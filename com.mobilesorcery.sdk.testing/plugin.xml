@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.views">
+      <view
+            category="com.mobilesorcery.sdk.ui.main"
+            class="com.mobilesorcery.sdk.testing.internal.ui.UnittestView"
+            icon="icons/testicon.png"
+            id="com.mobilesorcery.sdk.testing.view"
+            name="Unit Test"
+            restorable="true">
+      </view>
+   </extension>
+
+     <extension
+         point="org.eclipse.debug.core.launchConfigurationTypes">
+      <launchConfigurationType
+            delegate="com.mobilesorcery.sdk.testing.emulator.EmulatorTestLaunchConfigurationDelegate"
+            id="com.mobilesorcery.test.launchconfigurationtype"
+            modes="run,debug"
+            name="MoSync Test Emulated App"/>
+   </extension>
+   
+      <extension point="org.eclipse.debug.ui.launchShortcuts">
+<shortcut id="com.mobilesorcery.sdk.more.launchShortcut"
+modes="run,debug"
+class=
+"com.mobilesorcery.sdk.testing.emulator.MoSyncTestLaunchShortCut"
+label=
+"Run Tests on MoSync Emulator"
+icon="icons/testicon.png">
+                     <contextualLaunch>
+            <enablement>
+                <test
+                      forcePluginActivation="true"
+                      property="com.mobilesorcery.sdk.testers.hasMoreNature"/>
+            </enablement>
+         </contextualLaunch>
+</shortcut>
+</extension> 
+   
+      <extension
+         point="org.eclipse.debug.ui.launchConfigurationTabGroups">
+      <launchConfigurationTabGroup
+            class="com.mobilesorcery.sdk.testing.emulator.EmulatorTestLaunchConfigurationTabGroup"
+            id="com.mobilesorcery.launchconfigurationtabgroup"
+            type="com.mobilesorcery.test.launchconfigurationtype"/>
+   </extension>
+   
+      <extension
+         point="org.eclipse.debug.ui.launchConfigurationTypeImages">
+      
+      <launchConfigurationTypeImage
+            configTypeID="com.mobilesorcery.test.launchconfigurationtype"
+            icon="icons/testicon.png"
+            id="com.mobilesorcery.test.launchconfigurationtype.image"/>
+   </extension>
+</plugin>

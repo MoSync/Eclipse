@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+     <extension
+         point="org.eclipse.ui.newWizards">
+      <category
+            id="com.mobilesorcery.wizard.category"
+            name="MoSync"/>
+      <wizard
+            category="com.mobilesorcery.wizard.category"
+            class="com.mobilesorcery.sdk.wizards.internal.NewMoSyncProjectWizard"
+            finalPerspective="com.mobilesorcery.ui.perspective"
+            icon="icons/mosyncproject.png"
+            id="com.mobilesorcery.wizard.mosync.project"
+            name="MoSync Project"
+            project="true"/>
+      <wizard
+            category="com.mobilesorcery.wizard.category"
+            class="com.mobilesorcery.sdk.wizards.internal.NewMoSyncResourceFileWizard"
+            finalPerspective="com.mobilesorcery.ui.perspective"
+            icon="icons/mosyncproject.png"
+            id="com.mobilesorcery.wizard.mosync.resourcefile"
+            name="MoSync Resource File"
+            project="false"/>
+      <primaryWizard
+            id="com.mobilesorcery.wizard.mosync.project">
+      </primaryWizard>
+      <primaryWizard
+            id="com.mobilesorcery.wizard.mosync.resourcefile">
+      </primaryWizard>
+      
+   </extension>
+
+</plugin>

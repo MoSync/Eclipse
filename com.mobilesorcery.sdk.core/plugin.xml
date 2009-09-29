@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+   <extension-point id="com.mobilesorcery.core.packagers" name="Packager" schema="schema/com.mobilesorcery.core.packager.exsd"/>
+   <extension-point id="com.mobilesorcery.core.propertyinitializers" name="Property Initializer" schema="schema/com.mobilesorcery.core.propertyinitializers.exsd"/>
+   <extension-point id="com.mobilesorcery.sdk.updater" name="Auto Updater" schema="schema/com.mobilesorcery.sdk.updater.exsd"/>
+
+   <extension
+         id="builder"
+         name="MoSync Builder"
+         point="org.eclipse.core.resources.builders">
+      <builder
+            hasNature="false">
+         <run
+               class="com.mobilesorcery.sdk.core.MoSyncBuilder">
+         </run>
+      </builder>
+   </extension>
+   <extension
+         id="nature"
+         name="MoSync Project Nature"
+         point="org.eclipse.core.resources.natures">
+      <runtime>
+         <run
+               class="com.mobilesorcery.sdk.core.MoSyncNature">
+         </run>
+      </runtime>
+      <builder
+            id="com.mobilsorcery.mosync.core">
+      </builder>
+   </extension>
+
+     <extension
+         point="org.eclipse.debug.core.launchConfigurationTypes">
+      <launchConfigurationType
+            delegate="com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate"
+            id="com.mobilesorcery.launchconfigurationtype"
+            modes="run,debug"
+            name="MoSync Emulated App"/>
+   </extension>   
+
+
+
+   <extension
+         point="org.eclipse.core.expressions.propertyTesters">
+      <propertyTester
+            class="com.mobilesorcery.sdk.internal.MoSyncNatureTester"
+            id="com.mobilesorcery.sdk.testers.hasMoreNature"
+            namespace="com.mobilesorcery.sdk.testers"
+            properties="hasMoreNature"
+            type="java.lang.Object"/>
+   </extension>
+   
+
+<extension
+      point="org.eclipse.cdt.core.PathEntryContainerInitializer">
+            <pathEntryContainerInitializer
+            class="com.mobilesorcery.sdk.internal.cdt.MoSyncPathInitializer"
+            id="com.mobilesorcery.mosync.includepaths">
+      </pathEntryContainerInitializer>      
+</extension>
+      
+   <extension point=
+"org.eclipse.ui.navigator.viewer">
+      <viewerContentBinding
+            viewerId="org.eclipse.ui.navigator.ProjectExplorer">
+         <includes>
+            <contentExtension
+                  isRoot="true"
+                  pattern="com.mobilesorcery.sdk.ui.projectexplorer.filter">
+            </contentExtension>
+         </includes>
+      </viewerContentBinding>
+   </extension>
+   <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="com.mobilesorcery.sdk.internal.preferences.MoSyncToolPreferenceInitializer">
+      </initializer>
+   </extension>
+   <extension
+         point="com.mobilesorcery.core.propertyinitializers">
+      <initializer
+            class="com.mobilesorcery.sdk.internal.builder.BuildPropertiesInitializerDelegate"
+            context="com.mobilesorcery.sdk.mosync.project.context"
+            id="com.mobilesorcery.sdk.builder.initializer"
+            prefix="build.prefs">
+      </initializer>
+   </extension>
+   <extension
+         point="org.eclipse.debug.core.processFactories">
+      <processFactory
+            class="com.mobilesorcery.sdk.internal.launch.NonTerminableProcessFactory"
+            id="com.mobilesorcery.sdk.builder.nonterminableprocessfactory">
+      </processFactory>
+   </extension>
+      
+</plugin>

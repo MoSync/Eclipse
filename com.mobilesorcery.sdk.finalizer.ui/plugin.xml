@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.views">
+      <view
+            allowMultiple="false"
+            category="com.mobilesorcery.sdk.ui.main"
+            class="com.mobilesorcery.sdk.finalizer.ui.FinalizerView"
+            icon="icons/viewicon.png"
+            id="com.mobilesorcery.sdk.finalizer.ui.view"
+            name="Finalizer">
+      </view>
+   </extension>
+</plugin>

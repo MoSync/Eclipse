@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Perspective Plug-in
+Bundle-SymbolicName: com.mobilesorcery.sdk.ui.perspective;singleton:=true
+Bundle-Version: 1.0.0
+Bundle-Activator: com.mobilesorcery.ui.perspective.Activator
+Bundle-Vendor: MOBILESORCERY
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.ui.console,
+ org.eclipse.debug.ui;bundle-version="3.3.2"
+Eclipse-LazyStart: true

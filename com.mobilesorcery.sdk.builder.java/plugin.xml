@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+   <extension
+         point="com.mobilesorcery.core.packagers">
+      <packager
+            implementation="com.mobilesorcery.sdk.builder.java.JavaPackager"
+            pattern="^profiles\\runtimes\\java\\.*">
+      </packager>
+   </extension>
+
+</plugin>

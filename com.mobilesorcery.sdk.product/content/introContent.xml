@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<introContent>
+    <!-- Root page -->
+	<page id="root" content="root.xhtml" />
+	
+    <!-- Standby page -->
+    <page id="standby" style="css/shared.css" style-id="page">
+   		 <title style-id="intro-header">Standby Page</title>
+   		 <link url="http://org.eclipse.ui.intro/setStandbyMode?standby=false" label="No standby" id="noStandby" />
+    </page>    
+    
+    <!--  Example page -->
+    <page id="examples" content="examples.xhtml" />
+    
+</introContent>

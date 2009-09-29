@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.importWizards">
+      <category
+            id="com.mobilesorcery.sdk.importproject.category.mosync"
+            name="MoSync">
+      </category>
+      <wizard
+            category="com.mobilesorcery.sdk.importproject.category.mosync"
+            class="com.mobilesorcery.sdk.importproject.OldMoBuildProjectImportWizard"
+            icon="icons/mosync_project.png"
+            id="com.mobilesorcery.sdk.importproject.wizard"
+            name="Old MoBuild project into workspace">
+      </wizard>      
+   </extension>
+   <extension point="org.eclipse.ui.newWizards">
+         <wizard
+            category="com.mobilesorcery.wizard.category"
+            class="com.mobilesorcery.sdk.importproject.OldMoBuildProjectImportWizard"
+            finalPerspective="com.mobilesorcery.ui.perspective"
+            icon="icons/mosync_project_wizard.png"
+            id="com.mobilesorcery.sdk.importproject.new.wizard"
+            name="Import Legacy MoSync Project into workspace"
+            project="true"/>
+   </extension>
+   
+
+</plugin>

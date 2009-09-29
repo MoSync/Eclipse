@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: %Bundle-Name.0
+Bundle-SymbolicName: com.mobilesorcery.sdk.product; singleton:=true
+Bundle-Version: 1.0.0
+Bundle-Vendor: %Bundle-Vendor.0
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.ui.intro,
+ org.eclipse.ui,
+ org.eclipse.ui.ide;bundle-version="3.5.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-Localization: plugin
+Import-Package: com.mobilesorcery.sdk.core,
+ com.mobilesorcery.sdk.importproject,
+ org.eclipse.ui.intro

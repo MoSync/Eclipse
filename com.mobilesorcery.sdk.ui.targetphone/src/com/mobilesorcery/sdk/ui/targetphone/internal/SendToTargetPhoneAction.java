@@ -1,0 +1,172 @@
+package com.mobilesorcery.sdk.ui.targetphone.internal;
+
+import java.io.IOException;
+import java.text.MessageFormat;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.IWorkbenchWindowActionDelegate;
+
+import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
+import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.profiles.IProfile;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
+import com.mobilesorcery.sdk.ui.targetphone.Activator;
+
+public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
+
+    private static MoSyncProject lastSelected;
+    private IAction action;
+    private ISelection selection;
+    private IWorkbenchWindow window;
+
+    public void dispose() {
+    }
+
+    public void init(IWorkbenchWindow window) {
+        this.window = window;
+    }
+
+    public void run(IAction action) {
+        final TargetPhone phone = Activator.getDefault().getCurrentlySelectedPhone();
+
+        Job selectJob = new Job("Send to target") {
+            protected IStatus run(IProgressMonitor monitor) {
+                final TargetPhone[] selectedPhone = new TargetPhone[1];
+                selectedPhone[0] = phone;
+
+                if (phone == null) {
+                    try {
+                        selectedPhone[0] = SelectTargetPhoneAction.selectPhone(SelectTargetPhoneAction.getCurrentProfileOfCurrentProject(window));
+                    } catch (IOException e) {
+                        return new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e);
+                    }
+
+                    if (selectedPhone[0] == null) {
+                        return Status.CANCEL_STATUS;
+                    }
+                } else if (phone.getPreferredProfile() == null) {
+                	phone.setPreferredProfile(SelectTargetPhoneAction.getCurrentProfileOfCurrentProject(window));
+                }
+
+                Job sendJob = new Job("Send to target") {
+                    protected IStatus run(IProgressMonitor monitor) {
+                        if (selectedPhone[0] != null) {
+                            monitor.beginTask("Sending to target", 3);
+
+                            if (!selectedPhone[0].isPortAssigned()) {
+                                IStatus status = SelectTargetPhoneAction.assignPort(new SubProgressMonitor(monitor, 1), selectedPhone[0]);
+                                if (status.getSeverity() != IStatus.OK) {
+                                    return status;
+                                }
+                            } else {
+                                monitor.worked(1);
+                            }
+
+                            MoSyncProject project = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(window);
+
+                            if (project == null) {
+                                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "No MoSync Project selected");
+                            }
+
+                            IProfile targetProfile = selectedPhone[0].getPreferredProfile();
+                            
+                            if (targetProfile == null) {
+                            	targetProfile = project.getTargetProfile();
+                            }
+
+                            if (targetProfile == null) {
+                                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "No Target Profile selected");
+                            }
+
+                            IBuildResult buildResult = null;
+                            try {
+                                buildResult = new MoSyncBuilder().fullBuild(project.getWrappedProject(), targetProfile, true, true,
+                                        new SubProgressMonitor(monitor, 1));
+                            } catch (CoreException e) {
+                                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format(
+                                        "Could not build for target {0}. Root cause: {1}", targetProfile, e.getMessage()), e);
+                            }
+
+                            if (buildResult != null) {
+                                try {
+                                    if (buildResult.getBuildResult() == null) {
+                                        return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Could not build for device");
+                                    }
+                                    Bcobex.sendObexFile(selectedPhone[0], buildResult.getBuildResult(), new SubProgressMonitor(
+                                            monitor, 1));
+                                    return Status.OK_STATUS;
+                                } catch (IOException e) {
+                                    return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Could not send file to device", e);
+                                }
+                            }
+                        }
+                        return Status.OK_STATUS;
+                    }
+                };
+
+                sendJob.setUser(true);
+                sendJob.schedule();
+
+                return Status.OK_STATUS;
+            }
+
+        };
+
+        selectJob.setSystem(true);
+        selectJob.schedule();
+    }
+
+    /**
+     * Sends the build result to the target phone
+     */
+    public void sendTo(final TargetPhone phone) {
+        if (phone != null) {
+            Job job = new Job("Send to target") {
+                public IStatus run(IProgressMonitor monitor) {
+                    IPath mobex = MoSyncTool.getDefault().getMoSyncBin().append("mobex.exe");
+                    MoSyncProject project = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(window);
+
+                    // project.get
+                    IProfile currentProfile = project.getTargetProfile();
+
+                    int result = 0;
+
+                    if (project != null) {
+                        String[] commandLine = getCommandLine(mobex, "", phone);
+                        try {
+                            Process process = Runtime.getRuntime().exec(commandLine);
+                            result = process.waitFor();
+                        } catch (Exception e) {
+                            result = -1;
+                        }
+                    }
+
+                    return result == 0 ? Status.OK_STATUS
+                            : new Status(Status.ERROR, Activator.PLUGIN_ID, "Could not send to phone");
+                }
+
+            };
+        }
+    }
+
+    private String[] getCommandLine(IPath mobex, String fileToSend, TargetPhone phone) {
+        return new String[] { mobex.toFile().getAbsolutePath(), fileToSend, phone.getAddress(), Integer.toString(phone.getPort()) };
+    }
+
+    public void selectionChanged(IAction action, ISelection selection) {
+        this.action = action;
+        this.selection = selection;
+    }
+
+}

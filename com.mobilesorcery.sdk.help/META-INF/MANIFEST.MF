@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Help Plug-in
+Bundle-SymbolicName: com.mobilesorcery.sdk.help;singleton:=true
+Bundle-Version: 1.0.0
+Bundle-Vendor: MOBILESORCERY
+Require-Bundle: org.eclipse.equinox.http.registry,
+ org.eclipse.help.webapp;bundle-version="3.4.0"

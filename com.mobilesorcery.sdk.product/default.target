@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?pde version="3.5"?>
+
+<target name="MoSync IDE [RCP] Target Definition">
+<locations>
+<location id="org.eclipse.rcp" path="${eclipse_home}" type="Feature"/>
+<location includeAllPlatforms="false" includeMode="planner" type="InstallableUnit">
+<unit id="org.eclipse.jdt.feature.group" version="3.5.0.v20090527-2000-7r88FEeFJePyvYeA33DjZ_c1"/>
+<repository location="http://download.eclipse.org/releases/galileo"/>
+</location>
+<location includeAllPlatforms="false" includeMode="planner" type="InstallableUnit">
+<unit id="org.eclipse.platform.ide" version="3.5.0.I20090611-1540"/>
+<unit id="org.eclipse.platform.sdk" version="3.5.0.I20090611-1540"/>
+<unit id="org.eclipse.sdk.ide" version="3.5.0.I20090611-1540"/>
+<unit id="org.eclipse.releng.tools.feature.group" version="3.3.0.v20090520-44-7w311A1638"/>
+<repository location="http://download.eclipse.org/eclipse/updates/3.5"/>
+</location>
+<location includeAllPlatforms="false" includeMode="planner" type="InstallableUnit">
+<unit id="org.eclipse.cdt.feature.group" version="6.0.0.200906161748"/>
+<unit id="org.eclipse.cdt.sdk.feature.group" version="6.0.0.200906161748"/>
+<unit id="org.eclipse.cdt.gnu.build.feature.group" version="6.0.0.200906161748"/>
+<unit id="org.eclipse.cdt.gnu.debug.feature.group" version="6.0.0.200906161748"/>
+<unit id="org.eclipse.cdt.platform.feature.group" version="6.0.0.200906161748"/>
+<repository location="http://download.eclipse.org/tools/cdt/releases/galileo"/>
+</location>
+<location includeAllPlatforms="false" includeMode="planner" type="InstallableUnit">
+<unit id="org.eclipse.swtbot.eclipse.feature.group" version="2.0.0.394-dev-e35"/>
+<unit id="org.eclipse.swtbot.feature.group" version="2.0.0.394-dev-e35"/>
+<repository location="http://download.eclipse.org/technology/swtbot/galileo/dev-build/update-site"/>
+</location>
+</locations>
+</target>

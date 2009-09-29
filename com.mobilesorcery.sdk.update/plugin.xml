@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+      <extension
+            point="org.eclipse.ui.preferencePages">
+         <page
+               class="com.mobilesorcery.sdk.update.internal.preferences.ProfileUpdatesPreferencePage"
+               id="com.mobilesorcery.sdk.preferences.updates"
+               name="Profile Updates"
+               category="com.mobilesorcery.sdk.preferences.main">
+         </page>
+      </extension>
+         <extension
+         point="org.eclipse.ui.actionSets">
+      <actionSet
+            id="com.mobilesorcery.sdk.update.actionset"
+            label="Updates"
+            visible="true">
+         ...
+         <action
+               class="com.mobilesorcery.sdk.update.internal.UpdateProfilesAction"
+               id="com.mobilesorcery.sdk.update"
+               label="Update MoSync Profile Database"
+               menubarPath="help/helpStart">
+         </action>
+      </actionSet>
+   </extension>
+         <extension
+               point="com.mobilesorcery.sdk.updater">
+            <updater
+                  id="com.mobilesorcery.sdk.update.default"
+                  implementation="com.mobilesorcery.sdk.update.internal.DefaultUpdater">
+            </updater>
+         </extension>
+      
+</plugin>

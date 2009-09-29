@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/com.mobilesorcery.sdk.feature_1.0.0.jar" id="com.mobilesorcery.sdk.feature" version="1.0.0" os="win32"/>
+   <feature url="features/com.mobilesorcery.sdk.builder.java.feature_1.0.0.qualifier.jar" id="com.mobilesorcery.sdk.builder.java.feature" version="1.0.0.qualifier"/>
+   <feature url="features/com.mobilesorcery.sdk.builder.s60.feature_1.0.0.qualifier.jar" id="com.mobilesorcery.sdk.builder.s60.feature" version="1.0.0.qualifier"/>
+   <feature url="features/com.mobilesorcery.sdk.builder.winmobile.feature_1.0.0.qualifier.jar" id="com.mobilesorcery.sdk.builder.winmobile.feature" version="1.0.0.qualifier"/>
+</site>
