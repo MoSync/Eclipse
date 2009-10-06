@@ -63,7 +63,6 @@ http://www.mosync.com
       <plugin id="com.mobilesorcery.sdk.lib"/>
       <plugin id="com.mobilesorcery.sdk.product"/>
       <plugin id="com.mobilesorcery.sdk.profiles.ui"/>
-      <plugin id="com.mobilesorcery.sdk.testing"/>
       <plugin id="com.mobilesorcery.sdk.ui"/>
       <plugin id="com.mobilesorcery.sdk.ui.editors.resources"/>
       <plugin id="com.mobilesorcery.sdk.ui.perspective"/>

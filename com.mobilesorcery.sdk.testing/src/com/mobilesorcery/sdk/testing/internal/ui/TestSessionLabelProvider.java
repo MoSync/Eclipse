@@ -1,3 +1,16 @@
+/*  Copyright (C) 2009 Mobile Sorcery AB
+
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the Eclipse Public License v1.0.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE. See the Eclipse Public License v1.0 for
+    more details.
+
+    You should have received a copy of the Eclipse Public License v1.0 along
+    with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
+*/
 package com.mobilesorcery.sdk.testing.internal.ui;
 
 import java.text.MessageFormat;
@@ -68,20 +81,22 @@ public class TestSessionLabelProvider extends StyledCellLabelProvider {
 			String name = ((ITest) element).getName();
 			return name == null ? "?" : name;
 		}
-		return "?"; //$NON-NLS-1$
+		return element.toString(); //$NON-NLS-1$
 	}
 
 	private Image getImage(Object element) {
-		if (element instanceof ITest) {
+		String imageKey = null;
+
+		if (element instanceof Exception) {
+			imageKey = TestPlugin.TEST_SUITE_ERROR_IMAGE;
+		} else  if (element instanceof ITest) {
 			ITest test = (ITest) element;
 			if (session != null) {
 				boolean hasFinished = session.getTestResult().hasFinished(test);
 				boolean passed = session.getTestResult().passed(test, true);
 				boolean isRunning = session.getTestResult().isRunning(test);
 				boolean isSuite = test.isSuite();
-				
-				String imageKey = null;
-				
+								
 				if (isSuite) {
 					if (isRunning) {
 						imageKey = TestPlugin.TEST_SUITE_RUNNING_IMAGE; 
@@ -108,10 +123,14 @@ public class TestSessionLabelProvider extends StyledCellLabelProvider {
 					}
 				}
 				
-				return TestPlugin.getDefault().getImageRegistry().get(imageKey);
+				
 			}			
 		}
 
-		return null;
+		if (imageKey != null) {
+			return TestPlugin.getDefault().getImageRegistry().get(imageKey);
+		} else {
+			return null;
+		}
 	}
 }

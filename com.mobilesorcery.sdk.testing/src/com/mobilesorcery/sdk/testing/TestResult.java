@@ -1,3 +1,16 @@
+/*  Copyright (C) 2009 Mobile Sorcery AB
+
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the Eclipse Public License v1.0.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE. See the Eclipse Public License v1.0 for
+    more details.
+
+    You should have received a copy of the Eclipse Public License v1.0 along
+    with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
+*/
 package com.mobilesorcery.sdk.testing;
 
 import java.util.ArrayList;
@@ -31,6 +44,7 @@ public class TestResult extends TestListenerBase {
 		}
 		
 		failuresForTest.add(errorToken);
+		notifyListeners(new TestSessionEvent(TestSessionEvent.TEST_FAILED, session, test));
 	}
 
 	public TestResult(ITestSession session) {
@@ -131,6 +145,13 @@ public class TestResult extends TestListenerBase {
 	}
 
 	
+	/**
+	 * Returns a list of failures associated with a test,
+	 * or if <code>test</code> is a <code>ITestSession</code>, any
+	 * problems actually executing the test suite.
+	 * @param test
+	 * @return
+	 */
 	public List<Object> getFailures(ITest test) {
 		return failures.get(test);
 	}
@@ -153,6 +174,21 @@ public class TestResult extends TestListenerBase {
 			Integer elapsedTime = this.elapsedTime.get(test);
 			return elapsedTime == null ? TIME_UNDEFINED : elapsedTime.intValue();
 		}		
+	}
+
+	public boolean hasFailures(ITest test) {
+		List<Object> failuresForOneTest = getFailures(test);
+		return failuresForOneTest != null && failuresForOneTest.size() > 0;
+	}
+	
+	/**
+	 * <p>Returns whether the actual test run failed (for example, the tests
+	 * were never run due to a communication error or something).</p>
+	 * <p>That kind of failure should be reported as a failure on the <code>ITestSession</code> itself.
+	 * @return
+	 */
+	public boolean didTestExecutionFail() {
+		return hasFailures(session);
 	}
 
 

@@ -1,8 +1,19 @@
+/*  Copyright (C) 2009 Mobile Sorcery AB
+
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the Eclipse Public License v1.0.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE. See the Eclipse Public License v1.0 for
+    more details.
+
+    You should have received a copy of the Eclipse Public License v1.0 along
+    with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
+*/
 package com.mobilesorcery.sdk.testing.internal.ui;
 
 import java.util.Random;
-
-import javax.swing.text.BadLocationException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspace;
@@ -21,7 +32,6 @@ import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
-import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
@@ -44,7 +54,7 @@ import com.mobilesorcery.sdk.testing.Test;
 import com.mobilesorcery.sdk.testing.TestManager;
 import com.mobilesorcery.sdk.testing.TestResult;
 import com.mobilesorcery.sdk.testing.TestSessionEvent;
-import com.mobilesorcery.sdk.testing.emulator.EmulatorTestRunner;
+import com.mobilesorcery.sdk.testing.emulator.EmulatorTestSession;
 
 public class UnittestView extends ViewPart implements ITestSessionListener {
 
@@ -92,8 +102,8 @@ public class UnittestView extends ViewPart implements ITestSessionListener {
 				if (o instanceof ITest) {
 					ITest test = (ITest) o;
 					TestResult result = testRun.getTestSession().getTestResult();
-					Object fileObj = result.getProperty(test, EmulatorTestRunner.FILE_KEY);
-					Object lineObj = result.getProperty(test, EmulatorTestRunner.LINE_KEY);
+					Object fileObj = result.getProperty(test, EmulatorTestSession.FILE_KEY);
+					Object lineObj = result.getProperty(test, EmulatorTestSession.LINE_KEY);
 	                if (fileObj != null) {
 		                IWorkspace ws = ResourcesPlugin.getWorkspace();
 		                IFile[] files = ws.getRoot().findFilesForLocation(new Path(fileObj.toString()));
@@ -106,7 +116,7 @@ public class UnittestView extends ViewPart implements ITestSessionListener {
 									ITextEditor textEditor = (ITextEditor) part;
 									IDocumentProvider provider= textEditor.getDocumentProvider();
 									IDocument document= provider.getDocument(textEditor.getEditorInput());
-									int start= document.getLineOffset(Integer.parseInt(lineObj.toString()));
+									int start = document.getLineOffset(Integer.parseInt(lineObj.toString()) - 1);
 									textEditor.selectAndReveal(start, 0);
 								}
 							} catch (PartInitException e) {
