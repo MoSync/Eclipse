@@ -1,0 +1,205 @@
+<project name="mosync.sdk" default="dev">
+	<property name="buildDirectory" value="${basedir}/buildresult" />
+	<property name="test-directory" value="${buildDirectory}\I.MoSync\MoSync-win32.win32.x86-trimmed-test" />
+	
+	<!-- We're three levels down; srcroot is the top root, all plugins reside one 
+	     level below this -->
+	<property name="srcroot" location="${basedir}/../../" />
+
+	<!--
+        PDE Build expects that the build directory contains a "plugins" 
+        directory and a "features" directory. These directories should contain
+        the various plug-ins and features to be built.        
+    -->
+	<target name="init">
+		<tstamp>
+		   <format property="build.timestamp" pattern="yyyyMMdd-HHmm" />
+		</tstamp>
+		
+		<property name="target-platform" location="${buildDirectory}/../target-platform" />
+		<property name="product-def-file" value="${srcroot}/com.mobilesorcery.sdk.product/com.mobilesorcery.sdk.product" />
+
+		<!-- For some other strange reason (of course, this is PDE build...),
+             we must have a fixed path in build.properties, so we
+             just use build.properties.template and replace it with
+             the ${target-platform} set by the user
+        -->
+		<copy file="./build.properties.template" tofile="./build.properties" overwrite="yes" />
+
+		<!-- Oh, the hackery of it! This is because of the mismatch between ant location properties,
+             which have backslash, and ant file properties, which must escape backslashes.
+             MAKE SURE that no line has any trailing whitespace, or be prepared to do some serious debugging -->
+		<echo file="./build.properties.gen">
+		escaped-target-platform=${target-platform}
+		escaped-basedir=${basedir}
+		escaped-product-def-file=${product-def-file}
+		</echo>
+		<replaceregexp file="./build.properties.gen" match="\\" replace="/" byline="false" flags="g" />
+		<property file="./build.properties.gen" />
+		<!-- End of hackery -->
+
+        <!-- And this has to be done because of the non-portability of the build.properties. Or, I missed
+		     some very important and basic information in the PDE build tutorial... 
+	    -->
+		<replace file="./build.properties" token="%%target-platform%%" value="${escaped-target-platform}" />
+		<replace file="./build.properties" token="%%product-def-file%%" value="${escaped-product-def-file}" />
+		<replace file="./build.properties" token="%%basedir%%" value="${escaped-basedir}" />
+		<replace file="./build.properties" token="%%timestamp%%" value="${build.timestamp}" />
+
+		<property file="./build.properties" />
+		
+		<property name="pdebuild-dir" location="${target-platform}/eclipse/plugins/org.eclipse.pde.build_${pdeBuildPluginVersion}" />
+		
+		<!-- And for some bizarre reason, 3.5 forces us to explicitly state this -->
+		<property name="eclipse.pdebuild.scripts" location="${pdebuild-dir}/scripts" />		
+		<property name="eclipse.pdebuild.templates" location="${pdebuild-dir}/templates"/>
+
+		<mkdir dir="${buildDirectory}" />
+		<mkdir dir="${buildDirectory}/plugins" />
+		<mkdir dir="${buildDirectory}/features" />
+
+		<copy todir="${buildDirectory}/plugins">
+			<fileset dir="${srcroot}">
+			    <exclude name="**/*.class"/>
+				<!-- This list should contain all plugins, but not features + product -->
+				<include name="com.mobilesorcery.sdk.builder/**" />
+				<include name="com.mobilesorcery.sdk.builder.headless/**" />
+				<include name="com.mobilesorcery.sdk.builder.java/**" />
+				<include name="com.mobilesorcery.sdk.builder.s60/**" />
+				<include name="com.mobilesorcery.sdk.builder.winmobile/**" />
+				<include name="com.mobilesorcery.sdk.core/**" />
+				<include name="com.mobilesorcery.sdk.core.templates/**" />
+				<include name="com.mobilesorcery.sdk.finalizer.core/**" />
+				<include name="com.mobilesorcery.sdk.finalizer.ui/**" />
+				<include name="com.mobilesorcery.sdk.fontsupport/**" />
+				<include name="com.mobilesorcery.sdk.help/**" />
+				<include name="com.mobilesorcery.sdk.importproject/**" />
+				<include name="com.mobilesorcery.sdk.lib/**" />
+				<include name="com.mobilesorcery.sdk.product/**" />
+				<exclude name="com.mobilesorcery.sdk.product/build/**" />
+				<include name="com.mobilesorcery.sdk.profiles.ui/**" />
+				<include name="com.mobilesorcery.sdk.testing/**" />
+				<include name="com.mobilesorcery.sdk.ui/**" />
+				<include name="com.mobilesorcery.sdk.ui.editors.resources/**" />
+				<include name="com.mobilesorcery.sdk.ui.targetphone/**" />
+				<include name="com.mobilesorcery.sdk.ui.wizards/**" />
+				<include name="com.mobilesorcery.sdk.ui.perspective/**" />
+				<include name="com.mobilesorcery.sdk.update/**" />
+				
+				<include name="com.mobilesorcery.sdk.smoketests/**" />
+				<include name="com.mobilesorcery.sdk.core.tests/**" />
+				<include name="com.mobilesorcery.sdk.core.templates.tests/**" />
+			</fileset>
+		</copy>
+		<copy todir="${buildDirectory}/features">
+			<fileset dir="${srcroot}">
+				<include name="com.mobilesorcery.sdk.feature/**" />
+				<include name="com.mobilesorcery.sdk.builder.java.feature/**" />
+				<include name="com.mobilesorcery.sdk.builder.s60.feature/**" />
+				<include name="com.mobilesorcery.sdk.builder.winmobile.feature/**" />
+				<include name="com.mobilesorcery.sdk.tests.feature/**" />
+			</fileset>
+		</copy>
+		
+	</target>
+
+	<target name="unzip-target-platform" depends="unzip-target-platform.precondition" if="do-unzip-target-platform">
+		<unzip src="./target-platform.zip" dest="${buildDirectory}/../target-platform" />
+	</target>
+
+	<target name="unzip-target-platform.precondition">
+		<condition property="do-unzip-target-platform">
+			<not>
+				<available file="${buildDirectory}/../target-platform" />
+			</not>
+		</condition>
+	</target>
+
+	<target name="pde-build" depends="init">
+		<delete dir="${buildDirectory}/I.MoSync" failonerror="true" />
+		<java jar="${target-platform}/eclipse/plugins/org.eclipse.equinox.launcher_${equinoxLauncherPluginVersion}.jar" fork="true" failonerror="true">
+			<arg value="-application" />
+			<arg value="org.eclipse.ant.core.antRunner" />
+			<arg value="-buildfile" />
+			<arg value="${pdebuild-dir}/scripts/productBuild/productBuild.xml" />
+			<arg value="-Dbuilder=${basedir}"/>
+			<!-- <arg value="-Declipse.pdebuild.scripts=C:/development/projects/mobilesorcery-2/com.mobilesorcery.sdk.product/build/target-platform/eclipse/plugins/org.eclipse.pde.build_${pdeBuildPluginVersion}/scripts"/>
+			<arg value="-Declipse.pdebuild.templates=C:/development/projects/mobilesorcery-2/com.mobilesorcery.sdk.product/build/target-platform/eclipse/plugins/org.eclipse.pde.build_${pdeBuildPluginVersion}/templates"/> -->
+		</java>		
+	</target>
+
+	<target name="-build-tests">
+		<java jar="${target-platform}/eclipse/plugins/org.eclipse.equinox.launcher_${equinoxLauncherPluginVersion}.jar" fork="true" failonerror="true">
+			<arg value="-application" />
+			<arg value="org.eclipse.ant.core.antRunner" />
+			<arg value="-buildfile" />
+			<arg value="${pdebuild-dir}/scripts/build.xml" />
+			<arg value="-Dbuilder=${basedir}"/>
+		</java>		
+	</target>
+		
+	<target name="-prune-cdt" depends="pde-build" unless="-no-prune">
+		<!-- Remove some CDT specific stuff -->
+		<ant antfile="../com.mobilesorcery.sdk.product.customization/build.xml" dir="../../com.mobilesorcery.sdk.product.customization" />		
+	</target>
+
+	<target name="-clean-build-dir">
+		<delete dir="${buildDirectory}" />
+	</target>
+	
+	<target name="-clean-target-platform">
+		<delete dir="${buildDirectory}/../target-platform" />
+	</target>
+
+	<target name="-prepare-test-host" >
+		<!-- Unzip the pruned mosync -->
+		<delete dir="${test-directory}"/>
+		<unzip src="${buildDirectory}\I.MoSync\MoSync-win32.win32.x86-trimmed.zip" dest="${test-directory}"/>
+		
+		<!-- Create an empty workspace -->
+		<delete dir="${test-directory}-ws"/>
+		<mkdir dir="${test-directory}-ws"/>
+		
+		<!-- Put the tests + testing framework in the dropins folder -->
+		<!-- TODO: dropins doesn't work, and the usual lack of error messages force me to just put them
+		     in the plugin/feature folders; the old way, but it's probably ok considering this to be 
+		     a throw-away item -->
+		<mkdir dir="${test-directory}\mosync\dropins" />
+		<unzip src="${buildDirectory}\..\lib\swtbot-dropin.zip" dest="${test-directory}\mosync\dropins" overwrite="yes" />
+		<unzip src="${buildDirectory}\I.MoSync\com.mobilesorcery.sdk.tests.feature-MoSync-win32.win32.x86.zip" dest="${test-directory}\mosync\dropins" overwrite="yes"/>
+		<!-- Ehm... mosync -> eclipse -->
+		<copy todir="${test-directory}\mosync\dropins\eclipse\plugins" >
+			<fileset dir="${test-directory}\mosync\dropins\mosync\plugins"/>
+		</copy>
+		<copy todir="${test-directory}\mosync\dropins\eclipse\features" >
+			<fileset dir="${test-directory}\mosync\dropins\mosync\features"/>
+		</copy>
+		<!-- And dropins -> plugins -->
+		<copy todir="${test-directory}\mosync\plugins" >
+			<fileset dir="${test-directory}\mosync\dropins\eclipse\plugins"/>
+		</copy>		
+	</target>
+	
+	<target name="run-tests" depends="-prune-cdt, -build-tests, -prepare-test-host, run-tests-standalone" />
+	
+	<target name="run-tests-standalone" depends="init">
+		<!-- Run the tests -->		
+		<java jar="${test-directory}/mosync/plugins/org.eclipse.equinox.launcher_${equinoxLauncherPluginVersion}.jar" fork="true" failonerror="true">
+			<arg value="-debug" />
+			<arg value="-application" />
+			<arg value="org.eclipse.swtbot.eclipse.junit4.headless.swtbottestapplication" />
+			<arg value="-data" />
+			<arg file="${buildDirectory}\test-ws"/>
+			<arg value="-testPluginName" />
+			<arg value="com.mobilesorcery.sdk.smoketests" />
+			<arg value="-className" />
+			<arg value="com.mobilesorcery.sdk.smoketests.Main" />			 			
+		</java>
+	</target>
+	
+	<target name="clean" depends="-clean-target-platform, -clean-build-dir" />
+
+	<target name="dev" depends="unzip-target-platform, pde-build" />
+	<target name="release" depends="-clean-build-dir, run-tests" />
+	
+</project>
