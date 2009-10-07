@@ -105,6 +105,7 @@
 
 	<target name="unzip-target-platform" depends="unzip-target-platform.precondition" if="do-unzip-target-platform">
 		<unzip src="./target-platform.zip" dest="${buildDirectory}/../target-platform" />
+		<unzip src="${buildDirectory}\..\lib\swtbot-dropin.zip" dest="${buildDirectory}/../target-platform/eclipse/dropins" overwrite="yes" />
 	</target>
 
 	<target name="unzip-target-platform.precondition">
@@ -200,6 +201,6 @@
 	<target name="clean" depends="-clean-target-platform, -clean-build-dir" />
 
 	<target name="dev" depends="unzip-target-platform, pde-build" />
-	<target name="release" depends="-clean-build-dir, run-tests" />
+	<target name="release" depends="-clean-build-dir, unzip-target-platform, run-tests" />
 	
 </project>

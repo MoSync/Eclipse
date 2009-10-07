@@ -638,7 +638,8 @@ public class MoSyncBuilder extends ACBuilder {
     }
     
     private static IPath[] getProfileIncludes(IProfile profile) {
-        return new IPath[] { MoSyncTool.getDefault().getProfilePath(profile) };
+    	IPath profilePath = MoSyncTool.getDefault().getProfilePath(profile);
+        return profilePath == null ? new IPath[0] : new IPath[] { profilePath };
     }
 
 
