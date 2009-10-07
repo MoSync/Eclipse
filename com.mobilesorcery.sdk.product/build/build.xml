@@ -129,7 +129,7 @@
 		</java>		
 	</target>
 
-	<target name="-build-tests">
+	<target name="-build-tests" unless="no-tests">
 		<java jar="${target-platform}/eclipse/plugins/org.eclipse.equinox.launcher_${equinoxLauncherPluginVersion}.jar" fork="true" failonerror="true">
 			<arg value="-application" />
 			<arg value="org.eclipse.ant.core.antRunner" />
@@ -152,7 +152,7 @@
 		<delete dir="${buildDirectory}/../target-platform" />
 	</target>
 
-	<target name="-prepare-test-host" >
+	<target name="-prepare-test-host" unless="no-tests" >
 		<!-- Unzip the pruned mosync -->
 		<delete dir="${test-directory}"/>
 		<unzip src="${buildDirectory}\I.MoSync\MoSync-win32.win32.x86-trimmed.zip" dest="${test-directory}"/>
@@ -183,7 +183,7 @@
 	
 	<target name="run-tests" depends="-prune-cdt, -build-tests, -prepare-test-host, run-tests-standalone" />
 	
-	<target name="run-tests-standalone" depends="init">
+	<target name="run-tests-standalone" depends="init" unless="no-tests">
 		<!-- Run the tests -->		
 		<java jar="${test-directory}/mosync/plugins/org.eclipse.equinox.launcher_${equinoxLauncherPluginVersion}.jar" fork="true" failonerror="true">
 			<arg value="-debug" />
