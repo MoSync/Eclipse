@@ -31,9 +31,7 @@ public class V3Packager extends S60Packager {
 
 	private final static String TEMPLATE_UID = "E1223344"; //$NON-NLS-1$
 
-	private static final int V3_MAGIC1 = 0x5B;
-	private static final int V3_MAGIC2 = 0x78;
-	private static final int V3_SIZE1 = 0x33;
+	private static final int V3_SIZE1 = 0x25;
 	static final int V3_EXE_HEADER_SIZE = 0x9c;
 
 	public V3Packager() {
@@ -156,6 +154,8 @@ public class V3Packager extends S60Packager {
 		}
 
 		byte[] template = readFile(resourceTemplateFile);
+		byte v;
+		int x;
 
 		int originalAppnameLength = (byte)(template[0x42]);
 		if (template[0x42] != template[0x43]) {
@@ -164,7 +164,9 @@ public class V3Packager extends S60Packager {
 
 		byte[] buffer = new byte[template.length+2*(appName.length()-originalAppnameLength)];
 		System.arraycopy(template, 0, buffer, 0, 0x44);
-		buffer[0x11] = (byte)(V3_MAGIC1 + (appName.length() + 1) * 4);
+		v = template[0x11];
+		x = v - ((originalAppnameLength + 1) * 4);
+		buffer[0x11] = (byte)(x + (appName.length() + 1) * 4);
 
 		buffer[0x42] = (byte)(appName.length() & 0xff);
 		buffer[0x43] = (byte)(appName.length() & 0xff);
@@ -196,9 +198,22 @@ public class V3Packager extends S60Packager {
 		System.arraycopy(template, templateLoc, buffer, bufferLoc, V3_SIZE1);
 
 		templateLoc += V3_SIZE1;
-		bufferLoc += V3_SIZE1;// - 2;
-
-		buffer[bufferLoc] = (byte)(V3_MAGIC2 + 2 * (appName.length() + 1));
+		bufferLoc += V3_SIZE1;
+	
+		//read one byte
+		v = (byte)(template[templateLoc++]);
+		buffer[bufferLoc++] = v;
+	
+		//copy v+8 bytes
+		v += 8;
+		System.arraycopy(template, templateLoc, buffer, bufferLoc, v);
+		templateLoc += v;
+		bufferLoc += v;
+	
+		//write the last magic word
+		v = template[templateLoc];
+		x = v - ((originalAppnameLength + 1) * 2);
+		buffer[bufferLoc] = (byte)(x + (appName.length() + 1) * 2);
 		buffer[bufferLoc + 1] = 0;
 
 		//System.err.println(Util.toBase16(template));
