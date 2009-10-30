@@ -29,8 +29,6 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class V3Packager extends S60Packager {
 
-	private final static String TEMPLATE_UID = "E1223344"; //$NON-NLS-1$
-
 	private static final int V3_SIZE1 = 0x25;
 	static final int V3_EXE_HEADER_SIZE = 0x9c;
 
@@ -55,7 +53,6 @@ public class V3Packager extends S60Packager {
 
 			File runtimeDir = new File(internal.resolve("%runtime-dir%")); //$NON-NLS-1$
 			String runtimePath = internal.resolve("%runtime-dir%\\MoSync%D%.exe"); //$NON-NLS-1$
-			String vendorName = "Mobile Sorcery"; //$NON-NLS-1$
 
 			try {
 				createExe(new File(runtimePath), packageOutputDir, uid);
@@ -65,10 +62,11 @@ public class V3Packager extends S60Packager {
 				throw new IOException("Invalid runtime(s)", e);
 			}
 			
-			Template template = new Template(getClass().getResource("/templates/mosyncapp.pkg.v3.template")); //$NON-NLS-1$
+			String template = Util.readFile(runtimeDir.getAbsolutePath() + "/MoSync-template.pkg"); //$NON-NLS-1$
+
 			internal.setParameter("uid", uid); //$NON-NLS-1$
-			internal.setParameter("vendor-name", "MOBILE SORCERY"); //$NON-NLS-1$ //$NON-NLS-2$
-			String resolvedTemplate = template.resolve(internal.getParameters().toMap());
+			internal.setParameter("vendor-name", "Mobile Sorcery"); //$NON-NLS-1$ //$NON-NLS-2$
+			String resolvedTemplate = Template.preprocess(template, internal.getParameters().toMap());
 			File pkgFile = new File(packageOutputDir, uid + ".pkg"); //$NON-NLS-1$
 			Util.writeToFile(pkgFile, resolvedTemplate);
 

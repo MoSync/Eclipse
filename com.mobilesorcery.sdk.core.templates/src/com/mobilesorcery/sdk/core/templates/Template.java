@@ -19,7 +19,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -96,7 +95,11 @@ public class Template implements ITemplate {
         String template = buffer.toString();
         
         return verySimplePreprocessing(replace(template, map), map.keySet());
-    }    
+    }
+    
+    public static String preprocess(String template, Map<String, String> map) {
+        return verySimplePreprocessing(replace(template, map), map.keySet());
+    }
     
     public static String replace(String input, Map<String, String> map) {
         return innerReplace(input, map, 0).toString();

@@ -40,8 +40,6 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class V2Packager extends S60Packager {
 
-	//private final static String TEMPLATE_UID = "01223344";
-
 	private static final int V2_MAGIC2 = 0x1f - 4;
 	private static final int V2_SIZE1 = 4;
 	private static final int V2_MAGIC1 = 4;
@@ -80,10 +78,10 @@ public class V2Packager extends S60Packager {
 			Util.copyFile(new NullProgressMonitor(), new File(runtimeDir, "MoSync.rsc"), new File(packageOutputDir, uid + ".rsc")); //$NON-NLS-1$ //$NON-NLS-2$
 			
 			// Create the launcherapp.pkg
-			Template template = new Template(getClass().getResource("/templates/mosyncapp.pkg.v2.template")); //$NON-NLS-1$
+			String template = Util.readFile(runtimeDir.getAbsolutePath() + "/MoSync-template.pkg"); //$NON-NLS-1$
 			internal.setParameter("uid", uid); //$NON-NLS-1$
 			internal.setParameter("vendor-name", "MOBILE SORCERY"); //$NON-NLS-1$ //$NON-NLS-2$
-			String resolvedTemplate = template.resolve(internal.getParameters().toMap());
+			String resolvedTemplate = Template.preprocess(template, internal.getParameters().toMap());
 			File pkgFile = new File(packageOutputDir, uid + ".pkg"); //$NON-NLS-1$
 			Util.writeToFile(pkgFile, resolvedTemplate);
 
