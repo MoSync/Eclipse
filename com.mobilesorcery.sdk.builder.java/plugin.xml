@@ -5,7 +5,7 @@
          point="com.mobilesorcery.core.packagers">
       <packager
             implementation="com.mobilesorcery.sdk.builder.java.JavaPackager"
-            pattern="^profiles\\runtimes\\java\\.*">
+            pattern="^profiles\\runtimes\\java\\.*|^profiles\\runtimes\\JavaME\\.*">
       </packager>
    </extension>
 
