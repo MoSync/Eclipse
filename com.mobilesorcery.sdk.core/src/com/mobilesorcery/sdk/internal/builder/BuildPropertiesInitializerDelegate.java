@@ -56,9 +56,9 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
         		return PropertyUtil.fromBoolean(false);
         	}
         } else if (MoSyncBuilder.LIB_OUTPUT_PATH.equals(namespacedKey) && namespaceSegment != null) {
-    		return "Output/" + namespaceSegment + projectName + ".lib";          	
+    		return namespaceSegment + projectName + ".lib";          	
         } else if (MoSyncBuilder.APP_OUTPUT_PATH.equals(namespacedKey) && namespaceSegment != null) {
-    		return "Output/" + namespaceSegment;
+    		return namespaceSegment;
         }
         
         return null;
