@@ -26,8 +26,8 @@ Require-Bundle: org.eclipse.core.runtime,
 Bundle-ActivationPolicy: lazy
 Export-Package: com.mobilesorcery.sdk.core,
  com.mobilesorcery.sdk.internal.builder,
- com.mobilesorcery.sdk.internal.dependencies;x-friends:="com.mobilesorcery.skd.builder.test",
- com.mobilesorcery.sdk.internal.launch;x-friends:="com.mobilesorcery.sdk.testing",
+ com.mobilesorcery.sdk.internal.dependencies,
+ com.mobilesorcery.sdk.internal.launch,
  com.mobilesorcery.sdk.profiles,
  com.mobilesorcery.sdk.profiles.filter
 Bundle-ClassPath: .

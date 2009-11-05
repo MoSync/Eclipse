@@ -27,6 +27,7 @@ import org.eclipse.core.runtime.CoreException;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IProcessConsole;
+import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
 /**
@@ -46,6 +47,7 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	protected List<IResource> deletedResources = new ArrayList<IResource>();
 	protected IProject project;
 	protected IProcessConsole console;
+	private IPropertyOwner buildProperties;
 
 	public boolean visit(IResource resource) throws CoreException {
 		if (doesAffectBuild(resource)) {
@@ -212,4 +214,11 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 		return result;
 	}
 
+	public void setBuildProperties(IPropertyOwner buildProperties) {
+		this.buildProperties = buildProperties;
+	}
+	
+	public IPropertyOwner getBuildProperties() {
+		return buildProperties;
+	}
 }

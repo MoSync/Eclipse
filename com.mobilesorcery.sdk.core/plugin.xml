@@ -10,6 +10,7 @@
          name="MoSync Builder"
          point="org.eclipse.core.resources.builders">
       <builder
+            callOnEmptyDelta="true"
             hasNature="false">
          <run
                class="com.mobilesorcery.sdk.core.MoSyncBuilder">

@@ -83,7 +83,7 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 	public void incrementalCompile(IProgressMonitor monitor, DependencyManager<IResource> dependencyManager) throws CoreException {
 		Set<IResource> recompileThese = computeResourcesToRebuild(dependencyManager);
 		if (!recompileThese.isEmpty()) {
-			String[] extraResourceSwitches = PropertyUtil.getStrings(MoSyncProject.create(project), MoSyncBuilder.EXTRA_RES_SWITCHES);
+			String[] extraResourceSwitches = PropertyUtil.getStrings(getBuildProperties(), MoSyncBuilder.EXTRA_RES_SWITCHES);
 			pipeTool.setExtraSwitches(extraResourceSwitches);
 			pipeTool.setMode(PipeTool.BUILD_RESOURCES_MODE);
 			pipeTool.setInputFiles(getResourceFiles());

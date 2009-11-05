@@ -19,11 +19,17 @@ import java.beans.PropertyChangeSupport;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.Map.Entry;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -73,6 +79,18 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     public static final String TARGET_PROFILE_CHANGED = "target.profile";
 
     /**
+     * The property change event type that is triggered if the build configuration
+     * of this project changes
+     */
+    public static final String BUILD_CONFIGURATION_CHANGED = "build.config";
+
+    /**
+     * The property change event type that is triggered if the build configuration
+     * support of this project changes
+     */
+    public static final String BUILD_CONFIGURATION_SUPPORT_CHANGED = "build.config.support";
+
+    /**
      * The file exclude filter property for this project.
      * TODO: Not implemented yet
      * @see PathExclusionFilter
@@ -99,7 +117,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 * The property key for the dependency strategy of this project.
 	 */
 	public static final String DEPENDENCY_STRATEGY = "dependency.strategy";
-
+	
 	/**
 	 * A constant indicating that this project should use the GCC dependency
 	 * strategy (GCC -MF option).
@@ -130,6 +148,14 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     
     private static final String NO_CACHE_SLD_KEY = "no.cache.sld";
 
+	private static final String BUILD_CONFIG = "build.cfg";
+
+	private static final String BUILD_CONFIG_ID_KEY = "id";
+
+	private static final String BUILD_CONFIGS_SUPPORTED = "supports-build-configs";
+
+	private static final String ACTIVE_BUILD_CONFIG_KEY = "active";
+
     private static IdentityHashMap<IProject, MoSyncProject> projects = new IdentityHashMap<IProject, MoSyncProject>();
     
     private IProject project;
@@ -152,10 +178,16 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
 	private SLD lastSLD;
 
+	private IBuildConfiguration currentBuildConfig;
+
+	private TreeMap<String, IBuildConfiguration> configurations = new TreeMap<String, IBuildConfiguration>(String.CASE_INSENSITIVE_ORDER);
+
+	private boolean isBuildConfigurationsSupported;
+
     private MoSyncProject(IProject project) {
         Assert.isNotNull(project);
         this.project = project;
-        this.deviceFilterListener = new DeviceFilterListener(); 
+        this.deviceFilterListener = new DeviceFilterListener();
         initFromProjectMetaData();        
         addDeviceFilterListener();
     }
@@ -180,6 +212,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
             input = new FileReader(projectMetaDataPath.toFile());
             XMLMemento memento = XMLMemento.createReadRoot(input);
             initTargetProfileFromProjectMetaData(memento);
+            initAvailableBuildConfigurations(memento);
             
             deviceFilter = CompositeDeviceFilter.read(memento);
             properties = initPropertiesFromProjectMetaData(memento);
@@ -197,7 +230,23 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         
     }
 
-    private Map<String, String> initPropertiesFromProjectMetaData(XMLMemento memento) {
+    private void initAvailableBuildConfigurations(XMLMemento memento) {
+    	Boolean supportsBuildConfigurations = memento.getBoolean(BUILD_CONFIGS_SUPPORTED);
+    	this.isBuildConfigurationsSupported = supportsBuildConfigurations == null ? false : supportsBuildConfigurations;
+    	    	
+    	configurations.clear();
+    	IMemento[] cfgs = memento.getChildren(BUILD_CONFIG);
+    	for (int i = 0; i < cfgs.length; i++) {
+    		String id = cfgs[i].getString(BUILD_CONFIG_ID_KEY);
+    		BuildConfiguration cfg = new BuildConfiguration(this, id);
+    		configurations.put(id, cfg);
+    		if (Boolean.TRUE.equals(cfgs[i].getBoolean(ACTIVE_BUILD_CONFIG_KEY))) {
+    			currentBuildConfig = cfg;
+    		}
+    	}
+	}
+
+	private Map<String, String> initPropertiesFromProjectMetaData(XMLMemento memento) {
         Map<String, String> result = new HashMap<String, String>();
         IMemento properties = memento.getChild(PROPERTIES);
         if (properties != null) {
@@ -238,6 +287,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
             output = new FileWriter(projectMetaDataPath.toFile());
             IMemento target = root.createChild(TARGET);
             saveTargetProfile(target);
+            saveAvailableBuildConfigurations(root);
             
             deviceFilter.saveState(root);
             
@@ -259,9 +309,24 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         }
     }
     
-    private void saveProperties(IMemento memento) {
-        for (Iterator properties = this.properties.keySet().iterator(); properties.hasNext(); ) {
-            String key = (String) properties.next();
+    private void saveAvailableBuildConfigurations(XMLMemento root) {
+    	// Older versions of the project file format do not have build configs,
+    	// so we save a marker denoting that we do.
+    	root.putBoolean(BUILD_CONFIGS_SUPPORTED, isBuildConfigurationsSupported);
+    	for (String cfg : getBuildConfigurations()) {
+    		IMemento node = root.createChild(BUILD_CONFIG);
+    		node.putString(BUILD_CONFIG_ID_KEY, cfg);
+    		if (currentBuildConfig != null && cfg.equals(currentBuildConfig.getId())) {
+    			node.putBoolean(ACTIVE_BUILD_CONFIG_KEY, true);
+    		}
+    	}    	
+	}
+
+	private void saveProperties(IMemento memento) {
+		TreeMap<String, String> sortedProperties = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
+		sortedProperties.putAll(this.properties);
+        for (Iterator<String> properties = sortedProperties.keySet().iterator(); properties.hasNext(); ) {
+            String key = properties.next();
             String value = this.properties.get(key);
             IMemento property = memento.createChild(PROPERTY);
             property.putString(KEY_KEY, key);
@@ -503,6 +568,10 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         
         return property;
     }
+    
+    public Map<String, String> getProperties() {
+    	return new TreeMap<String, String>(properties);
+    }
 
     /**
      * <p>Sets a project-specific property.</p>
@@ -512,9 +581,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
      */
     public boolean setProperty(String key, String value) {
     	String oldValue = getProperty(key);
-    	if (equals(oldValue, value)) {
+    	if (NameSpacePropertyOwner.equals(oldValue, value)) {
     		return false;
     	}
+    	
+    	System.err.println(key + " := " + value);
     	
     	initProperty(key, value);
 
@@ -523,13 +594,19 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         
         return true;
     }
-
-	private static boolean equals(String oldValue, String value) {
-		if (oldValue == null) {
-			return value == null;
+    
+	public boolean applyProperties(Map<String, String> properties) {
+		boolean result = false;
+		for (String key : properties.keySet()) {
+			String value = properties.get(key);
+			result |= setProperty(key, value);
 		}
 		
-		return oldValue.equals(value);
+		return result;
+	}
+
+	public IWorkingCopy createWorkingCopy() {
+		return new PropertyOwnerWorkingCopy(this);
 	}
 
     /**
@@ -622,6 +699,93 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
      */
 	public DependencyManager<IResource> getDependencyManager() {
 		return dependencyManager;
+	}
+
+	/**
+	 * Returns the current build configuration. Does always return
+	 * a build configuration.
+	 * @return
+	 */
+	public IBuildConfiguration getActiveBuildConfiguration() {
+		return currentBuildConfig;
+	}
+
+	/**
+	 * Sets the current build configuration. A property change
+	 * event with event type <code>BUILD_CONFIGURATION_CHANGED</code>
+	 * is triggered.
+	 * @param id The new build configuration to use
+	 * @throws IllegalArgumentException If no build configuration with
+	 * the given id exists.
+	 */
+	public void setActiveBuildConfiguration(String id) {
+		IBuildConfiguration oldCfg = getActiveBuildConfiguration();
+		Object oldId = oldCfg == null ? null : oldCfg.getId();
+		IBuildConfiguration newConfiguration = getBuildConfiguration(id);
+		if (newConfiguration == null) {
+			throw new IllegalArgumentException(MessageFormat.format("No configuration with id {0}", id));
+		}
+		currentBuildConfig = newConfiguration;
+		updateProjectSpec();
+		firePropertyChange(new PropertyChangeEvent(this, BUILD_CONFIGURATION_CHANGED, oldId, id));
+	}
+	
+	public Set<String> getBuildConfigurations() {
+		return new TreeSet<String>(configurations.keySet());
+	}
+	
+	public IBuildConfiguration getBuildConfiguration(String id) {
+		return configurations.get(id);
+	}
+	
+	public IBuildConfiguration installBuildConfiguration(String id) {
+		BuildConfiguration newConfig = new BuildConfiguration(this, id);
+		installBuildConfiguration(newConfig);
+		return newConfig;
+	}
+	
+	public void installBuildConfiguration(IBuildConfiguration newConfig) {
+		String id = newConfig.getId();
+		this.configurations.put(id, newConfig);
+		updateProjectSpec();
+		listeners.firePropertyChange(BUILD_CONFIGURATION_CHANGED, null, newConfig);
+	}
+	
+	public void deinstallBuildConfiguration(String id) {
+		IBuildConfiguration removed = this.configurations.remove(id);
+		removed.getProperties().clear();
+		if (currentBuildConfig == removed) {
+			currentBuildConfig = null;
+			if (!configurations.isEmpty()) {
+				Entry<String, IBuildConfiguration> entry = configurations.lowerEntry(id);
+				currentBuildConfig = entry == null ? configurations.firstEntry().getValue() : entry.getValue();
+			}
+		}
+		updateProjectSpec();
+		listeners.firePropertyChange(BUILD_CONFIGURATION_CHANGED, removed, null);
+	}
+
+	public void setBuildConfigurationsSupported(boolean isBuildConfigurationsSupported) {
+		if (this.isBuildConfigurationsSupported != isBuildConfigurationsSupported) {
+			this.isBuildConfigurationsSupported = isBuildConfigurationsSupported;
+			updateProjectSpec();
+			listeners.firePropertyChange(BUILD_CONFIGURATION_SUPPORT_CHANGED, !isBuildConfigurationsSupported, isBuildConfigurationsSupported);
+		}
+	}
+	
+	public boolean isBuildConfigurationsSupported() {
+		return isBuildConfigurationsSupported;
+	}
+	
+	public void activateBuildConfigurations() {
+		setBuildConfigurationsSupported(true);
+		
+		if (configurations.isEmpty()) {
+			configurations.put("Release", new BuildConfiguration(this, IBuildConfiguration.RELEASE_ID));
+			configurations.put("Debug", new BuildConfiguration(this, IBuildConfiguration.DEBUG_ID));
+			configurations.put("Test", new BuildConfiguration(this, IBuildConfiguration.TEST_ID));
+			setActiveBuildConfiguration("Release");
+		}
 	}
 
 

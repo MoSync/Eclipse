@@ -5,7 +5,7 @@ Bundle-SymbolicName: com.mobilesorcery.sdk.core.templates
 Bundle-Version: 1.0.0.qualifier
 Bundle-Vendor: MOBILESORCERY
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
-Require-Bundle: com.mobilesorcery.sdk.core;bundle-version="1.0.0",
- org.eclipse.core.resources;bundle-version="3.5.0",
- org.eclipse.core.runtime;bundle-version="3.5.0"
+Require-Bundle: org.eclipse.core.resources;bundle-version="3.5.0",
+ org.eclipse.core.runtime;bundle-version="3.5.0",
+ com.mobilesorcery.sdk.core;bundle-version="1.0.0"
 Export-Package: com.mobilesorcery.sdk.core.templates

@@ -13,14 +13,22 @@
 */
 package com.mobilesorcery.sdk.ui.internal.properties;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.HashMap;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
+import org.eclipse.jface.viewers.ComboViewer;
+import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -32,15 +40,39 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.actions.BuildAction;
 import org.eclipse.ui.dialogs.PropertyPage;
 
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
+import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.PropertyOwnerWorkingCopy;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.IPropertyOwner.IWorkingCopy;
 
-public class BuildSettingsPropertyPage extends PropertyPage {
+public class BuildSettingsPropertyPage extends PropertyPage implements PropertyChangeListener {
+
+	public class BuildConfigurationChangedListener implements
+			ISelectionChangedListener {
+
+		private boolean active = true;
+
+		public void selectionChanged(SelectionChangedEvent event) {
+			if (!active) {
+				return;
+			}
+			IStructuredSelection selection = (IStructuredSelection) event.getSelection();
+			String id = (String) selection.getFirstElement();
+			updateCurrentBuildConfiguration();
+			changeConfiguration(id);
+			initUI();
+		}
+
+		public void setActive(boolean active) {
+			this.active = active;
+		}
+	}
 
 	private final static String[] INCREMENTAL_BUILD_STRATEGY_OPTIONS = new String[] { "Use GCC -MF Option", "Always perform FULL build" };
 	
@@ -72,7 +104,8 @@ public class BuildSettingsPropertyPage extends PropertyPage {
     private Button ignoreDefaultLibraries;
     private Text extraRes;
     private Text extraLink;
-    private Text outputPath;
+    private Text libOutputPath;
+	private Text appOutputPath;
     private UpdateListener listener;
     private String currentOutputPath;
     private Button gccWall;
@@ -80,10 +113,28 @@ public class BuildSettingsPropertyPage extends PropertyPage {
     private Button gccWextra;
     private Combo incrementalBuildStrategy;
 	private Button useDebugRuntimes;
+	private ComboViewer buildConfigurations;
+	private String currentConfigId;
+	private BuildConfigurationChangedListener buildConfigurationListener;
+	private HashMap<Object, IWorkingCopy> workingCopies = new HashMap<Object, IWorkingCopy>();
+	private Composite main;
+	private Composite placeHolder;
+	
 	//private Text excludeFiles;
 
     protected Control createContents(Composite parent) {
-        Composite main = new Composite(parent, SWT.NONE);
+    	placeHolder = new Composite(parent, SWT.NONE);
+    	FillLayout placeHolderLayout = new FillLayout();
+    	placeHolderLayout.marginHeight = 0;
+    	placeHolderLayout.marginWidth = 0;
+    	placeHolder.setLayout(placeHolderLayout);
+    	fillPlaceHolder(placeHolder);
+    	getProject().addPropertyChangeListener(this);
+    	return placeHolder;
+    }
+        
+    protected void fillPlaceHolder(Composite placeHolder) {
+        main = new Composite(placeHolder, SWT.NONE);
         main.setLayout(new GridLayout(1, false));
 
         Group projectType = new Group(main, SWT.NONE);
@@ -109,7 +160,30 @@ public class BuildSettingsPropertyPage extends PropertyPage {
         incrementalBuildStrategy.setItems(INCREMENTAL_BUILD_STRATEGY_OPTIONS);
         incrementalBuildStrategy.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false));
         
-        Group buildPaths = new Group(main, SWT.NONE);
+        boolean hasConfigurations = getProject().isBuildConfigurationsSupported();
+        Group configurationsGroup = null;
+        if (hasConfigurations) {
+        	configurationsGroup = new Group(main, SWT.NONE);
+        	configurationsGroup.setLayout(new GridLayout(1, false));
+        	configurationsGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        	configurationsGroup.setText("Build Configuration");
+        	Composite configurationsComposite = new Composite(configurationsGroup, SWT.NONE);
+        	configurationsComposite.setLayout(new GridLayout(2, true));
+        	configurationsComposite.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        	Label configurationsLabel = new Label(configurationsComposite, SWT.NONE);
+        	configurationsLabel.setText("Configuratio&n:");
+        	buildConfigurations = new ComboViewer(configurationsComposite, SWT.READ_ONLY);
+        	buildConfigurations.setContentProvider(new BuildConfigurationsContentProvider(getProject()));
+        	buildConfigurations.setLabelProvider(new BuildConfigurationsLabelProvider(getProject()));
+        	buildConfigurations.setInput(getProject());
+        	buildConfigurations.getControl().setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        	
+        	buildConfigurationListener = new BuildConfigurationChangedListener();
+        	buildConfigurations.addSelectionChangedListener(buildConfigurationListener);
+        }
+ 
+		Composite configurationParent = hasConfigurations ? configurationsGroup : main;
+        Group buildPaths = new Group(configurationParent, SWT.NONE);
         buildPaths.setText("Build &Paths and Files");
         buildPaths.setLayout(new GridLayout(2, false));
         buildPaths.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -158,12 +232,21 @@ public class BuildSettingsPropertyPage extends PropertyPage {
         outputPathLabel.setText("&Output File (libraries only)");
         outputPathLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 
-        outputPath = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
+        libOutputPath = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
         GridData outputPathData = new GridData(GridData.FILL_HORIZONTAL);
         outputPathData.horizontalSpan = 2;
-        outputPath.setLayoutData(outputPathData);
+        libOutputPath.setLayoutData(outputPathData);
 
-        Group compilerFlags = new Group(main, SWT.NONE);
+        Label appPathLabel = new Label(buildPaths, SWT.NONE);
+        appPathLabel.setText("&Output Directory (applications only)");
+        appPathLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
+
+        appOutputPath = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
+        GridData appPathData = new GridData(GridData.FILL_HORIZONTAL);
+        appPathData.horizontalSpan = 2;
+        appOutputPath.setLayoutData(appPathData);
+
+        Group compilerFlags = new Group(configurationParent, SWT.NONE);
         compilerFlags.setText("Compiler &Flags");
         compilerFlags.setLayout(new GridLayout(2, false));
         compilerFlags.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -198,7 +281,7 @@ public class BuildSettingsPropertyPage extends PropertyPage {
         gccWextra = new Button(compilerFlags, SWT.CHECK);
         gccWextra.setText("E&xtra Warnings");
         
-        Group packaging = new Group(main, SWT.NONE);
+        Group packaging = new Group(configurationParent, SWT.NONE);
         packaging.setText("&Packaging");
         packaging.setLayout(new GridLayout(1, false));
         packaging.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -208,53 +291,108 @@ public class BuildSettingsPropertyPage extends PropertyPage {
         
         listener = new UpdateListener();
 
-        initUI();
-
         applicationProjectType.addListener(SWT.Selection, listener);
         libraryProjectType.addListener(SWT.Selection, listener);
+        applicationProjectType.addListener(SWT.Selection, listener);
         additionalIncludePathsText.addListener(SWT.Modify, listener);
         additionalLibrariesText.addListener(SWT.Modify, listener);
         additionalLibraryPathsText.addListener(SWT.Modify, listener);
-        outputPath.addListener(SWT.Modify, listener);
-
-        return main;
+        libOutputPath.addListener(SWT.Modify, listener);
+        appOutputPath.addListener(SWT.Modify, listener);
+        
+        changeConfiguration(getProject().getActiveBuildConfiguration());
+    	if (getProject().isBuildConfigurationsSupported()) {
+    		IBuildConfiguration cfg = getProject().getActiveBuildConfiguration();
+    		if (cfg != null) {
+    			buildConfigurationListener.setActive(false);
+    			buildConfigurations.setSelection(new StructuredSelection(cfg.getId()));
+    			buildConfigurationListener.setActive(true);
+    		}
+    	}
+    	
+        initUI();
+        placeHolder.layout();
     }
-
+    
+    protected void reinitUI() {
+    	main.dispose();
+    	fillPlaceHolder(placeHolder);
+    }
+    
     private void initUI() {
+    	IWorkingCopy configProperties = getWorkingCopyOfBuildConfiguration();
+    	
     	incrementalBuildStrategy.select(PropertyUtil.getInteger(getProject(), MoSyncProject.DEPENDENCY_STRATEGY, MoSyncProject.GCC_DEPENDENCY_STRATEGY));
     	
-        ignoreDefaultIncludePaths.setSelection(PropertyUtil.getBoolean(getProject(), MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS));
-        setText(additionalIncludePathsText, getProject().getProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS));
+        ignoreDefaultIncludePaths.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS));
+        setText(additionalIncludePathsText, configProperties.getProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS));
 
-        ignoreDefaultLibraryPaths.setSelection(PropertyUtil.getBoolean(getProject(), MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS));
-        setText(additionalLibraryPathsText, getProject().getProperty(MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS));
+        ignoreDefaultLibraryPaths.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS));
+        setText(additionalLibraryPathsText, configProperties.getProperty(MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS));
 
-        ignoreDefaultLibraries.setSelection(PropertyUtil.getBoolean(getProject(), MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES));
-        setText(additionalLibrariesText, getProject().getProperty(MoSyncBuilder.ADDITIONAL_LIBRARIES));
+        ignoreDefaultLibraries.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES));
+        setText(additionalLibrariesText, configProperties.getProperty(MoSyncBuilder.ADDITIONAL_LIBRARIES));
         
-        //setText(excludeFiles, getProject().getProperty(MoSyncProject.EXCLUDE_FILTER_KEY));
+        //setText(excludeFiles, configProperties.getProperty(MoSyncProject.EXCLUDE_FILTER_KEY));
 
-        setText(outputPath, getProject().getProperty(MoSyncBuilder.OUTPUT_PATH));
+        setText(libOutputPath, configProperties.getProperty(MoSyncBuilder.LIB_OUTPUT_PATH));
+        setText(appOutputPath, configProperties.getProperty(MoSyncBuilder.APP_OUTPUT_PATH));
 
         boolean isLibraryProject = MoSyncBuilder.PROJECT_TYPE_LIBRARY.equals(getProject().getProperty(MoSyncBuilder.PROJECT_TYPE));
         libraryProjectType.setSelection(isLibraryProject);
         applicationProjectType.setSelection(!isLibraryProject);
 
-        deadCodeElim.setSelection(PropertyUtil.getBoolean(getProject(), MoSyncBuilder.DEAD_CODE_ELIMINATION));
+        deadCodeElim.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.DEAD_CODE_ELIMINATION));
 
-        setText(gccFlags, getProject().getProperty(MoSyncBuilder.EXTRA_COMPILER_SWITCHES));
-        setText(extraRes, getProject().getProperty(MoSyncBuilder.EXTRA_RES_SWITCHES));
-        setText(extraLink, getProject().getProperty(MoSyncBuilder.EXTRA_LINK_SWITCHES));
+        setText(gccFlags, configProperties.getProperty(MoSyncBuilder.EXTRA_COMPILER_SWITCHES));
+        setText(extraRes, configProperties.getProperty(MoSyncBuilder.EXTRA_RES_SWITCHES));
+        setText(extraLink, configProperties.getProperty(MoSyncBuilder.EXTRA_LINK_SWITCHES));
 
-        Integer gcc = PropertyUtil.getInteger(getProject(), MoSyncBuilder.GCC_WARNINGS);
+        Integer gcc = PropertyUtil.getInteger(configProperties, MoSyncBuilder.GCC_WARNINGS);
 
         gccWerror.setSelection(gcc != null && (gcc & MoSyncBuilder.GCC_WERROR) != 0);
         gccWall.setSelection(gcc != null && (gcc & MoSyncBuilder.GCC_WALL) != 0);
         gccWextra.setSelection(gcc != null && (gcc & MoSyncBuilder.GCC_WEXTRA) != 0);
         
-        useDebugRuntimes.setSelection(PropertyUtil.getBoolean(getProject(), MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS));
+        useDebugRuntimes.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS));
         
         updateUI(null);
+    }
+    
+    public void changeConfiguration(IBuildConfiguration cfg) {
+    	this.currentConfigId = cfg == null ? null : cfg.getId();
+    }
+
+    public void changeConfiguration(String id) {
+    	this.currentConfigId = id;
+    }
+    
+    public IPropertyOwner getBuildConfigurationProperties() {
+    	return currentConfigId == null ? getProject() : getProject().getBuildConfiguration(currentConfigId).getProperties();
+    }
+    
+    public IWorkingCopy getWorkingCopyOfBuildConfiguration() {
+    	IPropertyOwner original = getBuildConfigurationProperties();
+    	IWorkingCopy workingCopy = workingCopies.get(original);
+    	if (workingCopy == null) {
+    		workingCopy = new PropertyOwnerWorkingCopy(original);
+    		workingCopies.put(original, workingCopy);
+    	}
+    	
+    	return workingCopy;
+    }
+    
+    void clearWorkingCopies() {
+    	workingCopies.clear();
+    }
+    
+    boolean applyWorkingCopies() {
+    	boolean result = false;
+    	for (IWorkingCopy workingCopy : workingCopies.values()) {
+    		result |= workingCopy.apply();
+    	}
+    	
+    	return result;
     }
 
     private void setText(Text text, String value) {
@@ -265,20 +403,8 @@ public class BuildSettingsPropertyPage extends PropertyPage {
         listener.setActive(false);
         boolean isLibraryProject = libraryProjectType.getSelection();
         deadCodeElim.setEnabled(!isLibraryProject);
-        outputPath.setEnabled(isLibraryProject);
-
-        if (event != null) {
-            if (event.widget == libraryProjectType) {
-                if (!libraryProjectType.getSelection()) {
-                    currentOutputPath = outputPath.getText();
-                }
-
-                setText(outputPath, libraryProjectType.getSelection() ? currentOutputPath : null);
-            }
-        }
-        if (applicationProjectType.getSelection()) {
-            setText(outputPath, null);
-        }
+        libOutputPath.setEnabled(isLibraryProject);
+        appOutputPath.setEnabled(!isLibraryProject);
 
         validate();
         listener.setActive(true);
@@ -298,15 +424,20 @@ public class BuildSettingsPropertyPage extends PropertyPage {
         }
 
         if (libraryProjectType.getSelection()) {
-            if (outputPath.getText().length() > 0 && Util.getExtension(new File(outputPath.getText())).length() == 0) {
+            if (libOutputPath.getText().length() > 0 && Util.getExtension(new File(libOutputPath.getText())).length() == 0) {
                 severity = WARNING;
                 message = "Output file has no extension";
             }
             
-            if (new File(outputPath.getText()).getParentFile() == null) {
+            if (libOutputPath.getText().length() == 0) {
                 severity = ERROR;
-                message = "Output file must be at an absolute location";
+                message = "Library output file must be set";
             }
+        } else {
+            if (appOutputPath.getText().length() == 0) {
+                severity = ERROR;
+                message = "Application output file must be set";
+            }        	
         }
         
         setMessage(message, severity);
@@ -332,54 +463,69 @@ public class BuildSettingsPropertyPage extends PropertyPage {
         ignoreDefaultIncludePaths.setSelection(false);
         additionalIncludePathsText.setText("");
     }
-
+   
     public boolean performOk() {
+    	// First, update.
+    	updateCurrentBuildConfiguration();
+
+    	// Then, apply.
+    	boolean changed = applyWorkingCopies();
+    	
+        if (changed && getProject().getActiveBuildConfiguration().getId().equals(currentConfigId)) {
+            ProjectBuildAction action = new ProjectBuildAction(getShell(), IncrementalProjectBuilder.FULL_BUILD);
+            action.setProject(getProject().getWrappedProject());
+            action.run();
+        }
+
+    	return true; 	
+    }
+    
+    public boolean performCancel() {
+    	clearWorkingCopies();
+    	return super.performCancel();
+    }
+    
+    public boolean updateCurrentBuildConfiguration() {
+    	IWorkingCopy configProperties = getWorkingCopyOfBuildConfiguration();
+    	
         boolean changed = false;
         changed |= PropertyUtil.setInteger(getProject(), MoSyncProject.DEPENDENCY_STRATEGY, incrementalBuildStrategy.getSelectionIndex());
         
-        changed |= getProject().setProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS, additionalIncludePathsText.getText().replace(';', ','));
-        changed |= PropertyUtil.setBoolean(getProject(), MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS, ignoreDefaultIncludePaths
+        changed |= configProperties.setProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS, additionalIncludePathsText.getText().replace(';', ','));
+        changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS, ignoreDefaultIncludePaths
                 .getSelection());
 
-        changed |= getProject().setProperty(MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS, additionalLibraryPathsText.getText().replace(';', ','));
-        changed |= PropertyUtil.setBoolean(getProject(), MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS, ignoreDefaultLibraryPaths
+        changed |= configProperties.setProperty(MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS, additionalLibraryPathsText.getText().replace(';', ','));
+        changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS, ignoreDefaultLibraryPaths
                 .getSelection());
 
-        changed |= getProject().setProperty(MoSyncBuilder.ADDITIONAL_LIBRARIES, additionalLibrariesText.getText().replace(';', ','));
-        changed |= PropertyUtil.setBoolean(getProject(), MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES, ignoreDefaultLibraries
+        changed |= configProperties.setProperty(MoSyncBuilder.ADDITIONAL_LIBRARIES, additionalLibrariesText.getText().replace(';', ','));
+        changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES, ignoreDefaultLibraries
                 .getSelection());
 
-        //changed |= getProject().setProperty(MoSyncProject.EXCLUDE_FILTER_KEY, excludeFiles.getText());
-        
-        if (outputPath.isEnabled()) {
-            changed |= getProject().setProperty(MoSyncBuilder.OUTPUT_PATH, outputPath.getText());
-        }
+        //changed |= configProperties.setProperty(MoSyncProject.EXCLUDE_FILTER_KEY, excludeFiles.getText());
+        changed |= configProperties.setProperty(MoSyncBuilder.LIB_OUTPUT_PATH, libOutputPath.getText());
+    	changed |= configProperties.setProperty(MoSyncBuilder.APP_OUTPUT_PATH, appOutputPath.getText());
 
-        changed |= PropertyUtil.setBoolean(getProject(), MoSyncBuilder.DEAD_CODE_ELIMINATION, deadCodeElim.getSelection());
+        changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.DEAD_CODE_ELIMINATION, deadCodeElim.getSelection());
 
         changed |= getProject().setProperty(MoSyncBuilder.PROJECT_TYPE,
                 libraryProjectType.getSelection() ? MoSyncBuilder.PROJECT_TYPE_LIBRARY : "");
 
-        changed |= getProject().setProperty(MoSyncBuilder.EXTRA_COMPILER_SWITCHES, gccFlags.getText());
-        changed |= getProject().setProperty(MoSyncBuilder.EXTRA_RES_SWITCHES, extraRes.getText());
-        changed |= getProject().setProperty(MoSyncBuilder.EXTRA_LINK_SWITCHES, extraLink.getText());
+        changed |= configProperties.setProperty(MoSyncBuilder.EXTRA_COMPILER_SWITCHES, gccFlags.getText());
+        changed |= configProperties.setProperty(MoSyncBuilder.EXTRA_RES_SWITCHES, extraRes.getText());
+        changed |= configProperties.setProperty(MoSyncBuilder.EXTRA_LINK_SWITCHES, extraLink.getText());
 
         int gccWarnings = 0;
         gccWarnings |= gccWerror.getSelection() ? MoSyncBuilder.GCC_WERROR : 0;
         gccWarnings |= gccWall.getSelection() ? MoSyncBuilder.GCC_WALL : 0;
         gccWarnings |= gccWextra.getSelection() ? MoSyncBuilder.GCC_WEXTRA : 0;
         
-        changed |= PropertyUtil.setInteger(getProject(), MoSyncBuilder.GCC_WARNINGS, gccWarnings);
+        changed |= PropertyUtil.setInteger(configProperties, MoSyncBuilder.GCC_WARNINGS, gccWarnings);
         
-        changed |= PropertyUtil.setBoolean(getProject(), MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS, useDebugRuntimes.getSelection());
+        changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS, useDebugRuntimes.getSelection());
         
-        if (changed) {
-            ProjectBuildAction action = new ProjectBuildAction(getShell(), IncrementalProjectBuilder.FULL_BUILD);
-            action.setProject(getProject().getWrappedProject());
-            action.run();
-        }
-
-        return true;
+        return changed;
     }
 
     private MoSyncProject getProject() {
@@ -388,4 +534,17 @@ public class BuildSettingsPropertyPage extends PropertyPage {
 
         return project;
     }
+
+	public void propertyChange(PropertyChangeEvent event) {
+		String property = event.getPropertyName();
+		if (MoSyncProject.BUILD_CONFIGURATION_SUPPORT_CHANGED.equals(property) ||
+			MoSyncProject.BUILD_CONFIGURATION_CHANGED.equals(property)) {
+			reinitUI();
+		}
+	}
+	
+	public void dispose() {
+		getProject().removePropertyChangeListener(this);
+		super.dispose();
+	}
 }
