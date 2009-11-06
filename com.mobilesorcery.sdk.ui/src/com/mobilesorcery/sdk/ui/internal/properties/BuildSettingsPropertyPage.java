@@ -433,12 +433,7 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
                 severity = ERROR;
                 message = "Library output file must be set";
             }
-        } else {
-            if (appOutputPath.getText().length() == 0) {
-                severity = ERROR;
-                message = "Application output file must be set";
-            }        	
-        }
+        } 
         
         setMessage(message, severity);
     }
