@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="com.mobilesorcery.core.propertyinitializers">
+      <initializer
+            class="com.mobilesorcery.sdk.finalizer.core.FinalizerPropertyInitializer"
+            context="com.mobilesorcery.sdk.mosync.project.context"
+            id="com.mobilesorcery.sdk.finalizer.core.initializer"
+            prefix="finalizer">
+      </initializer>
+   </extension>
+
+</plugin>

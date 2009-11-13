@@ -88,14 +88,13 @@ public class FinalizerView extends ViewPart {
 			}
 		});
 
-		IWorkbenchWindow window = getSite().getWorkbenchWindow();
-		final MoSyncProject project = MosyncUIPlugin.getDefault()
-				.getCurrentlySelectedProject(window);
+		final IWorkbenchWindow window = getSite().getWorkbenchWindow();
 
 		finalize.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent event) {
 				final StringReader script = new StringReader(scriptText
 						.getText());
+				MoSyncProject project = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(window);
 				FinalizeJob job = new FinalizeJob(project, scriptText.getText());
 				job.setUser(true);
 				job.schedule();

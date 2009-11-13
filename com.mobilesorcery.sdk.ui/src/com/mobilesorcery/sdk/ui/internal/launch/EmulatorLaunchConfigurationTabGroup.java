@@ -20,7 +20,10 @@ import org.eclipse.debug.ui.ILaunchConfigurationTab;
 public class EmulatorLaunchConfigurationTabGroup extends AbstractLaunchConfigurationTabGroup {
 
     public void createTabs(ILaunchConfigurationDialog dialog, String mode) {
-        ILaunchConfigurationTab[] tabs = new ILaunchConfigurationTab[] { new MoSyncLaunchParamsTab() };
+    	MoSyncLaunchParamsTab launchTab = new MoSyncLaunchParamsTab();
+    	launchTab.setMode(mode);
+    	
+        ILaunchConfigurationTab[] tabs = new ILaunchConfigurationTab[] { launchTab };
 
         for (int i = 0; i < tabs.length; i++) {
             tabs[i].setLaunchConfigurationDialog(dialog);

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <introContent>
     <!-- Root page -->
-	<page id="root" content="root2.xhtml" >
+	<page id="root" content="root.xhtml" >
 	</page>
 		    
     <!-- Standby page -->
@@ -12,5 +12,7 @@
     
     <!--  Example page -->
     <page id="examples" content="examples.xhtml" />
+    <page id="examples_old" content="examples_old.xhtml" />
+    <page id="reading" content="reading.xhtml" />
     
 </introContent>

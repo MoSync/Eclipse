@@ -202,10 +202,6 @@ public class MoSyncTool {
         return new IPath[] { getMoSyncLib().append("pipe") };
     }
 
-    public IPath[] getMoSyncDefaultLibraries() {
-        return new IPath[] { new Path("MAStd.lib") };
-    }
-
     public IPath getProfilesPath() {
         return getMoSyncHome().append("profiles");
     }

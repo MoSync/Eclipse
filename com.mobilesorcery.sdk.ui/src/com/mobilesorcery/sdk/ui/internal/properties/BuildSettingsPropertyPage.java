@@ -50,6 +50,8 @@ import com.mobilesorcery.sdk.core.PropertyOwnerWorkingCopy;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.IPropertyOwner.IWorkingCopy;
+import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
+import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
 
 public class BuildSettingsPropertyPage extends PropertyPage implements PropertyChangeListener {
 

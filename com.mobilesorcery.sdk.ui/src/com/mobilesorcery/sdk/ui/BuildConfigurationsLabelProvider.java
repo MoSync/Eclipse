@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.ui.internal.properties;
+package com.mobilesorcery.sdk.ui;
 
 import java.text.MessageFormat;
 

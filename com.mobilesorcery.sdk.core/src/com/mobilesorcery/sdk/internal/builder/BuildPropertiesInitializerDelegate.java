@@ -48,7 +48,11 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
     	}
     	
         if (MoSyncBuilder.EXTRA_COMPILER_SWITCHES.equals(namespacedKey)) {
-            return "-O2";
+        	if (IBuildConfiguration.DEBUG_ID.equals(namespace)) {
+        		return "-O0";
+        	} else {
+        		return "-O2";
+        	}
         } else if (MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS.equals(namespacedKey)) {
         	if (IBuildConfiguration.DEBUG_ID.equals(namespace)) {
         		return PropertyUtil.fromBoolean(true); 
@@ -59,6 +63,12 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
     		return namespaceSegment + projectName + ".lib";          	
         } else if (MoSyncBuilder.APP_OUTPUT_PATH.equals(namespacedKey) && namespaceSegment != null) {
     		return namespaceSegment;
+        } else if (MoSyncBuilder.DEFAULT_LIBRARIES.equals(namespacedKey)) {
+        	if (IBuildConfiguration.DEBUG_ID.equals(namespace)) {
+        		return PropertyUtil.fromPaths(new IPath[] { new Path("MAStdD.lib") });
+        	} else {
+        		return PropertyUtil.fromPaths(new IPath[] { new Path("MAStd.lib") });
+        	}
         }
         
         return null;

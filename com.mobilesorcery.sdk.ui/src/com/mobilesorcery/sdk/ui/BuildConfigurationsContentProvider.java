@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.ui.internal.properties;
+package com.mobilesorcery.sdk.ui;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -19,7 +19,7 @@ public class BuildConfigurationsContentProvider implements IStructuredContentPro
 	}
 
 	public Object[] getElements(Object inputElement) {
-		return project.getBuildConfigurations().toArray();
+		return project.isBuildConfigurationsSupported() ? project.getBuildConfigurations().toArray() : new Object[0];
 	}
 
 	public void dispose() {

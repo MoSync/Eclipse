@@ -52,8 +52,10 @@ import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.LaunchConfigurationDelegate;
 import org.eclipse.ui.statushandlers.StatusManager;
 
+import com.mobilesorcery.sdk.core.BuildConfiguration;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.DefaultPackager;
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.ILaunchConstants;
 import com.mobilesorcery.sdk.core.IProcessUtil;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
@@ -90,6 +92,24 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         thread.start();
     }
 
+    public boolean preLaunchCheck(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
+    	IProject project = getProject(configuration);
+    	MoSyncProject mosyncProject = MoSyncProject.create(project);
+    	// We'll let non-mosync projects slip through; they'll be handled in launchSync
+    	if (mosyncProject != null && mosyncProject.isBuildConfigurationsSupported()) {
+    		if (configuration.getAttribute(ILaunchConstants.AUTO_CHANGE_CONFIG, true)) {
+    			String buildConfig = configuration.getAttribute(ILaunchConstants.BUILD_CONFIG, "Debug");
+    			IBuildConfiguration activeBuildConfig = mosyncProject.getActiveBuildConfiguration();
+    			String activeBuildConfigId = activeBuildConfig == null ? null : activeBuildConfig.getId();
+    			if (buildConfig != null && !buildConfig.equals(activeBuildConfigId)) {
+    				mosyncProject.setActiveBuildConfiguration(buildConfig);
+    			}
+    		}
+    	}
+    	
+    	return super.preLaunchCheck(configuration, mode, monitor);
+    }
+    
     public void launchSync(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor)
             throws CoreException {
     	boolean debug = "debug".equals(mode);
@@ -113,7 +133,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
             throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
                     "Cannot execute a library; please compile as application"));
         }
-
+        
         if (launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_OF_TARGET, true)) {
             IProfile profile = mosyncProject.getTargetProfile();
             if (profile != null) {
@@ -286,8 +306,8 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         return MoSyncTool.getDefault().getMoSyncBin().append("MoRE.exe").toOSString();
     }
 
-    private int getNextId() {
-        GLOBAL_ID %= 128;
+    private synchronized int getNextId() {
+        GLOBAL_ID %= 256;
         return GLOBAL_ID++;
     }
 

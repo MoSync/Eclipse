@@ -22,37 +22,42 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 
 import com.mobilesorcery.sdk.core.MoSyncNature;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 
 public class MoSyncNatureTester extends PropertyTester {
 
-    public boolean test(Object receiver, String property, Object[] args, Object expectedValue) {
+	public boolean test(Object receiver, String property, Object[] args, Object expectedValue) {
+		return extractProject(receiver, property, args, expectedValue) != null;
+	}
+	
+	protected MoSyncProject extractProject(Object receiver, String property, Object[] args, Object expectedValue) {
         if (receiver instanceof IAdaptable) {
             receiver = ((IAdaptable) receiver).getAdapter(IResource.class);             
         }
         
         if (receiver instanceof List) {
             if (((List)(receiver)).size() == 0) {
-                return false;
+                return null;
             }
             
-            return test(((List)receiver).get(0), property, args, expectedValue);
+            return extractProject(((List)receiver).get(0), property, args, expectedValue);
         }
         
         if(receiver == null) {
-            return false;
+            return null;
         }
         
         if (receiver instanceof IResource) {
             IProject project = ((IResource)receiver).getProject();
 
             try {                
-                return MoSyncNature.isCompatible(project);
+                return MoSyncNature.isCompatible(project) ? MoSyncProject.create(project) : null;
             } catch (CoreException e) {
-                return false;
+                return null;
             }
         }
         
-        return false;
+        return null;
     }
 
 }

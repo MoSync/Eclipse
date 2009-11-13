@@ -200,7 +200,9 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin {
             String[] prefixAndSubkey = key.split(":", 2);
             if (prefixAndSubkey.length == 2) {
                 IPropertyInitializer initializer = prefixMap.get(prefixAndSubkey[0]);
-                return initializer.getDefaultValue(owner, key);
+                if (initializer != null) {
+                	return initializer.getDefaultValue(owner, key);
+                }
             }
         }
 

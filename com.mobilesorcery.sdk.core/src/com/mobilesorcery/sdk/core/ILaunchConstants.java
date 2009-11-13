@@ -15,12 +15,33 @@ package com.mobilesorcery.sdk.core;
 
 public interface ILaunchConstants {
 
+	/**
+	 * The launch property representing the project's name
+	 */
     String PROJECT = "project";
     
+	/**
+	 * The screen height launch property 
+	 */
     String SCREEN_SIZE_HEIGHT = "screen.height";
 
+	/**
+	 * The screen width launch property 
+	 */
     String SCREEN_SIZE_WIDTH = "screen.width";
 
     String SCREEN_SIZE_OF_TARGET = "screen.use.target";
+
+	/**
+	 * The launch property deciding whether to automatically change
+	 * the build configuration before launch 
+	 */
+	String AUTO_CHANGE_CONFIG = "auto.change.config";
+
+	/**
+	 * The launch property deciding which build configuration to automatically change
+	 * to before launch
+	 */
+	String BUILD_CONFIG = "build.config";
 
 }

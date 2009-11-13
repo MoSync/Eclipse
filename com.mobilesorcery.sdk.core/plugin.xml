@@ -50,6 +50,12 @@
             namespace="com.mobilesorcery.sdk.testers"
             properties="hasMoreNature"
             type="java.lang.Object"/>
+      <propertyTester
+            class="com.mobilesorcery.sdk.internal.SupportsBuildConfigurationTester"
+            id="com.mobilesorcery.sdk.testers.supportsBuildConfiguration"
+            namespace="com.mobilesorcery.sdk.testers"
+            properties="supportsBuildConfiguration"
+            type="java.lang.Object"/>
    </extension>
    
 

@@ -31,16 +31,24 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 
+import com.mobilesorcery.sdk.core.BuildConfiguration;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.IVendor;
 
 public class FinalizerParser {
 
+	public static final String FINALIZER_PROPERTY_PREFIX = "finalizer";
+	
+	public static final String AUTO_CHANGE_CONFIG = FINALIZER_PROPERTY_PREFIX + ":auto.change.config";
+	
+	public static final String BUILD_CONFIG = FINALIZER_PROPERTY_PREFIX + ":build.config";
+	
 	public class ParseException extends Exception {	
 		public ParseException(String msg, int line) {
 			super("Line " + line + ": " + msg); //$NON-NLS-1$ //$NON-NLS-2$
@@ -77,6 +85,12 @@ public class FinalizerParser {
 			throw new ParseException(Messages.FinalizerParser_ParseError_0, 0);
 		}
 
+		MoSyncProject project = MoSyncProject.create(this.project);
+		if (project != null && PropertyUtil.getBoolean(project, AUTO_CHANGE_CONFIG)) {
+			String buildConfiguration = project.getProperty(BUILD_CONFIG);
+			project.setActiveBuildConfiguration(buildConfiguration);
+		}
+		
 		for (IRunnableWithProgress buildJob : buildJobs) {
 			SubProgressMonitor jobMonitor = new SubProgressMonitor(monitor, 1);
 			if (!monitor.isCanceled()) {

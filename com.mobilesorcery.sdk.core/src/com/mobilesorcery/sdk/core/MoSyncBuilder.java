@@ -88,6 +88,9 @@ public class MoSyncBuilder extends ACBuilder {
 	public final static String IGNORE_DEFAULT_LIBRARY_PATHS = BUILD_PREFS_PREFIX
 			+ "ignore.default.library.paths";
 
+	public static final String DEFAULT_LIBRARIES = BUILD_PREFS_PREFIX
+			+ "default.libraries";
+	
 	public final static String ADDITIONAL_LIBRARIES = BUILD_PREFS_PREFIX
 			+ "additional.libraries";
 
@@ -410,6 +413,7 @@ public class MoSyncBuilder extends ACBuilder {
 	public IBuildResult fullBuild(IProject project, IProfile targetProfile,
 			boolean isFinalizerBuild, boolean doClean, IProgressMonitor monitor)
 			throws CoreException {
+		// TODO: Allow for setting build config explicitly!
 		monitor.beginTask(MessageFormat.format("Full build of {0}", project
 				.getName()), 8);
 		if (doClean) {
@@ -882,15 +886,14 @@ public class MoSyncBuilder extends ACBuilder {
 	}
 
 	public static IPath[] getLibraries(MoSyncProject project) {
-		return getLibraries(project, getActivePropertyOwner(project));
+		return getLibraries(getActivePropertyOwner(project));
 	}
 	
-	public static IPath[] getLibraries(MoSyncProject project, IPropertyOwner buildProperties) {
+	public static IPath[] getLibraries(IPropertyOwner buildProperties) {
 		// Ehm, I think I've seen this code elsewhere...
 		ArrayList<IPath> result = new ArrayList<IPath>();
-		if (!PropertyUtil.getBoolean(project, IGNORE_DEFAULT_LIBRARIES)) {
-			result.addAll(Arrays.asList(MoSyncTool.getDefault()
-					.getMoSyncDefaultLibraries()));
+		if (!PropertyUtil.getBoolean(buildProperties, IGNORE_DEFAULT_LIBRARIES)) {
+			result.addAll(Arrays.asList(PropertyUtil.getPaths(buildProperties, DEFAULT_LIBRARIES)));
 		}
 
 		IPath[] additionalLibraries = PropertyUtil.getPaths(buildProperties,

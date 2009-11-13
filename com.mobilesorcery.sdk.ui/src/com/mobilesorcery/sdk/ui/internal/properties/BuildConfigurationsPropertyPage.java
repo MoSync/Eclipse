@@ -24,6 +24,8 @@ import org.eclipse.ui.dialogs.PropertyPage;
 
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
+import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
 
 public class BuildConfigurationsPropertyPage extends PropertyPage {
 
