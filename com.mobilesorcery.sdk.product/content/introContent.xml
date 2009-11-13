@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <introContent>
     <!-- Root page -->
-	<page id="root" content="root.xhtml" />
-	
+	<page id="root" content="root2.xhtml" >
+	</page>
+		    
     <!-- Standby page -->
     <page id="standby" style="css/shared.css" style-id="page">
    		 <title style-id="intro-header">Standby Page</title>

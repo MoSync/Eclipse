@@ -32,9 +32,11 @@ public class ImportExampleAction implements IIntroAction {
 	public void run(IIntroSite site, Properties params) {
 		IIntroPart intro = PlatformUI.getWorkbench().getIntroManager().getIntro();
 		boolean success = false;
-		if (params.containsKey("example") && params.containsKey("extension")) { //$NON-NLS-1$ //$NON-NLS-2$
-			String example = params.getProperty("example"); //$NON-NLS-1$
-			String extension = params.getProperty("extension"); //$NON-NLS-1$
+		String extension = params.getProperty("extension");
+		
+		if (params.containsKey("href")) { //$NON-NLS-1$ //$NON-NLS-2$
+			String example = params.getProperty("href"); //$NON-NLS-1$
+			extension = extension == null ? "mopro" : params.getProperty("extension"); //$NON-NLS-1$
 			String extradir = ""; //$NON-NLS-1$
 			if (params.containsKey("extradir")) { //$NON-NLS-1$
 				extradir = params.getProperty("extradir"); //$NON-NLS-1$
