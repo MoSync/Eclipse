@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+<extension point="org.eclipse.ui.popupMenus">
+  <objectContribution
+        adaptable="true"
+        id="com.mobilesorcery.sdk.fontsupport.convertwizard"
+        nameFilter="*.fnt"
+        objectClass="org.eclipse.core.resources.IFile">
+   <filter
+        name="projectNature"
+        value="com.mobilesorcery.sdk.builder.nature">
+   </filter>
+   <action
+       id="com.mobilesorcery.sdk.fontsupport.convertwizard.action"
+             label="Generate MoSync Font Resource..."
+             menubarPath="additions"
+          class="com.mobilesorcery.sdk.fontsupport.internal.wizard.GenerateMOFWizardAction">
+    </action>
+  </objectContribution>
+</extension>
+
+</plugin>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.views">
+      <view
+            allowMultiple="false"
+            category="com.mobilesorcery.sdk.ui.main"
+            class="com.mobilesorcery.sdk.finalizer.ui.FinalizerView"
+            icon="icons/viewicon.png"
+            id="com.mobilesorcery.sdk.finalizer.ui.view"
+            name="Finalizer">
+      </view>
+   </extension>
+              <extension
+             point="org.eclipse.ui.propertyPages">
+          <page
+                category="com.mobilesorcery.sdk.ui.properties.project"
+                class="com.mobilesorcery.sdk.finalizer.ui.properties.FinalizerPropertyPage"
+                id="com.mobilesorcery.sdk.ui.properties.finalizer"
+                name="Finalizer"
+                objectClass="org.eclipse.core.resources.IProject">
+                <enabledWhen>
+                <and>
+                   <test
+                         forcePluginActivation="true"
+                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                   </test>
+                   <test
+                         forcePluginActivation="true"
+                         property="com.mobilesorcery.sdk.testers.supportsBuildConfigurations">
+                   </test>
+                </and>
+                </enabledWhen>
+          </page>          
+   </extension>
+</plugin>

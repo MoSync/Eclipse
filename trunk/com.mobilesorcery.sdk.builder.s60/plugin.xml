@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+   <extension
+         point="com.mobilesorcery.core.packagers">
+      <packager
+            implementation="com.mobilesorcery.sdk.builder.s60.V2Packager"
+            pattern="^profiles\\runtimes\\s60v2\\.*">
+      </packager>
+      <packager
+            implementation="com.mobilesorcery.sdk.builder.s60.V3Packager"
+            pattern="^profiles\\runtimes\\s60v3\\.*">
+      </packager>
+   </extension>
+
+       <extension
+             point="org.eclipse.ui.propertyPages">
+          <page
+                class="com.mobilesorcery.sdk.builder.s60.ui.properties.SymbianPropertyPage"
+                id="com.mobilesorcery.sdk.ui.properties.symbian"
+                name="Symbian"
+                objectClass="org.eclipse.core.resources.IProject"
+                category="com.mobilesorcery.sdk.ui.properties.project">
+                                <enabledWhen>
+                                   <test
+                                         forcePluginActivation="true"
+                                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                                   </test>
+                                </enabledWhen>
+                                </page>
+          <page
+                category="com.mobilesorcery.sdk.ui.properties.symbian"
+                class="com.mobilesorcery.sdk.builder.s60.ui.properties.SymbianSigningPropertyPage"
+                id="com.mobilesorcery.sdk.builder.s60.selfsigning"
+                objectClass="org.eclipse.core.resources.IProject"
+                name="Self-Signing">
+                                <enabledWhen>
+                                   <test
+                                         forcePluginActivation="true"
+                                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                                   </test>
+                                </enabledWhen>                
+          </page>          
+       </extension>
+       <extension
+             point="com.mobilesorcery.core.propertyinitializers">
+          <initializer
+                class="com.mobilesorcery.sdk.builder.s60.PropertyInitializer"
+                context="com.mobilesorcery.sdk.mosync.project.context"
+                id="com.mobilesorcery.sdk.builder.s60.initializer"
+                prefix="symbian.uids">
+          </initializer>
+       </extension>
+
+</plugin>

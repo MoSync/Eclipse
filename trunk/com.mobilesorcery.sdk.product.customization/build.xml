@@ -1,0 +1,60 @@
+<project default="replace-plugin-xmls">
+	<!--
+	     REQUIRED PROPERTY:
+		 buildDirectory - the same buildDirectory as the main build script defines
+	-->
+	
+	<!-- This macro will replace plugin.xml of "plugin-jar" with "replacement-folder"/plugin.xml -->
+	<!-- NOTE! This is a modifying script, so if the original needs to be kept, clients must ensure that themselves -->
+	<macrodef name="replace-plugin-xml-of-jar">
+		<attribute name="plugin-jar" />
+		<attribute name="replacement-folder" />
+		
+		<sequential>
+			<delete dir="@{replacement-folder}/tmp-jar" />
+			<unjar src="@{plugin-jar}" dest="@{replacement-folder}/tmp-jar" />
+			<copy file="@{replacement-folder}/plugin.xml" todir="@{replacement-folder}/tmp-jar" overwrite="yes"/>
+			<delete file="@{plugin-jar}" />
+			<zip destfile="@{plugin-jar}" >
+				<zipfileset dir="@{replacement-folder}/tmp-jar/" />
+			</zip>
+		</sequential>
+	</macrodef>
+	
+	<!-- We'll just derive this knowledge from the main [RCP] build scripts -->
+	<property name="built-rcp-zip" location="${buildDirectory}\I.MoSync\MoSync-win32.win32.x86.zip" />
+	<property name="built-rcp-unzipped" location="${buildDirectory}\I.MoSync\MoSync-win32.win32.x86-unzipped" />	
+	<property name="built-rcp-rezipped" location="${buildDirectory}\I.MoSync\MoSync-win32.win32.x86-trimmed.zip" />
+	<property name="built-rcp-plugin-dir" location="${built-rcp-unzipped}\mosync\plugins" />
+	<property name="root" location="." />
+	<property name="replacement-root" location="${root}/replacements" />
+	<property name="target-platform" location="${buildDirectory}/target-platform" />
+	
+    <target name="replace-plugin-xmls">
+    	<delete dir="${built-rcp-unzipped}" failonerror="true"/>
+    	<mkdir dir="${built-rcp-unzipped}" />
+    	
+    	<!-- First unzip it all... -->
+    	<unzip src="${built-rcp-zip}" dest="${built-rcp-unzipped}" />
+    	
+    	<!-- Explicit version numbers by design; way too easy to inadvertently destroy the entire build otherwise... -->
+        <replace-plugin-xml-of-jar
+    	    plugin-jar="${built-rcp-plugin-dir}/org.eclipse.cdt.ui_5.1.0.200906161748.jar"
+    	    replacement-folder="${replacement-root}/org.eclipse.cdt.ui" />
+    	
+        <replace-plugin-xml-of-jar
+    	    plugin-jar="${built-rcp-plugin-dir}/org.eclipse.cdt.debug.ui_6.0.0.200906161748.jar"
+    	    replacement-folder="${replacement-root}/org.eclipse.cdt.debug.ui" />
+
+    	<replace-plugin-xml-of-jar
+    	    plugin-jar="${built-rcp-plugin-dir}/org.eclipse.cdt.debug.core_6.0.0.200906161748.jar"
+    	    replacement-folder="${replacement-root}/org.eclipse.cdt.debug.core" />
+    	
+		<!-- Another hack before rezipping: let's put the console version of eclipse in there -->
+		<copy file="${target-platform}/eclipse/eclipsec.exe" tofile="${built-rcp-unzipped}/mosync/mosyncc.exe"/>
+
+    	<!-- Time to RE-zip it all... -->
+    	<zip basedir="${built-rcp-unzipped}" destfile="${built-rcp-rezipped}" />
+    </target>
+
+</project>

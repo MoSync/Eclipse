@@ -1,0 +1,1 @@
+error_ovr.gif, success_ovr.gif extraced from eclipse junit plugin 

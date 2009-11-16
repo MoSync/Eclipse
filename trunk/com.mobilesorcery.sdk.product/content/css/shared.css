@@ -1,0 +1,134 @@
+/*
+ * Set up the content for the root page.
+ */
+html, body {
+	/*background-image : url("../images/background.jpg");*/
+	background-repeat : no-repeat;
+	background-position : center center;
+	background-attachment : fixed;
+	overflow : auto;
+	overflow-clip: rect(0, auto, auto, 0);
+	background-color : #ffffff;
+}
+
+img {
+	border: 0px;
+}
+
+body, p, td, th
+{
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	line-height:1.5;
+	color:#000000;
+}
+
+#page-text {
+	padding-bottom: 50px;
+	font-size: .775em;
+	
+}
+
+#page-content #top-left {
+  	border: none; 
+  	float: left; 
+  	margin: 0px; 
+  	padding: 0px; 
+  	width: 49%;
+  	clear: left;
+}
+#page-content #top-right {
+	border: none; 
+	float: right; 
+	margin: 0px; 
+	padding: 0px; 
+	width: 49%;
+	clear: right;
+}
+
+
+
+
+#page-content #footer {
+	position: fixed;
+	bottom:0px;
+	left: 0px;
+	width:100%;
+	height:20px;
+	background-color: #000000;
+}
+
+#page-content #footer p {
+	font-size:.825em;
+	color: #ffffff;
+	text-align: center;
+}
+
+div.content {
+	position: relative;
+	min-height: 100px;
+}
+
+a.content-link img {
+	background-image: url("../images/mosyncicon.jpg");
+	width: 48px;
+	height: 48px;
+
+}
+
+a.content-link:hover img {
+	background-image: url("../images/mosyncicon_pressed.jpg");
+}
+
+
+
+span.content-text{
+	position: absolute;
+	top: 0px;
+	left: 60px;
+	font-size: .775em;
+	width: 80%;
+	color: #000000;
+}
+
+
+
+a{
+	color: #20acc5;
+	text-decoration: none;
+}
+
+a:hover{
+	color: #50ddff;
+}
+
+a:active {
+	color: #ff7f00;
+}
+
+a .text {
+	font-weight: normal;
+	vertical-align: text-top;
+}
+
+.content-link .content-label {
+	font-size: 1.5em;
+	font-weight: bold; 
+	line-height:1.5;
+	color: #20acc5;
+}
+
+.content-link:hover .content-label  {
+	color: #50ddff; 
+}
+
+.content-link:active .content-label {
+	color: #ff7f00; 
+}
+
+
+.content-link {
+	cursor: pointer;
+}
+
+
+
