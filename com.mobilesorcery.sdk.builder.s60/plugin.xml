@@ -11,6 +11,10 @@
             implementation="com.mobilesorcery.sdk.builder.s60.V3Packager"
             pattern="^profiles\\runtimes\\s60v3\\.*">
       </packager>
+      <packager
+            implementation="com.mobilesorcery.sdk.builder.s60.V3Packager"
+            pattern="^profiles\\runtimes\\s60v5\\.*">
+      </packager>
    </extension>
 
        <extension
