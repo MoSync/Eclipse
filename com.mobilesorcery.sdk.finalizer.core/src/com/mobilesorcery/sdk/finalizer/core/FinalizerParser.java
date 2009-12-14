@@ -88,7 +88,9 @@ public class FinalizerParser {
 		MoSyncProject project = MoSyncProject.create(this.project);
 		if (project != null && PropertyUtil.getBoolean(project, AUTO_CHANGE_CONFIG)) {
 			String buildConfiguration = project.getProperty(BUILD_CONFIG);
-			project.setActiveBuildConfiguration(buildConfiguration);
+			if (project.isBuildConfigurationsSupported()) {
+				project.setActiveBuildConfiguration(buildConfiguration);
+			}
 		}
 		
 		for (IRunnableWithProgress buildJob : buildJobs) {
