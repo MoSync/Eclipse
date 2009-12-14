@@ -503,5 +503,9 @@ public class Util {
 
 		return new File(peer.getParent(), filename);
 	}
+
+	public static boolean isEmpty(String text) {
+		return text == null || text.isEmpty();
+	}
 	
 }

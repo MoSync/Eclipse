@@ -42,7 +42,7 @@ public class PathExclusionFilter implements IFilter<IResource> {
 	
 	public boolean inverseAccept(IResource resource) {
 		for (int i = 0; i < filespecs.length; i++) {
-			if (accept(resource, filespecs[i])) {
+			if (!Util.isEmpty(filespecs[i]) && accept(resource, filespecs[i])) {
 				return true;
 			}
 		}
