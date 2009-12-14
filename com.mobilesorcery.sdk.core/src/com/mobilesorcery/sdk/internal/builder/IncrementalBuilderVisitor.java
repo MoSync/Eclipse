@@ -28,6 +28,7 @@ import org.eclipse.core.runtime.CoreException;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
 /**
@@ -166,7 +167,9 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	 * @return
 	 */
 	public boolean doesAffectBuild(IResource resource) {
-		return true;
+		// TODO: Make this much faster!
+		MoSyncProject project = MoSyncProject.create(this.project);
+		return project == null || MoSyncProject.getExclusionFilter(project).accept(resource);
 	}
 
 	/**

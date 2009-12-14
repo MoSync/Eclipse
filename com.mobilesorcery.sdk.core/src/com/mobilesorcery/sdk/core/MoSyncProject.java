@@ -43,7 +43,6 @@ import org.eclipse.ui.IMemento;
 import org.eclipse.ui.XMLMemento;
 
 import com.mobilesorcery.sdk.internal.ParseException;
-import com.mobilesorcery.sdk.internal.PathExclusionFilter;
 import com.mobilesorcery.sdk.internal.ProfileInfoParser;
 import com.mobilesorcery.sdk.internal.SLD;
 import com.mobilesorcery.sdk.internal.SLDParser;
@@ -659,9 +658,14 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		}
 	}
 	
-	public IFilter<IResource> getExclusionFilter() {
+	/**
+	 * A convenience method for returning the exclusion filter for a project/config.
+	 * @param properties
+	 * @return
+	 */
+	public static IFilter<IResource> getExclusionFilter(MoSyncProject project) {
 		// Efficient?
-		return PathExclusionFilter.parse(PropertyUtil.getStrings(this, EXCLUDE_FILTER_KEY));
+		return PathExclusionFilter.parse(PropertyUtil.getStrings(project.getPropertyOwner(), EXCLUDE_FILTER_KEY));
 	}
 	
 	public String getContext() {
@@ -702,8 +706,9 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	}
 
 	/**
-	 * Returns the current build configuration. Does always return
-	 * a build configuration.
+	 * Returns the current build configuration. Does not always return
+	 * a build configuration, but will return one regardless of
+	 * whatever isBuildConfigurationsSupported returns.
 	 * @return
 	 */
 	public IBuildConfiguration getActiveBuildConfiguration() {
@@ -786,6 +791,14 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 			configurations.put("Test", new BuildConfiguration(this, IBuildConfiguration.TEST_ID));
 			setActiveBuildConfiguration("Release");
 		}
+	}
+
+	public IPropertyOwner getPropertyOwner() {
+		if (isBuildConfigurationsSupported && currentBuildConfig != null) {
+			return currentBuildConfig.getProperties();
+		}
+		
+		return this;
 	}
 
 

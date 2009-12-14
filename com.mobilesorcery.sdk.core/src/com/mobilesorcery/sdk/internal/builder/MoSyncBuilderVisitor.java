@@ -158,9 +158,9 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     }
 
     public boolean doesAffectBuild(IResource resource) {
-        return MoSyncBuilderVisitor.hasExtension(resource, MoSyncBuilderVisitor.C_SOURCE_FILE_EXTS) ||
+        return (MoSyncBuilderVisitor.hasExtension(resource, MoSyncBuilderVisitor.C_SOURCE_FILE_EXTS) ||
                 MoSyncBuilderVisitor.hasExtension(resource, MoSyncBuilderVisitor.C_HEADER_FILE_EXTS) ||
-                MoSyncBuilderVisitor.hasExtension(resource, MoSyncBuilderVisitor.RESOURCE_FILE_EXTS);
+                MoSyncBuilderVisitor.hasExtension(resource, MoSyncBuilderVisitor.RESOURCE_FILE_EXTS)) && super.doesAffectBuild(resource);
     }
 
     /**

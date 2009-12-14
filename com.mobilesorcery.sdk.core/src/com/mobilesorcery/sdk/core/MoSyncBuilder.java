@@ -348,6 +348,9 @@ public class MoSyncBuilder extends ACBuilder {
 		// TODO: Don't store transient build vars like this.
 		String lastBuildConfigKey = "last.build.config";
 		String oldConfig = project.getProperty(lastBuildConfigKey);
+		if ("".equals(oldConfig)) {
+			oldConfig = null;
+		}
 		IBuildConfiguration activeConfig = project.getActiveBuildConfiguration();
 		String activeConfigId = activeConfig == null ? null : activeConfig.getId();
 		boolean changedConfig = !NameSpacePropertyOwner.equals(oldConfig, activeConfigId);

@@ -11,12 +11,14 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
-package com.mobilesorcery.sdk.internal;
+package com.mobilesorcery.sdk.core;
 
+import java.util.regex.Pattern;
+
+import org.eclipse.cdt.internal.ui.util.StringMatcher;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.Path;
 
-import com.mobilesorcery.sdk.core.IFilter;
 
 public class PathExclusionFilter implements IFilter<IResource> {
 	
@@ -31,7 +33,11 @@ public class PathExclusionFilter implements IFilter<IResource> {
 	}
 
 	public boolean accept(IResource resource) {
-		return !inverseAccept(resource);
+		boolean result = !inverseAccept(resource);
+		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+			CoreMoSyncPlugin.trace("{0} {1}", resource.getFullPath(), result ? "Accepted" : "NOT accepted");
+		}
+		return result;
 	}
 	
 	public boolean inverseAccept(IResource resource) {
@@ -45,10 +51,12 @@ public class PathExclusionFilter implements IFilter<IResource> {
 	}
 	
 	protected boolean accept(IResource resource, String filespec) {
-		// Just simple exclusion list for now.
 		Path filePath = new Path(filespec);
-		IResource fileResource = resource.getProject().findMember(filePath, false);
-		return resource.equals(fileResource);
+		return new StringMatcher(filePath.toPortableString(), true, false).match(resource.getFullPath().toPortableString());
+	}
+	
+	public static void addExclusionFilter(String filter, MoSyncProject project) {
+		
 	}
 
 }

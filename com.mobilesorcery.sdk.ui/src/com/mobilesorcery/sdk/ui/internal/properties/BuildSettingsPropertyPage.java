@@ -122,7 +122,7 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
 	private Composite main;
 	private Composite placeHolder;
 	
-	//private Text excludeFiles;
+	private Text excludeFiles;
 
     protected Control createContents(Composite parent) {
     	placeHolder = new Composite(parent, SWT.NONE);
@@ -221,14 +221,14 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         ignoreDefaultLibraries = new Button(buildPaths, SWT.CHECK);
         ignoreDefaultLibraries.setText("I&gnore Default");
 
-        /*Label excludeFilesLabel = new Label(buildPaths, SWT.NONE);
-        excludeFilesLabel.setText("&List of files to exclude");
+        Label excludeFilesLabel = new Label(buildPaths, SWT.NONE);
+        excludeFilesLabel.setText("Exclude file pattern");
         excludeFilesLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 
         excludeFiles = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
         GridData excludeFilesData = new GridData(GridData.FILL_HORIZONTAL);
         excludeFilesData.horizontalSpan = 2;
-        excludeFiles.setLayoutData(excludeFilesData);*/
+        excludeFiles.setLayoutData(excludeFilesData);
 
         Label outputPathLabel = new Label(buildPaths, SWT.NONE);
         outputPathLabel.setText("&Output File (libraries only)");
@@ -335,7 +335,7 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         ignoreDefaultLibraries.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES));
         setText(additionalLibrariesText, configProperties.getProperty(MoSyncBuilder.ADDITIONAL_LIBRARIES));
         
-        //setText(excludeFiles, configProperties.getProperty(MoSyncProject.EXCLUDE_FILTER_KEY));
+        setText(excludeFiles, configProperties.getProperty(MoSyncProject.EXCLUDE_FILTER_KEY));
 
         setText(libOutputPath, configProperties.getProperty(MoSyncBuilder.LIB_OUTPUT_PATH));
         setText(appOutputPath, configProperties.getProperty(MoSyncBuilder.APP_OUTPUT_PATH));
@@ -500,7 +500,7 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES, ignoreDefaultLibraries
                 .getSelection());
 
-        //changed |= configProperties.setProperty(MoSyncProject.EXCLUDE_FILTER_KEY, excludeFiles.getText());
+        changed |= configProperties.setProperty(MoSyncProject.EXCLUDE_FILTER_KEY, excludeFiles.getText());
         changed |= configProperties.setProperty(MoSyncBuilder.LIB_OUTPUT_PATH, libOutputPath.getText());
     	changed |= configProperties.setProperty(MoSyncBuilder.APP_OUTPUT_PATH, appOutputPath.getText());
 
