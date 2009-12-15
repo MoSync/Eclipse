@@ -52,7 +52,7 @@ public class PathExclusionFilter implements IFilter<IResource> {
 	
 	protected boolean accept(IResource resource, String filespec) {
 		Path filePath = new Path(filespec);
-		return new StringMatcher(filePath.toPortableString(), true, false).match(resource.getFullPath().toPortableString());
+		return new StringMatcher(filePath.toPortableString(), true, false).match(resource.getProjectRelativePath().toPortableString());
 	}
 	
 	public static void addExclusionFilter(String filter, MoSyncProject project) {

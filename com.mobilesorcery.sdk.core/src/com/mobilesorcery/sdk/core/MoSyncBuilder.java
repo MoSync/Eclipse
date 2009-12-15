@@ -504,6 +504,7 @@ public class MoSyncBuilder extends ACBuilder {
 			MoSyncBuilderVisitor compilerVisitor = new MoSyncBuilderVisitor();
 
 			PipeTool pipeTool = new PipeTool();
+			pipeTool.setAppCode(PipeTool.generateAppCode());
 			pipeTool.setProject(project);
 			pipeTool.setConsole(console);
 			pipeTool.setLineHandler(linehandler);

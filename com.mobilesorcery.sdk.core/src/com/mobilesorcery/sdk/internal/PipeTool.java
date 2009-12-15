@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -56,6 +57,7 @@ public class PipeTool {
     private IProject project;
     private ILineHandler linehandler;
 	private boolean collectStabs;
+	private String appCode;
 
     public PipeTool() {
 
@@ -95,7 +97,11 @@ public class PipeTool {
         if (extra != null && Util.join(extra, "").trim().length() > 0) {
             args.addAll(Arrays.asList(extra));
         }
-
+        
+        if (appCode != null) {
+        	args.add("-appcode=" + getAppCode());
+        }
+        
         if (collectStabs) {
         	args.add("-collect-stabs");
         }
@@ -167,7 +173,39 @@ public class PipeTool {
         }
     }
 
-    private void assertArgLength(ArrayList<String> args) throws IOException {
+    /**
+     * Returns the app code of this pipe tool, corresponding
+     * to the -appcode switch
+     * @return
+     */
+    public String getAppCode() {
+		return appCode;
+	}
+    
+    /**
+     * Generates a random 4-character app code 
+     * @return
+     */
+    public static String generateAppCode() {
+    	Random rnd = new Random(System.currentTimeMillis());
+    	char[] CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
+    	char[] result = new char[4];
+        for (int i = 0; i < result.length; i++) {
+        	result[i] = CHARS[rnd.nextInt(CHARS.length)];
+        }
+        
+        return new String(result);
+    }
+    
+    /**
+     * Sets the app code of this pipe tool
+     * @param appCode
+     */
+    public void setAppCode(String appCode) {
+    	this.appCode = appCode;
+    }
+
+	private void assertArgLength(ArrayList<String> args) throws IOException {
     	for (String arg : args) {
     		if (arg.length() > MAX_PIPE_TOOL_ARG_LENGTH) {
     			throw new IOException(MessageFormat.format("Argument/file name too long: {0} (max length {1} characters)", arg, MAX_PIPE_TOOL_ARG_LENGTH));

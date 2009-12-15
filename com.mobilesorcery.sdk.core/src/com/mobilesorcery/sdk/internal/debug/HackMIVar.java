@@ -57,9 +57,6 @@ public class HackMIVar extends MIVar {
 				return name;
 			} else {
 				String result = name.substring(lix + 1);
-				if (result.startsWith("__")) {
-					result = '_' + result;
-				}
 				return result;
 			}
 		}
