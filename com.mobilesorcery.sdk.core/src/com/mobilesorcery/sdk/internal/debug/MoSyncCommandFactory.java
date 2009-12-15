@@ -25,6 +25,8 @@ import org.eclipse.cdt.debug.mi.core.command.MIExecNext;
 import org.eclipse.cdt.debug.mi.core.command.MIExecRun;
 import org.eclipse.cdt.debug.mi.core.command.MIExecStep;
 import org.eclipse.cdt.debug.mi.core.command.MIGDBSet;
+import org.eclipse.cdt.debug.mi.core.command.MIVarCreate;
+import org.eclipse.cdt.debug.mi.core.command.MIVarListChildren;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -96,5 +98,16 @@ public class MoSyncCommandFactory extends CommandFactory {
 		return new MoSyncMIBreakInsert(getMIVersion(), isTemporary, isHardware, condition, ignoreCount, line, tid);
 	}
 
-	
+	public MIVarListChildren createMIVarListChildren(String name) {
+		return new HackMIVarListChildren(getMIVersion(), name);
+	}
+
+	/*public MIVarCreate createMIVarCreate(String expression) {
+		return new HackMIVarCreate(getMIVersion(), expression);
+	}
+
+	public MIVarCreate createMIVarCreate(String name, String frameAddr, String expression) {
+		return new HackMIVarCreate(getMIVersion(), name, frameAddr, expression);
+	}*/
+
 }
