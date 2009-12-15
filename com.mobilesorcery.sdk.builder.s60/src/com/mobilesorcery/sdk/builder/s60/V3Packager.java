@@ -55,7 +55,7 @@ public class V3Packager extends S60Packager {
 			String runtimePath = internal.resolve("%runtime-dir%\\MoSync%D%.exe"); //$NON-NLS-1$
 
 			try {
-				createExe(new File(runtimePath), packageOutputDir, uid);
+				createExe(new File(runtimePath), packageOutputDir, uid, internal);
 				createRegRsc(new File(runtimeDir, "MoSync_reg.RSC"), packageOutputDir, uid); //$NON-NLS-1$
 				createResourceFile(new File(runtimeDir, "MoSync.RSC"), packageOutputDir, uid, appname); //$NON-NLS-1$
 			} catch (RuntimeException e) {
@@ -106,44 +106,10 @@ public class V3Packager extends S60Packager {
 		writeFile(new File(packageOutputDir, uidStr + "_reg.rsc"), buffer); //$NON-NLS-1$
 	}
 
-	private void createExe(File exeTemplateFile, File packageOutputDir, String uidStr) throws IOException {
-		byte[] buffer = readFile(exeTemplateFile);
-
-		int uid = (int)Long.parseLong(uidStr, 16);
-		int oldUid = readInt(buffer, 8);
-
-		//uids with crc
-		writeInt(uid, buffer, 8);
-		int uidChecksum = CRC16.getChecksumForUID(buffer);
-		writeInt(uidChecksum, buffer, 12);
-
-		//"secure" uid
-		writeInt(uid, buffer, 0x80);
-
-		//header crc
-		int headerCRC = 0xc90fdaa2;	//magic number from Symbian's f32image.h
-		writeInt(headerCRC, buffer, 0x14);
-
-		CRC32 crc32 = new CRC32();
-		crc32.update(buffer, 0, V3_EXE_HEADER_SIZE);
-		int newCRC = crc32.getChecksum();
-		writeInt(newCRC, buffer, 0x14);
-
-		/*//UTF-16 uid
-		for (int i = 0; i < uidStr.length(); i++) {
-			buffer[0x126c + 2 * i] = (byte)(uidStr.charAt(i) & 0xff);
-			buffer[0x126d + 2 * i] = 0x00;
-		}*/
-
-		//uid in code: find & change
-		for (int i = V3_EXE_HEADER_SIZE; i < buffer.length; i += 4) {
-			if (readInt(buffer, i) == oldUid) {
-				//printf("found uid @ 0x%x\n", HEADER_SIZE + i * 4);
-				writeInt(uid, buffer, i);
-			}
-		}
-
-		writeFile(new File(packageOutputDir, uidStr + ".exe"), buffer); //$NON-NLS-1$
+	private void createExe(File exeTemplateFile, File packageOutputDir, String uidStr, DefaultPackager internal) throws IOException {
+		File outputFile = new File(packageOutputDir, uidStr + ".exe");	//$NON-NLS-1$
+		internal.runCommandLine("%mosync-bin%\\e32hack.exe", exeTemplateFile.getAbsolutePath(),	//$NON-NLS-1$
+			outputFile.getAbsolutePath(), uidStr);
 	}
 
 	private void createResourceFile(File resourceTemplateFile, File packageOutputDir, String uidStr, String appName) throws IOException {
