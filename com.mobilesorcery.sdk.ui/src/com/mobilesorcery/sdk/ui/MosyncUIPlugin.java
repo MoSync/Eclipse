@@ -148,7 +148,9 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         }
         
         MoSyncProject.addNatureToProject(project);
-        return MoSyncProject.create(project);
+        MoSyncProject result = MoSyncProject.create(project);
+        result.activateBuildConfigurations();
+        return result;
     }
 
     private void initProjectChangeListener() {

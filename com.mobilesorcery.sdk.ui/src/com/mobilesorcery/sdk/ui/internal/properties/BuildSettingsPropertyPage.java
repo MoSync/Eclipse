@@ -468,7 +468,7 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
     	// Then, apply.
     	boolean changed = applyWorkingCopies();
     	
-        if (changed && getProject().getActiveBuildConfiguration().getId().equals(currentConfigId)) {
+        if (changed && (getProject().getActiveBuildConfiguration() == null || getProject().getActiveBuildConfiguration().getId().equals(currentConfigId))) {
             ProjectBuildAction action = new ProjectBuildAction(getShell(), IncrementalProjectBuilder.FULL_BUILD);
             action.setProject(getProject().getWrappedProject());
             action.run();
