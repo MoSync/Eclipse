@@ -27,7 +27,7 @@ import com.mobilesorcery.sdk.core.IProfileInfo;
 public class ProfileInfoParser {
 
 	public static IProfileInfo parse(IPath profileInfoPath,
-			SLD sld, IProgressMonitor monitor) throws ParseException, IOException {
+			SLDInfo sld, IProgressMonitor monitor) throws ParseException, IOException {
 		File profileInfoFile = profileInfoPath.toFile();
 		
 		ProfileInfo result = new ProfileInfo();

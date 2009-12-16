@@ -21,9 +21,10 @@ import java.io.PipedOutputStream;
 import java.util.concurrent.CountDownLatch;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.EmulatorOutputParser;
-import com.mobilesorcery.sdk.internal.SLD;
+import com.mobilesorcery.sdk.internal.SLDInfo;
 import com.mobilesorcery.sdk.internal.EmulatorOutputParser.ParseEvent;
 
 public class EmulatorParseEventHandler implements EmulatorOutputParser.IParseEventHandler {
@@ -38,7 +39,7 @@ public class EmulatorParseEventHandler implements EmulatorOutputParser.IParseEve
     }*/
     
     private MoSyncProject project = null;
-    private SLD sld = null;
+    private SLDInfo sldInfo = null;
 
     private PipedOutputStream messageStream;
 
@@ -47,9 +48,12 @@ public class EmulatorParseEventHandler implements EmulatorOutputParser.IParseEve
     private String exitMessage;
     
     private int emulatorId = -1;
+    
+	private IBuildConfiguration buildConfiguration;
 
-    public EmulatorParseEventHandler(MoSyncProject project) {
+    public EmulatorParseEventHandler(MoSyncProject project, IBuildConfiguration buildConfiguration) {
         this.project = project;
+        this.buildConfiguration = buildConfiguration;
         startSLDParsing();
     }
 
@@ -58,10 +62,10 @@ public class EmulatorParseEventHandler implements EmulatorOutputParser.IParseEve
     	Runnable sldRunnable = new Runnable() {
 			public void run() {
 				try {
-					SLD oldSLD = sld;
-					sld = project.parseSLD();
+					SLDInfo oldSLDInfo = sldInfo;
+					sldInfo = project.getSLD(buildConfiguration).parseSLD();
 					if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-						if (oldSLD == sld) {
+						if (oldSLDInfo == sldInfo) {
 							CoreMoSyncPlugin.trace("Using cached SLD for " + project.getName());
 						} else {
 							CoreMoSyncPlugin.trace("Done parsing sld for " + project.getName());
@@ -102,7 +106,7 @@ public class EmulatorParseEventHandler implements EmulatorOutputParser.IParseEve
                 stack = new int[] { event.ip };
                 // fall thru
             case EmulatorOutputParser.REPORT_CALL_STACK:
-                SLD sld = getSLD();
+                SLDInfo sld = getSLD();
                 for (int i = 0; stack != null && i < stack.length; i++) {
                     String filename = sld == null ? null : sld.getFileName(stack[i]);
                     int line = sld == null ? -1 : sld.getLine(stack[i]);
@@ -128,14 +132,14 @@ public class EmulatorParseEventHandler implements EmulatorOutputParser.IParseEve
         return emulatorId > 0 ? "[" + emulatorId + "] " + msg : msg;
     }
 
-    private SLD getSLD() throws IOException {
+    private SLDInfo getSLD() throws IOException {
     	try {
     		if (sldLatch.getCount() > 0) {
     			messageStream.write("Reading line number information - may take a few moments\n".getBytes());
     		}
     		
 			sldLatch.await();
-			return sld;
+			return sldInfo;
 		} catch (InterruptedException e) {
 			throw new IOException(e.getMessage());
 		}        

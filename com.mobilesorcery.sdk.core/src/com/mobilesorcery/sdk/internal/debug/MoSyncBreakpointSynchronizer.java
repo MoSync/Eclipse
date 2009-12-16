@@ -15,14 +15,18 @@ package com.mobilesorcery.sdk.internal.debug;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.TreeSet;
 
 import org.eclipse.cdt.core.settings.model.ICFileDescription;
 import org.eclipse.cdt.debug.core.CDIDebugModel;
 import org.eclipse.cdt.debug.core.model.ICLineBreakpoint;
+import org.eclipse.cdt.debug.internal.core.breakpoints.CLineBreakpoint;
 import org.eclipse.cdt.debug.internal.core.model.CDebugTarget;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IMarkerDelta;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointListener;
@@ -77,17 +81,31 @@ public class MoSyncBreakpointSynchronizer implements IBreakpointListener {
 		DebugPlugin.getDefault().getBreakpointManager().removeBreakpointListener(this);
 	}
 	
-	public void cleanup() {
-		IBreakpointManager bp = DebugPlugin.getDefault().getBreakpointManager();
+	public void cleanup(IResource resource) {
+		/*IBreakpointManager bp = DebugPlugin.getDefault().getBreakpointManager();
 		IBreakpoint[] bps = bp.getBreakpoints(CDIDebugModel.getPluginIdentifier());
-		
-		TreeSet uniqueBps = new TreeSet(new MoSyncBreakpointComparator());
-		uniqueBps.addAll(Arrays.asList(bps));
+		try {
+			IMarker[] markers = resource.findMarkers(IBreakpoint.BREAKPOINT_MARKER, true, IResource.DEPTH_INFINITE);
+			HashSet<IMarker> orphanedBreakPointMarkers = new HashSet<IMarker>();
+			orphanedBreakPointMarkers.addAll(Arrays.asList(markers));
+			for (int i = 0; i < bps.length; i++) {
+				orphanedBreakPointMarkers.remove(bps[i].getMarker());
+			}
+			
+			for (IMarker marker : orphanedBreakPointMarkers) {
+				if (CLineBreakpoint.getMarkerType().equals(marker.getType())) {
+					marker.delete();	
+				}
+			}
+			
+		} catch (CoreException e1) {
+			// Ignore this, we cannot really do anything about it anyways.
+		}*/
 	}
 
 	public void breakpointAdded(IBreakpoint breakpoint) {
 		if (isBreakpointApplicable(breakpoint)) {
-			//cleanup();
+			cleanup(breakpoint.getMarker().getResource());
 		}
 	}
 
@@ -99,6 +117,9 @@ public class MoSyncBreakpointSynchronizer implements IBreakpointListener {
 	}
 
 	public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
+		if (isBreakpointApplicable(breakpoint)) {
+			cleanup(breakpoint.getMarker().getResource());
+		}
 	}
 	
 }

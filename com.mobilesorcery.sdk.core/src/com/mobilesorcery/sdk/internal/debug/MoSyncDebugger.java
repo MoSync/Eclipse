@@ -39,6 +39,7 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
@@ -114,7 +115,8 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 		
 		if (project != null) {
 			MoSyncProject mosyncProject = MoSyncProject.create(project);
-			IPath sldPath = mosyncProject.getSLDPath();
+			IBuildConfiguration buildConfiguration = mosyncProject.getActiveBuildConfiguration();
+			IPath sldPath = mosyncProject.getSLD(buildConfiguration).getSLDPath();
 
 			if (program != null) {
 				argList.add("-p");
@@ -126,7 +128,7 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 				argList.add(sldPath.toOSString());
 			}
 
-			IPath stabsPath = mosyncProject.getStabsPath();
+			IPath stabsPath = mosyncProject.getStabsPath(buildConfiguration);
 			if (supportsStabs(mosyncProject) && stabsPath.toFile().exists()) {
 				argList.add("-stabs");
 				argList.add(stabsPath.toOSString());

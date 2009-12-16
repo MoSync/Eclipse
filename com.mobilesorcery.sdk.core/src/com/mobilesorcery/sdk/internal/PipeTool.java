@@ -242,11 +242,10 @@ public class PipeTool {
 
     public File getExecDir() {
     	return getExecDir(project);
-        // return outputFile.toFile().getParentFile().getParentFile();
     }
 
     private static File getExecDir(IProject project) {
-    	return project.getLocation().toFile();
+    	return MoSyncBuilder.getOutputPath(project).toFile();
     }
     
     public void setNoVerify(boolean noVerify) {

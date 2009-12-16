@@ -45,6 +45,7 @@ import org.eclipse.ui.XMLMemento;
 import com.mobilesorcery.sdk.internal.ParseException;
 import com.mobilesorcery.sdk.internal.ProfileInfoParser;
 import com.mobilesorcery.sdk.internal.SLD;
+import com.mobilesorcery.sdk.internal.SLDInfo;
 import com.mobilesorcery.sdk.internal.SLDParser;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
@@ -145,8 +146,6 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
     private static final String VALUE_KEY = "value";
     
-    private static final String NO_CACHE_SLD_KEY = "no.cache.sld";
-
 	private static final String BUILD_CONFIG = "build.cfg";
 
 	private static final String BUILD_CONFIG_ID_KEY = "id";
@@ -173,15 +172,13 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
 	private DependencyManager<IResource> dependencyManager = new DependencyManager<IResource>();
 
-	private long lastSLDTimestamp;
-
-	private SLD lastSLD;
-
 	private IBuildConfiguration currentBuildConfig;
 
 	private TreeMap<String, IBuildConfiguration> configurations = new TreeMap<String, IBuildConfiguration>(String.CASE_INSENSITIVE_ORDER);
 
 	private boolean isBuildConfigurationsSupported;
+
+	private HashMap<String, SLD> slds = new HashMap<String, SLD>();
 
     private MoSyncProject(IProject project) {
         Assert.isNotNull(project);
@@ -454,96 +451,50 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     }
     
     /**
-     * <p>Returns the path to the (single) SLD file of this project.</p>
-     * <p>The SLD file maps addresses to files and line numbers.</p> 
+     * <p>Returns the path to the STABS debug info file of a specific build configuration.</p>
+     * @param buildConfiguration 
      * @return
      */
-    public IPath getSLDPath() {
-        return getWrappedProject().getLocation().append("Sld.tab");        
-    }
-    
-    /**
-     * <p>Returns the path to the (single) STABS debug info file of this project.</p>
-     * @return
-     */
-	public IPath getStabsPath() {
-		return getWrappedProject().getLocation().append("stabs.tab");
+	public IPath getStabsPath(IBuildConfiguration buildConfiguration) {
+		IPath outputPath = MoSyncBuilder.getOutputPath(project, getPropertyOwner(buildConfiguration)).append("stabs.tab");
+		return outputPath;
 	}
 
 	/**
-	 * <p>Parses the SLD of this project; equivalent to
-	 * <code>parseSLD(false)</code></p>
+	 * Returns the SLD for a specific buildconfiguration; if a null
+	 * build configuration is passed as argument, then this amounts
+	 * to build configurations not being supported.
+	 * @param buildConfiguration
 	 * @return
 	 */
-    public SLD parseSLD() {
-    	return parseSLD(false);
-    }
-    
-    /**
-     * Parses the SLD of this project if the SLD
-     * file has a newer time stamp than when last parsed,
-     * or if <code>force</code> is set to <code>true</code>.
-     * If the project property defined by NO_CACHE_SLD_KEY is
-     * set to <code>true</code>, parsing will always take place.
-     * @param force
-     * @return
-     */
-    public synchronized SLD parseSLD(boolean force) {
-        IPath sld = getSLDPath();
-        if (!sld.toFile().exists()) {
-            return null;
-        }
-        
-        boolean dontCache = Boolean.parseBoolean(getProperty(NO_CACHE_SLD_KEY));
-        boolean alwaysParse = force || dontCache; 
-        
-        SLD result = dontCache ? null : lastSLD;
-        
-        long currentSLDTimestamp = sld.toFile().lastModified();
-        boolean timestampChanged = lastSLDTimestamp != currentSLDTimestamp;
-        boolean hasNoCached = lastSLD == null;
-        
-        boolean doParse = alwaysParse || hasNoCached || timestampChanged;
-        
-        if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-        	if (doParse) {
-        		CoreMoSyncPlugin.trace("Parsing SLD: force = {0}, nocache = {1}, dirty = {2}", alwaysParse, hasNoCached, timestampChanged);
-        	}
-        }
-        
-        if (doParse) {
-	        SLDParser parser = new SLDParser();
-	        try {
-	            parser.parse(sld.toFile());
-	            result = parser.getSLD();
-	            if (!dontCache) { 
-	            	lastSLD = result;
-	            	lastSLDTimestamp = currentSLDTimestamp; 
-	            }
-	        } catch (IOException e) {
-	            // Ignore.
-	        	e.printStackTrace();
-	            CoreMoSyncPlugin.getDefault().getLog().log(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could not parse SLD file", e));
-	        }
-        }
-        
-        return result;
-    }
-
+	public synchronized SLD getSLD(IBuildConfiguration buildConfiguration) {
+		IPath outputPath = MoSyncBuilder.getOutputPath(project, getPropertyOwner(buildConfiguration)).append("Sld.tab");
+		SLD sld = slds.get(outputPath.toPortableString());
+		if (sld == null) {
+			sld = new SLD(this, outputPath);
+			slds.put(outputPath.toPortableString(), sld);
+		}
+		
+		return sld;
+	}
+	
     /**
      * Parses the profile info file for a project,
      * and returns 
      * @return
      * @throws IOException 
-     * @throws ParseException 
+     * @throws ParseException
+     * @deprecated Well, we're not using it right now; when we do,
+     * lets un-deprecate this 
      */
     public IProfileInfo parsePerformanceInfo(IPath profileInfoFile, IProgressMonitor monitor) throws ParseException, IOException {
-    	monitor.beginTask("Parsing profile info", 2);
+    	throw new UnsupportedOperationException();
+    	/*monitor.beginTask("Parsing profile info", 2);
     	SLD sld = parseSLD();
     	monitor.worked(1);
     	IProfileInfo result = ProfileInfoParser.parse(profileInfoFile, sld, monitor);
     	monitor.done();
-    	return result;
+    	return result;*/
     }
     
     /**
@@ -799,6 +750,10 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		}
 		
 		return this;
+	}
+	
+	private IPropertyOwner getPropertyOwner(IBuildConfiguration config) {
+		return config == null ? this : config.getProperties();
 	}
 
 

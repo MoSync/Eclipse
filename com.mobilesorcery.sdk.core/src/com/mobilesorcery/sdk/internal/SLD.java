@@ -13,94 +13,108 @@
 */
 package com.mobilesorcery.sdk.internal;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.Writer;
-import java.util.Iterator;
-import java.util.TreeMap;
-import java.util.Map.Entry;
 
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.MoSyncProject;
+
+/**
+ * A class for handling a single the state of SLD data;
+ * each build configuration typically have an SLD.
+ * 
+ * @author Mattias Bybro, mattias.bybro@purplescout.se
+ *
+ */
 public class SLD {
 
-    public static final int UNKNOWN_LINE = -1;
+    public static final String NO_CACHE_SLD_KEY = "no.cache.sld";
 
-    private TreeMap<Integer, String> fileTable = new TreeMap<Integer, String>();
-    private TreeMap<Integer, Integer> addrToFile = new TreeMap<Integer, Integer>();
-    private TreeMap<Integer, Integer> addrToLine = new TreeMap<Integer, Integer>();
-    private File file;
+	private MoSyncProject project;
 
-    SLD(File sldFile) {
-        this.file = sldFile;
+	private long lastSLDTimestamp;
+
+	private SLDInfo lastSLD;
+
+	private IPath sldFile;
+
+	public SLD(MoSyncProject project, IPath sldFile) {
+		this.project = project;
+		this.sldFile = sldFile;
+	}
+	
+	/**
+	 * <p>Parses the SLD of this project; equivalent to
+	 * <code>parseSLD(false)</code></p>
+	 * @return
+	 */
+    public SLDInfo parseSLD() {
+    	return parseSLD(false);
     }
-
-    void addFile(int id, String name) {
-        fileTable.put(id, name);
-    }
-
-    void addLocationForAddress(int addr, int lineInFile, int fileId) {
-        addrToLine.put(addr, lineInFile);
-        addrToFile.put(addr, fileId);
-    }
-
-    public String getFileName(int addr) {
-        if (addrToFile.isEmpty()) {
+    
+    /**
+     * Parses the SLD of this project if the SLD
+     * file has a newer time stamp than when last parsed,
+     * or if <code>force</code> is set to <code>true</code>.
+     * If the project property defined by NO_CACHE_SLD_KEY is
+     * set to <code>true</code>, parsing will always take place.
+     * @param force
+     * @return
+     */
+    public synchronized SLDInfo parseSLD(boolean force) {
+        IPath sld = getSLDPath();
+        if (!sld.toFile().exists()) {
             return null;
         }
-
-        Entry<Integer, Integer> entry = addrToFile.floorEntry(addr);
-        if (entry != null) {
-            Integer fileId = entry.getValue();
-            if (fileId != null) {
-                return fileTable.get(fileId);
-            }
+        
+        boolean dontCache = Boolean.parseBoolean(project.getProperty(NO_CACHE_SLD_KEY));
+        boolean alwaysParse = force || dontCache; 
+        
+        SLDInfo result = dontCache ? null : lastSLD;
+        
+        long currentSLDTimestamp = sld.toFile().lastModified();
+        boolean timestampChanged = lastSLDTimestamp != currentSLDTimestamp;
+        boolean hasNoCached = lastSLD == null;
+        
+        boolean doParse = alwaysParse || hasNoCached || timestampChanged;
+        
+        if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+        	if (doParse) {
+        		CoreMoSyncPlugin.trace("Parsing SLD: force = {0}, nocache = {1}, dirty = {2}", alwaysParse, hasNoCached, timestampChanged);
+        	}
         }
-
-        return null;
+        
+        if (doParse) {
+	        SLDParser parser = new SLDParser();
+	        try {
+	            parser.parse(sld.toFile());
+	            result = parser.getSLD();
+	            if (!dontCache) { 
+	            	lastSLD = result;
+	            	lastSLDTimestamp = currentSLDTimestamp; 
+	            }
+	        } catch (IOException e) {
+	            // Ignore.
+	        	e.printStackTrace();
+	            CoreMoSyncPlugin.getDefault().getLog().log(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could not parse SLD file", e));
+	        }
+        }
+        
+        return result;
     }
 
-    public int getLine(int addr) {
-        if (addrToLine.isEmpty()) {
-            return UNKNOWN_LINE;
-        }
-
-        Entry<Integer, Integer> entry = addrToLine.floorEntry(addr - 1);
-        if (entry != null) {
-            Integer line = entry.getValue();
-            if (line != null) {
-                return line;
-            }
-        }
-
-        return UNKNOWN_LINE;
+    /**
+     * <p>Returns the path to the SLD file.</p>
+     * <p>The SLD file maps addresses to files and line numbers.</p> 
+     * @return
+     */
+    public IPath getSLDPath() {
+    	return sldFile;       
     }
+    
 
-    public void write(Writer writer) throws IOException {
-        writer.write(SLDParser.FILE_MARKER);
-        writer.write('\n');
-        for (Iterator<Integer> files = fileTable.keySet().iterator(); files.hasNext();) {
-            Integer fileId = files.next();
-            String filename = fileTable.get(fileId);
-            writer.write(fileId + ":" + filename);
-            writer.write('\n');
-        }
-
-        writer.write(SLDParser.SLD_MARKER);
-        writer.write('\n');
-
-        for (Iterator<Integer> addrs = addrToFile.keySet().iterator(); addrs.hasNext();) {
-            Integer addr = addrs.next();
-            int line = addrToLine.get(addr);
-            int file = addrToFile.get(addr);
-
-            writer.write(Integer.toHexString(addr) + ":" + line + ":" + file);
-            writer.write("\n");
-        }
-    }
-
-    public File getSLDFile() {
-        return file;
-    }
- 
+	
 }

@@ -114,7 +114,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
             throws CoreException {
     	boolean debug = "debug".equals(mode);
     	
-        String width = launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_WIDTH, "176");
+    	String width = launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_WIDTH, "176");
         String height = launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, "220");
         
         IProject project = getProject(launchConfig);
@@ -134,6 +134,9 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
                     "Cannot execute a library; please compile as application"));
         }
         
+
+    	IBuildConfiguration buildConfiguration = mosyncProject.getActiveBuildConfiguration();
+    	
         if (launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_OF_TARGET, true)) {
             IProfile profile = mosyncProject.getTargetProfile();
             if (profile != null) {
@@ -156,7 +159,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 
         String[] cmdline = getCommandLine(project, width, height, dupWriteFd, emulatorId, debug);
 
-        final EmulatorParseEventHandler handler = new EmulatorParseEventHandler(mosyncProject);
+        final EmulatorParseEventHandler handler = new EmulatorParseEventHandler(mosyncProject, buildConfiguration);
         PipedOutputStream messageOutputStream = new PipedOutputStream();
         PipedInputStream messageInputStream = null;
 
@@ -177,7 +180,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         	CoreMoSyncPlugin.trace("Emulator command line:\n    " + Util.join(Util.ensureQuoted(cmdline), " "));
         }
 
-        File dir = mosyncProject.getWrappedProject().getLocation().append("Output").toFile();
+        File dir = MoSyncBuilder.getOutputPath(mosyncProject.getWrappedProject()).toFile();
         
         String command = Util.join(Util.ensureQuoted(cmdline), " ");
         final SpawnedProcess process = new SpawnedProcess(getMoREExe(), command, dir);

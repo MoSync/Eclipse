@@ -32,14 +32,14 @@ public class SLDParser {
     private int state;
 
     private ArrayList<Exception> errors = new ArrayList<Exception>();
-    private SLD sld;
+    private SLDInfo sld;
 
     private int currentLine;
 
     public void parse(File sldFile) throws IOException {
         BufferedReader sldReader = new BufferedReader(new FileReader(sldFile));
         try {
-            sld = new SLD(sldFile);
+            sld = new SLDInfo(sldFile);
             currentLine = 0;
             LineNumberReader sldLines = new LineNumberReader(sldReader);
             for (String line = sldLines.readLine(); line != null; line = sldLines.readLine()) {
@@ -61,7 +61,7 @@ public class SLDParser {
         }
     }
 
-    public SLD getSLD() {
+    public SLDInfo getSLD() {
         return sld;
     }
 
