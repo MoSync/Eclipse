@@ -202,4 +202,24 @@ icon="icons/launchshortcut.png">
             name="Mosync">
       </category>
       </extension>
+      <extension
+            point="org.eclipse.ui.decorators">
+         <decorator
+               adaptable="false"
+               class="com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator"
+               id="com.mobilesorcery.sdk.ui.decorator.excluderesource"
+               label="Files excluded from MoSync build"
+               lightweight="false"
+               location="TOP_RIGHT"
+               state="true">
+         <description>
+            Show files that are excluded from the MoSync build process
+         </description>
+         <enablement>
+            <objectClass
+                  name="java.lang.Object">
+            </objectClass>
+         </enablement>
+         </decorator>
+      </extension>
 </plugin>

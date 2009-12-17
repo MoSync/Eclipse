@@ -36,6 +36,8 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
@@ -72,6 +74,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 	 * A property indicating the current project has changed
 	 */
     public static final String CURRENT_PROJECT_CHANGED = PLUGIN_ID + ":current.project.changed";
+
+	public static final String IMG_OVR_EXCLUDED_RESOURCE = "excl.res";
 
 	// The shared instance
 	private static MosyncUIPlugin plugin;
@@ -333,6 +337,13 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 
 	public IProcessConsole get(String name) {
 		return new IDEProcessConsole(name);
+	}
+	
+	public void initializeImageRegistry(ImageRegistry reg) {
+		super.initializeImageRegistry(reg);
+		reg.put(IMG_OVR_EXCLUDED_RESOURCE, AbstractUIPlugin
+		.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID,
+				"$nl$/icons/exclude_ovr.png"));
 	}
 
 }
