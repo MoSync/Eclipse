@@ -48,6 +48,7 @@ import com.mobilesorcery.sdk.internal.SLD;
 import com.mobilesorcery.sdk.internal.SLDInfo;
 import com.mobilesorcery.sdk.internal.SLDParser;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
+import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -754,6 +755,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	
 	private IPropertyOwner getPropertyOwner(IBuildConfiguration config) {
 		return config == null ? this : config.getProperties();
+	}
+
+	public LibraryLookup getLibraryLookup(IPropertyOwner buildProperties) {
+		// TODO: cache?
+		return new LibraryLookup(MoSyncBuilder.getLibraryPaths(buildProperties), MoSyncBuilder.getLibraries(buildProperties));
 	}
 
 
