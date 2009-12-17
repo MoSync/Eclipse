@@ -14,11 +14,11 @@
          </property>
          <property
                name="aboutText"
-               value="MoSync IDE &#x0A;(C) Mobile Sorcery 2009&#x0A;&#x0A;http://www.mosync.com">
+               value="http://www.mosync.com">
          </property>
          <property
                name="aboutImage"
-               value="icons/mosync_32x32.png">
+               value="about.png">
          </property>
          <property
                name="startupForegroundColor"

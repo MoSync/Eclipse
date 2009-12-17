@@ -4,12 +4,9 @@
 <product name="%productName" id="com.mobilesorcery.sdk.product.product" application="org.eclipse.ui.ide.workbench" version="1.0.0" useFeatures="false" includeLaunchers="true">
 
    <aboutInfo>
-      <image path="/com.mobilesorcery.sdk.product/icons/mosync_32x32.png"/>
+      <image path="/com.mobilesorcery.sdk.product/about.png"/>
       <text>
-         MoSync IDE 
-(C) Mobile Sorcery 2009
-
-http://www.mosync.com
+         http://www.mosync.com
       </text>
    </aboutInfo>
 
@@ -39,6 +36,7 @@ http://www.mosync.com
             winLargeLow="/com.mobilesorcery.sdk.product/icons/mosync_ico_48x48_lo.bmp"/>
       </win>
    </launcher>
+
 
    <vm>
       <windows>org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/OSGi%Minimum-1.0</windows>
