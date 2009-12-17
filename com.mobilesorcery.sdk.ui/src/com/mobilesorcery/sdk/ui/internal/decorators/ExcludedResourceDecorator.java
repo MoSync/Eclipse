@@ -27,8 +27,7 @@ import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 public class ExcludedResourceDecorator extends LabelProvider implements
 		ILightweightLabelDecorator {
 
-	public ExcludedResourceDecorator() {
-	System.err.println("!");	
+	public ExcludedResourceDecorator() {	
 	}
 	
 	public void decorate(Object element, IDecoration decoration) {

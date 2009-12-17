@@ -209,7 +209,7 @@ icon="icons/launchshortcut.png">
                class="com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator"
                id="com.mobilesorcery.sdk.ui.decorator.excluderesource"
                label="Files excluded from MoSync build"
-               lightweight="false"
+               lightweight="true"
                location="TOP_RIGHT"
                state="true">
          <description>
