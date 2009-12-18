@@ -22,6 +22,10 @@ import org.eclipse.core.runtime.Path;
 
 public class PathExclusionFilter implements IFilter<IResource> {
 	
+	private int NEUTRAL = 0;
+	private int INCLUDE = 1;
+	private int EXCLUDE = -INCLUDE;
+	
 	private String[] filespecs;
 
 	PathExclusionFilter(String[] filespecs) {
@@ -40,7 +44,8 @@ public class PathExclusionFilter implements IFilter<IResource> {
 		return result;
 	}
 	
-	public boolean inverseAccept(IResource resource) {
+	boolean inverseAccept(IResource resource) {
+		int state = NEUTRAL;
 		for (int i = 0; i < filespecs.length; i++) {
 			if (!Util.isEmpty(filespecs[i]) && accept(resource, filespecs[i])) {
 				return true;
@@ -51,6 +56,12 @@ public class PathExclusionFilter implements IFilter<IResource> {
 	}
 	
 	protected boolean accept(IResource resource, String filespec) {
+		if (filespec.charAt(0) == '+') {
+			return !accept(resource, filespec.substring(1));
+		} else if (filespec.charAt(0) == '-') {
+			return accept(resource, filespec.substring(1));
+		}
+		
 		Path filePath = new Path(filespec);
 		return new StringMatcher(filePath.toPortableString(), true, false).match(resource.getProjectRelativePath().toPortableString());
 	}

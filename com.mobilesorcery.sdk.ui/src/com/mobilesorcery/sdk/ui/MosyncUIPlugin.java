@@ -33,6 +33,7 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.ISafeRunnable;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunchConfiguration;
@@ -47,6 +48,7 @@ import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWindowListener;
+import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -60,7 +62,9 @@ import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IProvider;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
 import com.mobilesorcery.sdk.ui.internal.console.IDEProcessConsole;
+import com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -87,6 +91,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
     private boolean listenerAdded;
 
     private IdentityHashMap<IWorkbenchWindow, IProject> currentProjects = new IdentityHashMap<IWorkbenchWindow, IProject>();
+
+	private PropertyChangeListener globalListener;
     
 	/**
 	 * The constructor
@@ -107,6 +113,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 
 		listeners = new PropertyChangeSupport(this);
 		CoreMoSyncPlugin.getDefault().setIDEProcessConsoleProvider(this);
+		registerGlobalProjectListener();
 	}
 
 	/*
@@ -119,6 +126,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
+		deregisterGlobalProjectListener();
 	}
 
 	/**
@@ -329,6 +337,34 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 				}    			
     		});    	
     	}
+	}
+
+    public void registerGlobalProjectListener() {
+    	globalListener = new PropertyChangeListener() {
+			public void propertyChange(PropertyChangeEvent event) {
+				Object source = event.getSource();
+				if (MoSyncProject.BUILD_CONFIGURATION_CHANGED.equals(event.getPropertyName()) ||
+					MoSyncProject.BUILD_CONFIGURATION_SUPPORT_CHANGED.equals(event.getPropertyName()) ||
+					MoSyncProject.EXCLUDE_FILTER_KEY.equals(NameSpacePropertyOwner.getKey(event.getPropertyName()))) {
+					try {
+						MoSyncProject project = (MoSyncProject) source;
+						ExcludedResourceDecorator dec = (ExcludedResourceDecorator) PlatformUI.getWorkbench().getDecoratorManager().getLabelDecorator(ExcludedResourceDecorator.ID);
+						if (dec != null) {
+							dec.updateDecorations();
+						}
+					} catch (Exception e) {
+						CoreMoSyncPlugin.getDefault().log(e);
+					}
+				}
+			}
+		};
+		
+    	MoSyncProject.addGlobalPropertyChangeListener(globalListener);
+    	
+    }
+    
+	private void deregisterGlobalProjectListener() {
+		MoSyncProject.removeGlobalPropertyChangeListener(globalListener);
 	}
 
     public void log(Throwable e) {

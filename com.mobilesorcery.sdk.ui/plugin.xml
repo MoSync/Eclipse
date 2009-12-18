@@ -179,7 +179,18 @@ icon="icons/launchshortcut.png">
 		          <objectState name="nature" value="com.mobilesorcery.sdk.builder.nature"/>
                </visibility>
                          
-      </objectContribution>
+      <!--</objectContribution>
+            <objectContribution
+            adaptable="true"
+            id="com.mobilesorcery.sdk.exclude"
+            objectClass="org.eclipse.core.resources.IResource">
+         <action
+               class="com.mobilesorcery.ui.internal.actions.ExcludeFromBuild"
+               id="com.mobilesorcery.sdk.exclude"
+               label="Exclude from build"
+               menubarPath="additions">
+         </action>
+      </objectContribution>-->
   </extension>
       <extension
          point="org.eclipse.ui.ide.projectNatureImages">
@@ -209,9 +220,9 @@ icon="icons/launchshortcut.png">
                class="com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator"
                id="com.mobilesorcery.sdk.ui.decorator.excluderesource"
                label="Files excluded from MoSync build"
-               lightweight="true"
+               lightweight="false"
                location="TOP_RIGHT"
-               state="true">
+               state="false">
          <description>
             Show files that are excluded from the MoSync build process
          </description>

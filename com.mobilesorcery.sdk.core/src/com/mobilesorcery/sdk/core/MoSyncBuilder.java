@@ -44,6 +44,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
+import sun.security.action.GetBooleanAction;
+
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.builder.MoSyncBuilderVisitor;
@@ -615,13 +617,13 @@ public class MoSyncBuilder extends ACBuilder {
 				IPath libraryOutput = computeLibraryOutput(mosyncProject,
 						buildProperties);
 				pipeTool.setOutputFile(isLib ? libraryOutput : program);
-				pipeTool.setLibraryPaths(getLibraryPaths(mosyncProject));
-				pipeTool.setLibraries(getLibraries(mosyncProject));
+				pipeTool.setLibraryPaths(getLibraryPaths(buildProperties));
+				pipeTool.setLibraries(getLibraries(buildProperties));
 				pipeTool.setDeadCodeElimination(elim);
 				pipeTool.setCollectStabs(true);
 
 				String[] extraLinkerSwitches = PropertyUtil.getStrings(
-						mosyncProject, EXTRA_LINK_SWITCHES);
+						buildProperties, EXTRA_LINK_SWITCHES);
 				pipeTool.setExtraSwitches(extraLinkerSwitches);
 
 				pipeTool.run();
@@ -681,7 +683,7 @@ public class MoSyncBuilder extends ACBuilder {
 				packager.setParameter(IS_FINALIZER_BUILD, Boolean
 						.toString(isFinalizerBuild));
 				packager.setParameter(USE_DEBUG_RUNTIME_LIBS, Boolean
-						.toString(PropertyUtil.getBoolean(mosyncProject,
+						.toString(PropertyUtil.getBoolean(mosyncProject.getPropertyOwner(),
 								USE_DEBUG_RUNTIME_LIBS)));
 
 				if (ec == 0) {

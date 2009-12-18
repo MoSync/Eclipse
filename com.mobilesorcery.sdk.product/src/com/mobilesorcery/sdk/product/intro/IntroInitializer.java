@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,8 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.eclipse.core.runtime.Platform;
+
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 
 public class IntroInitializer {
 
@@ -53,7 +56,12 @@ public class IntroInitializer {
 	}
 	
 	private IntroInitializer() {
-		uri = new File("C:/development/projects/mobilesorcery-oct-09-R/trunk/com.mobilesorcery.sdk.product/content/welcome.xml").toURI();
+		try {
+			uri = getClass().getResource("/content/welcome.xml").toURI();
+		} catch (Exception e) {
+			CoreMoSyncPlugin.getDefault().log(e);
+			// Should not happen.
+		}
 	}
 	
 	public void fetch(final ICallback callback) {
