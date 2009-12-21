@@ -179,8 +179,8 @@ icon="icons/launchshortcut.png">
 		          <objectState name="nature" value="com.mobilesorcery.sdk.builder.nature"/>
                </visibility>
                          
-      <!--</objectContribution>
-            <objectContribution
+      </objectContribution>
+      <!--<objectContribution
             adaptable="true"
             id="com.mobilesorcery.sdk.exclude"
             objectClass="org.eclipse.core.resources.IResource">

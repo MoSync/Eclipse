@@ -29,7 +29,6 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class V3Packager extends S60Packager {
 
-	private static final int V3_SIZE1 = 0x25;
 	static final int V3_EXE_HEADER_SIZE = 0x9c;
 
 	public V3Packager() {
@@ -157,13 +156,22 @@ public class V3Packager extends S60Packager {
 			bufferLoc++;
 		}
 
-		templateLoc += originalAppnameLength + 2;
+		templateLoc += 2 + originalAppnameLength;
 
-		System.arraycopy(template, templateLoc, buffer, bufferLoc, V3_SIZE1);
-
-		templateLoc += V3_SIZE1;
-		bufferLoc += V3_SIZE1;
-	
+		//icon filename and surroundings
+		System.arraycopy(template, templateLoc, buffer, bufferLoc, 0x14);
+		templateLoc += 0x14;
+		bufferLoc += 0x14;
+		if (uidStr.length() != 8) {
+			throw new IOException();
+		}
+		System.arraycopy(uidStr.getBytes(), 0, buffer, bufferLoc, 8);
+		templateLoc += 8;
+		bufferLoc += 8;
+		System.arraycopy(template, templateLoc, buffer, bufferLoc, 9);
+		templateLoc += 9;
+		bufferLoc += 9;
+		
 		//read one byte
 		v = (byte)(template[templateLoc++]);
 		buffer[bufferLoc++] = v;
@@ -179,10 +187,6 @@ public class V3Packager extends S60Packager {
 		x = v - ((originalAppnameLength + 1) * 2);
 		buffer[bufferLoc] = (byte)(x + (appName.length() + 1) * 2);
 		buffer[bufferLoc + 1] = 0;
-
-		//System.err.println(Util.toBase16(template));
-		//System.err.println(Util.toBase16(buffer));
-		//System.err.println(Util.toBase16(readFile(new File("C:\\development\\tools\\MoSync\\examples\\MoTris\\Output\\E4E046D4.rsc"))));
 
 		writeFile(new File(packageOutputDir, uidStr + ".rsc"), buffer); //$NON-NLS-1$
 	}
