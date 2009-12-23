@@ -87,6 +87,13 @@ public class PropertyUtil {
         String[] strings = value.split("\\s+");
         return strings;
     }
+    
+    public static void setStrings(IPropertyOwner p, String key, String[] value) {
+    	if (p != null) {
+    		String valueStr = Util.join(value, " ");
+    		p.setProperty(key, valueStr);
+    	}
+    }
 
     public static Integer getInteger(IPropertyOwner p, String key) {
     	if (p == null) {

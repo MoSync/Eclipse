@@ -56,6 +56,12 @@
             namespace="com.mobilesorcery.sdk.testers"
             properties="supportsBuildConfiguration"
             type="java.lang.Object"/>
+       <propertyTester
+            class="com.mobilesorcery.sdk.internal.IsExcludableFromBuildTester"
+            id="com.mobilesorcery.sdk.testers.isExcludableFromBuild"
+            namespace="com.mobilesorcery.sdk.testers"
+            properties="isExcludableFromBuild"
+            type="java.lang.Object"/>
    </extension>
    
 

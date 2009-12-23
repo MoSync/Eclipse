@@ -32,7 +32,7 @@ import org.junit.Test;
 public class GCCDependencyFileParserTest {
 
 	@Test
-	public void simpleDeps() throws IOException {
+	public void simpleDeps() throws Exception {
 		try {
 			ResourcesPlugin.getWorkspace().getRoot().getProject("project").create(null);
 		} catch (CoreException e) {
@@ -72,4 +72,5 @@ public class GCCDependencyFileParserTest {
 		ByteArrayInputStream result = new ByteArrayInputStream(str.getBytes());
 		return result;
 	}
+
 }

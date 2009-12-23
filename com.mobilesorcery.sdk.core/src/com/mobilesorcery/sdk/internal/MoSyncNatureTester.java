@@ -30,6 +30,19 @@ public class MoSyncNatureTester extends PropertyTester {
 		return extractProject(receiver, property, args, expectedValue) != null;
 	}
 	
+	/**
+	 * Tries to derive a mosync project from whatever object is passed
+	 * as the <code>receiver</code>; this method will accept <code>List</code>s,
+	 * <code>IAdaptable</code>s, <code>IResource</code>s, and then if project
+	 * associated with these is compatible with a MoSyncProject, return that project.
+	 * 
+	 * @param receiver
+	 * @param property
+	 * @param args
+	 * @param expectedValue
+	 * @return
+	 * @see MoSyncProject#isCompatible
+	 */
 	protected MoSyncProject extractProject(Object receiver, String property, Object[] args, Object expectedValue) {
         if (receiver instanceof IAdaptable) {
             receiver = ((IAdaptable) receiver).getAdapter(IResource.class);             

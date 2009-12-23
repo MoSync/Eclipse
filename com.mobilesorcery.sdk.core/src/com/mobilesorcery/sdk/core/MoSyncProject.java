@@ -615,9 +615,16 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 * @param properties
 	 * @return
 	 */
-	public static IFilter<IResource> getExclusionFilter(MoSyncProject project) {
+	public static PathExclusionFilter getExclusionFilter(MoSyncProject project) {
+		if (project == null) {
+			return null;
+		}
 		// Efficient?
 		return PathExclusionFilter.parse(PropertyUtil.getStrings(project.getPropertyOwner(), EXCLUDE_FILTER_KEY));
+	}
+	
+	public static void setExclusionFilter(MoSyncProject project, PathExclusionFilter filter) {
+		PropertyUtil.setStrings(project.getPropertyOwner(), EXCLUDE_FILTER_KEY, filter.getFileSpecs());
 	}
 	
 	public String getContext() {

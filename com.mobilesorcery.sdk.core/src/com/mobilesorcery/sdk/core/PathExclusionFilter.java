@@ -10,26 +10,145 @@
 
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
-*/
+ */
 package com.mobilesorcery.sdk.core;
 
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 
 import org.eclipse.cdt.internal.ui.util.StringMatcher;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 
-
 public class PathExclusionFilter implements IFilter<IResource> {
+
+	private final static int NEUTRAL = 0;
+	private final static int INCLUDE = 1;
+	private final static int EXCLUDE = -INCLUDE;
+
+	static class InternalFilter {
+		private String filespec;
+		private StringMatcher matcher;
+		private boolean exclude;
+
+		public InternalFilter(String filespec, boolean exclude) {
+			this.filespec = filespec;
+			Path filePath = new Path(filespec);
+			this.matcher = new StringMatcher(filePath.toPortableString(), true, false);
+			this.exclude = exclude;
+		}
+		
+		private InternalFilter(InternalFilter prototype) {
+			this(prototype.filespec, prototype.exclude);
+		}
+
+		public int accept(IResource resource) {
+			boolean isDirectoryFilter = resource.getProject().getLocation().append(new Path(filespec)).toFile().isDirectory();
+			boolean match = matcher.match(resource.getProjectRelativePath().toPortableString());
+			if (match) {
+				return exclude ? EXCLUDE : INCLUDE;
+			} else if (isDirectoryFilter && resource.getType() != IResource.PROJECT && resource.getType() != IResource.ROOT) {
+				return accept(resource.getParent());
+			}
+			
+			return NEUTRAL;
+		}
+
+		public static InternalFilter parse(String filespec) {
+			if (filespec.charAt(0) == '+') {
+				return parse(filespec.substring(1)).inverse();
+			} else if (filespec.charAt(0) == '-') {
+				return parse(filespec.substring(1));
+			}
+			
+			return new InternalFilter(filespec, true);
+		}
+
+		public InternalFilter inverse() {
+			InternalFilter copy = new InternalFilter(this);
+			copy.exclude = !exclude;
+			return copy;
+		}
+		
+		public boolean equals(Object o) {
+			if (o instanceof InternalFilter) {
+				return equals((InternalFilter) o);
+			}
+			
+			return false;
+		}
+		
+		public boolean equals(InternalFilter filter) {
+			if (filter == null) {
+				return false;
+			}
+			
+			return exclude == filter.exclude && filespec.equals(filter.filespec);
+		}
+		
+		public int hashCode() {
+			return new Boolean(exclude).hashCode() ^ filespec.hashCode();
+		}
+
+		public String getFileSpec() {
+			String prefix = exclude ? "" : "+";
+			return prefix + filespec;
+		}
+		
+		public String toString() {
+			return getFileSpec();
+		}
+	}
 	
-	private int NEUTRAL = 0;
-	private int INCLUDE = 1;
-	private int EXCLUDE = -INCLUDE;
-	
-	private String[] filespecs;
+	// Todo: create 'internal filters' instead of string[]
+	private List<InternalFilter> filters = new ArrayList<InternalFilter>();
 
 	PathExclusionFilter(String[] filespecs) {
-		this.filespecs = filespecs;
+		filters = parseFilters(filespecs, true);
+	}
+
+	private PathExclusionFilter(List<InternalFilter> filters) {
+		this.filters = normalize(filters);
+	}
+	
+	private List<InternalFilter> normalize(List<InternalFilter> filters) {
+		HashSet<InternalFilter> added = new HashSet<InternalFilter>();
+		ArrayList<InternalFilter> newFilters = new ArrayList<InternalFilter>();
+		
+		for (InternalFilter filter : filters) {
+			// No duplicates, please
+			if (!added.contains(filter)) {
+				// And some may cancel each other out
+				if (added.contains(filter.inverse())) {
+					newFilters.remove(filter.inverse());
+					added.remove(filter.inverse());
+				} else {
+					newFilters.add(filter);
+					added.add(filter);
+				}
+			}
+		}
+		
+		return newFilters;
+	}
+	
+	private List<InternalFilter> parseFilters(String[] filespecs, boolean exclude) {
+		List<InternalFilter> filters = new ArrayList<InternalFilter>();
+		for (int i = 0; i < filespecs.length; i++) {
+			if (!Util.isEmpty(filespecs[i])) {
+				InternalFilter parsedFilter = InternalFilter.parse(filespecs[i]);
+				if (!exclude) {
+					parsedFilter = parsedFilter.inverse();
+				}
+				
+				filters.add(parsedFilter);
+			}
+		}
+	
+		return normalize(filters);
 	}
 
 	public static PathExclusionFilter parse(String[] filespecs) {
@@ -37,37 +156,65 @@ public class PathExclusionFilter implements IFilter<IResource> {
 	}
 
 	public boolean accept(IResource resource) {
-		boolean result = !inverseAccept(resource);
+		return !inverseAccept(resource);
+	}
+	
+	public boolean inverseAccept(IResource resource) {
+		int state = NEUTRAL;
+		for (int i = 0; i < filters.size(); i++) {
+			int newState = filters.get(i).accept(resource);
+			state = newState == NEUTRAL ? state : newState;
+		}
+
+		boolean result = state == EXCLUDE;
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-			CoreMoSyncPlugin.trace("{0} {1}", resource.getFullPath(), result ? "Accepted" : "NOT accepted");
+			CoreMoSyncPlugin.trace("{0} {1}", resource.getFullPath(),
+					result ? "Accepted" : "NOT accepted");
 		}
 		return result;
 	}
-	
-	boolean inverseAccept(IResource resource) {
-		int state = NEUTRAL;
-		for (int i = 0; i < filespecs.length; i++) {
-			if (!Util.isEmpty(filespecs[i]) && accept(resource, filespecs[i])) {
-				return true;
-			}
+
+	public PathExclusionFilter addExclusions(List<String> filespecs, boolean excluded) {
+		List<InternalFilter> newFilespecs = new ArrayList<InternalFilter>(filters);
+		newFilespecs.addAll(parseFilters(filespecs.toArray(new String[0]), excluded));
+		return new PathExclusionFilter(newFilespecs);
+	}
+
+
+	/**
+	 * Convenience method to set the excluded / included state
+	 * of a set of resources. This method will automatically determine
+	 * which project each resource belongs to and update the corresponding
+	 * exclusion filter (if applicable).
+	 * @param resources
+	 * @param excluded
+	 */
+	public static void setExcluded(List<IResource> resources, boolean excluded) {
+		for (IResource resource : resources) {
+			MoSyncProject project = MoSyncProject.create(resource.getProject());
+			IPath path = resource.getProjectRelativePath();
+			setExcluded(project, path, excluded);
 		}
-		
-		return false;
 	}
 	
-	protected boolean accept(IResource resource, String filespec) {
-		if (filespec.charAt(0) == '+') {
-			return !accept(resource, filespec.substring(1));
-		} else if (filespec.charAt(0) == '-') {
-			return accept(resource, filespec.substring(1));
+	private static void setExcluded(MoSyncProject project, IPath path, boolean excluded) {
+		PathExclusionFilter filter = MoSyncProject.getExclusionFilter(project);
+		filter = filter.addExclusions(Arrays.asList(path.toPortableString()), excluded);
+		MoSyncProject.setExclusionFilter(project, filter);
+	}
+
+	/**
+	 * Returns a string array that can be used to construct
+	 * a new, equals path exclusion filter.
+	 * @return
+	 */
+	public String[] getFileSpecs() {
+		ArrayList<String> result = new ArrayList<String>();
+		for (InternalFilter filter : filters) {
+			result.add(filter.getFileSpec());
 		}
 		
-		Path filePath = new Path(filespec);
-		return new StringMatcher(filePath.toPortableString(), true, false).match(resource.getProjectRelativePath().toPortableString());
-	}
-	
-	public static void addExclusionFilter(String filter, MoSyncProject project) {
-		
+		return result.toArray(new String[0]);
 	}
 
 }
