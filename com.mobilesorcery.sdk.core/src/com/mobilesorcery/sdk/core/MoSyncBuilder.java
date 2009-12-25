@@ -592,9 +592,6 @@ public class MoSyncBuilder extends ACBuilder {
 			// if some library that our project depends on is changed.
 			boolean requiresLinking = allAffectedResources.length > 0;
 			if (!requiresLinking) {
-				// Please note; if libraries added/removed we'll always
-				// do a full rebuild, hence we need not consider it right now.
-				// Beware of future bugs, though.
 				long librariesTouched = mosyncProject.getLibraryLookup(
 						buildProperties).getLastTouched();
 				long programCombTouched = programComb.toFile().lastModified();
