@@ -148,7 +148,12 @@ public class PipeTool {
         try {
             assertArgLength(args);
             
-            outputFile.toFile().getParentFile().mkdirs();
+            boolean ensureOutputFileParentExists = outputFile.toFile().getParentFile().mkdirs();
+            if (ensureOutputFileParentExists && CoreMoSyncPlugin.getDefault().isDebugging()) {
+            	CoreMoSyncPlugin.trace("Created directory {0}", outputFile.toFile().getParentFile());
+            }
+            
+            getExecDir().mkdirs();
             
             // Note where it's executed - this is where the sld will end up.
             Process process = DebugPlugin.exec((String[]) args.toArray(new String[0]), getExecDir());
@@ -242,6 +247,7 @@ public class PipeTool {
 
     public File getExecDir() {
     	return getExecDir(project);
+    	//return outputFile.toFile().getParentFile();
     }
 
     private static File getExecDir(IProject project) {

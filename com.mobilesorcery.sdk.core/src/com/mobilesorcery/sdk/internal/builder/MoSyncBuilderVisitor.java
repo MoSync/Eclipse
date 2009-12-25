@@ -284,7 +284,8 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     }
 
     private static String assembleIncludeString(IPath includePath) {
-        return "-I\"" + includePath.toOSString() + "\"";
+    	// Remove trailing separator, otherwise the \ will be considered an escape char.
+        return "-I\"" + includePath.removeTrailingSeparator().toOSString() + "\"";
     }
 
     public IPath mapFileToOutput(IResource file) {

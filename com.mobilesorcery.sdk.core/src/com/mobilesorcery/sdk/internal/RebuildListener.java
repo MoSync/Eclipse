@@ -19,6 +19,7 @@ import java.text.MessageFormat;
 
 import org.eclipse.cdt.core.model.CoreModel;
 import org.eclipse.cdt.core.model.ICProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -63,7 +64,9 @@ public class RebuildListener implements PropertyChangeListener {
         Job job = new Job("Building for target profile") {
             protected IStatus run(IProgressMonitor monitor) {
                 try {
-                    new MoSyncBuilder().fullBuild(project.getWrappedProject(), targetProfile, true, false, monitor);
+                	monitor.beginTask("Building", 2);
+                	project.getWrappedProject().refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
+                    new MoSyncBuilder().fullBuild(project.getWrappedProject(), targetProfile, true, false, new SubProgressMonitor(monitor, 1));
                 } catch (CoreException e) {
                     return new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, MessageFormat.format(
                             "Could not build for target {0}. Root cause: {1}", targetProfile, e.getMessage()), e);

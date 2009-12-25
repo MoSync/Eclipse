@@ -747,7 +747,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		if (configurations.isEmpty()) {
 			configurations.put("Release", new BuildConfiguration(this, IBuildConfiguration.RELEASE_ID));
 			configurations.put("Debug", new BuildConfiguration(this, IBuildConfiguration.DEBUG_ID));
-			configurations.put("Test", new BuildConfiguration(this, IBuildConfiguration.TEST_ID));
+			//configurations.put("Test", new BuildConfiguration(this, IBuildConfiguration.TEST_ID));
 			setActiveBuildConfiguration("Release");
 		}
 	}
@@ -766,7 +766,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
 	public LibraryLookup getLibraryLookup(IPropertyOwner buildProperties) {
 		// TODO: cache?
-		return new LibraryLookup(MoSyncBuilder.getLibraryPaths(buildProperties), MoSyncBuilder.getLibraries(buildProperties));
+		return new LibraryLookup(MoSyncBuilder.getLibraryPaths(getWrappedProject(), buildProperties), MoSyncBuilder.getLibraries(buildProperties));
 	}
 
 

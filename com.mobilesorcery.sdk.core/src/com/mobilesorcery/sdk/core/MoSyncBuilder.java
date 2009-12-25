@@ -566,7 +566,14 @@ public class MoSyncBuilder extends ACBuilder {
 							ResourcesPlugin.getWorkspace());
 			projectDependencyMgr.setDependencies(project, projectDependencies);
 
-			epm.reportProblems();
+			try {
+				epm.reportProblems();
+			} catch (Exception e) {
+				// We could get a concurrency error here, but usually no big deal.
+			    // Still, log it and consider a proper fix later.
+				CoreMoSyncPlugin.getDefault().log(e);
+			}
+			
 			monitor.worked(1);
 
 			if (monitor.isCanceled()) {
@@ -598,7 +605,7 @@ public class MoSyncBuilder extends ACBuilder {
 				boolean librariesNewer = librariesTouched > programCombTouched;
 				requiresLinking = librariesNewer;
 
-				if (librariesNewer) {
+				if (librariesNewer && programCombTouched > 0) {
 					console
 							.addMessage("Libraries have changed, will require re-linking");
 				}
@@ -614,7 +621,7 @@ public class MoSyncBuilder extends ACBuilder {
 				IPath libraryOutput = computeLibraryOutput(mosyncProject,
 						buildProperties);
 				pipeTool.setOutputFile(isLib ? libraryOutput : program);
-				pipeTool.setLibraryPaths(getLibraryPaths(buildProperties));
+				pipeTool.setLibraryPaths(getLibraryPaths(project, buildProperties));
 				pipeTool.setLibraries(getLibraries(buildProperties));
 				pipeTool.setDeadCodeElimination(elim);
 				pipeTool.setCollectStabs(true);
@@ -716,6 +723,8 @@ public class MoSyncBuilder extends ACBuilder {
 			epm.reportProblems();
 			if (!buildResult.success() && !hasErrorMarkers(project)) {
 				addBuildFailedMarker(project);
+			} else if (buildResult.success()) {
+				clearCMarkers(project);
 			}
 		}
 	}
@@ -899,10 +908,13 @@ public class MoSyncBuilder extends ACBuilder {
 			IPropertyOwner buildProperties) {
 		ArrayList<IPath> result = new ArrayList<IPath>();
 		if (!PropertyUtil.getBoolean(project, IGNORE_DEFAULT_INCLUDE_PATHS)) {
+			// TODO: Too much 'secret sauce' here; add special dialogs for this instead,
+			// like JDT, to allow user to control this better. Like %output%?			
 			result.addAll(Arrays.asList(MoSyncTool.getDefault()
 					.getMoSyncDefaultIncludes()));
 			result.addAll(Arrays.asList(getProfileIncludes(project
 					.getTargetProfile())));
+			result.add(getOutputPath(project.getWrappedProject(), buildProperties).removeTrailingSeparator());
 		}
 
 		IPath[] additionalIncludePaths = PropertyUtil.getPaths(buildProperties,
@@ -931,7 +943,7 @@ public class MoSyncBuilder extends ACBuilder {
 		return profilePath == null ? new IPath[0] : new IPath[] { profilePath };
 	}
 
-	public static IPath[] getLibraryPaths(IPropertyOwner buildProperties) {
+	public static IPath[] getLibraryPaths(IProject project, IPropertyOwner buildProperties) {
 		ArrayList<IPath> result = new ArrayList<IPath>();
 		if (!PropertyUtil.getBoolean(buildProperties,
 				IGNORE_DEFAULT_LIBRARY_PATHS)) {
