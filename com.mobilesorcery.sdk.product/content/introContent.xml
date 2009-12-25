@@ -12,7 +12,6 @@
     
     <!--  Example page -->
     <page id="examples" content="examples.xhtml" />
-    <page id="examples_old" content="examples_old.xhtml" />
     <page id="reading" content="reading.xhtml" />
     
 </introContent>

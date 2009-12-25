@@ -2,13 +2,21 @@
  * Set up the content for the root page.
  */
 html, body {
-	/*background-image : url("../images/background.jpg");*/
 	background-repeat : no-repeat;
 	background-position : center center;
 	background-attachment : fixed;
 	overflow : auto;
 	overflow-clip: rect(0, auto, auto, 0);
 	background-color : #ffffff;
+	margin: 0;
+	padding: 0;
+	height: 100%;	
+}
+
+div {
+	margin: 0px;
+	padding: 0px;
+	border: 0px;
 }
 
 img {
@@ -20,41 +28,84 @@ body, p, td, th
 	font-family: Verdana, Arial, Helvetica, sans-serif;
 	line-height:1.5;
 	color:#000000;
+	margin: 0;
+	padding: 0;
 }
 
-#page-text {
-	padding-bottom: 50px;
+body {
+	width: 100%;
+	height: 100%;
+}
+
+#page-content {
+	width: 99%;
+	height: 100%;
+	min-height: 484px;
+	background-color: #ced8e1;
+	}
+
+#intro-header {
+	width: 100%;
+	background-color: black;
+	position: fixed;
+	bottom: 0;
+}
+
+#page-main {
+	width: 100%;
+	height: 85%;
 	font-size: .775em;
+	margin: 0;
 	
 }
 
-#page-content #top-left {
-  	border: none; 
+#page-main #main-box-table {
+	width: 99%;
+	height: 97%;
+	margin: 0px auto;
+	vertical-align: top;
+}
+
+#page-main #main-box-table  tr td{
+ 	height: 35%;
+ 	margin: 10px;
+}
+
+#page-main .main-box {
   	float: left; 
-  	margin: 0px; 
-  	padding: 0px; 
-  	width: 49%;
-  	clear: left;
-}
-#page-content #top-right {
-	border: none; 
-	float: right; 
-	margin: 0px; 
-	padding: 0px; 
-	width: 49%;
-	clear: right;
-}
+  	min-height: 180px;	
+  	min-width: 400px;
+  	margin: 5px;
+  	padding: 0;
+	width: 98%;
+	height: 98%;
+	background-image: url('../images/mainbox_bg.png');
 
 
+}
+
+#page-main .main-box .inner-box{
+	width: 100%;
+	height: 100%;
+  	min-height: 100%;
+	margin-top: -15px;
+}
+
+#page-main .main-box .inner-box .title h1{
+	margin-top: 10px;
+}
+
+#page-main .main-box .inner-box .content {
+	width: 90%;
+	height: 100%;
+	margin-left: 40px;
+	display: block;
+}
 
 
 #page-content #footer {
-	position: fixed;
-	bottom:0px;
-	left: 0px;
 	width:100%;
-	height:20px;
-	background-color: #000000;
+	background: black
 }
 
 #page-content #footer p {
@@ -63,38 +114,71 @@ body, p, td, th
 	text-align: center;
 }
 
-div.content {
-	position: relative;
-	min-height: 100px;
+.roundtopleft {
+  	border: none; 
+  	float: left; 
+  	width:  15px;  	
+  	height: 15px;
+	background-image: url('../images/tl.png');
+	display: block;
 }
 
-a.content-link img {
-	background-image: url("../images/mosyncicon.jpg");
-	width: 48px;
-	height: 48px;
-
+.roundtopright {
+  	border: none; 
+  	float: right; 
+  	width:  15px;  	
+  	height: 15px;
+	background-image: url('../images/tr.png');
+	display: block;
 }
 
-a.content-link:hover img {
-	background-image: url("../images/mosyncicon_pressed.jpg");
+.roundbottomleft {
+  	border: 0px;
+  	float: left; 
+  	width:  15px;  	
+  	height: 15px;
+	background-image: url('../images/bl.png');
+	display: block;
+}
+
+.roundbottomright {
+  	border: 0; 
+  	float: right; 
+  	width:  15px;  	
+  	height: 15px;
+	background-image: url('../images/br.png');
+	display: block;
+}
+.title {
+	margin-left: -20px;
+}
+
+.title img {
+	float: left;
+}
+
+.title h1 {
+	float: left;
+	font-size: 1.5em;
+}
+
+.sub-box {
+	width: 165px;
+	height: 130px;
+	float: left;
+}
+
+.sub-box2 {
+	width: 165px;
+	margin-top: -5px;
+	float: left;
 }
 
 
-
-span.content-text{
-	position: absolute;
-	top: 0px;
-	left: 60px;
-	font-size: .775em;
-	width: 80%;
-	color: #000000;
-}
-
-
-
-a{
+a {
 	color: #20acc5;
 	text-decoration: none;
+	font-weight: bold;
 }
 
 a:hover{
@@ -128,6 +212,10 @@ a .text {
 
 .content-link {
 	cursor: pointer;
+}
+
+.clear {
+	clear: both;
 }
 
 

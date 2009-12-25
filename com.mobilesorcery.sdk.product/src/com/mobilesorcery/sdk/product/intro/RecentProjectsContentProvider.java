@@ -28,19 +28,29 @@ public class RecentProjectsContentProvider extends LinkContentProvider {
 		ChooseWorkspaceData data = new ChooseWorkspaceData("");
 		String[] recentWS = data.getRecentWorkspaces();
 		int wsCount = 0;
-		
-		// Always add the example workspace at the top.
-		createWorkspaceLink(getExampleWorkspace().getAbsolutePath(), parent);
 
+		addBreak(parent);
+		
 		for (int i = 0; i < recentWS.length; i++) {
 			if (recentWS[i] != null && wsCount < MAX_WS_COUNT && !isExampleWorkspace(recentWS[i])) {
 				createWorkspaceLink(recentWS[i], parent);
 				wsCount++;
 			}
 		}
+
+		// Always add the example workspace at the bottom.
+		if (wsCount > 0) {
+			addBreak(parent);
+		}
+		createWorkspaceLink(getExampleWorkspace().getAbsolutePath(), parent);
+
 	}
 
-
+	private void addBreak(Element parent) {
+		Element br = parent.getOwnerDocument().createElement("br");
+		parent.appendChild(br);	
+	}
+	
 	private void createWorkspaceLink(String ws, Element parent) {
 		createActionLink("com.mobilesorcery.sdk.product.intro.actions.SwitchWorkspaceAction", ws, getWorkspaceName(ws), parent, 1);		
 	}

@@ -1,8 +1,8 @@
 <intro>
-<link type="example" href="AdvGraphics" desc="AdvGraphics 1" scope="short" />
-<link type="example" href="AdvGraphics" desc="AdvGraphics 2" scope="short" />
-<link type="example" href="AdvGraphics" desc="AdvGraphics 3" scope="short,full" />
-<link type="example" href="AdvGraphics" desc="AdvGraphics 4" scope="full" />
+<link type="example" href="3dLines" desc="3D Lines Example" scope="short" />
+<link type="example" href="AdvGraphics" desc="Advanced Graphics Example" scope="short" />
+<link type="example" href="MoTris" desc="MoTris Example" scope="short,full" />
+<link type="example" href="MoTooth" desc="Bluetooth Example" scope="full" />
 <link type="guide" href="http://www.mosync.com/node/330/play" desc="Quickstart Guide" />
 <link type="screencast" href="http://www.mosync.com/node/330/play" desc="Quickstart Screencast" />
 <link type="reading" href="/com.mobilesorcery.sdk.help/docs/index.html" desc="Index!" scope="short,full" />

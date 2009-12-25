@@ -34,8 +34,10 @@ public class ImportExampleAction implements IIntroAction {
 		boolean success = false;
 		String extension = params.getProperty("extension");
 		
-		if (params.containsKey("example")) { //$NON-NLS-1$ //$NON-NLS-2$
-			String example = params.getProperty("example"); //$NON-NLS-1$
+		String example = params.getProperty("href");
+		example = example == null ? params.getProperty("example") : example;
+		
+		if (example != null) { //$NON-NLS-1$ //$NON-NLS-2$
 			extension = extension == null ? "mopro" : params.getProperty("extension"); //$NON-NLS-1$
 			String extradir = ""; //$NON-NLS-1$
 			if (params.containsKey("extradir")) { //$NON-NLS-1$
