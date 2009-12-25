@@ -182,27 +182,34 @@ public class PathExclusionFilter implements IFilter<IResource> {
 
 
 	/**
-	 * Convenience method to set the excluded / included state
+	 * <p>Convenience method to set the excluded / included state
 	 * of a set of resources. This method will automatically determine
 	 * which project each resource belongs to and update the corresponding
-	 * exclusion filter (if applicable).
+	 * exclusion filter (if applicable).</p>
 	 * @param resources
 	 * @param excluded
+	 * @return The number of resources that was actually added to the list of
+	 * excluded/included list; if a filter already filters a resource, it will
+	 * not be added.
 	 */
-	public static void setExcluded(List<IResource> resources, boolean excluded) {
+	public static int setExcluded(List<IResource> resources, boolean excluded) {
+		int added = 0;
 		for (IResource resource : resources) {
 			MoSyncProject project = MoSyncProject.create(resource.getProject());
 			IPath path = resource.getProjectRelativePath();
-			setExcluded(project, path, excluded);
+			PathExclusionFilter filter = MoSyncProject.getExclusionFilter(project);
+			boolean accept = filter.accept(resource);
+			boolean shouldAdd = excluded ? accept : !accept;
+			if (shouldAdd) {
+				added++;
+				filter = filter.addExclusions(Arrays.asList(path.toPortableString()), excluded);
+				MoSyncProject.setExclusionFilter(project, filter);				
+			}
 		}
+		
+		return added;
 	}
 	
-	private static void setExcluded(MoSyncProject project, IPath path, boolean excluded) {
-		PathExclusionFilter filter = MoSyncProject.getExclusionFilter(project);
-		filter = filter.addExclusions(Arrays.asList(path.toPortableString()), excluded);
-		MoSyncProject.setExclusionFilter(project, filter);
-	}
-
 	/**
 	 * Returns a string array that can be used to construct
 	 * a new, equals path exclusion filter.

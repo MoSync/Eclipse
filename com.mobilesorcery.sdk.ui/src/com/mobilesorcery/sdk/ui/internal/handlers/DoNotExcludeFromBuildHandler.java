@@ -15,6 +15,8 @@ package com.mobilesorcery.sdk.ui.internal.handlers;
 
 public class DoNotExcludeFromBuildHandler extends ExcludeFromBuildHandler {
 
+	public final static String COMMAND_ID = "com.mobilesorcery.sdk.ui.donotexcludefrombuild";
+
 	protected boolean shouldExclude() {
 		return false;
 	}

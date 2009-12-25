@@ -26,7 +26,6 @@ public class IsExcludableFromBuildTester extends MoSyncNatureTester {
 		if (project != null) {
 			List<IResource> resources = extractApplicableResources(receiver,
 					property, args, expectedValue);
-			System.err.println(expectedValue + "; " + resources);
 			return resources.size() > 0;
 		}
 		

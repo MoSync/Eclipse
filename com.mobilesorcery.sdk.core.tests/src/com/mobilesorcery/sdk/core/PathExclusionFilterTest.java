@@ -18,6 +18,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Arrays;
+
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -35,6 +38,7 @@ public class PathExclusionFilterTest {
 		try {
 			project = ResourcesPlugin.getWorkspace().getRoot().getProject("project");
 			project.create(null);
+			MoSyncNature.addNatureToProject(project);
 		} catch (CoreException e) {
 			e.printStackTrace();
 		}
@@ -75,8 +79,20 @@ public class PathExclusionFilterTest {
 		assertEquals(0, filter.getFileSpecs().length);
 	}
 	
+	@Test 
+	public void testSubDuplicates() throws CoreException {
+		assertEquals(1, PathExclusionFilter.setExcluded(Arrays.asList(new IResource[] { createResource("a") }), true));
+		createFolder("a").create(true, true, null);
+		int added = PathExclusionFilter.setExcluded(Arrays.asList(new IResource[] { createResource("a/a.h"), createResource("b") }), true);
+		assertEquals("a/a.h should not be added if a already added", 1, added);
+	}
+	
 	private IResource createResource(String path) {
 		return project.getFile(path);
+	}
+	
+	private IFolder createFolder(String path) {
+		return project.getFolder(path);
 	}
 	
 }
