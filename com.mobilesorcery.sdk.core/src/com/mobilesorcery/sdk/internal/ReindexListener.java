@@ -89,6 +89,8 @@ public class ReindexListener implements PropertyChangeListener {
 	private boolean propertyIsApplicable(String propertyName) {
 		return MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS == propertyName
 		|| MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS == propertyName
-		|| MoSyncBuilder.EXTRA_COMPILER_SWITCHES == propertyName;
+		|| MoSyncBuilder.EXTRA_COMPILER_SWITCHES == propertyName
+		|| MoSyncProject.BUILD_CONFIGURATION_CHANGED == propertyName
+		|| MoSyncProject.BUILD_CONFIGURATION_SUPPORT_CHANGED == propertyName;
 	}
 }
