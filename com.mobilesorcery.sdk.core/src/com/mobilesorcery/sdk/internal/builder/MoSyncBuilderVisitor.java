@@ -199,7 +199,14 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             IPath xgcc = MoSyncTool.getDefault().getMoSyncBin().append("xgcc.exe");
 
             MoSyncProject project = MoSyncProject.create(resource.getProject());
-            String[] includeStr = assembleIncludeString(MoSyncBuilder.getIncludePaths(project));
+            List<IPath> includePaths = new ArrayList<IPath>(Arrays.asList(MoSyncBuilder.getIncludePaths(project)));
+            
+            // TODO: We should have proper include path 'containers' with variables and all. But
+            // for now we'll hard code it. Also, we should kill the include default check box
+            // in the build settings dialog and create a more CDT like interface (or reuse)
+            includePaths.add(outputPath);
+            
+            String[] includeStr = assembleIncludeString(includePaths.toArray(new IPath[0]));
             //String[] profileIncludesStr = assembleIncludeString(getProfileIncludes(profile));
 
             ArrayList<String> args = new ArrayList<String>();

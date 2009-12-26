@@ -565,15 +565,6 @@ public class MoSyncBuilder extends ACBuilder {
 					.getDefault().getProjectDependencyManager(
 							ResourcesPlugin.getWorkspace());
 			projectDependencyMgr.setDependencies(project, projectDependencies);
-
-			try {
-				epm.reportProblems();
-			} catch (Exception e) {
-				// We could get a concurrency error here, but usually no big deal.
-			    // Still, log it and consider a proper fix later.
-				CoreMoSyncPlugin.getDefault().log(e);
-			}
-			
 			monitor.worked(1);
 
 			if (monitor.isCanceled()) {
@@ -720,8 +711,10 @@ public class MoSyncBuilder extends ACBuilder {
 			throw new CoreException(new Status(IStatus.ERROR,
 					CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
 		} finally {
-			epm.reportProblems();
-			if (!buildResult.success() && !hasErrorMarkers(project)) {
+			if (!isFinalizerBuild) {
+				epm.reportProblems();
+			}
+			if (!monitor.isCanceled() && !buildResult.success() && !hasErrorMarkers(project)) {
 				addBuildFailedMarker(project);
 			} else if (buildResult.success()) {
 				clearCMarkers(project);

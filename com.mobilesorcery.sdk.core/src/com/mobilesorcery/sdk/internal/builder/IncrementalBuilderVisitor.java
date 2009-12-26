@@ -57,7 +57,7 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 		return true;
 	}
 
-	public void setChangedOrAddedResources(IResource[] changedOrAddedResources) {
+	public void addChangedOrAddedResources(IResource[] changedOrAddedResources) {
 		if (this.changedOrAddedResources == null) {
 			this.changedOrAddedResources = new ArrayList<IResource>();
 		}
@@ -70,7 +70,7 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 		}
 	}
 
-	public void setDeletedResources(IResource[] deletedResources) {
+	public void addDeletedResources(IResource[] deletedResources) {
 		if (this.deletedResources == null) {
 			this.deletedResources = new ArrayList<IResource>();
 		}
@@ -94,7 +94,7 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 							| IResourceDelta.CHANGED));
 		}
 
-		setChangedOrAddedResources(changedOrAddedResources);
+		addChangedOrAddedResources(changedOrAddedResources);
 	}
 
 	public IResource[] getChangedOrAddedResources() {
@@ -109,7 +109,7 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 					.getAffectedChildren(IResourceDelta.REMOVED));
 		}
 
-		setDeletedResources(deletedResources);
+		addDeletedResources(deletedResources);
 	}
 
 	public IResource[] getDeletedResources() {

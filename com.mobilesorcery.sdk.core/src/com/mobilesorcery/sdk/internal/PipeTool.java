@@ -246,8 +246,8 @@ public class PipeTool {
     }
 
     public File getExecDir() {
-    	return getExecDir(project);
-    	//return outputFile.toFile().getParentFile();
+    	//return getExecDir(project);
+    	return outputFile.toFile().getParentFile();
     }
 
     private static File getExecDir(IProject project) {
