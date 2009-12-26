@@ -901,13 +901,11 @@ public class MoSyncBuilder extends ACBuilder {
 			IPropertyOwner buildProperties) {
 		ArrayList<IPath> result = new ArrayList<IPath>();
 		if (!PropertyUtil.getBoolean(project, IGNORE_DEFAULT_INCLUDE_PATHS)) {
-			// TODO: Too much 'secret sauce' here; add special dialogs for this instead,
-			// like JDT, to allow user to control this better. Like %output%?			
 			result.addAll(Arrays.asList(MoSyncTool.getDefault()
 					.getMoSyncDefaultIncludes()));
 			result.addAll(Arrays.asList(getProfileIncludes(project
 					.getTargetProfile())));
-			result.add(getOutputPath(project.getWrappedProject(), buildProperties).removeTrailingSeparator());
+			//result.add(getOutputPath(project.getWrappedProject(), buildProperties).removeTrailingSeparator());
 		}
 
 		IPath[] additionalIncludePaths = PropertyUtil.getPaths(buildProperties,

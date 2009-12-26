@@ -201,9 +201,8 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             MoSyncProject project = MoSyncProject.create(resource.getProject());
             List<IPath> includePaths = new ArrayList<IPath>(Arrays.asList(MoSyncBuilder.getIncludePaths(project)));
             
-            // TODO: We should have proper include path 'containers' with variables and all. But
-            // for now we'll hard code it. Also, we should kill the include default check box
-            // in the build settings dialog and create a more CDT like interface (or reuse)
+			// TODO: Too much 'secret sauce' here; add special dialogs for this instead,
+			// like JDT/CDT, to allow user to control this better. Like %output%?			
             includePaths.add(outputPath);
             
             String[] includeStr = assembleIncludeString(includePaths.toArray(new IPath[0]));
