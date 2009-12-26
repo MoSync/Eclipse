@@ -51,7 +51,7 @@ public class MoSyncIconBuilderVisitor extends IncrementalBuilderVisitor {
 
 	public boolean doesAffectBuild(IResource resource) {
 		if (resource.getType() == IResource.FILE) {
-			return resource.getName().endsWith(".icon");
+			return resource.getName().endsWith(".icon") && super.doesAffectBuild(resource);
 		}
     	return false;
     }

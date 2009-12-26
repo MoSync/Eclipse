@@ -327,7 +327,8 @@ public class MoSyncBuilder extends ACBuilder {
 		IResourceDelta[] deltas = kind == FULL_BUILD ? null
 				: getDeltas(getProject());
 		boolean doPack = kind == FULL_BUILD;
-		incrementalBuild(project, deltas, targetProfile, false, doPack, monitor);
+		incrementalBuild(project, deltas, targetProfile, false, true, doPack,
+				null, true, monitor);
 
 		Set<IProject> dependencies = CoreMoSyncPlugin.getDefault()
 				.getProjectDependencyManager(ResourcesPlugin.getWorkspace())
@@ -337,15 +338,14 @@ public class MoSyncBuilder extends ACBuilder {
 		return dependencies.toArray(new IProject[dependencies.size()]);
 	}
 
-
 	private boolean hasErrorMarkers(IProject project) throws CoreException {
 		return hasErrorMarkers(project, IResource.DEPTH_INFINITE);
 	}
 
-	private boolean hasErrorMarkers(IProject project, int depth) throws CoreException {
+	private boolean hasErrorMarkers(IProject project, int depth)
+			throws CoreException {
 		return project.findMaxProblemSeverity(
-				ICModelMarker.C_MODEL_PROBLEM_MARKER, true,
-				depth) == IMarker.SEVERITY_ERROR;
+				ICModelMarker.C_MODEL_PROBLEM_MARKER, true, depth) == IMarker.SEVERITY_ERROR;
 	}
 
 	private boolean hasConfigChanged(MoSyncProject project) {
@@ -423,6 +423,15 @@ public class MoSyncBuilder extends ACBuilder {
 	public IBuildResult fullBuild(IProject project, IProfile targetProfile,
 			boolean isFinalizerBuild, boolean doClean, IProgressMonitor monitor)
 			throws CoreException {
+		return fullBuild(project, targetProfile, isFinalizerBuild, doClean,
+				true, true, null, true, monitor);
+	}
+
+	public IBuildResult fullBuild(IProject project, IProfile targetProfile,
+			boolean isFinalizerBuild, boolean doClean,
+			boolean doBuildResources, boolean doPack,
+			IFilter<IResource> resourceFilter, boolean doLink,
+			IProgressMonitor monitor) throws CoreException {
 		// TODO: Allow for setting build config explicitly!
 		monitor.beginTask(MessageFormat.format("Full build of {0}", project
 				.getName()), 8);
@@ -433,11 +442,16 @@ public class MoSyncBuilder extends ACBuilder {
 			monitor.worked(1);
 		}
 		return incrementalBuild(project, null, targetProfile, isFinalizerBuild,
-				true, monitor);
+				doBuildResources, doPack, resourceFilter, doLink, monitor);
 	}
 
+	// TODO: Refactor, this is becoming a jack-of-all-trades method, esp. now
+	// with the partial builds as well. Maybe need a new class like 'build
+	// settings' to avoid all setters and this huge method signature...
 	IBuildResult incrementalBuild(IProject project, IResourceDelta[] deltas,
-			IProfile targetProfile, boolean isFinalizerBuild, boolean doPack,
+			IProfile targetProfile, boolean isFinalizerBuild,
+			boolean doBuildResources, boolean doPack,
+			IFilter<IResource> resourceFilter, boolean doLink,
 			IProgressMonitor monitor) throws CoreException {
 
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
@@ -463,9 +477,10 @@ public class MoSyncBuilder extends ACBuilder {
 			// }
 
 			monitor.setTaskName("Clearing old problem markers");
-			
+
 			// And we only remove things that are on the project.
-			boolean hadSevereBuildErrors = hasErrorMarkers(project, IResource.DEPTH_ZERO);
+			boolean hadSevereBuildErrors = hasErrorMarkers(project,
+					IResource.DEPTH_ZERO);
 
 			if (hadSevereBuildErrors) {
 				// Build all
@@ -492,6 +507,10 @@ public class MoSyncBuilder extends ACBuilder {
 				console
 						.addMessage("- go to Window > Preferences > MoSync Tool to set the MoSync home directory");
 			}
+			
+			if (doLink && !doBuildResources) {
+				throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "If resource building is suppressed, then linking should also be."));
+			}
 
 			console.addMessage("Build started at "
 					+ DateFormat.getDateTimeInstance(DateFormat.SHORT,
@@ -517,8 +536,6 @@ public class MoSyncBuilder extends ACBuilder {
 			pipeTool.setConsole(console);
 			pipeTool.setLineHandler(linehandler);
 
-			// First we build the resources...
-			monitor.setTaskName("Assembling resources");
 			MoSyncResourceBuilderVisitor resourceVisitor = new MoSyncResourceBuilderVisitor();
 
 			IPath resource = getResourceOutputPath(project, targetProfile,
@@ -530,8 +547,14 @@ public class MoSyncBuilder extends ACBuilder {
 			resourceVisitor.setDependencyProvider(compilerVisitor
 					.getDependencyProvider());
 			resourceVisitor.setDelta(deltas);
-			resourceVisitor.incrementalCompile(monitor, mosyncProject
-					.getDependencyManager());
+			resourceVisitor.setResourceFilter(resourceFilter);
+			
+			if (doBuildResources) {
+				// First we build the resources...
+				monitor.setTaskName("Assembling resources");
+				resourceVisitor.incrementalCompile(monitor, mosyncProject
+						.getDependencyManager());
+			}
 
 			// ...and then the actual code is compiled
 			IPath compileDir = getCompileOutputPath(project, targetProfile,
@@ -553,7 +576,7 @@ public class MoSyncBuilder extends ACBuilder {
 			compilerVisitor.setLineHandler(linehandler);
 			compilerVisitor.setBuildResult(buildResult);
 			compilerVisitor.setDelta(deltas);
-
+			compilerVisitor.setResourceFilter(resourceFilter);
 			compilerVisitor.incrementalCompile(monitor, mosyncProject
 					.getDependencyManager());
 
@@ -602,6 +625,8 @@ public class MoSyncBuilder extends ACBuilder {
 				}
 			}
 
+			requiresLinking &= doLink;
+			
 			if (ec == 0 && requiresLinking) {
 				boolean elim = !isLib
 						&& PropertyUtil.getBoolean(buildProperties,
@@ -612,7 +637,8 @@ public class MoSyncBuilder extends ACBuilder {
 				IPath libraryOutput = computeLibraryOutput(mosyncProject,
 						buildProperties);
 				pipeTool.setOutputFile(isLib ? libraryOutput : program);
-				pipeTool.setLibraryPaths(getLibraryPaths(project, buildProperties));
+				pipeTool.setLibraryPaths(getLibraryPaths(project,
+						buildProperties));
 				pipeTool.setLibraries(getLibraries(buildProperties));
 				pipeTool.setDeadCodeElimination(elim);
 				pipeTool.setCollectStabs(true);
@@ -670,6 +696,7 @@ public class MoSyncBuilder extends ACBuilder {
 			iconVisitor.setBuildProperties(buildProperties);
 			iconVisitor.setConsole(console);
 			iconVisitor.setDelta(deltas);
+			iconVisitor.setResourceFilter(resourceFilter);
 			iconVisitor.incrementalCompile(monitor, mosyncProject
 					.getDependencyManager());
 
@@ -678,8 +705,8 @@ public class MoSyncBuilder extends ACBuilder {
 				packager.setParameter(IS_FINALIZER_BUILD, Boolean
 						.toString(isFinalizerBuild));
 				packager.setParameter(USE_DEBUG_RUNTIME_LIBS, Boolean
-						.toString(PropertyUtil.getBoolean(mosyncProject.getPropertyOwner(),
-								USE_DEBUG_RUNTIME_LIBS)));
+						.toString(PropertyUtil.getBoolean(mosyncProject
+								.getPropertyOwner(), USE_DEBUG_RUNTIME_LIBS)));
 
 				if (ec == 0) {
 					packager.createPackage(mosyncProject, targetProfile,
@@ -714,7 +741,8 @@ public class MoSyncBuilder extends ACBuilder {
 			if (!isFinalizerBuild) {
 				epm.reportProblems();
 			}
-			if (!monitor.isCanceled() && !buildResult.success() && !hasErrorMarkers(project)) {
+			if (!monitor.isCanceled() && !buildResult.success()
+					&& !hasErrorMarkers(project)) {
 				addBuildFailedMarker(project);
 			} else if (buildResult.success()) {
 				clearCMarkers(project);
@@ -869,7 +897,8 @@ public class MoSyncBuilder extends ACBuilder {
 		if (severity != IMarker.SEVERITY_INFO) {
 			ArrayList<IMarker> toBeRemovedList = new ArrayList<IMarker>();
 			for (int i = 0; i < markers.length; i++) {
-				Object severityOfMarker = markers[i].getAttribute(IMarker.SEVERITY);
+				Object severityOfMarker = markers[i]
+						.getAttribute(IMarker.SEVERITY);
 				if (severityOfMarker instanceof Integer) {
 					if (((Integer) severityOfMarker) >= severity) {
 						toBeRemovedList.add(markers[i]);
@@ -905,7 +934,8 @@ public class MoSyncBuilder extends ACBuilder {
 					.getMoSyncDefaultIncludes()));
 			result.addAll(Arrays.asList(getProfileIncludes(project
 					.getTargetProfile())));
-			//result.add(getOutputPath(project.getWrappedProject(), buildProperties).removeTrailingSeparator());
+			// result.add(getOutputPath(project.getWrappedProject(),
+			// buildProperties).removeTrailingSeparator());
 		}
 
 		IPath[] additionalIncludePaths = PropertyUtil.getPaths(buildProperties,
@@ -934,7 +964,8 @@ public class MoSyncBuilder extends ACBuilder {
 		return profilePath == null ? new IPath[0] : new IPath[] { profilePath };
 	}
 
-	public static IPath[] getLibraryPaths(IProject project, IPropertyOwner buildProperties) {
+	public static IPath[] getLibraryPaths(IProject project,
+			IPropertyOwner buildProperties) {
 		ArrayList<IPath> result = new ArrayList<IPath>();
 		if (!PropertyUtil.getBoolean(buildProperties,
 				IGNORE_DEFAULT_LIBRARY_PATHS)) {

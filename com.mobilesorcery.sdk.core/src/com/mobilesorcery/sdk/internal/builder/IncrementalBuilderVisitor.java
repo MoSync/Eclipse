@@ -26,9 +26,11 @@ import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.PathExclusionFilter;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
 /**
@@ -49,6 +51,7 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	protected IProject project;
 	protected IProcessConsole console;
 	private IPropertyOwner buildProperties;
+	private IFilter<IResource> resourceFilter;
 
 	public boolean visit(IResource resource) throws CoreException {
 		if (doesAffectBuild(resource)) {
@@ -169,7 +172,11 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	public boolean doesAffectBuild(IResource resource) {
 		// TODO: Make this much faster!
 		MoSyncProject project = MoSyncProject.create(this.project);
-		return project == null || MoSyncProject.getExclusionFilter(project).accept(resource);
+		IFilter<IResource> resourceFilter = this.resourceFilter;
+		if (resourceFilter == null) {
+			resourceFilter = MoSyncProject.getExclusionFilter(project);
+		}
+		return project == null || resourceFilter.accept(resource);
 	}
 
 	/**
@@ -223,5 +230,9 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	
 	public IPropertyOwner getBuildProperties() {
 		return buildProperties;
+	}
+	
+	public void setResourceFilter(IFilter<IResource> resourceFilter) {
+		this.resourceFilter = resourceFilter;
 	}
 }

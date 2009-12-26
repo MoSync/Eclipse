@@ -41,8 +41,7 @@ public class ExcludeFromBuildHandler extends AbstractHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		ISelection selection = HandlerUtil.getCurrentSelection(event);
 		if (selection instanceof IStructuredSelection) {
-			List elements = ((IStructuredSelection) selection).toList();
-			List<IResource> resources = extractResources(elements);
+			List<IResource> resources = extractResources(selection);
 
 			PathExclusionFilter.setExcluded(resources, shouldExclude());
 
@@ -52,6 +51,11 @@ public class ExcludeFromBuildHandler extends AbstractHandler {
 		}
 
 		return null;
+	}
+
+	protected List<IResource> extractResources(ISelection selection) {
+		List elements = ((IStructuredSelection) selection).toList();
+		return extractResources(elements);
 	}
 
 	private void refreshCommandState(ExecutionEvent event) {

@@ -251,6 +251,12 @@ icon="icons/launchshortcut.png">
                id="com.mobilesorcery.sdk.ui.donotexcludefrombuild"
                name="Do Not Exclude file from build">
          </command>
+         <command
+               categoryId="com.mobilesorcery.sdk.ui.category.main"
+               description="Compiles a set of files without any linking"
+               id="com.mobilesorcery.sdk.ui.compilefiles"
+               name="Quick Compile">
+         </command>
       </extension>
       <extension
             point="org.eclipse.ui.handlers">
@@ -276,9 +282,42 @@ icon="icons/launchshortcut.png">
                </test>
             </activeWhen>
          </handler>
+                  <handler
+               class="com.mobilesorcery.sdk.ui.internal.handlers.CompileFilesHandler"
+               commandId="com.mobilesorcery.sdk.ui.compilefiles">
+               <activeWhen>
+               <and>
+                     <with
+            variable="selection">
+         <iterate
+               ifEmpty="false"
+               operator="and">
+            <instanceof
+                  value="org.eclipse.cdt.core.model.ITranslationUnit">
+            </instanceof>
+         </iterate>
+      </with>
+      <test
+                           forcePluginActivation="true"
+                     property="com.mobilesorcery.sdk.testers.hasMoreNature">
+      </test>
+      </and>
+                     </activeWhen>
+         </handler>
       </extension>
       <extension
             point="org.eclipse.ui.menus">
+                     <menuContribution
+               locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+            <command
+                  commandId="com.mobilesorcery.sdk.ui.compilefiles"
+                  label="Quick Compile"
+                  style="push">
+               <visibleWhen
+                     checkEnabled="true">
+               </visibleWhen>
+            </command>
+         </menuContribution>
          <menuContribution
                locationURI="popup:org.eclipse.ui.popup.any?after=additions">
             <command
