@@ -20,7 +20,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -32,21 +31,12 @@ import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.MutexSchedulingRule;
 import com.mobilesorcery.sdk.update.UpdateManager;
 
 public class UpdateProfilesAction extends Action implements IWorkbenchWindowActionDelegate {
 
-    static class Mutex implements ISchedulingRule {
-        public boolean isConflicting(ISchedulingRule rule) {
-            return rule == this;
-        }
-
-        public boolean contains(ISchedulingRule rule) {
-            return rule == this;
-        }
-    }
-
-    private final static Mutex updateMutex = new Mutex();
+    private final static MutexSchedulingRule updateMutex = new MutexSchedulingRule();
 
     private final class ProfileDownloadJob extends Job {
         private ProfileDownloadJob(String name) {

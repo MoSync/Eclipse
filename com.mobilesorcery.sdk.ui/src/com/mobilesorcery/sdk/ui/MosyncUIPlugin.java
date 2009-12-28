@@ -10,7 +10,7 @@
 
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
-*/
+ */
 package com.mobilesorcery.sdk.ui;
 
 import java.beans.PropertyChangeEvent;
@@ -42,6 +42,7 @@ import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -69,7 +70,8 @@ import com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator;
 /**
  * The activator class controls the plug-in life cycle
  */
-public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener, ISelectionListener, IProvider<IProcessConsole, String>{
+public class MosyncUIPlugin extends AbstractUIPlugin implements
+		IWindowListener, ISelectionListener, IProvider<IProcessConsole, String> {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.ui";
@@ -77,7 +79,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 	/**
 	 * A property indicating the current project has changed
 	 */
-    public static final String CURRENT_PROJECT_CHANGED = PLUGIN_ID + ":current.project.changed";
+	public static final String CURRENT_PROJECT_CHANGED = PLUGIN_ID
+			+ ":current.project.changed";
 
 	public static final String IMG_OVR_EXCLUDED_RESOURCE = "excl.res";
 
@@ -86,14 +89,14 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 
 	private CopyOnWriteArrayList<ISelectionListener> customSelectionListeners = new CopyOnWriteArrayList<ISelectionListener>();
 
-    private PropertyChangeSupport listeners;
+	private PropertyChangeSupport listeners;
 
-    private boolean listenerAdded;
+	private boolean listenerAdded;
 
-    private IdentityHashMap<IWorkbenchWindow, IProject> currentProjects = new IdentityHashMap<IWorkbenchWindow, IProject>();
+	private IdentityHashMap<IWorkbenchWindow, IProject> currentProjects = new IdentityHashMap<IWorkbenchWindow, IProject>();
 
 	private PropertyChangeListener globalListener;
-    
+
 	/**
 	 * The constructor
 	 */
@@ -138,219 +141,262 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 		return plugin;
 	}
 
-    /**
-     * Convenience method for creating a <code>MoSyncProject</code> at the requested location,
-     * or in the workspace if location is <code>null</code>.
-     * @param project
-     * @param location
-     * @param monitor
-     * @return
-     * @throws CoreException 
-     */
-    public static MoSyncProject createProject(IProject project, URI location, IProgressMonitor monitor) throws CoreException {
-        IWorkspace workspace = ResourcesPlugin.getWorkspace();
-        IProjectDescription description = workspace.newProjectDescription(project.getName());
-        description.setLocationURI(location);
+	/**
+	 * Convenience method for creating a <code>MoSyncProject</code> at the
+	 * requested location, or in the workspace if location is <code>null</code>.
+	 * 
+	 * @param project
+	 * @param location
+	 * @param monitor
+	 * @return
+	 * @throws CoreException
+	 */
+	public static MoSyncProject createProject(IProject project, URI location,
+			IProgressMonitor monitor) throws CoreException {
+		IWorkspace workspace = ResourcesPlugin.getWorkspace();
+		IProjectDescription description = workspace
+				.newProjectDescription(project.getName());
+		description.setLocationURI(location);
 
-        CreateProjectOperation op = new CreateProjectOperation(description, "Create Project");
-        try {
-            op.execute(monitor, null);
-        } catch (ExecutionException e) {
-            throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
-        }
-        
-        MoSyncProject.addNatureToProject(project);
-        MoSyncProject result = MoSyncProject.create(project);
-        result.activateBuildConfigurations();
-        return result;
-    }
+		CreateProjectOperation op = new CreateProjectOperation(description,
+				"Create Project");
+		try {
+			op.execute(monitor, null);
+		} catch (ExecutionException e) {
+			if (e.getCause() instanceof CoreException) {
+				throw (CoreException) e.getCause();
+			} else {
+				throw new CoreException(new Status(IStatus.ERROR,
+						CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
+			}
+		}
 
-    private void initProjectChangeListener() {
-        if (!listenerAdded) {
-            if (PlatformUI.getWorkbench() != null) {
-                PlatformUI.getWorkbench().addWindowListener(this);
-                listenerAdded = true;
+		MoSyncProject.addNatureToProject(project);
+		MoSyncProject result = MoSyncProject.create(project);
+		result.activateBuildConfigurations();
+		return result;
+	}
 
-                IWorkbenchWindow[] windows = PlatformUI.getWorkbench().getWorkbenchWindows();
-                for (int i = 0; i < windows.length; i++) {
-                    windows[i].getSelectionService().addSelectionListener(this);
-                    updateCurrentlySelectedProjectFallback();
-                    updateCurrentlySelectedProject(windows[i]);
-                    updateCurrentlySelectedProject(windows[i], null);
-                }
-            }
-        }
-    }
-    
-    public void addListener(PropertyChangeListener listener) {
-        listeners.addPropertyChangeListener(listener);
-        updateCurrentlySelectedProject(PlatformUI.getWorkbench().getActiveWorkbenchWindow());
-    }
+	private void initProjectChangeListener() {
+		if (!listenerAdded) {
+			if (PlatformUI.getWorkbench() != null) {
+				PlatformUI.getWorkbench().addWindowListener(this);
+				listenerAdded = true;
 
-    public void removeListener(PropertyChangeListener listener) {
-        listeners.removePropertyChangeListener(listener);
-    }
-    public MoSyncProject getCurrentlySelectedProject(IWorkbenchWindow window) {
-    	if (window == null) {
-    		return null;
-    	}
-    	
-        updateCurrentlySelectedProject(window);
-        IProject project = currentProjects.get(window);
+				IWorkbenchWindow[] windows = PlatformUI.getWorkbench()
+						.getWorkbenchWindows();
+				for (int i = 0; i < windows.length; i++) {
+					windows[i].getSelectionService().addSelectionListener(this);
+					updateCurrentlySelectedProjectFallback();
+					updateCurrentlySelectedProject(windows[i]);
+					updateCurrentlySelectedProject(windows[i], null);
+				}
+			}
+		}
+	}
 
-        return project == null ? null : MoSyncProject.create(project);
-    }
+	public void addListener(PropertyChangeListener listener) {
+		listeners.addPropertyChangeListener(listener);
+		updateCurrentlySelectedProject(PlatformUI.getWorkbench()
+				.getActiveWorkbenchWindow());
+	}
 
-    /**
-     * Sets the current project given a set of "common" views that may have a
-     * selected project.
-     */
-    private void updateCurrentlySelectedProjectFallback() {
-        updateCurrentlySelectedProjectFromView("org.eclipse.ui.navigator.ProjectExplorer");
-    }
+	public void removeListener(PropertyChangeListener listener) {
+		listeners.removePropertyChangeListener(listener);
+	}
 
-    private boolean updateCurrentlySelectedProjectFromView(String viewId) {
-        try {
-            IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-            IWorkbenchPage[] pages = window.getPages();
-            for (int i = 0; i < pages.length; i++) {
-                IViewPart view = pages[i].findView(viewId);
-                if (view != null) {
-                    IResource selectedResource = getResource(view.getSite().getSelectionProvider().getSelection());
-                    if (selectedResource != null) {
-                        setCurrentProject(window, selectedResource.getProject());
-                        return true;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // Just ignore, we did the best we could.
-        }
+	public MoSyncProject getCurrentlySelectedProject(IWorkbenchWindow window) {
+		if (window == null) {
+			return null;
+		}
 
-        return false;
-    }
+		updateCurrentlySelectedProject(window);
+		IProject project = currentProjects.get(window);
 
-    private void updateCurrentlySelectedProject(final IWorkbenchWindow window) {
-        initProjectChangeListener();
+		return project == null ? null : MoSyncProject.create(project);
+	}
 
-        window.getWorkbench().getDisplay().asyncExec(new Runnable() {
-            public void run() {
-                ISelection selection = window.getSelectionService().getSelection();
-                IResource selectedResource = getResource(selection);
-                if (selectedResource != null) {
-                    setCurrentProject(window, selectedResource.getProject());
-                }
-            }
-        });
-    }
+	/**
+	 * Sets the current project given a set of "common" views that may have a
+	 * selected project.
+	 */
+	private void updateCurrentlySelectedProjectFallback() {
+		updateCurrentlySelectedProjectFromView("org.eclipse.ui.navigator.ProjectExplorer");
+	}
 
-    private void updateCurrentlySelectedProject(final IWorkbenchWindow window, final IEditorPart editor) {
-        window.getWorkbench().getDisplay().asyncExec(new Runnable() {
-            public void run() {
-                if (editor != null) {
-                    IEditorInput input = editor.getEditorInput();
-                    if (input instanceof IFileEditorInput) {
-                        IFile file = ((IFileEditorInput) input).getFile();
-                        if (file != null) {
-                            setCurrentProject(window, file.getProject());
-                        }
-                    }
-                } else {
-                    IEditorPart activeEditor = window.getActivePage().getActiveEditor();
-                    if (activeEditor != null) {
-                        updateCurrentlySelectedProject(window, activeEditor);
-                    }
-                }
-            }
-        });
-    }
+	private boolean updateCurrentlySelectedProjectFromView(String viewId) {
+		try {
+			IWorkbenchWindow window = PlatformUI.getWorkbench()
+					.getActiveWorkbenchWindow();
+			IWorkbenchPage[] pages = window.getPages();
+			for (int i = 0; i < pages.length; i++) {
+				IViewPart view = pages[i].findView(viewId);
+				if (view != null) {
+					IResource selectedResource = getResource(view.getSite()
+							.getSelectionProvider().getSelection());
+					if (selectedResource != null) {
+						setCurrentProject(window, selectedResource.getProject());
+						return true;
+					}
+				}
+			}
+		} catch (Exception e) {
+			// Just ignore, we did the best we could.
+		}
 
-    private void setCurrentProject(IWorkbenchWindow window, IProject project) {
-        IProject oldProject = currentProjects.get(window);
-        currentProjects.put(window, project);
-        listeners.firePropertyChange(new PropertyChangeEvent(this, CURRENT_PROJECT_CHANGED, oldProject, project));
-    }
+		return false;
+	}
 
-    IResource getResource(ISelection selection) {
-    	if (selection instanceof TreeSelection) {
-    		TreePath[] paths = ((TreeSelection) selection).getPaths();
-    		IResource result = null;
-    		if (paths != null && paths.length > 0) {
-    			Object firstSegment = paths[0].getFirstSegment();
-    			if (firstSegment instanceof IResource) {
-    				result = (IResource) firstSegment;
-    			} else if (firstSegment instanceof IAdaptable) {
-    				result = (IResource) ((IAdaptable) firstSegment).getAdapter(IResource.class);
-    				if (result == null) {
-    					ILaunchConfiguration launchConfig = (ILaunchConfiguration) ((IAdaptable) firstSegment).getAdapter(ILaunchConfiguration.class);
-    					try {
-							result = MoSyncBuilder.getProject(launchConfig);							
+	private void updateCurrentlySelectedProject(final IWorkbenchWindow window) {
+		initProjectChangeListener();
+
+		window.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			public void run() {
+				ISelection selection = window.getSelectionService()
+						.getSelection();
+				IResource selectedResource = getResource(selection);
+				if (selectedResource != null) {
+					setCurrentProject(window, selectedResource.getProject());
+				}
+			}
+		});
+	}
+
+	private void updateCurrentlySelectedProject(final IWorkbenchWindow window,
+			final IEditorPart editor) {
+		window.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			public void run() {
+				if (editor != null) {
+					IEditorInput input = editor.getEditorInput();
+					if (input instanceof IFileEditorInput) {
+						IFile file = ((IFileEditorInput) input).getFile();
+						if (file != null) {
+							setCurrentProject(window, file.getProject());
+						}
+					}
+				} else {
+					IEditorPart activeEditor = window.getActivePage()
+							.getActiveEditor();
+					if (activeEditor != null) {
+						updateCurrentlySelectedProject(window, activeEditor);
+					}
+				}
+			}
+		});
+	}
+
+	private void setCurrentProject(IWorkbenchWindow window, IProject project) {
+		IProject oldProject = currentProjects.get(window);
+		currentProjects.put(window, project);
+		listeners.firePropertyChange(new PropertyChangeEvent(this,
+				CURRENT_PROJECT_CHANGED, oldProject, project));
+	}
+
+	IResource getResource(ISelection selection) {
+		if (selection instanceof TreeSelection) {
+			TreePath[] paths = ((TreeSelection) selection).getPaths();
+			IResource result = null;
+			if (paths != null && paths.length > 0) {
+				Object firstSegment = paths[0].getFirstSegment();
+				if (firstSegment instanceof IResource) {
+					result = (IResource) firstSegment;
+				} else if (firstSegment instanceof IAdaptable) {
+					result = (IResource) ((IAdaptable) firstSegment)
+							.getAdapter(IResource.class);
+					if (result == null) {
+						ILaunchConfiguration launchConfig = (ILaunchConfiguration) ((IAdaptable) firstSegment)
+								.getAdapter(ILaunchConfiguration.class);
+						try {
+							result = MoSyncBuilder.getProject(launchConfig);
 						} catch (CoreException e) {
 							// Ignore.
 						}
-    				}
-    			}
-    			
+					}
+				}
+
 				return result;
-    		}
-    	}
-    	return null;
-    }
+			}
+		}
+		return null;
+	}
 
-    public void windowClosed(IWorkbenchWindow window) {
-        window.getSelectionService().removeSelectionListener(this);
-        currentProjects.remove(window);
-    }
+	public void windowClosed(IWorkbenchWindow window) {
+		window.getSelectionService().removeSelectionListener(this);
+		currentProjects.remove(window);
+	}
 
-    public void windowActivated(IWorkbenchWindow window) {
-        // Ignore.
-    }
+	public void windowActivated(IWorkbenchWindow window) {
+		// Ignore.
+	}
 
-    public void windowDeactivated(IWorkbenchWindow window) {
-        // Ignore.
-    }
+	public void windowDeactivated(IWorkbenchWindow window) {
+		// Ignore.
+	}
 
-    public void windowOpened(IWorkbenchWindow window) {
-        window.getSelectionService().addSelectionListener(this);
-    }
+	public void windowOpened(IWorkbenchWindow window) {
+		window.getSelectionService().addSelectionListener(this);
+	}
 
-    public void selectionChanged(IWorkbenchPart part, ISelection selection) {
-        if (part instanceof IEditorPart) {
-            updateCurrentlySelectedProject(part.getSite().getWorkbenchWindow(), (IEditorPart) part);
-        } else {
-            updateCurrentlySelectedProject(part.getSite().getWorkbenchWindow());
-        }
-        
-        callOtherSelectionListeners(part, selection);
-    }
+	public void selectionChanged(IWorkbenchPart part, ISelection selection) {
+		if (part instanceof IEditorPart) {
+			updateCurrentlySelectedProject(part.getSite().getWorkbenchWindow(),
+					(IEditorPart) part);
+		} else {
+			updateCurrentlySelectedProject(part.getSite().getWorkbenchWindow());
+		}
 
-    private void callOtherSelectionListeners(final IWorkbenchPart part, final ISelection selection) {
-    	for (Iterator<ISelectionListener> customSelectionListeners = this.customSelectionListeners.iterator(); customSelectionListeners.hasNext(); ) {
-    		final ISelectionListener customSelectionListener = customSelectionListeners.next();
-    		SafeRunner.run(new ISafeRunnable() {
+		callOtherSelectionListeners(part, selection);
+	}
+
+	private void callOtherSelectionListeners(final IWorkbenchPart part,
+			final ISelection selection) {
+		for (Iterator<ISelectionListener> customSelectionListeners = this.customSelectionListeners
+				.iterator(); customSelectionListeners.hasNext();) {
+			final ISelectionListener customSelectionListener = customSelectionListeners
+					.next();
+			SafeRunner.run(new ISafeRunnable() {
 				public void handleException(Throwable exception) {
 					log(exception);
 				}
 
 				public void run() throws Exception {
-					customSelectionListener.selectionChanged(part, selection);		
-				}    			
-    		});    	
-    	}
+					customSelectionListener.selectionChanged(part, selection);
+				}
+			});
+		}
 	}
 
-    public void registerGlobalProjectListener() {
-    	globalListener = new PropertyChangeListener() {
+	public void registerGlobalProjectListener() {
+		globalListener = new PropertyChangeListener() {
 			public void propertyChange(PropertyChangeEvent event) {
 				Object source = event.getSource();
-				if (MoSyncProject.BUILD_CONFIGURATION_CHANGED.equals(event.getPropertyName()) ||
-					MoSyncProject.BUILD_CONFIGURATION_SUPPORT_CHANGED.equals(event.getPropertyName()) ||
-					MoSyncProject.EXCLUDE_FILTER_KEY.equals(NameSpacePropertyOwner.getKey(event.getPropertyName()))) {
+				if (MoSyncProject.BUILD_CONFIGURATION_CHANGED.equals(event
+						.getPropertyName())
+						|| MoSyncProject.BUILD_CONFIGURATION_SUPPORT_CHANGED
+								.equals(event.getPropertyName())
+						|| MoSyncProject.EXCLUDE_FILTER_KEY
+								.equals(NameSpacePropertyOwner.getKey(event
+										.getPropertyName()))) {
 					try {
 						MoSyncProject project = (MoSyncProject) source;
-						ExcludedResourceDecorator dec = (ExcludedResourceDecorator) PlatformUI.getWorkbench().getDecoratorManager().getLabelDecorator(ExcludedResourceDecorator.ID);
+						final ExcludedResourceDecorator dec = (ExcludedResourceDecorator) PlatformUI
+								.getWorkbench()
+								.getDecoratorManager()
+								.getLabelDecorator(ExcludedResourceDecorator.ID);
 						if (dec != null) {
-							dec.updateDecorations();
+							IWorkbenchWindow ww = PlatformUI.getWorkbench()
+									.getActiveWorkbenchWindow();
+							if (ww != null) {
+								Shell shell = ww.getShell();
+								if (shell != null) {
+									shell.getDisplay().asyncExec(
+											new Runnable() {
+												public void run() {
+													dec.updateDecorations();
+												}
+											});
+								}
+							}
 						}
 					} catch (Exception e) {
 						CoreMoSyncPlugin.getDefault().log(e);
@@ -358,28 +404,28 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 				}
 			}
 		};
-		
-    	MoSyncProject.addGlobalPropertyChangeListener(globalListener);
-    	
-    }
-    
+
+		MoSyncProject.addGlobalPropertyChangeListener(globalListener);
+
+	}
+
 	private void deregisterGlobalProjectListener() {
 		MoSyncProject.removeGlobalPropertyChangeListener(globalListener);
 	}
 
-    public void log(Throwable e) {
-        getLog().log(new Status(IStatus.ERROR, PLUGIN_ID, e.getMessage(), e));
-    }
+	public void log(Throwable e) {
+		getLog().log(new Status(IStatus.ERROR, PLUGIN_ID, e.getMessage(), e));
+	}
 
 	public IProcessConsole get(String name) {
 		return new IDEProcessConsole(name);
 	}
-	
+
 	public void initializeImageRegistry(ImageRegistry reg) {
 		super.initializeImageRegistry(reg);
 		reg.put(IMG_OVR_EXCLUDED_RESOURCE, AbstractUIPlugin
-		.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID,
-				"$nl$/icons/exclude_ovr.png"));
+				.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID,
+						"$nl$/icons/exclude_ovr.png"));
 	}
 
 }

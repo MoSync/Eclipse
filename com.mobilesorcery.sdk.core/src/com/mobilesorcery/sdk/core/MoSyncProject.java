@@ -381,10 +381,21 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
      * @param newTarget The new target profile
      */
     public void setTargetProfile(IProfile newTarget) {
+    	IProfile oldTarget = initTargetProfile(newTarget);
+        firePropertyChange(new PropertyChangeEvent(this, TARGET_PROFILE_CHANGED, oldTarget, newTarget));
+    }
+    
+    /**
+     * Initializes the target profile; same as <code>setTargetProfile</code>,
+     * but no event is fired.
+     * @param newTarget
+     * @return The old target profile.
+     */
+    public IProfile initTargetProfile(IProfile newTarget) {
         IProfile oldTarget = this.target;
         this.target = newTarget;
         updateProjectSpec();
-        firePropertyChange(new PropertyChangeEvent(this, TARGET_PROFILE_CHANGED, oldTarget, newTarget));
+        return oldTarget;
     }
     
     private void firePropertyChange(PropertyChangeEvent event) {
