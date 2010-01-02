@@ -39,6 +39,8 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.TabFolder;
+import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.PropertyPage;
 
@@ -52,6 +54,7 @@ import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.IPropertyOwner.IWorkingCopy;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
+import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class BuildSettingsPropertyPage extends PropertyPage implements PropertyChangeListener {
 
@@ -123,6 +126,9 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
 	private Composite placeHolder;
 	
 	private Text excludeFiles;
+	private Text heapSize;
+	private Text stackSize;
+	private Text dataSize;
 
     protected Control createContents(Composite parent) {
     	placeHolder = new Composite(parent, SWT.NONE);
@@ -185,11 +191,135 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         }
  
 		Composite configurationParent = hasConfigurations ? configurationsGroup : main;
-        Group buildPaths = new Group(configurationParent, SWT.NONE);
-        buildPaths.setText("Build &Paths and Files");
+
+        TabFolder tabs = new TabFolder(configurationParent, SWT.NONE);
+        tabs.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        
+        createTabs(tabs);
+
+        listener = new UpdateListener();
+
+        applicationProjectType.addListener(SWT.Selection, listener);
+        libraryProjectType.addListener(SWT.Selection, listener);
+        applicationProjectType.addListener(SWT.Selection, listener);
+        additionalIncludePathsText.addListener(SWT.Modify, listener);
+        additionalLibrariesText.addListener(SWT.Modify, listener);
+        additionalLibraryPathsText.addListener(SWT.Modify, listener);
+        libOutputPath.addListener(SWT.Modify, listener);
+        appOutputPath.addListener(SWT.Modify, listener);
+        
+        changeConfiguration(getProject().getActiveBuildConfiguration());
+    	if (getProject().isBuildConfigurationsSupported()) {
+    		IBuildConfiguration cfg = getProject().getActiveBuildConfiguration();
+    		if (cfg != null) {
+    			buildConfigurationListener.setActive(false);
+    			buildConfigurations.setSelection(new StructuredSelection(cfg.getId()));
+    			buildConfigurationListener.setActive(true);
+    		}
+    	}
+    	
+        initUI();
+        placeHolder.layout();
+    }
+    
+    private void createTabs(TabFolder tabs) {
+    	createPathsTab(tabs);
+    	createCompilerOptionsTab(tabs);
+    	createPackagingTab(tabs);
+	}
+
+	private void createCompilerOptionsTab(TabFolder tabs) {
+        TabItem compilerFlagsTab = new TabItem(tabs, SWT.NONE);
+        compilerFlagsTab.setText("Compiler &Flags");
+        
+        Composite compilerFlags = new Composite(tabs, SWT.NONE);
+        compilerFlagsTab.setControl(compilerFlags);
+        
+        compilerFlags.setLayout(new GridLayout(2, false));
+        compilerFlags.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+        deadCodeElim = new Button(compilerFlags, SWT.CHECK);
+        deadCodeElim.setText("Activate Dead Code &Elimination");
+        deadCodeElim.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
+
+        Label gccFlagsLabel = new Label(compilerFlags, SWT.NONE);
+        gccFlagsLabel.setText("Additional GCC &Switches:");
+        gccFlags = new Text(compilerFlags, SWT.BORDER | SWT.SINGLE);
+        gccFlags.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+        Label extraResLabel = new Label(compilerFlags, SWT.NONE);
+        extraResLabel.setText("Extra &Resource Compiler Switches:");
+        extraRes = new Text(compilerFlags, SWT.BORDER | SWT.SINGLE);
+        extraRes.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+        Label extraLinkLabel = new Label(compilerFlags, SWT.NONE);
+        extraLinkLabel.setText("Extra &Linker Switches:");
+        extraLink = new Text(compilerFlags, SWT.BORDER | SWT.SINGLE);
+        extraLink.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        
+        Label gccWarningsLabel = new Label(compilerFlags, SWT.NONE);
+        gccWarningsLabel.setText("GCC &Warnings:");
+        gccWarningsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 1, 3));
+        
+        gccWerror = new Button(compilerFlags, SWT.CHECK);
+        gccWerror.setText("Warnings as &Errors");
+        gccWall = new Button(compilerFlags, SWT.CHECK);
+        gccWall.setText("&All Warnings");
+        gccWextra = new Button(compilerFlags, SWT.CHECK);
+        gccWextra.setText("E&xtra Warnings");
+        
+        Group memoryGroup = new Group(compilerFlags, SWT.NONE);
+        memoryGroup.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
+        memoryGroup.setText("&Memory Settings");
+        memoryGroup.setLayout(new GridLayout(3, false));
+        
+        Label heapSizeLabel = new Label(memoryGroup, SWT.NONE);
+        heapSizeLabel.setText("&Heap Size:");
+        
+        heapSize = new Text(memoryGroup, SWT.BORDER | SWT.SINGLE); 
+        heapSize.setLayoutData(new GridData(UIUtils.getDefaultFieldSize() / 2, SWT.DEFAULT));
+        Label kb1 = new Label(memoryGroup, SWT.NONE);
+        kb1.setText("kb");
+        
+        Label stackSizeLabel = new Label(memoryGroup, SWT.NONE);
+        stackSizeLabel.setText("&Stack Size:");
+        
+        stackSize = new Text(memoryGroup, SWT.BORDER | SWT.SINGLE);
+        stackSize.setLayoutData(new GridData(UIUtils.getDefaultFieldSize() / 2, SWT.DEFAULT));        
+        Label kb2 = new Label(memoryGroup, SWT.NONE);
+        kb2.setText("kb");
+        
+        Label dataSizeLabel = new Label(memoryGroup, SWT.NONE);
+        dataSizeLabel.setText("&Data Size:");
+        
+        dataSize = new Text(memoryGroup, SWT.BORDER | SWT.SINGLE);
+        dataSize.setLayoutData(new GridData(UIUtils.getDefaultFieldSize() / 2, SWT.DEFAULT));
+        Label kb3 = new Label(memoryGroup, SWT.NONE);
+        kb3.setText("kb");
+	}
+
+	private void createPackagingTab(TabFolder tabs) {
+		TabItem packagingTab = new TabItem(tabs, SWT.NONE);
+		packagingTab.setText("&Packaging");
+		
+		Composite packaging = new Composite(tabs, SWT.NONE);
+		packagingTab.setControl(packaging);
+		
+        packaging.setLayout(new GridLayout(1, false));
+        packaging.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        
+        useDebugRuntimes = new Button(packaging, SWT.CHECK);
+        useDebugRuntimes.setText("Use Debug &Runtimes");
+	}
+
+	private void createPathsTab(TabFolder tabs) {
+		TabItem buildPathsTab = new TabItem(tabs, SWT.NONE);
+		buildPathsTab.setText("&Paths and Files");
+        Composite buildPaths = new Composite(tabs, SWT.NONE);
+        buildPathsTab.setControl(buildPaths);
+        
         buildPaths.setLayout(new GridLayout(2, false));
         buildPaths.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
         Label includePathsLabel = new Label(buildPaths, SWT.NONE);
         includePathsLabel.setText("Additional &Include Paths:");
         includePathsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
@@ -246,77 +376,9 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         appOutputPath = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
         GridData appPathData = new GridData(GridData.FILL_HORIZONTAL);
         appPathData.horizontalSpan = 2;
-        appOutputPath.setLayoutData(appPathData);
+        appOutputPath.setLayoutData(appPathData);	}
 
-        Group compilerFlags = new Group(configurationParent, SWT.NONE);
-        compilerFlags.setText("Compiler &Flags");
-        compilerFlags.setLayout(new GridLayout(2, false));
-        compilerFlags.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
-        deadCodeElim = new Button(compilerFlags, SWT.CHECK);
-        deadCodeElim.setText("Activate Dead Code &Elimination");
-        deadCodeElim.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
-
-        Label gccFlagsLabel = new Label(compilerFlags, SWT.NONE);
-        gccFlagsLabel.setText("Additional GCC &Switches:");
-        gccFlags = new Text(compilerFlags, SWT.BORDER | SWT.SINGLE);
-        gccFlags.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
-        Label extraResLabel = new Label(compilerFlags, SWT.NONE);
-        extraResLabel.setText("Extra &Resource Compiler Switches:");
-        extraRes = new Text(compilerFlags, SWT.BORDER | SWT.SINGLE);
-        extraRes.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
-        Label extraLinkLabel = new Label(compilerFlags, SWT.NONE);
-        extraLinkLabel.setText("Extra &Linker Switches:");
-        extraLink = new Text(compilerFlags, SWT.BORDER | SWT.SINGLE);
-        extraLink.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        
-        Label gccWarningsLabel = new Label(compilerFlags, SWT.NONE);
-        gccWarningsLabel.setText("GCC &Warnings:");
-        gccWarningsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 1, 3));
-        
-        gccWerror = new Button(compilerFlags, SWT.CHECK);
-        gccWerror.setText("Warnings as &Errors");
-        gccWall = new Button(compilerFlags, SWT.CHECK);
-        gccWall.setText("&All Warnings");
-        gccWextra = new Button(compilerFlags, SWT.CHECK);
-        gccWextra.setText("E&xtra Warnings");
-        
-        Group packaging = new Group(configurationParent, SWT.NONE);
-        packaging.setText("&Packaging");
-        packaging.setLayout(new GridLayout(1, false));
-        packaging.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        
-        useDebugRuntimes = new Button(packaging, SWT.CHECK);
-        useDebugRuntimes.setText("Use Debug &Runtimes");
-        
-        listener = new UpdateListener();
-
-        applicationProjectType.addListener(SWT.Selection, listener);
-        libraryProjectType.addListener(SWT.Selection, listener);
-        applicationProjectType.addListener(SWT.Selection, listener);
-        additionalIncludePathsText.addListener(SWT.Modify, listener);
-        additionalLibrariesText.addListener(SWT.Modify, listener);
-        additionalLibraryPathsText.addListener(SWT.Modify, listener);
-        libOutputPath.addListener(SWT.Modify, listener);
-        appOutputPath.addListener(SWT.Modify, listener);
-        
-        changeConfiguration(getProject().getActiveBuildConfiguration());
-    	if (getProject().isBuildConfigurationsSupported()) {
-    		IBuildConfiguration cfg = getProject().getActiveBuildConfiguration();
-    		if (cfg != null) {
-    			buildConfigurationListener.setActive(false);
-    			buildConfigurations.setSelection(new StructuredSelection(cfg.getId()));
-    			buildConfigurationListener.setActive(true);
-    		}
-    	}
-    	
-        initUI();
-        placeHolder.layout();
-    }
-    
-    protected void reinitUI() {
+	protected void reinitUI() {
     	main.dispose();
     	fillPlaceHolder(placeHolder);
     }
@@ -355,6 +417,10 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         gccWerror.setSelection(gcc != null && (gcc & MoSyncBuilder.GCC_WERROR) != 0);
         gccWall.setSelection(gcc != null && (gcc & MoSyncBuilder.GCC_WALL) != 0);
         gccWextra.setSelection(gcc != null && (gcc & MoSyncBuilder.GCC_WEXTRA) != 0);
+        
+        setText(heapSize, configProperties.getProperty(MoSyncBuilder.MEMORY_HEAPSIZE_KB));
+        setText(stackSize, configProperties.getProperty(MoSyncBuilder.MEMORY_STACKSIZE_KB));
+        setText(dataSize, configProperties.getProperty(MoSyncBuilder.MEMORY_DATASIZE_KB));
         
         useDebugRuntimes.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS));
         
@@ -519,6 +585,10 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         gccWarnings |= gccWextra.getSelection() ? MoSyncBuilder.GCC_WEXTRA : 0;
         
         changed |= PropertyUtil.setInteger(configProperties, MoSyncBuilder.GCC_WARNINGS, gccWarnings);
+        
+        changed |= configProperties.setProperty(MoSyncBuilder.MEMORY_HEAPSIZE_KB, heapSize.getText());
+        changed |= configProperties.setProperty(MoSyncBuilder.MEMORY_STACKSIZE_KB, stackSize.getText());
+        changed |= configProperties.setProperty(MoSyncBuilder.MEMORY_DATASIZE_KB, dataSize.getText());
         
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS, useDebugRuntimes.getSelection());
         

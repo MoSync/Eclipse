@@ -43,6 +43,10 @@ public class PropertyUtil {
 	    return Boolean.toString(value);
 	}
 	
+	public static String fromInteger(int value) {
+		return Integer.toString(value);
+	}
+	
     public static IPath[] getPaths(IPropertyOwner p, String key) {
     	if (p == null) {
     		return new IPath[0];
@@ -120,5 +124,7 @@ public class PropertyUtil {
     public static boolean setInteger(IPropertyOwner p, String key, int value) {
         return p.setProperty(key, Integer.toString(value));
     }
+
+
 }
 

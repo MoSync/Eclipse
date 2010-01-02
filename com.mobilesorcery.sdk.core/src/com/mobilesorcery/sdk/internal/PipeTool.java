@@ -30,8 +30,10 @@ import org.eclipse.debug.core.DebugPlugin;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IProcessConsole;
+import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 
@@ -40,6 +42,25 @@ public class PipeTool {
     public static final String BUILD_RESOURCES_MODE = "-R";
     public static final String BUILD_C_MODE = "-B";
     public static final String BUILD_LIB_MODE = "-L";
+    
+    /**
+     * The default heap size; if no <code>-heapsize</code> argument is provided
+     * to pipe tool, then this is the size that will be used.
+     */
+    public static final int DEFAULT_HEAP_SIZE_KB = 64;
+    
+    /**
+     * The default heap size; if no <code>-stacksize</code> argument is provided
+     * to pipe tool, then this is the size that will be used.
+     */
+    public static final int DEFAULT_STACK_SIZE_KB = 2;
+    
+    /**
+     * The default heap size; if no <code>-datasize</code> argument is provided
+     * to pipe tool, then this is the size that will be used.
+     */
+    public static final int DEFAULT_DATA_SIZE_KB = 16;
+    
 	private static final String RESOURCE_DEPENDENCY_FILE_NAME = "resources.deps";
 	private static final int MAX_PIPE_TOOL_ARG_LENGTH = 162;
 
@@ -58,6 +79,7 @@ public class PipeTool {
     private ILineHandler linehandler;
 	private boolean collectStabs;
 	private String appCode;
+	private IPropertyOwner argumentMap;
 
     public PipeTool() {
 
@@ -87,6 +109,17 @@ public class PipeTool {
         this.sld = sld;
     }
 
+    /**
+     * <p>Sets some of the arguments of pipe tool;
+     * this class maps it to the proper command line
+     * arguments.</p>
+     * <p><emph>TODO:</emph>Could we move some other arguments here, eg "extras"
+     * @param argumentMap
+     */
+    public void setArguments(IPropertyOwner argumentMap) {
+    	this.argumentMap = argumentMap;
+    }
+    
     public void run() throws CoreException {
         IPath pipeTool = MoSyncTool.getDefault().getMoSyncBin().append("pipe-tool.exe");
 
@@ -106,7 +139,16 @@ public class PipeTool {
         	args.add("-collect-stabs");
         }
         
-        if (BUILD_C_MODE == mode || BUILD_LIB_MODE == mode) {
+        boolean programMode = BUILD_C_MODE == mode || BUILD_LIB_MODE == mode;
+
+        
+        if (programMode) {
+            if (argumentMap != null) {
+            	addMemoryArg(args, argumentMap, MoSyncBuilder.MEMORY_HEAPSIZE_KB, DEFAULT_HEAP_SIZE_KB, "-heapsize");
+            	addMemoryArg(args, argumentMap, MoSyncBuilder.MEMORY_STACKSIZE_KB, DEFAULT_STACK_SIZE_KB, "-stacksize");
+            	addMemoryArg(args, argumentMap, MoSyncBuilder.MEMORY_DATASIZE_KB, DEFAULT_DATA_SIZE_KB, "-datasize");
+            }
+            
             if (sld) {
                 args.add("-sld");
             }
@@ -178,7 +220,16 @@ public class PipeTool {
         }
     }
 
-    /**
+    private void addMemoryArg(ArrayList<String> args, IPropertyOwner argumentMap,
+			String key, int defaultSize, String prefix) {
+    	Integer size = PropertyUtil.getInteger(argumentMap, key);
+    	if (size != null && size.intValue() != defaultSize) {
+    		int sizeInBytes = 1024 * size;
+    		args.add(prefix + "=" + sizeInBytes);
+    	}
+	}
+
+	/**
      * Returns the app code of this pipe tool, corresponding
      * to the -appcode switch
      * @return

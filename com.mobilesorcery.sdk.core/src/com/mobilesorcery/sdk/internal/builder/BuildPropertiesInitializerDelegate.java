@@ -24,6 +24,7 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.internal.PipeTool;
 import com.sun.org.apache.bcel.internal.generic.MONITORENTER;
 
 public class BuildPropertiesInitializerDelegate implements IPropertyInitializerDelegate {
@@ -69,6 +70,12 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
         	} else {
         		return PropertyUtil.fromPaths(new IPath[] { new Path("MAStd.lib") });
         	}
+        } else if (MoSyncBuilder.MEMORY_HEAPSIZE_KB.equals(namespacedKey)) {
+        	return PropertyUtil.fromInteger(PipeTool.DEFAULT_HEAP_SIZE_KB);
+        } else if (MoSyncBuilder.MEMORY_STACKSIZE_KB.equals(namespacedKey)) {
+        	return PropertyUtil.fromInteger(PipeTool.DEFAULT_STACK_SIZE_KB);        	
+        } else if (MoSyncBuilder.MEMORY_DATASIZE_KB.equals(namespacedKey)) {
+        	return PropertyUtil.fromInteger(PipeTool.DEFAULT_DATA_SIZE_KB);
         }
         
         return null;

@@ -127,6 +127,15 @@ public class MoSyncBuilder extends ACBuilder {
 	public static final String GCC_WARNINGS = BUILD_PREFS_PREFIX
 			+ "gcc.warnings";
 
+
+	public static final String MEMORY_PREFS_PREFIX = BUILD_PREFS_PREFIX + "memory.";
+
+	public static final String MEMORY_HEAPSIZE_KB = MEMORY_PREFS_PREFIX + "heap";
+
+	public static final String MEMORY_STACKSIZE_KB = MEMORY_PREFS_PREFIX + "stack";
+
+	public static final String MEMORY_DATASIZE_KB = MEMORY_PREFS_PREFIX + "data";
+
 	public static final String USE_DEBUG_RUNTIME_LIBS = BUILD_PREFS_PREFIX
 			+ "runtime.debug";
 
@@ -535,6 +544,7 @@ public class MoSyncBuilder extends ACBuilder {
 			pipeTool.setProject(project);
 			pipeTool.setConsole(console);
 			pipeTool.setLineHandler(linehandler);
+			pipeTool.setArguments(buildProperties);
 
 			MoSyncResourceBuilderVisitor resourceVisitor = new MoSyncResourceBuilderVisitor();
 
