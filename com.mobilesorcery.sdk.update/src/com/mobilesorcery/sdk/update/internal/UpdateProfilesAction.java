@@ -25,16 +25,17 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.IWorkbenchWindowActionDelegate;
+import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.MutexSchedulingRule;
 import com.mobilesorcery.sdk.update.UpdateManager;
 
-public class UpdateProfilesAction extends Action implements IWorkbenchWindowActionDelegate {
+public class UpdateProfilesAction extends Action {
 
     private final static MutexSchedulingRule updateMutex = new MutexSchedulingRule();
 
@@ -55,12 +56,11 @@ public class UpdateProfilesAction extends Action implements IWorkbenchWindowActi
         }
     }
 
-    private IWorkbenchWindow window;
-
     private boolean isStartedByUser = true;
+	private Shell shell;
 
     public UpdateProfilesAction() {
-
+		shell = new Shell(Display.getDefault());
     }
 
     public void run() {
@@ -98,12 +98,12 @@ public class UpdateProfilesAction extends Action implements IWorkbenchWindowActi
                     boolean isValid = mgr.isValid();
 
                     if (!isValid) {
-                        retry = showQuestion(window, Messages.UpdateProfilesAction_InvalidConfirmationCode);
+                        retry = showQuestion(getShell(), Messages.UpdateProfilesAction_InvalidConfirmationCode);
                         mgr.setUserHash(null);
                     } else {
                         if (!mgr.isUpdateAvailable()) {
                             if (isStartedByUser) {
-                                showInfo(window, Messages.UpdateProfilesAction_NoUpdatesAvailable);
+                                showInfo(getShell(), Messages.UpdateProfilesAction_NoUpdatesAvailable);
                             }
                             return Status.OK_STATUS;
                         }
@@ -112,7 +112,8 @@ public class UpdateProfilesAction extends Action implements IWorkbenchWindowActi
                     }
                 }
 
-            } catch (IOException e) {
+            } catch (Exception e) {
+            	CoreMoSyncPlugin.getDefault().log(e);
                 MessageDialog.openError(getShell(), Messages.UpdateProfilesAction_IOError,
                         Messages.UpdateProfilesAction_CouldNotConnect);
             } finally {
@@ -121,7 +122,7 @@ public class UpdateProfilesAction extends Action implements IWorkbenchWindowActi
         }
 
         private void startUpdateJob(final boolean isStartedByUser) {
-        	window.getWorkbench().getDisplay().asyncExec(new Runnable() {
+        	getShell().getDisplay().asyncExec(new Runnable() {
         		public void run() {
 
         			try {
@@ -153,7 +154,7 @@ public class UpdateProfilesAction extends Action implements IWorkbenchWindowActi
     // Returns false if cancelled
     private boolean openConfirmDialog() throws IOException {
         final ArrayBlockingQueue<Boolean> result = new ArrayBlockingQueue<Boolean>(1);
-        window.getWorkbench().getDisplay().asyncExec(new Runnable() {
+        getShell().getDisplay().asyncExec(new Runnable() {
             public void run() {
                 ConfirmationDialog dialog = new ConfirmationDialog(getShell());
                 dialog.setIsStartedByUser(isStartedByUser);
@@ -190,17 +191,17 @@ public class UpdateProfilesAction extends Action implements IWorkbenchWindowActi
                 boolean alreadyRegistered = mgr.isRegistered();
 
                 if (alreadyRegistered) {
-                    boolean okToResend = showQuestion(window, Messages.UpdateProfilesAction_AlreadyRegistered);
+                    boolean okToResend = showQuestion(getShell(), Messages.UpdateProfilesAction_AlreadyRegistered);
                     if (okToResend) {
                         mgr.resend();
                     }
                 } else {
                     boolean ok = mgr.registerMe(info.mail, info.name, info.mailinglist);
                     if (ok) {
-                        showInfo(window, Messages.UpdateProfilesAction_ConfirmationCodeSent);
+                        showInfo(getShell(), Messages.UpdateProfilesAction_ConfirmationCodeSent);
                         retry = false;
                     } else {
-                        retry = showQuestion(window, Messages.UpdateProfilesAction_InvalidEmail);
+                        retry = showQuestion(getShell(), Messages.UpdateProfilesAction_InvalidEmail);
                     }
                 }
             }
@@ -211,7 +212,7 @@ public class UpdateProfilesAction extends Action implements IWorkbenchWindowActi
 
     private int openRegistrationDialogUI(final RegistrationInfo info) throws IOException {
         final ArrayBlockingQueue<Integer> result = new ArrayBlockingQueue<Integer>(1);
-        window.getWorkbench().getDisplay().syncExec(new Runnable() {
+        getShell().getDisplay().syncExec(new Runnable() {
             public void run() {
                 RegistrationDialog dialog = new RegistrationDialog(getShell());
                 dialog.setIsStartedByUser(isStartedByUser);
@@ -227,11 +228,11 @@ public class UpdateProfilesAction extends Action implements IWorkbenchWindowActi
         }
     }
 
-    public static boolean showQuestion(final IWorkbenchWindow window, final String message) throws IOException {
+    public static boolean showQuestion(final Shell shell, final String message) throws IOException {
         final ArrayBlockingQueue<Boolean> result = new ArrayBlockingQueue<Boolean>(1);
-        window.getWorkbench().getDisplay().asyncExec(new Runnable() {
+        shell.getDisplay().asyncExec(new Runnable() {
             public void run() {
-                result.offer(MessageDialog.openQuestion(window.getShell(), Messages.UpdateProfilesAction_ConfirmTitle, message));
+                result.offer(MessageDialog.openQuestion(shell, Messages.UpdateProfilesAction_ConfirmTitle, message));
             }
         });
 
@@ -242,10 +243,10 @@ public class UpdateProfilesAction extends Action implements IWorkbenchWindowActi
         }
     }
 
-    public static void showInfo(final IWorkbenchWindow window, final String message) {
-        window.getWorkbench().getDisplay().asyncExec(new Runnable() {
+    public static void showInfo(final Shell shell, final String message) {
+        shell.getDisplay().asyncExec(new Runnable() {
             public void run() {
-                MessageDialog.openInformation(window.getShell(), Messages.UpdateProfilesAction_InformationTitle, message);
+                MessageDialog.openInformation(shell, Messages.UpdateProfilesAction_InformationTitle, message);
             }
         });
     }
@@ -255,12 +256,8 @@ public class UpdateProfilesAction extends Action implements IWorkbenchWindowActi
 
     }
 
-    public void init(IWorkbenchWindow window) {
-        this.window = window;
-    }
-
     private Shell getShell() {
-        return window.getShell();
+    	return shell;
     }
 
     public void run(IAction action) {

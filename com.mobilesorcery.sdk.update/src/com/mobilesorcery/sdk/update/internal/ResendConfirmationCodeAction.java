@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.action.Action;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
@@ -34,6 +35,10 @@ public class ResendConfirmationCodeAction extends Action {
 		window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 	}
 
+	private Shell getShell() {
+		return window.getShell();
+	}
+	
 	public void run() {
 		Job resendJob = new Job(Messages.ResendConfirmationCodeAction_JobTitle) {
 			protected IStatus run(IProgressMonitor monitor) {
@@ -41,10 +46,10 @@ public class ResendConfirmationCodeAction extends Action {
 				try {
 					result = UpdateManager.getDefault().resend();
 					if (result) {
-						UpdateProfilesAction.showInfo(window,
+						UpdateProfilesAction.showInfo(getShell(),
 								Messages.ResendConfirmationCodeAction_ConfirmationEmailMessage);
 					} else {
-						UpdateProfilesAction.showInfo(window, Messages.ResendConfirmationCodeAction_ConfirmationEmailError);
+						UpdateProfilesAction.showInfo(getShell(), Messages.ResendConfirmationCodeAction_ConfirmationEmailError);
 					}
 					
 					return Status.OK_STATUS;
