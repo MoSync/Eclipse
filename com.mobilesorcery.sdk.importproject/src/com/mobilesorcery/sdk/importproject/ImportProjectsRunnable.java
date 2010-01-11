@@ -132,13 +132,16 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 				monitor);
 
 		project.open(new SubProgressMonitor(monitor, 1));
-		MoSyncProject mosyncProject = MoSyncProject.create(project,
-				projectMetaDataLocation);
 
-		if (projectMetaDataLocation == null) { // Only then do we parse it.
-			parseProjectDescription(new SubProgressMonitor(monitor, 1),
-					mosyncProject, projectDescription);
-		}
+		MoSyncProject mosyncProject = MoSyncProject.create(project);
+
+		parseProjectDescription(new SubProgressMonitor(monitor, 1),
+				mosyncProject, projectDescription);
+
+		// And we will have to re-initialize in case there is a .mosyncproject file
+		// available.
+		MoSyncProject.create(project,
+				projectMetaDataLocation);
 
 		project.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(
 				monitor, 1));
