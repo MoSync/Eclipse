@@ -155,6 +155,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
 	private static final String ACTIVE_BUILD_CONFIG_KEY = "active";
 
+	/**
+	 * The name of the file where this project's meta data is located.
+	 */
+	public static final String MOSYNC_PROJECT_META_DATA_FILENAME = ".mosyncproject";
+
     private static IdentityHashMap<IProject, MoSyncProject> projects = new IdentityHashMap<IProject, MoSyncProject>();
     
     private IProject project;
@@ -185,7 +190,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         Assert.isNotNull(project);
         this.project = project;
         this.deviceFilterListener = new DeviceFilterListener();
-        initFromProjectMetaData();        
+        initFromProjectMetaData(getMoSyncProjectMetaDataLocation());        
         addDeviceFilterListener();
     }
 
@@ -197,8 +202,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         deviceFilter.removePropertyChangeListener(deviceFilterListener);
     }
 
-    private void initFromProjectMetaData() {
-        IPath projectMetaDataPath = computeMoSyncProjectLocation();
+    private void initFromProjectMetaData(IPath projectMetaDataPath) {
+    	if (projectMetaDataPath == null) {
+    		projectMetaDataPath = getMoSyncProjectMetaDataLocation();
+    	}
+    	
         if (!projectMetaDataPath.toFile().exists()) {
             return;
         }
@@ -276,7 +284,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     }
 
     protected void updateProjectSpec() {
-        IPath projectMetaDataPath = computeMoSyncProjectLocation();
+        IPath projectMetaDataPath = getMoSyncProjectMetaDataLocation();
         XMLMemento root = XMLMemento.createWriteRoot(PROJECT);
         FileWriter output = null;
 
@@ -338,15 +346,15 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         }
     }
 
-    private IPath computeMoSyncProjectLocation() {
-        return project.getLocation().append(".mosyncproject");
+    public IPath getMoSyncProjectMetaDataLocation() {
+        return project.getLocation().append(MOSYNC_PROJECT_META_DATA_FILENAME);
     }
 
     /**
-     * Returns a (shared) instance of a MoSyncProject of
+     * <p>Returns a (shared) instance of a MoSyncProject of
      * the provided project, or <code>null</code> if
-     * the project does not have a MoSync nature.
-     * @param project
+     * the project does not have a MoSync nature.</p>
+     * @param project The eclipse project this <code>MoSyncProject</code> should wrap
      * @return
      */
     public synchronized static MoSyncProject create(IProject project) {
@@ -364,6 +372,28 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
             projects.put(project, result);
         }
 
+        return result;
+    }
+    
+    /**
+     * <p>Returns a (shared) instance of a MoSyncProject of
+     * the provided project, or <code>null</code> if
+     * the project does not have a MoSync nature.</p>
+     * <p>An optional project meta data file initialization file may
+     * be provided. This file will then be loaded and its project meta
+     * data used by the project.</p>
+     * @param project The eclipse project this <code>MoSyncProject</code> should wrap
+     * @param projectMetadataLocation The location of the project meta data. If <code>null</code>,
+     * no initialization will take place unless this is the first call to <code>create</code> 
+     * with the provided <code>project</code>.
+     * @return
+     */
+    public static MoSyncProject create(IProject project, IPath projectMetadataLocation) {
+    	MoSyncProject result = create(project);
+        if (projectMetadataLocation != null) {
+        	result.initFromProjectMetaData(projectMetadataLocation);
+        }
+        
         return result;
     }
     

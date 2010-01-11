@@ -222,7 +222,7 @@ icon="icons/launchshortcut.png">
                label="Files excluded from MoSync build"
                lightweight="false"
                location="TOP_RIGHT"
-               state="false">
+               state="true">
          <description>
             Show files that are excluded from the MoSync build process
          </description>

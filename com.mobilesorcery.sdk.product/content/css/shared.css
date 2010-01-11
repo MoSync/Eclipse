@@ -47,8 +47,6 @@ body {
 #intro-header {
 	width: 100%;
 	background-color: black;
-	position: fixed;
-	bottom: 0;
 }
 
 #page-main {

@@ -456,7 +456,7 @@ public class MoSyncBuilder extends ACBuilder {
 
 	// TODO: Refactor, this is becoming a jack-of-all-trades method, esp. now
 	// with the partial builds as well. Maybe need a new class like 'build
-	// settings' to avoid all setters and this huge method signature...
+	// parameters' to avoid all setters and this huge method signature...
 	IBuildResult incrementalBuild(IProject project, IResourceDelta[] deltas,
 			IProfile targetProfile, boolean isFinalizerBuild,
 			boolean doBuildResources, boolean doPack,

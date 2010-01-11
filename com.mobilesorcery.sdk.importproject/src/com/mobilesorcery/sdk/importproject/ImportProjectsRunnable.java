@@ -33,6 +33,7 @@ import org.eclipse.core.resources.IResourceStatus;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
@@ -68,21 +69,25 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 	public final static int COPY_ALL_FILES = 0;
 	public final static int COPY_ONLY_FILES_IN_PROJECT_DESC = 1;
 	public final static int DO_NOT_COPY = 2;
+	
+	public final static int USE_NEW_PROJECT_IF_AVAILABLE = 1 << 12;
 
 	static FileFilter COPY_FILE_FILTER = new FileFilter() {
 		public boolean accept(File file) {
 			String name = file.getName();
-			return !name.equals(".project") && !name.equals(".cproject") && !name.equals(".mosyncproject"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			return !name.equals(".project") && !name.equals(".cproject") && !name.equals(MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME); //$NON-NLS-1$ //$NON-NLS-2$ 
 		}
 	};
 
 	private File[] projectDescriptions;
 	private Map<String, String> keyMap;
 	private int copyStrategy;
+	private boolean useNewProjectIfAvailable;
 
-	public ImportProjectsRunnable(File[] projectDescriptions, int copyStrategy) {
+	public ImportProjectsRunnable(File[] projectDescriptions, int strategy) {
 		this.projectDescriptions = projectDescriptions;
-		this.copyStrategy = copyStrategy;
+		this.copyStrategy = strategy & 0x3; // Max value of copy strategies.
+		this.useNewProjectIfAvailable = (strategy & USE_NEW_PROJECT_IF_AVAILABLE) == USE_NEW_PROJECT_IF_AVAILABLE;
 	}
 
 	protected void execute(IProgressMonitor monitor) throws CoreException,
@@ -118,24 +123,41 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		monitor = new SubProgressMonitor(monitor, 4);
 		String projectName = Util.getNameWithoutExtension(projectDescription);
 
-		URI location = copyStrategy == DO_NOT_COPY ? projectDescription
-				.getParentFile().toURI() : null;
-				
+		IPath projectMetaDataLocation = getProjectMetaDataLocation(projectDescription);
+
+		URI location = shouldCopy() ? null : projectDescription.getParentFile()
+				.toURI();
+
 		IProject project = createProjectWithUniqueName(projectName, location,
 				monitor);
 
 		project.open(new SubProgressMonitor(monitor, 1));
-		MoSyncProject mosyncProject = MoSyncProject.create(project);
+		MoSyncProject mosyncProject = MoSyncProject.create(project,
+				projectMetaDataLocation);
 
-		parseProjectDescription(new SubProgressMonitor(monitor, 1),
-				mosyncProject, projectDescription);
+		if (projectMetaDataLocation == null) { // Only then do we parse it.
+			parseProjectDescription(new SubProgressMonitor(monitor, 1),
+					mosyncProject, projectDescription);
+		}
 
 		project.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(
 				monitor, 1));
 	}
 
-	IProject createProjectWithUniqueName(String projectName,
-			URI location, IProgressMonitor monitor) throws CoreException {
+	private IPath getProjectMetaDataLocation(File projectDescription) {
+		File projectMetaDataFile = new File(projectDescription.getParentFile(),
+				MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME);
+		return projectMetaDataFile.exists() && shouldUseNewFormatIfAvailable() ? new Path(
+				projectMetaDataFile.getAbsolutePath())
+				: null;
+	}
+
+	private boolean shouldUseNewFormatIfAvailable() {
+		return useNewProjectIfAvailable;
+	}
+
+	IProject createProjectWithUniqueName(String projectName, URI location,
+			IProgressMonitor monitor) throws CoreException {
 		String newProjectName = projectName;
 		IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace().getRoot();
 		IProject result = workspaceRoot.getProject(projectName);
@@ -154,7 +176,8 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 								Messages.ImportProjectsRunnable_UniqueNameCreationFailed));
 			}
 
-			// Since IResource.exists() is case-sensitive whereas the underlying OS may
+			// Since IResource.exists() is case-sensitive whereas the underlying
+			// OS may
 			// not be, we must create the project here and check for
 			// IResourceStatus.CASE_VARIANT_EXISTS.
 
@@ -166,7 +189,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 			} catch (CoreException e) {
 				exists = true; // So we are stuck in the loop.
 				if (e.getStatus().getCode() != IResourceStatus.CASE_VARIANT_EXISTS) {
-					throw e; 
+					throw e;
 				} // else iterate again.
 			}
 
@@ -188,7 +211,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 			Document doc = builder.parse(projectDescription);
 			String[] projectPaths = findFiles(doc, projectDescription);
 
-			if (copyStrategy != DO_NOT_COPY) {
+			if (shouldCopy()) {
 				success &= copyFilesToProject(monitor, project,
 						projectDescription, projectPaths);
 			}
@@ -224,6 +247,10 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 			throw new CoreException(new Status(IStatus.ERROR,
 					Activator.PLUGIN_ID, e.getMessage(), e));
 		}
+	}
+
+	private boolean shouldCopy() {
+		return copyStrategy != DO_NOT_COPY;
 	}
 
 	private boolean copyFilesToProject(IProgressMonitor monitor,

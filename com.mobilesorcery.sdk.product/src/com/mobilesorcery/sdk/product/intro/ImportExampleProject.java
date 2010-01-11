@@ -54,7 +54,7 @@ public class ImportExampleProject {
 			File[] fileChildren = new File[1];
 			fileChildren[0] = new File(projectString);
 			if (fileChildren[0].exists()) {
-				ImportProjectsRunnable importproject = new ImportProjectsRunnable(fileChildren, ImportProjectsRunnable.COPY_ALL_FILES);
+				ImportProjectsRunnable importproject = new ImportProjectsRunnable(fileChildren, ImportProjectsRunnable.COPY_ALL_FILES | ImportProjectsRunnable.USE_NEW_PROJECT_IF_AVAILABLE);
 				IProgressMonitor monitor = new NullProgressMonitor();
 				try {
 					importproject.run(monitor);
