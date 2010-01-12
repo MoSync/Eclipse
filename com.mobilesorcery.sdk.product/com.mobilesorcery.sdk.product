@@ -45,8 +45,10 @@
    <plugins>
       <plugin id="com.ibm.icu"/>
       <plugin id="com.mobilesorcery.sdk.builder"/>
+      <plugin id="com.mobilesorcery.sdk.builder.android"/>
       <plugin id="com.mobilesorcery.sdk.builder.headless"/>
       <plugin id="com.mobilesorcery.sdk.builder.java"/>
+      <plugin id="com.mobilesorcery.sdk.builder.moblin"/>
       <plugin id="com.mobilesorcery.sdk.builder.s60"/>
       <plugin id="com.mobilesorcery.sdk.builder.winmobile"/>
       <plugin id="com.mobilesorcery.sdk.core"/>
