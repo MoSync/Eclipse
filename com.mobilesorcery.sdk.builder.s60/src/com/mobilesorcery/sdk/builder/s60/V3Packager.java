@@ -16,6 +16,7 @@ package com.mobilesorcery.sdk.builder.s60;
 import java.io.File;
 import java.io.IOException;
 
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -25,6 +26,7 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.templates.Template;
+import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class V3Packager extends S60Packager {
@@ -53,6 +55,7 @@ public class V3Packager extends S60Packager {
 			File runtimeDir = new File(internal.resolve("%runtime-dir%")); //$NON-NLS-1$
 			String runtimePath = internal.resolve("%runtime-dir%\\MoSync%D%.exe"); //$NON-NLS-1$
 
+			// bin-hack
 			try {
 				createExe(new File(runtimePath), packageOutputDir, uid, internal);
 				createRegRsc(new File(runtimeDir, "MoSync_reg.RSC"), packageOutputDir, uid); //$NON-NLS-1$
@@ -60,15 +63,39 @@ public class V3Packager extends S60Packager {
 			} catch (RuntimeException e) {
 				throw new IOException("Invalid runtime(s)", e);
 			}
-			
-			String template = Util.readFile(runtimeDir.getAbsolutePath() + "/MoSync-template.pkg"); //$NON-NLS-1$
 
+			// handle icon
+			MoSyncIconBuilderVisitor visitor = new MoSyncIconBuilderVisitor();
+			visitor.setProject(project.getWrappedProject());
+			IResource[] iconFiles = visitor.getIconFiles();
+			boolean hasIcon = false;
+			if (iconFiles.length > 0) {
+				IResource iconFile = iconFiles[0];
+				Object xObj = targetProfile.getProperties().get("MA_PROF_CONST_ICONSIZE_X"); //$NON-NLS-1$
+				Object yObj = targetProfile.getProperties().get("MA_PROF_CONST_ICONSIZE_Y"); //$NON-NLS-1$
+				String sizeStr;
+				if (xObj != null && yObj != null) {
+					sizeStr = ((Long) xObj) + "x" + ((Long) yObj); //$NON-NLS-1$
+				} else {
+					sizeStr = "default"; //$NON-NLS-1$
+				}
+				internal.runCommandLine("%mosync-bin%\\icon-injector", "-src", //$NON-NLS-1$ //$NON-NLS-2$
+					iconFile.getLocation().toOSString(),
+					"-size", sizeStr, "-platform", "symbian9", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+					"-dst", packageOutputDir + "/" + uid + "_icon.mif"); //$NON-NLS-1$
+				hasIcon = true;
+			}
+			
+			// write package file
+			String template = Util.readFile(runtimeDir.getAbsolutePath() + "/MoSync-template.pkg"); //$NON-NLS-1$
 			internal.setParameter("uid", uid); //$NON-NLS-1$
 			internal.setParameter("vendor-name", "Mobile Sorcery"); //$NON-NLS-1$ //$NON-NLS-2$
+			internal.setParameter("has-icon", hasIcon ? "" : ";");
 			String resolvedTemplate = Template.preprocess(template, internal.getParameters().toMap());
 			File pkgFile = new File(packageOutputDir, uid + ".pkg"); //$NON-NLS-1$
 			Util.writeToFile(pkgFile, resolvedTemplate);
-
+			
+			// compile sis file
 			internal.runCommandLine("%mosync-bin%\\makesis-4.exe", pkgFile.getAbsolutePath()); //$NON-NLS-1$
 
 			File unsignedSis = new File(packageOutputDir, uid + ".sis"); //$NON-NLS-1$
@@ -163,7 +190,7 @@ public class V3Packager extends S60Packager {
 		templateLoc += 0x14;
 		bufferLoc += 0x14;
 		if (uidStr.length() != 8) {
-			throw new IOException();
+			throw new IOException("Invalid UID");
 		}
 		System.arraycopy(uidStr.getBytes(), 0, buffer, bufferLoc, 8);
 		templateLoc += 8;

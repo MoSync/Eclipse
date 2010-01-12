@@ -26,7 +26,6 @@ import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class JavaPackager extends AbstractPackager {
@@ -52,7 +51,7 @@ public class JavaPackager extends AbstractPackager {
 			File manifest = new File(internal.resolve("%compile-output-dir%\\META-INF\\manifest.mf")); //$NON-NLS-1$
 			createManifest(project.getName(), manifest);
 
-			// Need to set exection dir, o/w zip will not understand what we
+			// Need to set execution dir, o/w zip will not understand what we
 			// really want.
 			internal.getExecutor().setExecutionDirectory(manifest.getParentFile().getParent());
 			internal.runCommandLine("cmd", "/c", "copy", "%runtime-dir%\\MoSyncRuntime%D%.jar", projectJar.getAbsolutePath(), "/y"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
@@ -77,7 +76,7 @@ public class JavaPackager extends AbstractPackager {
 				if (xObj != null && yObj != null) {
 					String sizeStr = ((Long) xObj) + "x" + ((Long) yObj); //$NON-NLS-1$
 					internal.runCommandLine("%mosync-bin%\\icon-injector", "-src", iconFiles[0].getLocation().toOSString(), "-size", sizeStr, "-platform", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-							"j2me", "-dst", projectJar.getAbsolutePath()); //$NON-NLS-1$ //$NON-NLS-2$
+						"j2me", "-dst", projectJar.getAbsolutePath()); //$NON-NLS-1$ //$NON-NLS-2$
 				}
 			}
 
