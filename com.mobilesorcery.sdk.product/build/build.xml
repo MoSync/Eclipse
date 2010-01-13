@@ -64,9 +64,9 @@
 				<!-- This list should contain all plugins, but not features + product -->
 				<include name="com.mobilesorcery.sdk.builder/**" />
 				<include name="com.mobilesorcery.sdk.builder.headless/**" />
-				<include name="com.mobilesorcery.sdk.builder.java/**" />
-				<include name="com.mobilesorcery.sdk.builder.s60/**" />
-				<include name="com.mobilesorcery.sdk.builder.winmobile/**" />
+				<!-- All platforms should have the com.mobilesorcery.sdk.builder prefix -->
+				<include name="com.mobilesorcery.sdk.builder.*/**" />
+				<exclude name="com.mobilesorcery.sdk.builder.*.feature/**"/>
 				<include name="com.mobilesorcery.sdk.core/**" />
 				<include name="com.mobilesorcery.sdk.core.templates/**" />
 				<include name="com.mobilesorcery.sdk.finalizer.core/**" />
