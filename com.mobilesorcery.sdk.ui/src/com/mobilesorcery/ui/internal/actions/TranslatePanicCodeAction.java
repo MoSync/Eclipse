@@ -17,6 +17,7 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ITableLabelProvider;
@@ -163,8 +164,12 @@ public class TranslatePanicCodeAction extends Action implements IWorkbenchWindow
     }
 
     public void run(IAction action) {
-        TranslatePanicCodeDialog dialog = new TranslatePanicCodeDialog(window.getShell());
-        dialog.open();
+    	if (CoreMoSyncPlugin.getDefault().getAllPanicErrorCodes().length == 0) {
+    		MessageDialog.openError(window.getShell(), "No panic codes", "How ironic. Could not load panic code file!\nArgh. Panic. Panic. PANIC!!");
+    	} else {
+    		TranslatePanicCodeDialog dialog = new TranslatePanicCodeDialog(window.getShell());
+    		dialog.open();
+    	}
     }
 
     public void selectionChanged(IAction action, ISelection selection) {

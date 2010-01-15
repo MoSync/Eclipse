@@ -13,6 +13,7 @@
 */
 package com.mobilesorcery.sdk.core;
 
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.text.MessageFormat;
@@ -36,6 +37,8 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
@@ -59,7 +62,7 @@ import com.mobilesorcery.sdk.profiles.filter.elementfactories.VendorFilterFactor
 /**
  * The activator class controls the plug-in life cycle
  */
-public class CoreMoSyncPlugin extends AbstractUIPlugin {
+public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChangeListener {
 
     // The plug-in ID
     public static final String PLUGIN_ID = "com.mobilesorcery.sdk.core";
@@ -114,7 +117,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin {
         initGlobalDependencyManager();        
         initEmulatorProcessManager();
         installBreakpointHack();
-		checkAutoUpdate();
+		getPreferenceStore().addPropertyChangeListener(this);
+		checkAutoUpdate();        
     }
 
 	/**
@@ -220,10 +224,17 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin {
 
     private void initPanicErrorMessages() {
         try {
-            URL url = FileLocator.find(getBundle(), new Path("$nl$/panicmessages.properties"), new HashMap());
-            InputStream messagesStream = url.openStream();
-            panicMessages.load(messagesStream);
-            messagesStream.close();
+        	panicMessages = new Properties();
+
+        	InputStream messagesStream = 
+        		new FileInputStream(MoSyncTool.getDefault().getMoSyncHome().
+        				append("etc/paniccodes.properties").toFile());
+        	
+        	try {
+        		panicMessages.load(messagesStream);
+           } finally {
+        		Util.safeClose(messagesStream);
+        	}
         } catch (Exception e) {
             // Just ignore.
             getLog().log(new Status(IStatus.WARNING, PLUGIN_ID, "Could not initialize panic messages", e));
@@ -453,5 +464,12 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin {
 	public void setIDEProcessConsoleProvider(IProvider<IProcessConsole, String> ideProcessConsoleProvider) {
 		// I'm lazy - Instead of extension points...
 		this.ideProcessConsoleProvider = ideProcessConsoleProvider;
+	}
+
+	public void propertyChange(PropertyChangeEvent event) {
+		if (MoSyncTool.MOSYNC_HOME_PREF.equals(event.getProperty()) || MoSyncTool.MO_SYNC_HOME_FROM_ENV_PREF.equals(event.getProperty())) {
+			initPanicErrorMessages();
+		}
+		
 	}
 }
