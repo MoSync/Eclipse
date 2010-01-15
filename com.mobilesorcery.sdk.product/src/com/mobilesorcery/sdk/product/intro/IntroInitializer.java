@@ -56,8 +56,23 @@ public class IntroInitializer {
 	}
 	
 	private IntroInitializer() {
+		// First try the custom file in eclipse root. (Because we want it to be file-system only, and not
+		// located in the mosync home directory.
 		try {
-			uri = getClass().getResource("/content/welcome.xml").toURI();
+			String locationPath = Platform.getInstallLocation().getURL().getPath();
+			File welcomeFile = new File(locationPath, "welcome.xml");
+			if (welcomeFile.exists()) {
+				uri = welcomeFile.toURI();
+			}
+		} catch (Exception e) {
+			// Ignore.
+		}
+		
+		// And if that did not work, use the fallback version.
+		try {
+			if (uri == null) {
+				uri = getClass().getResource("/content/welcome.xml").toURI();
+			}
 		} catch (Exception e) {
 			CoreMoSyncPlugin.getDefault().log(e);
 			// Should not happen.
