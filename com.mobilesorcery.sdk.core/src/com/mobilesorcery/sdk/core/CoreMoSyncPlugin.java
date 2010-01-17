@@ -228,7 +228,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
         	InputStream messagesStream = 
         		new FileInputStream(MoSyncTool.getDefault().getMoSyncHome().
-        				append("etc/paniccodes.properties").toFile());
+        				append("eclipse/paniccodes.properties").toFile());
         	
         	try {
         		panicMessages.load(messagesStream);
