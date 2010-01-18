@@ -183,6 +183,13 @@ public class DebBuilder
         StringBuilder o = m_md5sums;
 
         // Add to file list
+        if ( p.startsWith( "./" ) == false )
+        {
+            if ( p.charAt( 0 ) == '/' )
+                p = "." + p;
+            else
+                p = "./" + p;
+        }		
         SimpleEntry<String, Integer> v = new SimpleEntry<String, Integer>( p, m );
         m_fileList.add( new SimpleEntry<File, SimpleEntry<String, Integer>>( f, v ) );
 
