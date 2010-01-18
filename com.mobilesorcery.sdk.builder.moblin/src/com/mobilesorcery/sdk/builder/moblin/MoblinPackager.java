@@ -117,8 +117,10 @@ extends AbstractPackager
                 outputDir.mkdirs( );
 
             Map<String, Object> props = targetProfile.getProperties();
-            String p = (String)props.get("MA_PROF_CONST_PACKAGER");
-            p = p.toLowerCase();
+            String p = (String)props.get( "MA_PROF_CONST_PACKAGER" );
+            if ( p == null )
+            	p = "all";
+            p = p.toLowerCase( );
             List<String> l = pack.createPackages( outputDir, p );
             buildResult.setBuildResult( new File( l.get( 0 ) ) );
             /*

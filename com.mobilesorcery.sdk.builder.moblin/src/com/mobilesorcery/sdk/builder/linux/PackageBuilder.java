@@ -47,10 +47,17 @@ import com.mobilesorcery.sdk.builder.linux.deb.fields.PriorityHeader;
 import com.mobilesorcery.sdk.builder.linux.deb.fields.SectionHeader;
 
 
+
+
 /**
  * This class handles the details of building RPM and DEB packages
  * from a template package.
  *
+ *	TODO:
+ *		- Fix package signing 
+ *		- Fix application category
+ *		- Proper package meta data, needs Eclipse support!
+ *		-
  *
  * @author Ali Mosavian
  */
@@ -147,6 +154,18 @@ public class PackageBuilder
         m_resourceMap.put( "png"+s, p );
     }
 
+    /**
+     * Sets the working directory where temporary
+     * unpacking and customization of a package is
+     * done. 
+     * 
+     * @param p
+     */
+    public void setWorkDir ( String p )
+    {
+    	m_tempDir.delete( );
+    	m_tempDir = new File( p, "temp" );
+    }
 
     /**
      * This method sets a private RSA key in DER format that is used
@@ -192,6 +211,9 @@ public class PackageBuilder
      *
      * @param o The directory to which the packages should be
      *          output.
+     *          
+     * @param pt Which kind of package to create, valid values
+     * 			 are { "deb", "rpm", "all" }.          
      *
      * @return List of (one or two) string(s) with the absolute
      *         path to the package(s)
@@ -200,7 +222,8 @@ public class PackageBuilder
      *         or if an exception occurred while building either
      *         package.
      */
-    public List<String> createPackages ( File o, String packager )
+    public List<String> createPackages ( File o, 
+    									 String pt )
     throws Exception
     {
         List<String> l = new LinkedList<String>( );
@@ -208,18 +231,31 @@ public class PackageBuilder
         // Parse and unpack template package
         doParseTemplate( );
 
-        if(packager.equals("deb")) {
+        // Check which package types we need to create
+        if ( (pt.equals( "deb" ) ||
+        	  pt.equals( "rpm" ) ||
+        	  pt.equals( "all" )) == false )
+        	throw new RuntimeException( "Unknown package type" );
+
+        // Create requested package(s)
+        if ( pt.equals( "deb" ) || 
+        	 pt.equals( "all" )  ) 
+        {
 	        // Do we have dependencies for DEB ?
 	        if ( m_templateParser.getDependsList( ).isEmpty( ) == false )
 	            l.add( new File( o, createDEB( o ) ).getAbsolutePath( ) );
-        } else if(packager.equals("rpm")) {
+        } 
+        
+        if ( pt.equals( "rpm" ) || 
+        	 pt.equals( "all" ) ) 
+        {
 	        // Do we have dependencies for RPM ?
 	        if ( m_templateParser.getRequiresList( ).isEmpty( ) == false )
 	            l.add( new File( o, createRPM( o ) ).getAbsolutePath( ) );
-        } else {
-        	throw new Exception("Bad packager");
         }
 
+        // An empty list means that there hasn't been any attempt 
+        // at creating a package because of missing dependency list.
         if ( l.isEmpty( ) )
             throw new Exception( "Template package has no dependency list" );
 
@@ -253,6 +289,7 @@ public class PackageBuilder
                                "1.0",
                                "0" );
         rpmBuilder.setType( RpmType.BINARY );
+        // FIXME: Doesn't have to be i386
         rpmBuilder.setPlatform( Architecture.I386, Os.LINUX );
         rpmBuilder.setSummary( m_resourceMap.get( "appname" ) );
         rpmBuilder.setDescription( m_resourceMap.get( "appname" ) );
@@ -297,7 +334,7 @@ public class PackageBuilder
     private String createDEB ( File o )
     throws Exception
     {
-        DebBuilder  builder;
+        DebBuilder  debBuilder;
         String      appName = m_resourceMap.get( "appname" );
         String      appSummary = appName;
         String      appDescription = appName;
@@ -305,28 +342,26 @@ public class PackageBuilder
         //
         // Set package parameters
         //
-        builder = new DebBuilder( appName,
-                                  "1.0",
-                                  "0" );
+        debBuilder = new DebBuilder( appName, "1.0", "0" );
 
         // FIXME: Doesn't have to be i386
-        builder.addHeader( new ArchitectureHeader( ArchitectureHeader.CpuArch.I386 ) );
-        builder.addHeader( new MaintainerHeader( "", "<>" ) );
-        builder.addHeader( new SectionHeader( SectionHeader.DebianSections.Utils ) );
-        builder.addHeader( new PriorityHeader( PriorityHeader.Priorities.Optional ) );
-        builder.addHeader( new DescriptionHeader( appSummary, appDescription ) );
+        debBuilder.addHeader( new ArchitectureHeader( ArchitectureHeader.CpuArch.I386 ) );
+        debBuilder.addHeader( new MaintainerHeader( "", "<>" ) );
+        debBuilder.addHeader( new SectionHeader( SectionHeader.DebianSections.Utils ) );
+        debBuilder.addHeader( new PriorityHeader( PriorityHeader.Priorities.Optional ) );
+        debBuilder.addHeader( new DescriptionHeader( appSummary, appDescription ) );
 
         // Package dependencies
         for ( String r : m_templateParser.getDependsList( ) )            
-            builder.addHeader( new DependsHeader( r ) );
+            debBuilder.addHeader( new DependsHeader( r ) );
 
         // Add files and directories
-        addFilesToDeb( builder, "/", new File( m_tempDir, "." ) );
+        addFilesToDeb( debBuilder, "/", new File( m_tempDir, "." ) );
 
         //
         // Build and return path to package
         //
-        return builder.build( o );
+        return debBuilder.build( o );
     }
 
 

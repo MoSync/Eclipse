@@ -25,7 +25,7 @@ import java.io.InputStreamReader;
 
 
 /**
- * This is a simple class that was refectored out or PackageParser,
+ * This is a simple class that was refactored out or PackageParser,
  * it handles variables and resolving them in strings and files.
  *
  * @author Ali Mosavian
