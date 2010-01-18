@@ -16,17 +16,17 @@ package com.mobilesorcery.sdk.builder.moblin;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+//import java.io.IOException;
+//import java.util.logging.Level;
+//import java.util.logging.Logger;
 import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.CoreException;
 
 import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
@@ -56,7 +56,7 @@ extends AbstractPackager
      * @param targetProfile Profile information i presume.
      * @param buildResult The build result is returned through this parameter.
      *
-     * @throws CoreException Error occured
+     * @throws CoreException Error occurred
      */
     public void createPackage ( MoSyncProject project,
                                 IProfile targetProfile,
@@ -77,7 +77,7 @@ extends AbstractPackager
         {
             appName = m_internal.resolve( "%project-name%" );
 
-            // Probably don't want this. Unless the debugger is turned of
+            // Probably don't want this. Unless the debugger is turned off
             // in release runtimes. What's the point of using debug
             // runtimes just cause the user is running his/hers app in
             // debug mode?
@@ -116,7 +116,10 @@ extends AbstractPackager
             if ( outputDir.exists( ) == false )
                 outputDir.mkdirs( );
 
-            List<String> l = pack.createPackages( outputDir );
+            Map<String, Object> props = targetProfile.getProperties();
+            String p = (String)props.get("MA_PROF_CONST_PACKAGER");
+            p = p.toLowerCase();
+            List<String> l = pack.createPackages( outputDir, p );
             buildResult.setBuildResult( new File( l.get( 0 ) ) );
             /*
             for ( String s : l )
@@ -142,7 +145,7 @@ extends AbstractPackager
      *
      * @param s String to output
      */
-    private void echoToCon ( String s )
+    /*private void echoToCon ( String s )
     {
         try
         {
@@ -153,5 +156,5 @@ extends AbstractPackager
             Logger.getLogger( MoblinPackager.class.getName() ).log( Level.SEVERE,
                                                                     null, ex );
         }
-    }
+    }*/
 }

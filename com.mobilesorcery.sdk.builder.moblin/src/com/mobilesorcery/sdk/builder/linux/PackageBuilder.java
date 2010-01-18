@@ -56,7 +56,7 @@ import com.mobilesorcery.sdk.builder.linux.deb.fields.SectionHeader;
  */
 public class PackageBuilder
 {
-    private PrivateKey      m_privKey;
+	private PrivateKey      m_privKey;
     private File            m_tempDir;
     private File            m_template;
     private PackageParser   m_templateParser;
@@ -191,31 +191,34 @@ public class PackageBuilder
      * and an exception is thrown.
      *
      * @param o The directory to which the packages should be
-     *          outputed.
+     *          output.
      *
      * @return List of (one or two) string(s) with the absolute
      *         path to the package(s)
      *
      * @throws Exception If neither package has a dependency list
-     *         or if an exception occured while building either
+     *         or if an exception occurred while building either
      *         package.
      */
-    public List<String> createPackages ( File o )
+    public List<String> createPackages ( File o, String packager )
     throws Exception
-    
     {
         List<String> l = new LinkedList<String>( );
 
         // Parse and unpack template package
         doParseTemplate( );
 
-        // Do we have dependencies for DEB ?
-        if ( m_templateParser.getDependsList( ).isEmpty( ) == false )
-            l.add( new File( o, createDEB( o ) ).getAbsolutePath( ) );
-
-        // Do we have dependencies for RPM ?
-        if ( m_templateParser.getRequiresList( ).isEmpty( ) == false )
-            l.add( new File( o, createRPM( o ) ).getAbsolutePath( ) );
+        if(packager.equals("deb")) {
+	        // Do we have dependencies for DEB ?
+	        if ( m_templateParser.getDependsList( ).isEmpty( ) == false )
+	            l.add( new File( o, createDEB( o ) ).getAbsolutePath( ) );
+        } else if(packager.equals("rpm")) {
+	        // Do we have dependencies for RPM ?
+	        if ( m_templateParser.getRequiresList( ).isEmpty( ) == false )
+	            l.add( new File( o, createRPM( o ) ).getAbsolutePath( ) );
+        } else {
+        	throw new Exception("Bad packager");
+        }
 
         if ( l.isEmpty( ) )
             throw new Exception( "Template package has no dependency list" );
@@ -329,7 +332,7 @@ public class PackageBuilder
 
     /**
      * This method extracts and parses a template package so that it
-     * becomes customised to this application.
+     * becomes customized to this application.
      *
      * @throws Exception If there was a file error, or missing values
      *         in the meta data of the template.
@@ -384,12 +387,12 @@ public class PackageBuilder
 
 
     /**
-     * This method recursivly adds file to an RPM while making sure
+     * This method recursively adds file to an RPM while making sure
      * that the file permissions are correct.
      *
      * @param b Instance of the rpm builder class
      * @param r Relative path to base everything on (in the rpm)
-     * @param c File to recursivly process
+     * @param c File to recursively process
      *
      * @throws IOException Error reading the file.
      * @throws NoSuchAlgorithmException This happens when the md5 and sha1
