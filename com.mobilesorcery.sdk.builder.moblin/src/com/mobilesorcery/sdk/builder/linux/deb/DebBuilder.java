@@ -181,7 +181,11 @@ public class DebBuilder
            NoSuchAlgorithmException
     {
         StringBuilder o = m_md5sums;
-
+        
+		// These entries will currupt the dpkg database
+        if ( p.equals( "/" ) ||  p.equals( "." ) || p.equals( "./" ) )
+            return;
+			
         // Add to file list
         if ( p.startsWith( "./" ) == false )
         {
