@@ -257,7 +257,7 @@ public class PackageBuilder
         // An empty list means that there hasn't been any attempt 
         // at creating a package because of missing dependency list.
         if ( l.isEmpty( ) )
-            throw new Exception( "Template package has no dependency list" );
+            throw new Exception( "Package(s) not built - missing dependency list" );
 
         return l;
     }
@@ -276,6 +276,9 @@ public class PackageBuilder
     throws Exception
     {
         Builder rpmBuilder;
+        String  appName = m_resourceMap.get( "appname" )
+        							   .toLowerCase( )
+        							   .replace( " ", "_" );
 
         //
         // Set package parameters
@@ -283,11 +286,7 @@ public class PackageBuilder
         rpmBuilder = new Builder( );
 
         //rpmBuilder.addSignature( m_privKey );
-        rpmBuilder.setPackage( m_resourceMap.get( "appname" )
-                                            .toLowerCase( )
-                                            .replace( " ", "_" ),
-                               "1.0",
-                               "0" );
+        rpmBuilder.setPackage(  appName, "1.0", "0" );
         rpmBuilder.setType( RpmType.BINARY );
         // FIXME: Doesn't have to be i386
         rpmBuilder.setPlatform( Architecture.I386, Os.LINUX );

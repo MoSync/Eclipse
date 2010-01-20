@@ -182,7 +182,7 @@ public class DebBuilder
     {
         StringBuilder o = m_md5sums;
         
-		// These entries will currupt the dpkg database
+		// These entries will corrupt the dpkg database
         if ( p.equals( "/" ) ||  p.equals( "." ) || p.equals( "./" ) )
             return;
 			
@@ -208,7 +208,7 @@ public class DebBuilder
         o.append( p ).append( "\n" );
 
         // Add file size to total
-        m_installedSize += f.length( );
+        m_installedSize += f.length( )/1024;
     }
 
 
@@ -347,7 +347,7 @@ public class DebBuilder
         tos.closeArchiveEntry( );
         ftemp.delete( );
 
-        // TODO: Add support for prerm, postrm, preinst, postinst scripts
+        // Add prerm, postrm, preinst, postinst scripts
         for ( Entry<String, String> s : m_scriptMap.entrySet( ) )
         {
             TarArchiveEntry e = new TarArchiveEntry( "./"+s.getKey( ) );
