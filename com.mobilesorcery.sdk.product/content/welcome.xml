@@ -1,12 +1,11 @@
 <intro>
 <link type="example" href="3dLines" desc="3D Lines Example" scope="short" />
 <link type="example" href="AdvGraphics" desc="Advanced Graphics Example" scope="short" />
-<link type="example" href="MoTris" desc="MoTris Example" scope="short,full" />
-<link type="example" href="MoTooth" desc="Bluetooth Example" scope="full" />
-<link type="guide" href="/com.mobilesorcery.sdk.help/docs/UserGuide.html" desc="Quickstart Guide" />
+<link type="example" href="MoTris" desc="MoTris Example" scope="short" />
+<link type="guide" href="help://com.mobilesorcery.sdk.help/docs/UserGuide.html" desc="Quickstart Guide" />
 <link type="screencast" href="http://www.mosync.com/content/mosync-23-screencast-importing-example-project" desc="Quickstart Screencast" />
-<link type="reading" href="/com.mobilesorcery.sdk.help/docs/MoRE.html" desc="MoRE - the emulator" scope="short,full" />
-<link type="reading" href="/com.mobilesorcery.sdk.help/docs/Rescomp.html" desc="The resource compiler!" scope="short,full" />
-<link type="reading" href="/com.mobilesorcery.sdk.help/docs/Fonts.html" desc="Font tools" scope="full" />
-<link type="reading" href="/com.mobilesorcery.sdk.help/docs/xml.html" desc="Working with XML in C++" scope="full" />
+<link type="reading" href="/com.mobilesorcery.sdk.help/docs/MoRE.html" desc="MoRE - the emulator" scope="short" />
+<link type="reading" href="/com.mobilesorcery.sdk.help/docs/Rescomp.html" desc="The resource compiler!" scope="short" />
+<link type="reading" href="/com.mobilesorcery.sdk.help/docs/Fonts.html" desc="Font tools" scope="short" />
+<link type="reading" href="/com.mobilesorcery.sdk.help/docs/xml.html" desc="Working with XML in C++" scope="short" />
 </intro>
