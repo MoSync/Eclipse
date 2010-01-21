@@ -97,8 +97,13 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     	MoSyncProject mosyncProject = MoSyncProject.create(project);
     	// We'll let non-mosync projects slip through; they'll be handled in launchSync
     	if (mosyncProject != null && mosyncProject.isBuildConfigurationsSupported()) {
-    		if (configuration.getAttribute(ILaunchConstants.AUTO_CHANGE_CONFIG, true)) {
-    			String buildConfig = configuration.getAttribute(ILaunchConstants.BUILD_CONFIG, "Debug");
+    		boolean isDebugMode = "debug".equals(mode);
+    		
+			String autoChangeConfigKey = isDebugMode ? ILaunchConstants.AUTO_CHANGE_CONFIG_DEBUG : ILaunchConstants.AUTO_CHANGE_CONFIG;
+    		String buildConfigKey = isDebugMode ? ILaunchConstants.BUILD_CONFIG_DEBUG : ILaunchConstants.BUILD_CONFIG;
+
+    		if (configuration.getAttribute(autoChangeConfigKey, true)) {
+    			String buildConfig = configuration.getAttribute(buildConfigKey, getDefaultBuildConfiguration(mode));
     			IBuildConfiguration activeBuildConfig = mosyncProject.getActiveBuildConfiguration();
     			String activeBuildConfigId = activeBuildConfig == null ? null : activeBuildConfig.getId();
     			if (buildConfig != null && !buildConfig.equals(activeBuildConfigId)) {
@@ -108,6 +113,15 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     	}
     	
     	return super.preLaunchCheck(configuration, mode, monitor);
+    }
+    
+    /**
+     * Returns the default build configuration to use for a given mode (debug or launch).
+     * @param mode
+     * @return
+     */
+    public static String getDefaultBuildConfiguration(String mode) {
+    	return "debug".equals(mode) ? IBuildConfiguration.DEBUG_ID : IBuildConfiguration.RELEASE_ID;
     }
     
     public void launchSync(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor)

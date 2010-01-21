@@ -43,5 +43,17 @@ public interface ILaunchConstants {
 	 * to before launch
 	 */
 	String BUILD_CONFIG = "build.config";
+	
+	/**
+	 * The launch property deciding whether to automatically change
+	 * the build configuration before a <i>debug</i> launch 
+	 */
+	String AUTO_CHANGE_CONFIG_DEBUG = AUTO_CHANGE_CONFIG + ".debug";
+
+	/**
+	 * The launch property deciding which build configuration to automatically change
+	 * to before a <i>debug</i> launch
+	 */
+	String BUILD_CONFIG_DEBUG= BUILD_CONFIG + ".debug";
 
 }

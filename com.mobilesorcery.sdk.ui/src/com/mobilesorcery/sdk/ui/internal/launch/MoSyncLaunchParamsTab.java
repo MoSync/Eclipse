@@ -44,9 +44,11 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.ILaunchConstants;
 import com.mobilesorcery.sdk.core.MoSyncNature;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
 
@@ -70,11 +72,11 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 			}
 		}
 	}
-	
+
 	private class UpdateConfigurationListener implements ModifyListener {
 		public void modifyText(ModifyEvent e) {
 			updateConfigurations();
-		}		
+		}
 	}
 
 	private Text projectText;
@@ -94,9 +96,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 		control.setLayout(new GridLayout());
 		createProjectEditor(control);
 		createResolutionEditor(control);
-		if ("debug".equals(mode)) {
-			createConfigurationEditor(control);
-		}
+		createConfigurationEditor(control);
 		setControl(control);
 	}
 
@@ -166,15 +166,17 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 
 	private void createConfigurationEditor(Composite control) {
 		configurationGroup = new Group(control, SWT.NONE);
-		configurationGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		configurationGroup
+				.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		configurationGroup.setText("&Configuration");
 		configurationGroup.setLayout(new GridLayout(1, false));
 
 		changeConfiguration = new Button(configurationGroup, SWT.CHECK);
 		changeConfiguration
-				.setText("&Automatically switch to this configuration before launching");
+				.setText(isDebugMode() ? 
+						"&Automatically switch to this configuration before debugging" :
+						"&Automatically switch to this configuration before launching");
 		changeConfiguration.addSelectionListener(listener);
-		// TODO: Dialog to alert user (if applicable)
 
 		configurations = new ComboViewer(configurationGroup, SWT.READ_ONLY
 				| SWT.BORDER);
@@ -182,17 +184,15 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 	}
 
 	private void updateConfigurations() {
-		if ("debug".equals(mode)) {
-			MoSyncProject project = selectedProject();
-			if (project != null) {
-				configurations
-						.setContentProvider(new BuildConfigurationsContentProvider(
-								project));
-				configurations
-						.setLabelProvider(new BuildConfigurationsLabelProvider(
-								project));
-				configurations.setInput(project);
-			}
+		MoSyncProject project = selectedProject();
+		if (project != null) {
+			configurations
+					.setContentProvider(new BuildConfigurationsContentProvider(
+							project));
+			configurations
+					.setLabelProvider(new BuildConfigurationsLabelProvider(
+							project));
+			configurations.setInput(project);
 		}
 	}
 
@@ -251,16 +251,27 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 			// Ignore.
 		}
 	}
-	
-	public void initializeBuildConfigurationOptions(ILaunchConfiguration config) throws CoreException {
-		if ("debug".equals(mode)) {
-			changeConfiguration.setSelection(config.getAttribute(
-					ILaunchConstants.AUTO_CHANGE_CONFIG, true));
-			String buildConfiguration = config.getAttribute(ILaunchConstants.BUILD_CONFIG, "Debug");
-			configurations.setSelection(new StructuredSelection(buildConfiguration));
-		}		
+
+	public void initializeBuildConfigurationOptions(ILaunchConfiguration config)
+			throws CoreException {
+		String defaultBuildConfig = EmulatorLaunchConfigurationDelegate.getDefaultBuildConfiguration(mode);
+		changeConfiguration.setSelection(config.getAttribute(getAutoChangeConfigKey(), true));
+		String buildConfiguration = config.getAttribute(getBuildConfigKey(), defaultBuildConfig);
+		configurations.setSelection(new StructuredSelection(buildConfiguration));
 	}
 
+	private boolean isDebugMode() {
+		return "debug".equals(mode);
+	}
+	
+	private String getAutoChangeConfigKey() {
+		return isDebugMode() ? ILaunchConstants.AUTO_CHANGE_CONFIG_DEBUG : ILaunchConstants.AUTO_CHANGE_CONFIG;
+	}
+	
+	private String getBuildConfigKey() {
+		return isDebugMode() ? ILaunchConstants.BUILD_CONFIG_DEBUG : ILaunchConstants.BUILD_CONFIG;
+	}
+	
 	public void performApply(ILaunchConfigurationWorkingCopy copy) {
 		copy.setAttribute(ILaunchConstants.SCREEN_SIZE_OF_TARGET,
 				useTargetProfile.getSelection());
@@ -270,16 +281,15 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 				.getText().trim());
 		copy.setAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, heightText
 				.getText().trim());
-		if ("debug".equals(mode)) {
-			copy.setAttribute(ILaunchConstants.AUTO_CHANGE_CONFIG,
-					changeConfiguration.getSelection());
-			copy.setAttribute(ILaunchConstants.BUILD_CONFIG,
-					getSelectedBuildConfiguration());
-		}
+		copy.setAttribute(getAutoChangeConfigKey(),
+				changeConfiguration.getSelection());
+		copy.setAttribute(getBuildConfigKey(),
+				getSelectedBuildConfiguration());
 	}
-	
+
 	public String getSelectedBuildConfiguration() {
-		String result = (String) ((IStructuredSelection) configurations.getSelection()).getFirstElement();
+		String result = (String) ((IStructuredSelection) configurations
+				.getSelection()).getFirstElement();
 		return result == null ? "" : result;
 	}
 
@@ -309,15 +319,13 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 	}
 
 	public void updateLaunchConfigurationDialog() {
-		if ("debug".equals(mode)) {
-			MoSyncProject project = selectedProject();
-			boolean configurationsVisible = project != null
-					&& project.isBuildConfigurationsSupported();
-			boolean comboEnabled = changeConfiguration.getSelection()
-					&& configurationsVisible;
-			configurations.getControl().setEnabled(comboEnabled);
-			configurationGroup.setVisible(configurationsVisible);
-		}
+		MoSyncProject project = selectedProject();
+		boolean configurationsVisible = project != null
+				&& project.isBuildConfigurationsSupported();
+		boolean comboEnabled = changeConfiguration.getSelection()
+				&& configurationsVisible;
+		configurations.getControl().setEnabled(comboEnabled);
+		configurationGroup.setVisible(configurationsVisible);
 
 		super.updateLaunchConfigurationDialog();
 	}
