@@ -82,10 +82,12 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
     public boolean visit(IResource resource) throws CoreException {
     	super.visit(resource);
-        IFile cFile = getCFile(resource, false);
-        if (cFile != null) {
-            objectFiles.add(mapFileToOutput(cFile).toOSString());
-        }
+    	if (isBuildable(resource)) {
+	        IFile cFile = getCFile(resource, false);
+	        if (cFile != null) {
+	            objectFiles.add(mapFileToOutput(cFile).toOSString());
+	        }
+    	}
         
         return true;
     }
