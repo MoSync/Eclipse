@@ -6,7 +6,7 @@
       <searchParticipant
             icon="icons/searchparticipant.png"
             id="com.mobilesorcery.sdk.docs.searchParticipant"
-            name="MoSync API Documentation &amp; User Guide"
+            name="MoSync API Documentation and User Guide"
             participant="com.mobilesorcery.sdk.docs.MoSyncDocsSearchParticipant">
       </searchParticipant>
    </extension>
