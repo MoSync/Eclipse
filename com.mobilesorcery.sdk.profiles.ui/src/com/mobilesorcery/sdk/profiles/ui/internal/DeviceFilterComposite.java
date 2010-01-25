@@ -13,6 +13,8 @@
 */
 package com.mobilesorcery.sdk.profiles.ui.internal;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.util.Iterator;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -49,6 +51,8 @@ public class DeviceFilterComposite extends Composite {
     private Button remove;
     private Button edit;
     private Button add;
+    
+    PropertyChangeSupport listeners = new PropertyChangeSupport(this);
 
     public DeviceFilterComposite(Composite parent, int style) {
         super(parent, style);
@@ -131,7 +135,7 @@ public class DeviceFilterComposite extends Composite {
             }            
         }
     }            
-
+    
     private DeviceFilterDialog createDialogForFilter(IDeviceFilter filter) {
         // TODO! Hard-coded?
         DeviceFilterDialog dialog = null;

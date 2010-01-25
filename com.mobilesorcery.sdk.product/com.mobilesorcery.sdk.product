@@ -54,6 +54,7 @@
       <plugin id="com.mobilesorcery.sdk.core.templates"/>
       <plugin id="com.mobilesorcery.sdk.core.templates.tests" fragment="true"/>
       <plugin id="com.mobilesorcery.sdk.core.tests" fragment="true"/>
+      <plugin id="com.mobilesorcery.sdk.docs"/>
       <plugin id="com.mobilesorcery.sdk.finalizer.core"/>
       <plugin id="com.mobilesorcery.sdk.finalizer.ui"/>
       <plugin id="com.mobilesorcery.sdk.fontsupport"/>

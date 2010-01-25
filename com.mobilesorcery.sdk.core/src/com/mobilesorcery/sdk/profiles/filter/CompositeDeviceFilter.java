@@ -14,6 +14,7 @@
 package com.mobilesorcery.sdk.profiles.filter;
 
 import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -34,7 +35,7 @@ import com.mobilesorcery.sdk.profiles.IProfile;
  * @author Mattias
  * 
  */
-public class CompositeDeviceFilter extends AbstractDeviceFilter implements ICompositeDeviceFilter {
+public class CompositeDeviceFilter extends AbstractDeviceFilter implements ICompositeDeviceFilter, PropertyChangeListener {
 
     private static final String CRITERIA = "criteria";    
 
@@ -52,11 +53,13 @@ public class CompositeDeviceFilter extends AbstractDeviceFilter implements IComp
 
     public void addFilter(IDeviceFilter filter) {
         this.filters.add(filter);
+        filter.addPropertyChangeListener(this);
         notifyListeners(new PropertyChangeEvent(this, FILTER_ADDED, null, filter));
     }
 
     public void removeFilter(IDeviceFilter filter) {
         this.filters.remove(filter);
+        filter.removePropertyChangeListener(this);
         notifyListeners(new PropertyChangeEvent(this, FILTER_REMOVED, filter, null));
     }
 
@@ -115,5 +118,10 @@ public class CompositeDeviceFilter extends AbstractDeviceFilter implements IComp
     public String getFactoryId() {
         return "com.mobilesorcery.mosync.filters.composite";
     }
+
+	public void propertyChange(PropertyChangeEvent event) {
+		// Propagate.
+		notifyListeners(event);
+	}
 
 }

@@ -13,13 +13,16 @@
  */
 package com.mobilesorcery.sdk.update.internal;
 
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.swt.SWT;
 import org.eclipse.ui.IWindowListener;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchListener;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IUpdater;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.update.MosyncUpdatePlugin;
@@ -37,7 +40,7 @@ public class DefaultUpdater implements IUpdater {
 		public void run() {
 			boolean done = false;
 			while (!done) {
-				done = tryToShowDialog(update);
+				done = !CoreMoSyncPlugin.isHeadless() && tryToShowDialog(update);
 				try {
 					if (!done) {
 						// Quite acceptable, should not take many iterations to get here
@@ -62,10 +65,9 @@ public class DefaultUpdater implements IUpdater {
 				.getPreferenceStore();
 		prefStore.setDefault(MoSyncTool.AUTO_UPDATE_PREF, true);
 
-
 		UpdateProfilesAction update = new UpdateProfilesAction();
 		update.setIsStartedByUser(false); // Ignore some UI, add some other
-		
+	
 		if (MoSyncTool.getDefault().isValid()
 				&& prefStore.getBoolean(MoSyncTool.AUTO_UPDATE_PREF)) {
 
@@ -79,11 +81,12 @@ public class DefaultUpdater implements IUpdater {
 	private boolean tryToShowDialog(UpdateProfilesAction update) {
 		// Since the updater is called very early, we cannot
 		// be sure we have a workbench yet. Hence this strange concurrent implementation.
-		IWorkbench wb = PlatformUI.getWorkbench();
-		if (wb == null) {
+		try {
+			IWorkbench wb = PlatformUI.getWorkbench();
+		} catch (Exception e) {
 			return false;
 		}
-
+		
 		try {
 			update.run();
 		} finally {

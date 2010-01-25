@@ -69,6 +69,7 @@
 				<exclude name="com.mobilesorcery.sdk.builder.*.feature/**"/>
 				<include name="com.mobilesorcery.sdk.core/**" />
 				<include name="com.mobilesorcery.sdk.core.templates/**" />
+				<include name="com.mobilesorcery.sdk.docs/**" />
 				<include name="com.mobilesorcery.sdk.finalizer.core/**" />
 				<include name="com.mobilesorcery.sdk.finalizer.ui/**" />
 				<include name="com.mobilesorcery.sdk.fontsupport/**" />
@@ -89,6 +90,7 @@
 				<include name="com.mobilesorcery.sdk.smoketests/**" />
 				<include name="com.mobilesorcery.sdk.core.tests/**" />
 				<include name="com.mobilesorcery.sdk.core.templates.tests/**" />
+				<include name="com.mobilesorcery.sdk.importproject.tests/**" />
 			</fileset>
 		</copy>
 		<copy todir="${buildDirectory}/features">
@@ -194,7 +196,8 @@
 			<arg value="-testPluginName" />
 			<arg value="com.mobilesorcery.sdk.smoketests" />
 			<arg value="-className" />
-			<arg value="com.mobilesorcery.sdk.smoketests.Main" />			 			
+			<arg value="com.mobilesorcery.sdk.smoketests.Main" />
+			<arg value="-suppress-updates" />
 		</java>
 	</target>
 	

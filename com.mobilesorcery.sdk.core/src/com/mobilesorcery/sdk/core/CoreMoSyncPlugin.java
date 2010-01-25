@@ -63,7 +63,7 @@ import com.mobilesorcery.sdk.profiles.filter.elementfactories.VendorFilterFactor
  * The activator class controls the plug-in life cycle
  */
 public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChangeListener {
-
+	
     // The plug-in ID
     public static final String PLUGIN_ID = "com.mobilesorcery.sdk.core";
 
@@ -117,8 +117,19 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         initGlobalDependencyManager();        
         initEmulatorProcessManager();
         installBreakpointHack();
-		getPreferenceStore().addPropertyChangeListener(this);
-		checkAutoUpdate();        
+		getPreferenceStore().addPropertyChangeListener(this); 
+		initializeOnSeparateThread();
+    }
+    
+    void initializeOnSeparateThread() {
+    	Thread initializerThread = new Thread(new Runnable() {
+			public void run() {
+				checkAutoUpdate();
+			}    		
+    	}, "Initializer");
+    	
+    	initializerThread.setDaemon(true);
+    	initializerThread.start();
     }
 
 	/**
@@ -444,10 +455,25 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 			return;
 		}
 		
+		String[] args = Platform.getApplicationArgs();
+		if (suppressUpdating(args)) {
+			return;
+		}
+		
 		IUpdater updater = getUpdater();
 		if (updater != null) {
 			updater.update(false);
 		}
+	}
+
+	private boolean suppressUpdating(String[] args) {
+		for (int i = 0; i < args.length; i++) {
+			if ("-suppress-updates".equals(args[i])) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 
 	/**

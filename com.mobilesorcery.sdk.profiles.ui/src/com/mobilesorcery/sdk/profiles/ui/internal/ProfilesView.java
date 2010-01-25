@@ -316,7 +316,7 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
             updateTargetProfileLink(currentProject.getTargetProfile());
         } else if (event.getSource() instanceof IDeviceFilter) {
             profileTree.setFilters(new ViewerFilter[] { new DeviceViewerFilter(currentProject.getDeviceFilter()) });
-            profileTree.setInput(MoSyncTool.getDefault().getVendors());
+            profileTree.setInput(currentProject == null ? MoSyncTool.getDefault().getVendors() : currentProject.getFilteredVendors());
         } else if (event.getPropertyName() == MoSyncTool.PROFILES_UPDATED) {
             profileTree.getControl().getDisplay().asyncExec(new Runnable() {
                 public void run() {

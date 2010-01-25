@@ -27,8 +27,6 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -217,6 +215,7 @@ public class UpdateProfilesAction extends Action {
                 RegistrationDialog dialog = new RegistrationDialog(getShell());
                 dialog.setIsStartedByUser(isStartedByUser);
                 dialog.setInfo(info);
+                shell.forceActive();
                 result.offer(dialog.open());
             }
         });
