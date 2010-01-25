@@ -119,6 +119,11 @@ public class DefaultPackager {
 	public void runCommandLine(String... commandLine) throws IOException {
 		getExecutor().runCommandLine(commandLine);
 	}
+	
+	public int runCommandLineWithRes ( String... commandLine ) 
+	throws IOException {
+		return getExecutor().runCommandLineWithRes( commandLine );
+	}	
 
 	public void mkdirs(String path) {
 		String resolvedPath = CommandLineExecutor.replace(path, parameters);

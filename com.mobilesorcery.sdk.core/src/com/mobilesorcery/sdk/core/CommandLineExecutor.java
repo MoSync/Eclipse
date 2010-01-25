@@ -57,6 +57,25 @@ public class CommandLineExecutor {
 		execute();
 		lines.clear();
 	}
+	
+	/**
+	 * Convenience method for running exactly one line.
+	 * 
+	 * @param commandLine
+	 * @return Exit code of the process
+	 * @throws IOException
+	 */
+	public int runCommandLineWithRes ( String[] commandLine ) 
+	throws IOException 
+	{
+		int res;
+		lines.clear();
+		lines.add(commandLine);
+		res = execute();
+		lines.clear();
+		
+		return res;
+	}	
 
 	public void setParameters(CascadingProperties parameters) {
 		this.parameters = parameters;

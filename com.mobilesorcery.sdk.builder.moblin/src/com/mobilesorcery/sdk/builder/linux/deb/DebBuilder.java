@@ -169,13 +169,13 @@ public class DebBuilder
     /**
      * Adds a new file to package
      *
-     * @param f The actual file to add
-     * @param p File path in debian package
-     * @param m Standard unix file mode in octal
+     * @param path File path in debian package
+     * @param file The actual file to add
+     * @param mode Standard unix file mode in octal
      */
-    public void addFile ( String p,
-                          File f,
-                          Integer m )
+    public void addFile ( String path,
+                          File file,
+                          Integer mode )
     throws IOException,
            FileNotFoundException,
            NoSuchAlgorithmException
@@ -183,32 +183,32 @@ public class DebBuilder
         StringBuilder o = m_md5sums;
         
 		// These entries will corrupt the dpkg database
-        if ( p.equals( "/" ) ||  p.equals( "." ) || p.equals( "./" ) )
+        if ( path.equals( "/" ) ||  path.equals( "." ) || path.equals( "./" ) )
             return;
 			
         // Add to file list
-        if ( p.startsWith( "./" ) == false )
+        if ( path.startsWith( "./" ) == false )
         {
-            if ( p.charAt( 0 ) == '/' )
-                p = "." + p;
+            if ( path.charAt( 0 ) == '/' )
+                path = "." + path;
             else
-                p = "./" + p;
+                path = "./" + path;
         }		
-        SimpleEntry<String, Integer> v = new SimpleEntry<String, Integer>( p, m );
-        m_fileList.add( new SimpleEntry<File, SimpleEntry<String, Integer>>( f, v ) );
+        SimpleEntry<String, Integer> v = new SimpleEntry<String, Integer>( path, mode );
+        m_fileList.add( new SimpleEntry<File, SimpleEntry<String, Integer>>( file, v ) );
 
-        if ( f.isDirectory( ) == true )
+        if ( file.isDirectory( ) == true )
             return;
 
         // Calculate file MD5
-        String md5 = BuilderUtil.getInstance( ).calcFileMD5Sum( f );
+        String md5 = BuilderUtil.getInstance( ).calcFileMD5Sum( file );
         o.append( md5 );
         for ( int i = 0; i < 1+(32-md5.length( )); i++ )
             o.append( " " );
-        o.append( p ).append( "\n" );
+        o.append( path ).append( "\n" );
 
         // Add file size to total
-        m_installedSize += f.length( )/1024;
+        m_installedSize += file.length( )/1024;
     }
 
 

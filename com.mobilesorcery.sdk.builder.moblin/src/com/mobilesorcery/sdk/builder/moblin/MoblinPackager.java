@@ -17,6 +17,7 @@ package com.mobilesorcery.sdk.builder.moblin;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -32,20 +33,23 @@ import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 import com.mobilesorcery.sdk.builder.linux.PackageBuilder;
+import com.mobilesorcery.sdk.builder.linux.PackageBuilder.DesktopEntryCategory;
 
 /**
  * Plugin entry point. Is responsible for creating debian
- * and RPM packages.
+ * and RPM packages. The name says Moblin, but it is a 
+ * general purpose Linux packager really.
  * 
  * @author Ali Mosavian
  */
 public class MoblinPackager
 extends AbstractPackager
 {
-    private DefaultPackager m_internal;
+    
 
 
     /**
@@ -62,25 +66,23 @@ extends AbstractPackager
                                 IProfile targetProfile,
                                 IBuildResult buildResult )
     throws CoreException
-    {
+    {    	
         String  runtime;
         String  appName;
+        IconManager icon;
         PackageBuilder pack;
+        DefaultPackager intern;
 
         // Was used for printing to console
-        m_internal = new DefaultPackager( project,
-                                          targetProfile,
-                                          isFinalizerBuild( ) );
+        intern = new DefaultPackager( project,
+                                      targetProfile,
+                                      isFinalizerBuild( ) );
 
 
         try
         {
-            appName = m_internal.resolve( "%project-name%" );
+            appName = intern.resolve( "%project-name%" );
 
-            // Probably don't want this. Unless the debugger is turned off
-            // in release runtimes. What's the point of using debug
-            // runtimes just cause the user is running his/hers app in
-            // debug mode?
             if ( shouldUseDebugRuntimes( ) == true )
                 runtime = "runtime.dbg.tar.gz";
             else
@@ -89,30 +91,69 @@ extends AbstractPackager
             //
             // Set package parameters
             //
-            pack = new PackageBuilder( new File( m_internal.resolve( "%runtime-dir%" ), runtime ) );
+            pack = new PackageBuilder( new File( intern.resolve( "%runtime-dir%" ), runtime ) );
 
             pack.setAppName( appName );
-            pack.setProgramFile( m_internal.resolve( "%program-output%" ) );
-            if ( new File( m_internal.resolve( "%resource-output%" ) ).exists( ) )
-                pack.setResorceFile( m_internal.resolve( "%resource-output%" ) );
+            pack.setProgramFile( intern.resolve( "%program-output%" ) );
+            if ( new File( intern.resolve( "%resource-output%" ) ).exists( ) )
+                pack.setResorceFile( intern.resolve( "%resource-output%" ) );
 
             // TODO: Proper handling of categories
-            pack.setCategories( "Applications" );
-
-
+            pack.setCategory( DesktopEntryCategory.Utility );
+            
             //
             // Set icons here
             // Note: Always set a 48x48 png at the very least!
             //
-            /*
-            pack.setIconSVG( "path..." )
-            pack.setIconPNG( size, "path..." )
-             */
+            try
+            {
+                File f;
+                File outDir = new File( intern.resolve( "%output-dir%" ) );            	
+	            icon = new IconManager( intern,
+	            						project.getWrappedProject( )
+	            						.getLocation( ).toFile( ) );            
+	            
+	            // Set SVG icon
+	            try 
+	            {
+		            f = new File( outDir, "icon.svg" );
+		            if ( f.exists( ) == true )
+		            	f.delete( );
+		            if ( icon.inject( f, 0, 0, "svg" ) == true )
+		            	pack.setIconSVG( f.getAbsolutePath( ) );
+	            }
+	            catch ( Exception e ) 
+	            {
+	            	buildResult.addError( e.getMessage( ) );
+	            }	            
+	            
+	            // Set PNG icons
+	            int[] sizes = {16, 32, 48, 64, 128, 256};
+	            for ( int s : sizes )
+	            {
+		            try 
+		            {	            	
+		                f = new File( outDir, "icon"+s+".png" );
+		                if ( f.exists( ) == true )
+		                	f.delete( );
+		                if ( icon.inject( f, s, s, "png" ) == true )
+		                	pack.setIconPNG( s, f.getAbsolutePath( ) );
+		            }
+		            catch ( Exception e ) 
+		            {
+		            	buildResult.addError( e.getMessage( ) );
+		            }		            
+	            }
+            }
+            catch ( Exception e ) 
+            {
+            	buildResult.addError( e.getMessage( ) );
+            }
 
             //
             // Create packages
             //
-            File outputDir = new File( m_internal.resolve( "%final-output-dir%" ), "package" );
+            File outputDir = new File( intern.resolve( "%package-output-dir%" ) );
             if ( outputDir.exists( ) == false )
                 outputDir.mkdirs( );
 
@@ -123,10 +164,6 @@ extends AbstractPackager
             p = p.toLowerCase( );
             List<String> l = pack.createPackages( outputDir, p );
             buildResult.setBuildResult( new File( l.get( 0 ) ) );
-            /*
-            for ( String s : l )
-                echoToCon( "Package built: " + s );
-             */
         }
         catch ( Exception e )
         {
@@ -138,25 +175,6 @@ extends AbstractPackager
             throw new CoreException( new Status( IStatus.ERROR,
                                                  "com.mobilesorcery.builder.moblin",
                                                  s.toString( ) ));
-
         }
     }
-
-    /**
-     * A hack that was used during debugging to output information
-     *
-     * @param s String to output
-     */
-    /*private void echoToCon ( String s )
-    {
-        try
-        {
-            m_internal.runCommandLine( "cmd", "/c", "echo \"" + s + "\"" );
-        }
-        catch ( IOException ex )
-        {
-            Logger.getLogger( MoblinPackager.class.getName() ).log( Level.SEVERE,
-                                                                    null, ex );
-        }
-    }*/
 }

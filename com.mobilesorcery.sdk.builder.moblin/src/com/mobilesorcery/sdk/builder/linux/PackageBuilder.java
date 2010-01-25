@@ -63,12 +63,35 @@ import com.mobilesorcery.sdk.builder.linux.deb.fields.SectionHeader;
  */
 public class PackageBuilder
 {
+	/**
+	 * This Enum defines the X windows menu categories,
+	 * obviously, not all of them are suitable in MoSync.
+	 * 
+	 * 
+	 * @author Ali Mosavian
+	 */
+    public enum DesktopEntryCategory
+    {
+    	AudioVideo, 	// A multimedia (audio/video) application	 
+    	Audio,			// An audio application	Desktop entry must include AudioVideo as well
+    	Video,			// A video application	Desktop entry must include AudioVideo as well
+    	Development,  	// An application for development	 
+    	Education, 		// Educational software	 
+    	Game,			// A game	 
+    	Graphics,		// Graphical application	 
+    	Network, 		// Network application such as a web browser	 
+    	Office, 		// An office type application	 
+    	Settings,		// Settings applications	Entries may appear in a separate menu or as part of a "Control Center"
+    	System,			// System application, "System Tools" such as say a log viewer or network monitor	 
+    	Utility			// Small utility application, "Accessories"    	
+    };
+    
 	private PrivateKey      m_privKey;
     private File            m_tempDir;
     private File            m_template;
     private PackageParser   m_templateParser;
     private Map<String,String> m_resourceMap;
-
+    
 
     /**
      * Constructor
@@ -99,11 +122,11 @@ public class PackageBuilder
     /**
      * Sets the categories of the application
      *
-     * @param c The categories
+     * @param c The category
      */
-    public void setCategories ( String c )
+    public void setCategory ( DesktopEntryCategory c )
     {
-        m_templateParser.setAppCategories( c );
+        m_templateParser.setAppCategories( c.toString( ) );
     }
 
     /**
@@ -264,7 +287,7 @@ public class PackageBuilder
 
 
     /**
-     * This method creates a RPM package from the customised package
+     * This method creates a RPM package from the customized package
      * that doParseTemplate( ) created.
      *
      * @param o Output directory
@@ -345,7 +368,7 @@ public class PackageBuilder
 
         // FIXME: Doesn't have to be i386
         debBuilder.addHeader( new ArchitectureHeader( ArchitectureHeader.CpuArch.I386 ) );
-        debBuilder.addHeader( new MaintainerHeader( "", "<>" ) );
+        debBuilder.addHeader( new MaintainerHeader( "", "" ) );
         debBuilder.addHeader( new SectionHeader( SectionHeader.DebianSections.Utils ) );
         debBuilder.addHeader( new PriorityHeader( PriorityHeader.Priorities.Optional ) );
         debBuilder.addHeader( new DescriptionHeader( appSummary, appDescription ) );
@@ -456,12 +479,12 @@ public class PackageBuilder
 
 
     /**
-     * This method recursivly adds file to a DEB while making sure
+     * This method recursively adds file to a DEB while making sure
      * that the file permissions are correct.
      *
      * @param b Instance of the deb builder class
      * @param r Relative path to base everything on (in the deb)
-     * @param c File to recursivly process
+     * @param c File to recursively process
      *
      * @throws IOException Error reading the file.
      * @throws NoSuchAlgorithmException This happens when the md5 and sha1
