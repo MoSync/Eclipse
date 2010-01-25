@@ -37,7 +37,6 @@
       </win>
    </launcher>
 
-
    <vm>
       <windows>org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/OSGi%Minimum-1.0</windows>
    </vm>
@@ -60,6 +59,7 @@
       <plugin id="com.mobilesorcery.sdk.fontsupport"/>
       <plugin id="com.mobilesorcery.sdk.help"/>
       <plugin id="com.mobilesorcery.sdk.importproject"/>
+      <plugin id="com.mobilesorcery.sdk.importproject.tests" fragment="true"/>
       <plugin id="com.mobilesorcery.sdk.lib"/>
       <plugin id="com.mobilesorcery.sdk.product"/>
       <plugin id="com.mobilesorcery.sdk.profiles.ui"/>
@@ -86,6 +86,7 @@
       <plugin id="org.eclipse.cdt.debug.mi.core"/>
       <plugin id="org.eclipse.cdt.debug.mi.ui"/>
       <plugin id="org.eclipse.cdt.debug.ui"/>
+      <plugin id="org.eclipse.cdt.doc.isv"/>
       <plugin id="org.eclipse.cdt.doc.user"/>
       <plugin id="org.eclipse.cdt.make.core"/>
       <plugin id="org.eclipse.cdt.make.ui"/>
@@ -120,6 +121,8 @@
       <plugin id="org.eclipse.ecf"/>
       <plugin id="org.eclipse.ecf.filetransfer"/>
       <plugin id="org.eclipse.ecf.identity"/>
+      <plugin id="org.eclipse.ecf.provider.filetransfer"/>
+      <plugin id="org.eclipse.ecf.provider.filetransfer.ssl" fragment="true"/>
       <plugin id="org.eclipse.ecf.ssl" fragment="true"/>
       <plugin id="org.eclipse.equinox.app"/>
       <plugin id="org.eclipse.equinox.common"/>
@@ -148,6 +151,16 @@
       <plugin id="org.eclipse.help.base"/>
       <plugin id="org.eclipse.help.ui"/>
       <plugin id="org.eclipse.help.webapp"/>
+      <plugin id="org.eclipse.jdt.compiler.apt" fragment="true"/>
+      <plugin id="org.eclipse.jdt.compiler.tool" fragment="true"/>
+      <plugin id="org.eclipse.jdt.core"/>
+      <plugin id="org.eclipse.jdt.core.manipulation"/>
+      <plugin id="org.eclipse.jdt.debug"/>
+      <plugin id="org.eclipse.jdt.debug.ui"/>
+      <plugin id="org.eclipse.jdt.junit"/>
+      <plugin id="org.eclipse.jdt.junit.runtime"/>
+      <plugin id="org.eclipse.jdt.launching"/>
+      <plugin id="org.eclipse.jdt.ui"/>
       <plugin id="org.eclipse.jface"/>
       <plugin id="org.eclipse.jface.databinding"/>
       <plugin id="org.eclipse.jface.text"/>
@@ -183,6 +196,8 @@
       <plugin id="org.eclipse.update.core.win32" fragment="true"/>
       <plugin id="org.eclipse.update.ui"/>
       <plugin id="org.hamcrest.core"/>
+      <plugin id="org.junit"/>
+      <plugin id="org.junit4"/>
       <plugin id="org.mortbay.jetty.server"/>
       <plugin id="org.mortbay.jetty.util"/>
    </plugins>

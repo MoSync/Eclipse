@@ -8,4 +8,7 @@
 <link type="reading" href="/com.mobilesorcery.sdk.help/docs/Rescomp.html" desc="The resource compiler!" scope="short" />
 <link type="reading" href="/com.mobilesorcery.sdk.help/docs/Fonts.html" desc="Font tools" scope="short" />
 <link type="reading" href="/com.mobilesorcery.sdk.help/docs/xml.html" desc="Working with XML in C++" scope="short" />
+<!--  These will just cause the 'for more examples...' message to appear -->
+<link type="reading" href="dummy" desc="?" scope="full" />
+<link type="example" href="dummy" desc="?" scope="full" />
 </intro>
