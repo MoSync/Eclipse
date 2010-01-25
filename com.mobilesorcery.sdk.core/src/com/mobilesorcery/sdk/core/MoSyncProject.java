@@ -93,7 +93,6 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
     /**
      * The file exclude filter property for this project.
-     * TODO: Not implemented yet
      * @see PathExclusionFilter
      */
     public static final String EXCLUDE_FILTER_KEY = "excludes";
@@ -576,8 +575,6 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     	if (NameSpacePropertyOwner.equals(oldValue, value)) {
     		return false;
     	}
-    	
-    	System.err.println(key + " := " + value);
     	
     	initProperty(key, value);
 

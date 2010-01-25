@@ -119,7 +119,6 @@ public class MoSyncNature implements IProjectNature {
     private static void addCNature(IProject project) throws CoreException {
         IProjectDescription description = project.getDescription();
         CCorePlugin.getDefault().createCProject(description, project, new NullProgressMonitor(), MoSyncProject.C_PROJECT_ID);
-
         CCProjectNature.addCCNature(project, new NullProgressMonitor());
     }
 
