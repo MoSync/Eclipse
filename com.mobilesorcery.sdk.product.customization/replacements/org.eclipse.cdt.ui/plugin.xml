@@ -1053,9 +1053,17 @@
         </menu>
         
         <visibility>
+<!-- BUG #465: build configuration menu should not be visible for mosync projects -->
+              <and>
+              <not>
+              <objectState
+                 name="projectNature"
+                 value="com.mobilesorcery.sdk.core.nature"/>
+              </not>
               <objectState
                  name="projectNature"
                  value="org.eclipse.cdt.core.cnature"/>
+              </and>
         </visibility>
      </objectContribution>
 
