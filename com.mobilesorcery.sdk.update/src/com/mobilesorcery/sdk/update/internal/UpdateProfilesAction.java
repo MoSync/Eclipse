@@ -58,7 +58,11 @@ public class UpdateProfilesAction extends Action {
 	private Shell shell;
 
     public UpdateProfilesAction() {
-		shell = new Shell(Display.getDefault());
+		Display.getDefault().asyncExec(new Runnable() {
+			public void run() {
+				shell = new Shell(Display.getDefault());
+			}
+		});
     }
 
     public void run() {
