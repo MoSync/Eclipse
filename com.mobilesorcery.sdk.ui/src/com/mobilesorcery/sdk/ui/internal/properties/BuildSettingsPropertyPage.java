@@ -436,7 +436,7 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
     }
     
     public IPropertyOwner getBuildConfigurationProperties() {
-    	return currentConfigId == null ? getProject() : getProject().getBuildConfiguration(currentConfigId).getProperties();
+    	return currentConfigId == null ? getProject() : getProject().getPropertyOwner();
     }
     
     public IWorkingCopy getWorkingCopyOfBuildConfiguration() {

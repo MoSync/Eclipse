@@ -107,5 +107,12 @@
             id="com.mobilesorcery.sdk.builder.nonterminableprocessfactory">
       </processFactory>
    </extension>
+   <extension
+         point="org.eclipse.team.core.ignore">
+      <ignore
+            enabled="true"
+            pattern=".mosyncproject.*">
+      </ignore>
+   </extension>
       
 </plugin>

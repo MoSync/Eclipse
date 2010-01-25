@@ -16,16 +16,24 @@ package com.mobilesorcery.sdk.product.intro;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.importproject.Activator;
 import com.mobilesorcery.sdk.importproject.ImportProjectsRunnable;
 
@@ -35,10 +43,13 @@ public class ImportExampleProject {
 	private String projectName;
 	private String projectExtension;
 	private String projectExtraDir;
-	public ImportExampleProject(String project, String extension, String extradir) {
+	private String openInEditors;
+	
+	public ImportExampleProject(String project, String extension, String extradir, String openInEditor) {
 		projectName = project;
 		projectExtension = extension;
 		projectExtraDir = extradir;
+		this.openInEditors = openInEditor;
 	}
 	
 	public boolean doImport() {
@@ -54,15 +65,17 @@ public class ImportExampleProject {
 			File[] fileChildren = new File[1];
 			fileChildren[0] = new File(projectString);
 			if (fileChildren[0].exists()) {
-				ImportProjectsRunnable importproject = new ImportProjectsRunnable(fileChildren, ImportProjectsRunnable.COPY_ALL_FILES | ImportProjectsRunnable.USE_NEW_PROJECT_IF_AVAILABLE);
+				List<IProject> result = new ArrayList<IProject>();
+				ImportProjectsRunnable importproject = new ImportProjectsRunnable(fileChildren, ImportProjectsRunnable.COPY_ALL_FILES | ImportProjectsRunnable.USE_NEW_PROJECT_IF_AVAILABLE, result);
 				IProgressMonitor monitor = new NullProgressMonitor();
 				try {
 					importproject.run(monitor);
+					IFile input = (!Util.isEmpty(openInEditors) && result.size() > 0) ? result.get(0).getFile(openInEditors) : null;
+					if (input != null && input.exists()) {
+						IDE.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), input, true);
+					}
 					success = true;
-				} catch (InvocationTargetException e) {
-					e.printStackTrace();
-					StatusManager.getManager().handle(new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e), StatusManager.SHOW);
-				} catch (InterruptedException e) {
+				} catch (Exception e) {
 					e.printStackTrace();
 					StatusManager.getManager().handle(new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e), StatusManager.SHOW);
 				}

@@ -145,19 +145,34 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     private static final String KEY_KEY = "key";
 
     private static final String VALUE_KEY = "value";
-    
+
 	private static final String BUILD_CONFIG = "build.cfg";
+	
+	private static final String ACTIVE_BUILD_CONFIG = "active.build.cfg";
 
 	private static final String BUILD_CONFIG_ID_KEY = "id";
 
 	private static final String BUILD_CONFIGS_SUPPORTED = "supports-build-configs";
 
 	private static final String ACTIVE_BUILD_CONFIG_KEY = "active";
+	
+	private static final String VERSION_KEY = "version";
+
+	private static final String VERSION = "1";
 
 	/**
-	 * The name of the file where this project's meta data is located.
+	 * The name of the file where this project's <b>shared</b> meta data is located.
 	 */
 	public static final String MOSYNC_PROJECT_META_DATA_FILENAME = ".mosyncproject";
+	
+	/**
+	 * The name of the file where this project's <b>local</b> meta data is located.
+	 */
+	public static final String MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME = ".mosyncproject.local";
+
+	public static final int SHARED_PROPERTY = 0;
+
+	public static final int LOCAL_PROPERTY = 1;
 
     private static IdentityHashMap<IProject, MoSyncProject> projects = new IdentityHashMap<IProject, MoSyncProject>();
     
@@ -171,7 +186,17 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
     private ICompositeDeviceFilter deviceFilter = new CompositeDeviceFilter(new IDeviceFilter[0]);
     
-    private Map<String, String> properties = new HashMap<String, String>();
+    /**
+     * This is the map holding the shared properties of this project, stored in .mosyncproject
+     */
+    private Map<String, String> sharedProperties = new HashMap<String, String>();
+    
+    /**
+     * This is the map holding the user's local properties of this project, stored in .mosyncproject.local
+     */
+    private Map<String, String> localProperties = new HashMap<String, String>();
+    
+    private CascadingProperties properties = new CascadingProperties(new Map[] { sharedProperties, localProperties });
 
     private DeviceFilterListener deviceFilterListener;
 
@@ -189,7 +214,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         Assert.isNotNull(project);
         this.project = project;
         this.deviceFilterListener = new DeviceFilterListener();
-        initFromProjectMetaData(getMoSyncProjectMetaDataLocation());        
+        initFromProjectMetaData(null, SHARED_PROPERTY);
+        initFromProjectMetaData(null, LOCAL_PROPERTY);
         addDeviceFilterListener();
     }
 
@@ -201,9 +227,9 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         deviceFilter.removePropertyChangeListener(deviceFilterListener);
     }
 
-    private void initFromProjectMetaData(IPath projectMetaDataPath) {
+    private void initFromProjectMetaData(IPath projectMetaDataPath, int store) {
     	if (projectMetaDataPath == null) {
-    		projectMetaDataPath = getMoSyncProjectMetaDataLocation();
+    		projectMetaDataPath = getMoSyncProjectMetaDataLocation(store);
     	}
     	
         if (!projectMetaDataPath.toFile().exists()) {
@@ -213,13 +239,20 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         FileReader input = null;
         
         try {
+            // Older projects only have a shared config, so initialize everything
+            // from that first
             input = new FileReader(projectMetaDataPath.toFile());
             XMLMemento memento = XMLMemento.createReadRoot(input);
             initTargetProfileFromProjectMetaData(memento);
-            initAvailableBuildConfigurations(memento);
+            // Special case; device filters are always shared.
+            if (store == SHARED_PROPERTY) {
+            	deviceFilter = CompositeDeviceFilter.read(memento);
+                initAvailableBuildConfigurations(memento);
+            }
+            initActiveBuildConfiguration(memento);
+
+            initProperties(initPropertiesFromProjectMetaData(memento), store);
             
-            deviceFilter = CompositeDeviceFilter.read(memento);
-            properties = initPropertiesFromProjectMetaData(memento);
         } catch (Exception e) {
             CoreMoSyncPlugin.getDefault().log(e);
         } finally {
@@ -230,10 +263,26 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
                     CoreMoSyncPlugin.getDefault().log(e);
                 }
             }
-        }
-        
+        }   
     }
 
+	private void initProperties(Map<String, String> properties, int store) {
+    	if (store == LOCAL_PROPERTY) {
+    		localProperties = properties;
+    	} else {
+    		sharedProperties = properties;
+    	}
+    	this.properties = new CascadingProperties(new Map[] { sharedProperties, localProperties });
+    }
+    
+	private void initActiveBuildConfiguration(XMLMemento memento) {
+		IMemento activeCfg = memento.getChild(ACTIVE_BUILD_CONFIG);
+		if (activeCfg != null) {
+			String activeCfgId = activeCfg.getString(ACTIVE_BUILD_CONFIG_KEY);
+			currentBuildConfig = getBuildConfiguration(activeCfgId);
+		}
+	}
+	
     private void initAvailableBuildConfigurations(XMLMemento memento) {
     	Boolean supportsBuildConfigurations = memento.getBoolean(BUILD_CONFIGS_SUPPORTED);
     	this.isBuildConfigurationsSupported = supportsBuildConfigurations == null ? false : supportsBuildConfigurations;
@@ -244,9 +293,6 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     		String id = cfgs[i].getString(BUILD_CONFIG_ID_KEY);
     		BuildConfiguration cfg = new BuildConfiguration(this, id);
     		configurations.put(id, cfg);
-    		if (Boolean.TRUE.equals(cfgs[i].getBoolean(ACTIVE_BUILD_CONFIG_KEY))) {
-    			currentBuildConfig = cfg;
-    		}
     	}
 	}
 
@@ -281,23 +327,36 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
             }
         }
     }
-
     protected void updateProjectSpec() {
-        IPath projectMetaDataPath = getMoSyncProjectMetaDataLocation();
+    	updateProjectSpec(SHARED_PROPERTY);
+    	updateProjectSpec(LOCAL_PROPERTY);
+    }
+    
+    protected void updateProjectSpec(int store) {
+        IPath projectMetaDataPath = getMoSyncProjectMetaDataLocation(store);
         XMLMemento root = XMLMemento.createWriteRoot(PROJECT);
         FileWriter output = null;
 
         try {
             output = new FileWriter(projectMetaDataPath.toFile());
-            IMemento target = root.createChild(TARGET);
-            saveTargetProfile(target);
-            saveAvailableBuildConfigurations(root);
+           
+            // Some properties are meant to be stored only in
+            // shared properties, others only in local.
+            if (store == SHARED_PROPERTY) {
+            	saveAvailableBuildConfigurations(root);
+            	deviceFilter.saveState(root);
+            }
             
-            deviceFilter.saveState(root);
+            if (store == LOCAL_PROPERTY) {
+            	saveActiveBuildConfiguration(root);
+                IMemento target = root.createChild(TARGET);
+            	saveTargetProfile(target);	
+            }
             
-            IMemento properties = root.createChild(PROPERTIES);
-            saveProperties(properties);
-            
+            IMemento propertiesMemento = root.createChild(PROPERTIES);
+            saveProperties(propertiesMemento, getProperties(store));
+    
+            root.putString(VERSION_KEY, VERSION);
             root.save(output);
             output.close();
         } catch (IOException e) {
@@ -313,25 +372,29 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         }
     }
     
-    private void saveAvailableBuildConfigurations(XMLMemento root) {
+    private void saveActiveBuildConfiguration(XMLMemento root) {
+		if (currentBuildConfig != null) {
+	    	IMemento node = root.createChild(ACTIVE_BUILD_CONFIG);
+			node.putString(ACTIVE_BUILD_CONFIG_KEY, currentBuildConfig.getId());
+		}
+	}
+
+	private void saveAvailableBuildConfigurations(XMLMemento root) {
     	// Older versions of the project file format do not have build configs,
     	// so we save a marker denoting that we do.
     	root.putBoolean(BUILD_CONFIGS_SUPPORTED, isBuildConfigurationsSupported);
     	for (String cfg : getBuildConfigurations()) {
     		IMemento node = root.createChild(BUILD_CONFIG);
     		node.putString(BUILD_CONFIG_ID_KEY, cfg);
-    		if (currentBuildConfig != null && cfg.equals(currentBuildConfig.getId())) {
-    			node.putBoolean(ACTIVE_BUILD_CONFIG_KEY, true);
-    		}
     	}    	
 	}
 
-	private void saveProperties(IMemento memento) {
+	private void saveProperties(IMemento memento, Map<String, String> properties) {
 		TreeMap<String, String> sortedProperties = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
-		sortedProperties.putAll(this.properties);
-        for (Iterator<String> properties = sortedProperties.keySet().iterator(); properties.hasNext(); ) {
-            String key = properties.next();
-            String value = this.properties.get(key);
+		sortedProperties.putAll(properties);
+        for (Iterator<String> propertyIterator = sortedProperties.keySet().iterator(); propertyIterator.hasNext(); ) {
+            String key = propertyIterator.next();
+            String value = properties.get(key);
             IMemento property = memento.createChild(PROPERTY);
             property.putString(KEY_KEY, key);
             property.putString(VALUE_KEY, value);
@@ -345,8 +408,12 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         }
     }
 
-    public IPath getMoSyncProjectMetaDataLocation() {
-        return project.getLocation().append(MOSYNC_PROJECT_META_DATA_FILENAME);
+    public IPath getMoSyncProjectMetaDataLocation(int store) {
+    	if (store == LOCAL_PROPERTY) {
+    		return project.getLocation().append(MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME);
+    	} else {
+    		return project.getLocation().append(MOSYNC_PROJECT_META_DATA_FILENAME);
+    	}
     }
 
     /**
@@ -382,7 +449,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
      * be provided. This file will then be loaded and its project meta
      * data used by the project.</p>
      * @param project The eclipse project this <code>MoSyncProject</code> should wrap
-     * @param projectMetadataLocation The location of the project meta data. If <code>null</code>,
+     * @param projectMetadataLocation The location of the (shared) project meta data. If <code>null</code>,
      * no initialization will take place unless this is the first call to <code>create</code> 
      * with the provided <code>project</code>.
      * @return
@@ -390,7 +457,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     public static MoSyncProject create(IProject project, IPath projectMetadataLocation) {
     	MoSyncProject result = create(project);
         if (projectMetadataLocation != null) {
-        	result.initFromProjectMetaData(projectMetadataLocation);
+        	result.initFromProjectMetaData(projectMetadataLocation, SHARED_PROPERTY);
         }
         
         return result;
@@ -561,7 +628,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     }
     
     public Map<String, String> getProperties() {
-    	return new TreeMap<String, String>(properties);
+    	return properties.toMap();
     }
 
     /**
@@ -636,17 +703,39 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	
 	/**
 	 * <p>Sets the property, regardless of any previous
-	 * value.</p> 
+	 * value.</p><p>Any property set by this method will
+	 * be stored in the SHARED_PROPERTY properties.</p>
 	 * @param key
 	 * @param value If <code>null</code>, then the entry is removed  
 	 */
 	public void initProperty(String key, String value) {
+		initProperty(key, value, SHARED_PROPERTY);
+	}
+	
+	/**
+	 * <p>Sets the property, regardless of any previous
+	 * value.</p> 
+	 * @param key
+	 * @param value If <code>null</code>, then the entry is removed  
+	 * @param store The store that this key should be set in, ie LOCAL
+	 * or SHARED
+	 */
+	public void initProperty(String key, String value, int store) {
 		if (value == null) {
-			properties.remove(key);
+			getProperties(store).remove(key);
 		} else {
-			properties.put(key, value);
+			getProperties(store).put(key, value);
+		}		
+	}
+	
+	private Map<String, String> getProperties(int store) {
+		if (store == LOCAL_PROPERTY) {
+			return localProperties;
+		} else {
+			return sharedProperties;
 		}
 	}
+	
 	
 	/**
 	 * A convenience method for returning the exclusion filter for a project/config.
@@ -686,14 +775,15 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     }
 
     /**
-     * Adds all properties of <code>properties</code> to this project.
+     * <p>Adds all properties of <code>properties</code> to this project.</p>
+     * <p>They will all be added to the SHARED store.</p>
      * @param properties
      */
     public void setProperties(Map<String, String> properties) {
-        this.properties.putAll(properties);
+        sharedProperties.putAll(properties);
         updateProjectSpec();
     }
-
+    
     /**
      * Returns the dependency manager of this project.
      * @return

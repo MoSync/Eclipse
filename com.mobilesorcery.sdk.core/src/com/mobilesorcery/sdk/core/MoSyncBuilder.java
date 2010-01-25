@@ -370,7 +370,7 @@ public class MoSyncBuilder extends ACBuilder {
 				.getId();
 		boolean changedConfig = !NameSpacePropertyOwner.equals(oldConfig,
 				activeConfigId);
-		project.initProperty(lastBuildConfigKey, activeConfigId);
+		project.initProperty(lastBuildConfigKey, activeConfigId, MoSyncProject.LOCAL_PROPERTY);
 		return changedConfig;
 	}
 

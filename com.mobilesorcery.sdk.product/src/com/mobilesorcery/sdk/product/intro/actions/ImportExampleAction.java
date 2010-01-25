@@ -39,12 +39,17 @@ public class ImportExampleAction implements IIntroAction {
 		
 		if (example != null) { //$NON-NLS-1$ //$NON-NLS-2$
 			extension = extension == null ? "mopro" : params.getProperty("extension"); //$NON-NLS-1$
-			String extradir = ""; //$NON-NLS-1$
-			if (params.containsKey("extradir")) { //$NON-NLS-1$
-				extradir = params.getProperty("extradir"); //$NON-NLS-1$
+			String extradir = params.getProperty("extradir", ""); //$NON-NLS-1$
+			String[] exampleParts = example.split("\\|", 2);
+			String openFileInEditor = null;
+			
+			if (exampleParts.length > 1) {
+				example = exampleParts[0];
+				openFileInEditor = exampleParts[1];
 			}
+			
 			try {
-				ImportExampleProject exProj = new ImportExampleProject(example, extension, extradir);
+				ImportExampleProject exProj = new ImportExampleProject(example, extension, extradir, openFileInEditor);
 				success = exProj.doImport();
 			} catch (Exception e)	{
 				e.printStackTrace();

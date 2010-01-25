@@ -21,6 +21,7 @@ import java.net.URI;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -83,11 +84,17 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 	private Map<String, String> keyMap;
 	private int copyStrategy;
 	private boolean useNewProjectIfAvailable;
+	private List<IProject> result;
 
 	public ImportProjectsRunnable(File[] projectDescriptions, int strategy) {
+		this(projectDescriptions, strategy, null);
+	}
+	
+	public ImportProjectsRunnable(File[] projectDescriptions, int strategy, List<IProject> result) {
 		this.projectDescriptions = projectDescriptions;
 		this.copyStrategy = strategy & 0x3; // Max value of copy strategies.
 		this.useNewProjectIfAvailable = (strategy & USE_NEW_PROJECT_IF_AVAILABLE) == USE_NEW_PROJECT_IF_AVAILABLE;
+		this.result = result;
 	}
 
 	protected void execute(IProgressMonitor monitor) throws CoreException,
@@ -145,6 +152,10 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 
 		project.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(
 				monitor, 1));
+		
+		if (result != null) {
+			result.add(project);
+		}
 	}
 
 	private IPath getProjectMetaDataLocation(File projectDescription) {

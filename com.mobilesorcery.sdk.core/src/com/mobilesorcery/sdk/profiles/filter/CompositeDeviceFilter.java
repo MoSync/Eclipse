@@ -83,14 +83,16 @@ public class CompositeDeviceFilter extends AbstractDeviceFilter implements IComp
     }
         
     public void saveState(IMemento memento) {
-        IMemento criteria = memento.createChild(CRITERIA);
-        
-        for (Iterator<IDeviceFilter> filterIterator = filters.iterator(); filterIterator.hasNext();) {
-            IDeviceFilter filter = filterIterator.next();
-            IMemento child = criteria.createChild(FILTER);
-            child.putString("type", filter.getFactoryId());
-            filter.saveState(child);
-        }
+    	if (filters.size() > 0) {
+    		IMemento criteria = memento.createChild(CRITERIA);
+      
+	        for (Iterator<IDeviceFilter> filterIterator = filters.iterator(); filterIterator.hasNext();) {
+	            IDeviceFilter filter = filterIterator.next();
+	            IMemento child = criteria.createChild(FILTER);
+	            child.putString("type", filter.getFactoryId());
+	            filter.saveState(child);
+	        }
+    	}
     }
 
     public static CompositeDeviceFilter read(IMemento memento) {
