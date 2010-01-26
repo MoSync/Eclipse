@@ -19,10 +19,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 /**
@@ -60,9 +56,6 @@ public class DefaultPackager {
 
 	
 	private CascadingProperties parameters;
-	
-	private DefaultPackager() {
-	}
 
 	public DefaultPackager(MoSyncProject project, IProfile targetProfile, boolean isFinalizerBuild) {
 		parameters = new CascadingProperties(new Map[] { defaultParameters, userParameters });

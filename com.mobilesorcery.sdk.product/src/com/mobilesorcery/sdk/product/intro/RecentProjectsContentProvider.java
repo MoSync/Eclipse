@@ -2,21 +2,13 @@ package com.mobilesorcery.sdk.product.intro;
 
 import java.io.File;
 import java.io.PrintWriter;
-import java.text.MessageFormat;
-import java.util.Arrays;
 
 import org.eclipse.core.runtime.Path;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.internal.ide.ChooseWorkspaceData;
-import org.eclipse.ui.internal.ide.IDEWorkbenchMessages;
 import org.eclipse.ui.intro.config.IIntroContentProviderSite;
-import org.eclipse.ui.intro.config.IIntroXHTMLContentProvider;
 import org.w3c.dom.Element;
-import org.w3c.dom.Text;
 
 import com.mobilesorcery.sdk.core.MoSyncTool;
 

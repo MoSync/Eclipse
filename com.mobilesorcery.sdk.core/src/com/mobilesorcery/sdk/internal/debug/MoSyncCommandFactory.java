@@ -16,7 +16,6 @@ package com.mobilesorcery.sdk.internal.debug;
 import java.io.IOException;
 
 import org.eclipse.cdt.debug.mi.core.MIProcess;
-import org.eclipse.cdt.debug.mi.core.MIProcessAdapter;
 import org.eclipse.cdt.debug.mi.core.command.CLIInfoThreads;
 import org.eclipse.cdt.debug.mi.core.command.CommandFactory;
 import org.eclipse.cdt.debug.mi.core.command.MIBreakInsert;
@@ -24,13 +23,10 @@ import org.eclipse.cdt.debug.mi.core.command.MIExecInterrupt;
 import org.eclipse.cdt.debug.mi.core.command.MIExecNext;
 import org.eclipse.cdt.debug.mi.core.command.MIExecRun;
 import org.eclipse.cdt.debug.mi.core.command.MIExecStep;
-import org.eclipse.cdt.debug.mi.core.command.MIGDBSet;
-import org.eclipse.cdt.debug.mi.core.command.MIVarCreate;
 import org.eclipse.cdt.debug.mi.core.command.MIVarListChildren;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
-import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 
 public class MoSyncCommandFactory extends CommandFactory {

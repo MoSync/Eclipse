@@ -19,7 +19,6 @@ import java.util.HashSet;
 import org.eclipse.ui.IMemento;
 
 import com.mobilesorcery.sdk.core.Util;
-import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.IVendor;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.VendorFilterFactory;

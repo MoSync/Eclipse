@@ -80,7 +80,6 @@ public class DependencyManagerTest {
 		DependencyManager dependencies = new DependencyManager();
 		Object level0 = "0";
 		Object level1 = "1";
-		Object level2 = "2";
 		Object level3 = "3";
 		Object level4 = "4";
 		dependencies.addDependency(level1, level0);

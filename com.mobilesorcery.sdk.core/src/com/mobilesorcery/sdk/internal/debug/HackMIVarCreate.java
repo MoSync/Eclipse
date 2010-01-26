@@ -17,7 +17,6 @@ import org.eclipse.cdt.debug.mi.core.MIException;
 import org.eclipse.cdt.debug.mi.core.command.MIVarCreate;
 import org.eclipse.cdt.debug.mi.core.output.MIInfo;
 import org.eclipse.cdt.debug.mi.core.output.MIOutput;
-import org.eclipse.cdt.debug.mi.core.output.MIVarCreateInfo;
 
 public class HackMIVarCreate extends MIVarCreate {
 

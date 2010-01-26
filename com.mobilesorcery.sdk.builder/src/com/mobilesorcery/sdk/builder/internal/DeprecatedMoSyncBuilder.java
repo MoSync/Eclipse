@@ -23,9 +23,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
-import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncNature;
-import com.mobilesorcery.sdk.core.MoSyncProject;
 
 public class DeprecatedMoSyncBuilder extends IncrementalProjectBuilder {
 

@@ -14,7 +14,6 @@
 package com.mobilesorcery.sdk.smoketests;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.cdt.debug.core.model.ICThread;
@@ -22,7 +21,6 @@ import org.eclipse.cdt.debug.mi.core.GDBProcess;
 import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IDebugEventSetListener;
-import org.eclipse.debug.core.model.IBreakpoint;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IEmulatorProcessListener;

@@ -15,7 +15,6 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -29,7 +28,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.IStatus;
@@ -39,7 +37,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -294,7 +291,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     public void initNativeLibs(BundleContext context) {
         try {
             JNALibInitializer.init(this.getBundle(), new Path("pipelib.dll"));
-            PROCESS dummy = PROCESS.INSTANCE; // Just to execute the .clinit.
+            @SuppressWarnings("unused")
+			PROCESS dummy = PROCESS.INSTANCE; // Just to execute the .clinit.
 
             JNALibInitializer.init(this.getBundle(), new Path("pid2.dll"));
 

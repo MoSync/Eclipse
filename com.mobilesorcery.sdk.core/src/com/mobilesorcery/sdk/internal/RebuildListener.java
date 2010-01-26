@@ -25,13 +25,11 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.MutexSchedulingRule;
 import com.mobilesorcery.sdk.internal.cdt.MoSyncIncludePathContainer;
 import com.mobilesorcery.sdk.internal.cdt.MoSyncPathInitializer;
 import com.mobilesorcery.sdk.profiles.IProfile;

@@ -17,7 +17,10 @@
 package com.mobilesorcery.sdk.internal;
 
 public class ParseException extends Exception {
-    private int line;
+
+	private static final long serialVersionUID = 8498866424257636660L;
+
+	private int line;
 
     public ParseException(String message, int line) {
         super(message);

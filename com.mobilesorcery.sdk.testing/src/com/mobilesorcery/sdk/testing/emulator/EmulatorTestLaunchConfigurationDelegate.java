@@ -18,11 +18,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
-import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
-import com.mobilesorcery.sdk.testing.ITestSession;
 import com.mobilesorcery.sdk.testing.TestManager;
-import com.mobilesorcery.sdk.testing.TestSession;
 
 public class EmulatorTestLaunchConfigurationDelegate extends
 		EmulatorLaunchConfigurationDelegate {

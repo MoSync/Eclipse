@@ -16,7 +16,6 @@ package com.mobilesorcery.sdk.internal.cdt;
 import org.eclipse.cdt.core.model.CoreModel;
 import org.eclipse.cdt.core.model.ICProject;
 import org.eclipse.cdt.core.model.PathEntryContainerInitializer;
-import org.eclipse.cdt.internal.core.model.CProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 

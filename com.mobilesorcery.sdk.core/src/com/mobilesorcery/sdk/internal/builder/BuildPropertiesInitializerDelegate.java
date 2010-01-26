@@ -23,9 +23,7 @@ import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
-import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.internal.PipeTool;
-import com.sun.org.apache.bcel.internal.generic.MONITORENTER;
 
 public class BuildPropertiesInitializerDelegate implements IPropertyInitializerDelegate {
 

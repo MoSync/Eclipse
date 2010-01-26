@@ -16,14 +16,12 @@ package com.mobilesorcery.sdk.profiles.filter;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 
 import org.eclipse.ui.IMemento;
 
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiles.IProfile;
-import com.mobilesorcery.sdk.profiles.Profile;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.FeatureFilterFactory;
 
 public class FeatureFilter extends AbstractDeviceFilter {

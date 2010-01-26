@@ -15,26 +15,17 @@ package com.mobilesorcery.sdk.builder.s60;
 
 //import java.io.DataInputStream;
 import java.io.File;
-//import java.io.FileInputStream;
-//import java.io.FileNotFoundException;
-//import java.io.FileOutputStream;
 import java.io.IOException;
-//import java.io.InputStream;
-
-//import javax.security.auth.callback.LanguageCallback;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
-//import org.eclipse.swt.program.Program;
 
-//import com.mobilesorcery.sdk.core.api.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
-//import com.mobilesorcery.sdk.core.api.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.templates.Template;
 import com.mobilesorcery.sdk.profiles.IProfile;
 

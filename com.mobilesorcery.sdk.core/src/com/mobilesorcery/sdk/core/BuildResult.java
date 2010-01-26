@@ -58,4 +58,7 @@ public class BuildResult implements IBuildResult {
 		this.success = success;
 	}
     
+	public IProject getProject() {
+		return project;
+	}
 }

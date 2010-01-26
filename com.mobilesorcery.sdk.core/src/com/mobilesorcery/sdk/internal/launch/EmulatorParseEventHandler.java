@@ -155,5 +155,9 @@ public class EmulatorParseEventHandler implements EmulatorOutputParser.IParseEve
     public void setExitMessage(String exitMessage) {
         this.exitMessage = exitMessage;
     }
+    
+    public String getExitMessage() {
+    	return exitMessage;
+    }
 
 }

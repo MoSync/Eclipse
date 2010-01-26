@@ -13,8 +13,6 @@
 */
 package com.mobilesorcery.sdk.core;
 
-import com.mobilesorcery.sdk.core.IPropertyOwner.IWorkingCopy;
-
 /**
  * <p>An interface representing a build configuration, such as "Release", "Debug", "Test", etc.</p>
  * <p><b>Implementation note:</b> Why not use CDT managed make? Because it is still too heavy-weight

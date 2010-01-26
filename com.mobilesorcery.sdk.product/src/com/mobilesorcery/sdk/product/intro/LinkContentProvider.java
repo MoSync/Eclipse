@@ -8,7 +8,6 @@ import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.intro.config.IIntroContentProviderSite;
 import org.eclipse.ui.intro.config.IIntroXHTMLContentProvider;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 public abstract class LinkContentProvider implements IIntroXHTMLContentProvider {
 

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 
-
 import org.eclipse.debug.core.ILaunchConfiguration;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;

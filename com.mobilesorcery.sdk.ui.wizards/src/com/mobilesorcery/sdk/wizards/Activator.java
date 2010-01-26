@@ -15,12 +15,7 @@ package com.mobilesorcery.sdk.wizards;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
 import java.util.TreeMap;
-import java.util.Map.Entry;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;

@@ -1,7 +1,5 @@
 package com.mobilesorcery.sdk.internal;
 
-import org.eclipse.core.expressions.PropertyTester;
-
 import com.mobilesorcery.sdk.core.MoSyncProject;
 
 public class SupportsBuildConfigurationTester extends MoSyncNatureTester {

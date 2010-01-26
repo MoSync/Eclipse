@@ -14,7 +14,6 @@
 package com.mobilesorcery.sdk.builder.s60.ui.properties;
 
 import java.text.MessageFormat;
-import java.util.Random;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.swt.SWT;
@@ -32,7 +31,6 @@ import org.eclipse.ui.dialogs.PropertyPage;
 
 import com.mobilesorcery.sdk.builder.s60.PropertyInitializer;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.Util;
 
 public class SymbianPropertyPage extends PropertyPage { 
 

@@ -13,7 +13,6 @@
 */
 package com.mobilesorcery.sdk.internal.preferences;
 
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;

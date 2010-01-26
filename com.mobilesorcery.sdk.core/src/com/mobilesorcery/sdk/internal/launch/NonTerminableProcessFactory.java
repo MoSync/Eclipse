@@ -15,7 +15,6 @@ package com.mobilesorcery.sdk.internal.launch;
 
 import java.util.Map;
 
-import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.IProcessFactory;
 import org.eclipse.debug.core.model.IProcess;

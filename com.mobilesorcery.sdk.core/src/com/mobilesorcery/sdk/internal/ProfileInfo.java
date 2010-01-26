@@ -15,8 +15,6 @@ package com.mobilesorcery.sdk.internal;
 
 import java.util.HashMap;
 
-import org.eclipse.core.runtime.IPath;
-
 import com.mobilesorcery.sdk.core.IProfileInfo;
 
 public class ProfileInfo implements IProfileInfo {

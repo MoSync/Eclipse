@@ -14,7 +14,6 @@
 package com.mobilesorcery.sdk.internal.builder;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,7 +29,6 @@ import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.PathExclusionFilter;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
 /**

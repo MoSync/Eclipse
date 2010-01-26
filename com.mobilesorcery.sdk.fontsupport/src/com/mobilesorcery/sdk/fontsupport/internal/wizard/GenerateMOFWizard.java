@@ -34,7 +34,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.ISharedImages;
 
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.fontsupport.MOF;

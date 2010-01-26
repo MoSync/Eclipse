@@ -13,14 +13,10 @@
 */
 package com.mobilesorcery.sdk.internal;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PipedOutputStream;
-import java.util.Arrays;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.SimpleQueue;
@@ -164,7 +160,6 @@ public class EmulatorOutputParser {
 	}
 
 	public static void main(String[] args) throws Exception {
-		EmulatorOutputParser parser = new EmulatorOutputParser(0, null);
 		// String hex =
 		// "0100000013000000456d756c61746f7220636f6e6e65637465642e0100000010000000457869742040204950203078363265310200000004000000e1620000"
 		// ;

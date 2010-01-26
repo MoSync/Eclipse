@@ -15,7 +15,6 @@ package com.mobilesorcery.sdk.testing.internal.ui;
 
 import org.eclipse.jdt.internal.junit.ui.CounterPanel;
 import org.eclipse.jdt.internal.junit.ui.JUnitProgressBar;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -28,7 +27,6 @@ import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Tree;
 
 import com.mobilesorcery.sdk.testing.ITest;
 import com.mobilesorcery.sdk.testing.ITestSession;

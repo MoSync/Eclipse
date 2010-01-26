@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.LineNumberReader;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class SLDParser {
 

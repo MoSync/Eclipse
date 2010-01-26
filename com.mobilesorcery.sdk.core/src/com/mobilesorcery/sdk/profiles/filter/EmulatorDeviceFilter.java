@@ -15,7 +15,6 @@ package com.mobilesorcery.sdk.profiles.filter;
 
 import org.eclipse.ui.IMemento;
 
-import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 /**

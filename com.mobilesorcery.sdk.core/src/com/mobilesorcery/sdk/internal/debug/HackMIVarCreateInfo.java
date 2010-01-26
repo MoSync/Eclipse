@@ -13,7 +13,6 @@
 */
 package com.mobilesorcery.sdk.internal.debug;
 
-import org.eclipse.cdt.debug.mi.core.output.MIInfo;
 import org.eclipse.cdt.debug.mi.core.output.MIOutput;
 import org.eclipse.cdt.debug.mi.core.output.MIVarCreateInfo;
 

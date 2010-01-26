@@ -16,7 +16,6 @@ package com.mobilesorcery.sdk.ui.targetphone.internal;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
-import com.sun.jna.win32.StdCallLibrary;
 
 public interface BTDIALOG extends Library {
     

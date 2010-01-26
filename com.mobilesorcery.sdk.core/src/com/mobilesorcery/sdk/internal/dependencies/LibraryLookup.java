@@ -18,8 +18,6 @@ import java.util.HashMap;
 
 import org.eclipse.core.runtime.IPath;
 
-import com.mobilesorcery.sdk.core.Pair;
-
 /**
  * <p>A class for handling library dependencies. If a library, external or
  * internal to the Eclipse workspace, is recompiled, then all projects

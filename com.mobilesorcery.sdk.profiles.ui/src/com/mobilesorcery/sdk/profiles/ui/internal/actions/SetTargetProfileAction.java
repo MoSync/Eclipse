@@ -13,7 +13,6 @@
 */
 package com.mobilesorcery.sdk.profiles.ui.internal.actions;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;

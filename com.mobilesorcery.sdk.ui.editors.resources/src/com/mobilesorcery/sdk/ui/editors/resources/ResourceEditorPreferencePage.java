@@ -13,11 +13,7 @@
 */
 package com.mobilesorcery.sdk.ui.editors.resources;
 
-import org.eclipse.jface.preference.ColorFieldEditor;
-import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.IWorkbenchPreferencePage;
 
 
 public class ResourceEditorPreferencePage extends SyntaxColoringPreferencePage {

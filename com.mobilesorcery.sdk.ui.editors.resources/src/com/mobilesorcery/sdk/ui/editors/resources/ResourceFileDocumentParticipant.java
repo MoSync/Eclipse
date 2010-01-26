@@ -14,12 +14,10 @@
 package com.mobilesorcery.sdk.ui.editors.resources;
 
 import org.eclipse.core.filebuffers.IDocumentSetupParticipant;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentExtension3;
 import org.eclipse.jface.text.IDocumentPartitioner;
 import org.eclipse.jface.text.IDocumentPartitionerExtension3;
-import org.eclipse.jface.text.ITypedRegion;
 import org.eclipse.jface.text.rules.FastPartitioner;
 
 public class ResourceFileDocumentParticipant implements IDocumentSetupParticipant {

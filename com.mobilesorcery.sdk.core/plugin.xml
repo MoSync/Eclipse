@@ -27,7 +27,7 @@
          </run>
       </runtime>
       <builder
-            id="com.mobilsorcery.mosync.core">
+            id="com.mobilesorcery.sdk.core.builder">
       </builder>
    </extension>
 

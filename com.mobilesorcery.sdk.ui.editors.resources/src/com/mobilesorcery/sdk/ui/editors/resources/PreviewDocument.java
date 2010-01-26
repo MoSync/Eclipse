@@ -14,15 +14,12 @@
 package com.mobilesorcery.sdk.ui.editors.resources;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.RGB;
-import org.eclipse.swt.graphics.TextStyle;
 
 
 public class PreviewDocument {

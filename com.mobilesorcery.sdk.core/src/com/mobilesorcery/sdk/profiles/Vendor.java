@@ -13,7 +13,6 @@
 */
 package com.mobilesorcery.sdk.profiles;
 
-import java.util.ArrayList;
 import java.util.TreeMap;
 
 import org.eclipse.jface.resource.ImageDescriptor;

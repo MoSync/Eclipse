@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import com.mobilesorcery.sdk.core.IPropertyOwner.IWorkingCopy;
-import com.sun.org.apache.xerces.internal.dom.DeferredProcessingInstructionImpl;
 
 /**
  * A default implementation fot property owner working copies.

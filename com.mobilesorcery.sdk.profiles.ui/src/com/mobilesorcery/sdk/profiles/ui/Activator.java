@@ -13,25 +13,15 @@
 */
 package com.mobilesorcery.sdk.profiles.ui;
 
-import java.io.IOException;
-import java.util.Map;
-
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
-
-import com.mobilesorcery.sdk.core.MoSyncTool;
-import com.mobilesorcery.sdk.profiles.ProfileParser;
 
 /**
  * The activator class controls the plug-in life cycle

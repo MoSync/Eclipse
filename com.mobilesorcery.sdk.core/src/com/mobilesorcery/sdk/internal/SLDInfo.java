@@ -20,8 +20,6 @@ import java.util.Iterator;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
-import org.eclipse.core.runtime.IPath;
-
 public class SLDInfo {
 
     public static final int UNKNOWN_LINE = -1;

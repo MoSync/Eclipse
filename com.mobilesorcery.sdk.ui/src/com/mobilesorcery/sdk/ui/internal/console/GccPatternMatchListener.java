@@ -13,8 +13,6 @@
 */
 package com.mobilesorcery.sdk.ui.internal.console;
 
-import java.util.regex.Pattern;
-
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;

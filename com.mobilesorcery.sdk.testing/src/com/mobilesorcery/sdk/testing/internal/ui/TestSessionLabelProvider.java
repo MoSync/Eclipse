@@ -15,15 +15,10 @@ package com.mobilesorcery.sdk.testing.internal.ui;
 
 import java.text.MessageFormat;
 import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
 
-import org.eclipse.jface.viewers.CellLabelProvider;
-import org.eclipse.jface.viewers.OwnerDrawLabelProvider;
 import org.eclipse.jface.viewers.StyledCellLabelProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.ViewerCell;
-import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.graphics.Image;
 
 import com.mobilesorcery.sdk.testing.ITest;

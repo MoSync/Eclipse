@@ -14,9 +14,7 @@
 package com.mobilesorcery.sdk.core;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.LineNumberReader;
-import java.io.OutputStream;
 import java.io.Reader;
 
 public class LineReader implements Runnable {
@@ -43,10 +41,6 @@ public class LineReader implements Runnable {
 
     private Reader from;
     private ILineHandler callback;
-
-    private LineReader() {
-        
-    }
     
     public LineReader(Reader from, ILineHandler callback) {
         this.from = from;

@@ -13,24 +13,16 @@
 */
 package com.mobilesorcery.sdk.internal.debug;
 
-import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.TreeSet;
 
-import org.eclipse.cdt.core.settings.model.ICFileDescription;
 import org.eclipse.cdt.debug.core.CDIDebugModel;
 import org.eclipse.cdt.debug.core.model.ICLineBreakpoint;
-import org.eclipse.cdt.debug.internal.core.breakpoints.CLineBreakpoint;
-import org.eclipse.cdt.debug.internal.core.model.CDebugTarget;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointListener;
-import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.model.IBreakpoint;
 
 /**

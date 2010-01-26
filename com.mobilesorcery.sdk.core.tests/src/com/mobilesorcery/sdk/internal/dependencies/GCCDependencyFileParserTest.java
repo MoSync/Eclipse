@@ -16,7 +16,6 @@ package com.mobilesorcery.sdk.internal.dependencies;
 import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.Map;

@@ -176,7 +176,7 @@ icon="icons/launchshortcut.png">
         <visibility>
               <objectState
                  name="projectNature"
-                 value="org.eclipse.cdt.core.cnature"/>
+                 value="com.mobilesorcery.sdk.core.nature"/>
         </visibility>
      </objectContribution>
 

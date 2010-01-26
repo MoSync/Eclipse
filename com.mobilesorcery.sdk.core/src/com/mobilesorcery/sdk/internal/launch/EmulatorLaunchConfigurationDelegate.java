@@ -52,9 +52,7 @@ import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.LaunchConfigurationDelegate;
 import org.eclipse.ui.statushandlers.StatusManager;
 
-import com.mobilesorcery.sdk.core.BuildConfiguration;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
-import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.ILaunchConstants;
 import com.mobilesorcery.sdk.core.IProcessUtil;
@@ -66,7 +64,6 @@ import com.mobilesorcery.sdk.core.SpawnedProcess;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.internal.EmulatorOutputParser;
 import com.mobilesorcery.sdk.internal.OSPipeInputStream;
-import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
 import com.mobilesorcery.sdk.internal.debug.MoSyncCDebugTarget;
 import com.mobilesorcery.sdk.internal.debug.MoSyncDebugger;
 import com.mobilesorcery.sdk.profiles.IProfile;
