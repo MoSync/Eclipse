@@ -21,6 +21,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncNature;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 
@@ -44,33 +45,7 @@ public class MoSyncNatureTester extends PropertyTester {
 	 * @see MoSyncProject#isCompatible
 	 */
 	protected MoSyncProject extractProject(Object receiver, String property, Object[] args, Object expectedValue) {
-        if (receiver instanceof IAdaptable) {
-            receiver = ((IAdaptable) receiver).getAdapter(IResource.class);             
-        }
-        
-        if (receiver instanceof List) {
-            if (((List)(receiver)).size() == 0) {
-                return null;
-            }
-            
-            return extractProject(((List)receiver).get(0), property, args, expectedValue);
-        }
-        
-        if(receiver == null) {
-            return null;
-        }
-        
-        if (receiver instanceof IResource) {
-            IProject project = ((IResource)receiver).getProject();
-
-            try {                
-                return MoSyncNature.isCompatible(project) ? MoSyncProject.create(project) : null;
-            } catch (CoreException e) {
-                return null;
-            }
-        }
-        
-        return null;
+		return CoreMoSyncPlugin.getDefault().extractProject(receiver);
     }
 
 }

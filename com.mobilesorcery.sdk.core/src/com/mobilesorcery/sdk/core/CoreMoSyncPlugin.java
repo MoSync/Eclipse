@@ -19,15 +19,18 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.IStatus;
@@ -496,4 +499,43 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		}
 		
 	}
+	
+	
+	/**
+	 * Tries to derive a mosync project from whatever object is passed
+	 * as the <code>receiver</code>; this method will accept <code>List</code>s,
+	 * <code>IAdaptable</code>s, <code>IResource</code>s, and then if project
+	 * associated with these is compatible with a MoSyncProject, return that project.
+	 */
+	// Should it be here?
+	public MoSyncProject extractProject(Object receiver) {
+        if (receiver instanceof IAdaptable) {
+            receiver = ((IAdaptable) receiver).getAdapter(IResource.class);             
+        }
+        
+        if (receiver instanceof List) {
+            if (((List)(receiver)).size() == 0) {
+                return null;
+            }
+            
+            return extractProject(((List)receiver).get(0));
+        }
+        
+        if(receiver == null) {
+            return null;
+        }
+        
+        if (receiver instanceof IResource) {
+            IProject project = ((IResource)receiver).getProject();
+
+            try {                
+                return MoSyncNature.isCompatible(project) ? MoSyncProject.create(project) : null;
+            } catch (CoreException e) {
+                return null;
+            }
+        }
+        
+        return null;
+	}
+
 }

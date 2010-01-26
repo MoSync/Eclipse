@@ -1,3 +1,16 @@
+/*  Copyright (C) 2010 Mobile Sorcery AB
+
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the Eclipse Public License v1.0.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE. See the Eclipse Public License v1.0 for
+    more details.
+
+    You should have received a copy of the Eclipse Public License v1.0 along
+    with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
+ */
 package com.mobilesorcery.sdk.ui;
 
 import java.beans.PropertyChangeEvent;
@@ -18,7 +31,7 @@ public class BuildConfigurationsContentProvider implements IStructuredContentPro
 	}
 
 	public Object[] getElements(Object inputElement) {
-		return project.isBuildConfigurationsSupported() ? project.getBuildConfigurations().toArray() : new Object[0];
+		return project.areBuildConfigurationsSupported() ? project.getBuildConfigurations().toArray() : new Object[0];
 	}
 
 	public void dispose() {

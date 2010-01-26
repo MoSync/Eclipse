@@ -43,7 +43,7 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
     		MoSyncProject project = (MoSyncProject) p;
     		projectName = project.getName();
     		// Config = namespace
-    		namespaceSegment = project.isBuildConfigurationsSupported() ? namespace + "/" : "";
+    		namespaceSegment = project.areBuildConfigurationsSupported() ? namespace + "/" : "";
     	}
     	
         if (MoSyncBuilder.EXTRA_COMPILER_SWITCHES.equals(namespacedKey)) {

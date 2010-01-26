@@ -538,7 +538,7 @@ public class MoSyncBuilder extends ACBuilder {
 			console.addMessage(MessageFormat.format(
 					"Building project {0} for profile {1}", project.getName(),
 					targetProfile));
-			if (mosyncProject.isBuildConfigurationsSupported()) {
+			if (mosyncProject.areBuildConfigurationsSupported()) {
 				IBuildConfiguration activeBuildConfig = mosyncProject
 						.getActiveBuildConfiguration();
 				console.addMessage(MessageFormat
@@ -783,12 +783,12 @@ public class MoSyncBuilder extends ACBuilder {
 			MoSyncProject mosyncProject) {
 		IBuildConfiguration activeBuildConfig = mosyncProject
 				.getActiveBuildConfiguration();
-		if (mosyncProject.isBuildConfigurationsSupported()
+		if (mosyncProject.areBuildConfigurationsSupported()
 				&& activeBuildConfig == null) {
 			throw new IllegalStateException("No configuration is active");
 		}
 
-		return mosyncProject.isBuildConfigurationsSupported() ? activeBuildConfig
+		return mosyncProject.areBuildConfigurationsSupported() ? activeBuildConfig
 				.getProperties()
 				: mosyncProject;
 	}

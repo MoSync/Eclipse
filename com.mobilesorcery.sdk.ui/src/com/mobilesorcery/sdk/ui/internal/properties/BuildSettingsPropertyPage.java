@@ -168,7 +168,7 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         incrementalBuildStrategy.setItems(INCREMENTAL_BUILD_STRATEGY_OPTIONS);
         incrementalBuildStrategy.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false));
         
-        boolean hasConfigurations = getProject().isBuildConfigurationsSupported();
+        boolean hasConfigurations = getProject().areBuildConfigurationsSupported();
         Group configurationsGroup = null;
         if (hasConfigurations) {
         	configurationsGroup = new Group(main, SWT.NONE);
@@ -209,7 +209,7 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         appOutputPath.addListener(SWT.Modify, listener);
         
         changeConfiguration(getProject().getActiveBuildConfiguration());
-    	if (getProject().isBuildConfigurationsSupported()) {
+    	if (getProject().areBuildConfigurationsSupported()) {
     		IBuildConfiguration cfg = getProject().getActiveBuildConfiguration();
     		if (cfg != null) {
     			buildConfigurationListener.setActive(false);

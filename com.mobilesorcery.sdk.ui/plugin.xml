@@ -148,17 +148,18 @@ icon="icons/launchshortcut.png">
         <action
               class="com.mobilesorcery.sdk.ui.internal.actions.ChangeBuildConfigContextAction"
               enablesFor="+"
-              id="org.eclipse.cdt.ui.buildConfigPulldownAction"
-              label="Build Configurations"
+              id="com.mobilesorcery.sdk.buildconfigs.active"
+              label="Set Active Configuration"
               menubarPath="com.mobilesorcery.sdk.build.menu/configs"
               style="pulldown"
-              tooltip="Set and manage build configurations"/>
+              tooltip="Set and manage build configurations">
+        </action>
         <action
-              class="org.eclipse.cdt.ui.actions.ManageConfigsAction"
+              class="com.mobilesorcery.sdk.ui.internal.actions.ManageBuildConfigsAction"
               enablesFor="+"
-              id="org.eclipse.cdt.ui.manageConfigsAction0"
-              label="%ManageConfigAction.label"
-              menubarPath="com.mobilesorcery.sdk.build.menu/configs"
+              id="com.mobilesorcery.sdk.buildconfigs.manage"
+              label="Manage..."
+              menubarPath="com.mobilesorcery.sdk.build.menu/meta"
               />
         <menu
               id="com.mobilesorcery.sdk.build.menu"
@@ -380,8 +381,5 @@ icon="icons/launchshortcut.png">
                </visibleWhen>
             </command>
          </menuContribution>
-      </extension>
-      <extension
-            point="org.eclipse.ui.menus">
       </extension>
 </plugin>

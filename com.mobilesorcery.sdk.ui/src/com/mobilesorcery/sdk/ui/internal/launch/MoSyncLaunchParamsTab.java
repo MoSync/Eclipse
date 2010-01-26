@@ -320,7 +320,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 	public void updateLaunchConfigurationDialog() {
 		MoSyncProject project = selectedProject();
 		boolean configurationsVisible = project != null
-				&& project.isBuildConfigurationsSupported();
+				&& project.areBuildConfigurationsSupported();
 		boolean comboEnabled = changeConfiguration.getSelection()
 				&& configurationsVisible;
 		configurations.getControl().setEnabled(comboEnabled);

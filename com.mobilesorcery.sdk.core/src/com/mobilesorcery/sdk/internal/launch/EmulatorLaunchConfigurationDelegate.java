@@ -93,7 +93,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     	IProject project = getProject(configuration);
     	MoSyncProject mosyncProject = MoSyncProject.create(project);
     	// We'll let non-mosync projects slip through; they'll be handled in launchSync
-    	if (mosyncProject != null && mosyncProject.isBuildConfigurationsSupported()) {
+    	if (mosyncProject != null && mosyncProject.areBuildConfigurationsSupported()) {
     		boolean isDebugMode = "debug".equals(mode);
     		
 			String autoChangeConfigKey = isDebugMode ? ILaunchConstants.AUTO_CHANGE_CONFIG_DEBUG : ILaunchConstants.AUTO_CHANGE_CONFIG;

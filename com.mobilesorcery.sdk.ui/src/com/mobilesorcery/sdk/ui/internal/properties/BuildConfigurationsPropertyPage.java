@@ -87,10 +87,10 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 		}
 
 		public void doHandleEvent(Event event) {
-			if (!project.isBuildConfigurationsSupported() && project.getBuildConfigurations().isEmpty()) {
+			if (!project.areBuildConfigurationsSupported() && project.getBuildConfigurations().isEmpty()) {
 				project.activateBuildConfigurations();
 			} else {
-				project.setBuildConfigurationsSupported(!project.isBuildConfigurationsSupported());				
+				project.setBuildConfigurationsSupported(!project.areBuildConfigurationsSupported());				
 			}
 		}
 	}
@@ -244,11 +244,11 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 	}
 	
 	protected void updateUI() {
-		activateButton.setSelection(getProject().isBuildConfigurationsSupported());
+		activateButton.setSelection(getProject().areBuildConfigurationsSupported());
 		viewer.refresh();
-		viewer.getControl().setEnabled(getProject().isBuildConfigurationsSupported());
+		viewer.getControl().setEnabled(getProject().areBuildConfigurationsSupported());
 		
-		boolean enableActions = getProject().isBuildConfigurationsSupported();
+		boolean enableActions = getProject().areBuildConfigurationsSupported();
 		boolean hasSelection = !viewer.getSelection().isEmpty();
 		setActiveButton.setEnabled(enableActions && hasSelection);
 		addButton.setEnabled(enableActions);

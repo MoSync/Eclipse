@@ -43,7 +43,7 @@ public class FinalizerPropertyPage extends PropertyPage implements
 	}
 
 	private void initUI() {
-		boolean enabled = getProject().isBuildConfigurationsSupported();
+		boolean enabled = getProject().areBuildConfigurationsSupported();
 		
 		configurations.setContentProvider(new BuildConfigurationsContentProvider(getProject()));
 		configurations.setLabelProvider(new BuildConfigurationsLabelProvider(getProject()));

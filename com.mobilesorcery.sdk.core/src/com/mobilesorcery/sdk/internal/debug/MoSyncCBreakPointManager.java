@@ -118,6 +118,7 @@ import org.eclipse.debug.core.model.ILineBreakpoint;
 import org.eclipse.debug.core.model.ISourceLocator;
 import org.eclipse.debug.core.sourcelookup.containers.LocalFileStorage;
 
+@SuppressWarnings("all") // Because of heavy use of discouraged apis
 public class MoSyncCBreakPointManager extends CBreakpointManager {
 
 	static class BreakpointInProgess {

@@ -859,7 +859,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		}
 	}
 	
-	public boolean isBuildConfigurationsSupported() {
+	public boolean areBuildConfigurationsSupported() {
 		return isBuildConfigurationsSupported;
 	}
 	
