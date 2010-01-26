@@ -61,15 +61,20 @@ public class EditDeviceListDialog extends Dialog {
 
 	private ComboViewer deviceList;
 	private TreeViewer preferredProfile;
+	private TargetPhone initialTargetPhone;
 
 	protected EditDeviceListDialog(Shell parentShell) {
 		super(parentShell);
 	}
 
+	public void setInitialTargetPhone(TargetPhone initialTargetPhone) {
+		this.initialTargetPhone = initialTargetPhone;
+	}
+	
     public Control createDialogArea(Composite parent) {
         getShell().setText("Select Preferred Profile");
         
-        TargetPhone initialTargetPhone = Activator.getDefault().getCurrentlySelectedPhone();
+        TargetPhone initialTargetPhone = this.initialTargetPhone == null ? Activator.getDefault().getCurrentlySelectedPhone() : this.initialTargetPhone;
         
         Composite main = (Composite) super.createDialogArea(parent);
         

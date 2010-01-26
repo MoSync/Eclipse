@@ -127,14 +127,17 @@ public class MoSyncBuilder extends ACBuilder {
 	public static final String GCC_WARNINGS = BUILD_PREFS_PREFIX
 			+ "gcc.warnings";
 
+	public static final String MEMORY_PREFS_PREFIX = BUILD_PREFS_PREFIX
+			+ "memory.";
 
-	public static final String MEMORY_PREFS_PREFIX = BUILD_PREFS_PREFIX + "memory.";
+	public static final String MEMORY_HEAPSIZE_KB = MEMORY_PREFS_PREFIX
+			+ "heap";
 
-	public static final String MEMORY_HEAPSIZE_KB = MEMORY_PREFS_PREFIX + "heap";
+	public static final String MEMORY_STACKSIZE_KB = MEMORY_PREFS_PREFIX
+			+ "stack";
 
-	public static final String MEMORY_STACKSIZE_KB = MEMORY_PREFS_PREFIX + "stack";
-
-	public static final String MEMORY_DATASIZE_KB = MEMORY_PREFS_PREFIX + "data";
+	public static final String MEMORY_DATASIZE_KB = MEMORY_PREFS_PREFIX
+			+ "data";
 
 	public static final String USE_DEBUG_RUNTIME_LIBS = BUILD_PREFS_PREFIX
 			+ "runtime.debug";
@@ -370,7 +373,8 @@ public class MoSyncBuilder extends ACBuilder {
 				.getId();
 		boolean changedConfig = !NameSpacePropertyOwner.equals(oldConfig,
 				activeConfigId);
-		project.initProperty(lastBuildConfigKey, activeConfigId, MoSyncProject.LOCAL_PROPERTY);
+		project.initProperty(lastBuildConfigKey, activeConfigId,
+				MoSyncProject.LOCAL_PROPERTY);
 		return changedConfig;
 	}
 
@@ -441,17 +445,22 @@ public class MoSyncBuilder extends ACBuilder {
 			boolean doBuildResources, boolean doPack,
 			IFilter<IResource> resourceFilter, boolean doLink,
 			IProgressMonitor monitor) throws CoreException {
-		// TODO: Allow for setting build config explicitly!
-		monitor.beginTask(MessageFormat.format("Full build of {0}", project
-				.getName()), 8);
-		if (doClean) {
-			clean(project, targetProfile, isFinalizerBuild,
-					new SubProgressMonitor(monitor, 1));
-		} else {
-			monitor.worked(1);
+		try {
+			// TODO: Allow for setting build config explicitly!
+			monitor.beginTask(MessageFormat.format("Full build of {0}", project
+					.getName()), 8);
+			if (doClean) {
+				clean(project, targetProfile, isFinalizerBuild,
+						new SubProgressMonitor(monitor, 1));
+			} else {
+				monitor.worked(1);
+			}
+			return incrementalBuild(project, null, targetProfile,
+					isFinalizerBuild, doBuildResources, doPack, resourceFilter,
+					doLink, monitor);
+		} finally {
+			monitor.done();
 		}
-		return incrementalBuild(project, null, targetProfile, isFinalizerBuild,
-				doBuildResources, doPack, resourceFilter, doLink, monitor);
 	}
 
 	// TODO: Refactor, this is becoming a jack-of-all-trades method, esp. now
@@ -516,9 +525,11 @@ public class MoSyncBuilder extends ACBuilder {
 				console
 						.addMessage("- go to Window > Preferences > MoSync Tool to set the MoSync home directory");
 			}
-			
+
 			if (doLink && !doBuildResources) {
-				throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "If resource building is suppressed, then linking should also be."));
+				throw new CoreException(
+						new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
+								"If resource building is suppressed, then linking should also be."));
 			}
 
 			console.addMessage("Build started at "
@@ -558,7 +569,7 @@ public class MoSyncBuilder extends ACBuilder {
 					.getDependencyProvider());
 			resourceVisitor.setDelta(deltas);
 			resourceVisitor.setResourceFilter(resourceFilter);
-			
+
 			if (doBuildResources) {
 				// First we build the resources...
 				monitor.setTaskName("Assembling resources");
@@ -636,7 +647,7 @@ public class MoSyncBuilder extends ACBuilder {
 			}
 
 			requiresLinking &= doLink;
-			
+
 			if (ec == 0 && requiresLinking) {
 				boolean elim = !isLib
 						&& PropertyUtil.getBoolean(buildProperties,

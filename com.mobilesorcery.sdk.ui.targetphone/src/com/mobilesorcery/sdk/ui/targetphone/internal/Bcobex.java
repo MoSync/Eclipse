@@ -160,11 +160,18 @@ public class Bcobex {
             os = putOperation.openOutputStream();
             byte[] buffer = new byte[788]; // Just an unusual number...
             int totalRead = 0;
+            boolean firstChunk = true;
             for (int read = fileInput.read(buffer); !monitor.isCanceled() && read != -1; read = fileInput.read(buffer)) {
                 totalRead += read;
-                monitor.setTaskName(MessageFormat.format("Sending {0} of {1}", Util.dataSize(totalRead), Util.dataSize(length)));
-                monitor.worked(read);
                 os.write(buffer, 0, read);
+                if (firstChunk) {
+                	monitor.setTaskName("Transfer in progress... (you may need to accept this transfer on the device)");
+                	firstChunk = false;
+                } else {
+                	monitor.setTaskName(MessageFormat.format("Sent {0} of {1}", Util.dataSize(totalRead), Util.dataSize(length)));
+                }
+                
+                monitor.worked(read);
             }
 
         } finally {

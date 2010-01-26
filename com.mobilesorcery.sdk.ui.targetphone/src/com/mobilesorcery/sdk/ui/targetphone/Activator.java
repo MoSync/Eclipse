@@ -181,5 +181,6 @@ public class Activator extends AbstractUIPlugin {
 
 	public void clearHistory() {
 		history.clear();
+		selectedPhone = null;
 	}
 }
