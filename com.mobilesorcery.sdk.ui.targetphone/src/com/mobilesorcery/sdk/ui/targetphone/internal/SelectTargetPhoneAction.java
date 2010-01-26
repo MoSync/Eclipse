@@ -121,7 +121,7 @@ public class SelectTargetPhoneAction implements IWorkbenchWindowPulldownDelegate
             protected IStatus run(IProgressMonitor monitor) {
                 final TargetPhone[] phone = new TargetPhone[1];
                 try {
-                    phone[0] = selectPhone(getCurrentProfileOfCurrentProject(window));
+                    phone[0] = selectPhone();
                     if (phone[0] == null) {
                         return Status.CANCEL_STATUS;
                     }
@@ -154,12 +154,9 @@ public class SelectTargetPhoneAction implements IWorkbenchWindowPulldownDelegate
      * @return
      * @throws IOException
      */
-    public static TargetPhone selectPhone(IProfile preferredProfile) throws IOException {
+    public static TargetPhone selectPhone() throws IOException {
         SearchDeviceDialog dialog = new SearchDeviceDialog();
         TargetPhone info = dialog.open();
-        if (preferredProfile != null && info != null) {
-        	info.setPreferredProfile(preferredProfile);
-        }
         return info;
     }
 
@@ -185,8 +182,10 @@ public class SelectTargetPhoneAction implements IWorkbenchWindowPulldownDelegate
         this.selection = selection;
     }
 
-    static IProfile getCurrentProfileOfCurrentProject(IWorkbenchWindow window) {
+    static IProfile selectProfileForPhone(TargetPhone phone, IWorkbenchWindow window) {
     	MoSyncProject project = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(window);
-    	return project == null ? null : project.getTargetProfile();
+    	EditDeviceListDialog dialog = new EditDeviceListDialog(window.getShell());
+    	dialog.open();
+    	return phone.getPreferredProfile();
     }
 }

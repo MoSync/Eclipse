@@ -139,9 +139,47 @@ icon="icons/launchshortcut.png">
            </action>           ...
        </actionSet>
    </extension>
-   
-      <extension
+         <extension
          point="org.eclipse.ui.popupMenus">
+     <objectContribution
+           adaptable="true"
+           id="com.mobilesorcery.sdk.buildconfig"
+           objectClass="org.eclipse.core.resources.IResource">
+        <action
+              class="com.mobilesorcery.sdk.ui.internal.actions.ChangeBuildConfigContextAction"
+              enablesFor="+"
+              id="org.eclipse.cdt.ui.buildConfigPulldownAction"
+              label="Build Configurations"
+              menubarPath="com.mobilesorcery.sdk.build.menu/configs"
+              style="pulldown"
+              tooltip="Set and manage build configurations"/>
+        <action
+              class="org.eclipse.cdt.ui.actions.ManageConfigsAction"
+              enablesFor="+"
+              id="org.eclipse.cdt.ui.manageConfigsAction0"
+              label="%ManageConfigAction.label"
+              menubarPath="com.mobilesorcery.sdk.build.menu/configs"
+              />
+        <menu
+              id="com.mobilesorcery.sdk.build.menu"
+              label="Build Configurations"
+              path="buildGroup">
+           <groupMarker name="configs"/>
+           <separator
+                 name="s1">
+           </separator>
+           <groupMarker
+                 name="meta">
+           </groupMarker>
+        </menu>
+        
+        <visibility>
+              <objectState
+                 name="projectNature"
+                 value="org.eclipse.cdt.core.cnature"/>
+        </visibility>
+     </objectContribution>
+
       <objectContribution
             adaptable="true"
             id="com.mobilesorcery.sdk.convert.project"
@@ -342,5 +380,8 @@ icon="icons/launchshortcut.png">
                </visibleWhen>
             </command>
          </menuContribution>
+      </extension>
+      <extension
+            point="org.eclipse.ui.menus">
       </extension>
 </plugin>

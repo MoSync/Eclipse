@@ -121,21 +121,35 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 		}
 
 		public void doHandleEvent(Event event) {
-			String uniqueId = createUniqueId(getProject());
+			String uniqueId = createUniqueId(getProject(), "Configuration");
 			getProject().installBuildConfiguration(uniqueId);
 		}
 
-		private String createUniqueId(MoSyncProject project) {
-			String originalUniqueId = "Configuration";
-			String uniqueId = originalUniqueId;
+		protected String createUniqueId(MoSyncProject project, String originalName) {
+			String uniqueId = originalName;
 	        int i = 2;
 
 	        while (project.getBuildConfiguration(uniqueId) != null) {
-	            uniqueId = originalUniqueId + i;
+	            uniqueId = originalName + i;
 	            i++;
 	        }
 	        
 	        return uniqueId;
+		}
+	}
+	
+	public class DuplicateListener extends AddListener {
+		public DuplicateListener(MoSyncProject project) {
+			super(project);
+		}
+
+		public void doHandleEvent(Event event) {
+			String cfg = getSelectedConfiguration();
+			if (cfg != null) {
+				String uniqueId = createUniqueId(getProject(), cfg);
+				IBuildConfiguration newConfig = getProject().getBuildConfiguration(cfg).clone(uniqueId);
+				getProject().installBuildConfiguration(newConfig);
+			}
 		}
 	}
 	
@@ -173,6 +187,7 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 	private TableViewer viewer;
 	private Button setActiveButton;
 	private Button addButton;
+	private Button duplicateButton;
 	private Button deleteButton;
 	private Button editButton;
 
@@ -190,7 +205,7 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
         viewer.setLabelProvider(new BuildConfigurationsLabelProvider(getProject()));
         viewer.setInput(getProject());
         GridData viewerData = new GridData(GridData.FILL_BOTH);
-        viewerData.verticalSpan = 4;
+        viewerData.verticalSpan = 5;
         viewer.getControl().setLayoutData(viewerData);
         viewer.addDoubleClickListener(new SetActiveListener(getProject()));
         viewer.addSelectionChangedListener(new ISelectionChangedListener() {
@@ -208,6 +223,11 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
         addButton.setText("&Add");
         addButton.addListener(SWT.Selection, new AddListener(getProject()));
         addButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, false, false));
+
+        duplicateButton = new Button(main, SWT.PUSH);
+        duplicateButton.setText("&Duplicate");
+        duplicateButton.addListener(SWT.Selection, new DuplicateListener(getProject()));
+        duplicateButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, false, false));
 
         editButton = new Button(main, SWT.PUSH);
         editButton.setText("&Edit...");
@@ -229,10 +249,12 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 		viewer.getControl().setEnabled(getProject().isBuildConfigurationsSupported());
 		
 		boolean enableActions = getProject().isBuildConfigurationsSupported();
-		setActiveButton.setEnabled(enableActions && !viewer.getSelection().isEmpty());
+		boolean hasSelection = !viewer.getSelection().isEmpty();
+		setActiveButton.setEnabled(enableActions && hasSelection);
 		addButton.setEnabled(enableActions);
-		deleteButton.setEnabled(enableActions && !viewer.getSelection().isEmpty());
-		editButton.setEnabled(enableActions && !viewer.getSelection().isEmpty());
+		duplicateButton.setEnabled(enableActions && hasSelection);
+		deleteButton.setEnabled(enableActions && hasSelection);
+		editButton.setEnabled(enableActions && hasSelection);
 		viewer.getControl().setFocus();
 	}
 

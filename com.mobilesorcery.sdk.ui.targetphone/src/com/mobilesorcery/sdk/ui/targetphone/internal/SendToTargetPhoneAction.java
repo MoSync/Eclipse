@@ -60,7 +60,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 
                 if (phone == null) {
                     try {
-                        selectedPhone[0] = SelectTargetPhoneAction.selectPhone(SelectTargetPhoneAction.getCurrentProfileOfCurrentProject(window));
+                        selectedPhone[0] = SelectTargetPhoneAction.selectPhone();
                     } catch (IOException e) {
                         return new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e);
                     }
@@ -69,7 +69,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
                         return Status.CANCEL_STATUS;
                     }
                 } else if (phone.getPreferredProfile() == null) {
-                	phone.setPreferredProfile(SelectTargetPhoneAction.getCurrentProfileOfCurrentProject(window));
+                	phone.setPreferredProfile(SelectTargetPhoneAction.selectProfileForPhone(phone, window));
                 }
 
                 Job sendJob = new Job("Send to target") {

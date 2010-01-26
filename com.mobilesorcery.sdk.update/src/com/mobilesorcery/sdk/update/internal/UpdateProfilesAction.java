@@ -58,7 +58,7 @@ public class UpdateProfilesAction extends Action {
 	private Shell shell;
 
     public UpdateProfilesAction() {
-		Display.getDefault().asyncExec(new Runnable() {
+		Display.getDefault().syncExec(new Runnable() {
 			public void run() {
 				shell = new Shell(Display.getDefault());
 			}
@@ -219,7 +219,7 @@ public class UpdateProfilesAction extends Action {
                 RegistrationDialog dialog = new RegistrationDialog(getShell());
                 dialog.setIsStartedByUser(isStartedByUser);
                 dialog.setInfo(info);
-                shell.forceActive();
+                getShell().forceActive();
                 result.offer(dialog.open());
             }
         });
