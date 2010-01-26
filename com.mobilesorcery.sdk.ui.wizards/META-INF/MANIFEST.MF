@@ -12,4 +12,4 @@ Require-Bundle: org.eclipse.ui,
  com.mobilesorcery.sdk.core,
  com.mobilesorcery.sdk.core.templates;bundle-version="1.0.0",
  com.mobilesorcery.sdk.ui;bundle-version="1.0.0"
-Eclipse-LazyStart: true
+Bundle-ActivationPolicy: lazy

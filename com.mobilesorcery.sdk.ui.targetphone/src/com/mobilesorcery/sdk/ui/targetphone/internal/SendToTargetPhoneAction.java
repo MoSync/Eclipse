@@ -160,6 +160,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 
 	/**
 	 * Sends the build result to the target phone
+	 * CURRENTLY NOT USED
 	 */
 	public void sendTo(final TargetPhone phone) {
 		if (phone != null) {

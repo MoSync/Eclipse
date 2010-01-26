@@ -14,7 +14,6 @@
 package com.mobilesorcery.sdk.update.internal;
 
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -77,7 +76,7 @@ public class DefaultUpdater implements IUpdater {
 		// Since the updater is called very early, we cannot
 		// be sure we have a workbench yet. Hence this strange concurrent implementation.
 		try {
-			IWorkbench wb = PlatformUI.getWorkbench();
+			PlatformUI.getWorkbench();
 		} catch (Exception e) {
 			return false;
 		}

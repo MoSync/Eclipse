@@ -89,10 +89,7 @@ public class ConstantFilterDialog extends DeviceFilterDialog<ConstantFilter> {
         }
     }
     
-    private void updateUI() {        
-        boolean c = constants.getSelection().isEmpty();
-        boolean d = selectedOp == null;
-        boolean e = threshold == null;
+    private void updateUI() {
         getButton(IDialogConstants.OK_ID).setEnabled(!constants.getSelection().isEmpty() && selectedOp != null && threshold != null); 
     }
     

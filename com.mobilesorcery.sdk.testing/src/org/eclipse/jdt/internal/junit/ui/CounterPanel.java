@@ -114,9 +114,9 @@ public class CounterPanel extends Composite {
 	public void setRunValue(int value, int ignoredCount) {
 		String runString;
 		if (ignoredCount == 0)
-			runString= MessageFormat.format("{0}/{1}", new String[] { Integer.toString(value), Integer.toString(fTotal) });
+			runString= MessageFormat.format("{0}/{1}", Integer.toString(value), Integer.toString(fTotal));
 		else
-			runString= MessageFormat.format("{0}/{1} ({2} ignored)", new String[] { Integer.toString(value), Integer.toString(fTotal), Integer.toString(ignoredCount) });
+			runString= MessageFormat.format("{0}/{1} ({2} ignored)", Integer.toString(value), Integer.toString(fTotal), Integer.toString(ignoredCount));
 		fNumberOfRuns.setText(runString);
 
 		if (fIgnoredCount == 0 && ignoredCount > 0	|| fIgnoredCount != 0 && ignoredCount == 0) {

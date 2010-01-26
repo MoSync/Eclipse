@@ -56,7 +56,7 @@ public class MoSyncIncludePathContainer implements IPathEntryContainer {
         if (project != null) {
         	IPath[] includePaths = MoSyncBuilder.getIncludePaths(project);
         	for (int i = 0; i < includePaths.length; i++) {
-        		IContainer[] includePathInWorkspace = ResourcesPlugin.getPlugin().getWorkspace().getRoot().findContainersForLocation(includePaths[i]);
+        		IContainer[] includePathInWorkspace = ResourcesPlugin.getWorkspace().getRoot().findContainersForLocation(includePaths[i]);
         		IPath resourcePath = includePathInWorkspace.length > 0 ? includePathInWorkspace[0].getProjectRelativePath() : Path.EMPTY;
         		entries.add(CoreModel.newIncludeEntry(resourcePath, Path.EMPTY, includePaths[i], true));
         	}

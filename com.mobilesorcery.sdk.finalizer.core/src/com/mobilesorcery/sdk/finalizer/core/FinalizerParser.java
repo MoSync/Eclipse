@@ -48,6 +48,9 @@ public class FinalizerParser {
 	public static final String BUILD_CONFIG = FINALIZER_PROPERTY_PREFIX + ":build.config";
 	
 	public class ParseException extends Exception {	
+
+		private static final long serialVersionUID = -9055537164752470136L;
+
 		public ParseException(String msg, int line) {
 			super("Line " + line + ": " + msg); //$NON-NLS-1$ //$NON-NLS-2$
 		}

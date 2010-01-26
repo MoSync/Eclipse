@@ -13,6 +13,6 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.cdt.core;bundle-version="5.0.0",
  com.mobilesorcery.sdk.profiles.ui;bundle-version="1.0.0",
  com.mobilesorcery.sdk.ui;bundle-version="1.0.0"
-Eclipse-LazyStart: true
+Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,
  lib/bluecove-2.0.3.jar

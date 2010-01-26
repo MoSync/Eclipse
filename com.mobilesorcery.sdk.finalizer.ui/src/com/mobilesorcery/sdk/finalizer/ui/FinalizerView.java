@@ -91,8 +91,6 @@ public class FinalizerView extends ViewPart {
 
 		finalize.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent event) {
-				final StringReader script = new StringReader(scriptText
-						.getText());
 				MoSyncProject project = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(window);
 				FinalizeJob job = new FinalizeJob(project, scriptText.getText());
 				job.setUser(true);
