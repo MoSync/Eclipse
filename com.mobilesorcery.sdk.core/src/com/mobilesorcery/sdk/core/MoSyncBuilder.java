@@ -951,8 +951,6 @@ public class MoSyncBuilder extends ACBuilder {
 		if (!PropertyUtil.getBoolean(project, IGNORE_DEFAULT_INCLUDE_PATHS)) {
 			result.addAll(Arrays.asList(MoSyncTool.getDefault()
 					.getMoSyncDefaultIncludes()));
-			result.addAll(Arrays.asList(getProfileIncludes(project
-					.getTargetProfile())));
 			// result.add(getOutputPath(project.getWrappedProject(),
 			// buildProperties).removeTrailingSeparator());
 		}
@@ -978,7 +976,7 @@ public class MoSyncBuilder extends ACBuilder {
 		return result.toArray(new IPath[0]);
 	}
 
-	private static IPath[] getProfileIncludes(IProfile profile) {
+	public static IPath[] getProfileIncludes(IProfile profile) {
 		IPath profilePath = MoSyncTool.getDefault().getProfilePath(profile);
 		return profilePath == null ? new IPath[0] : new IPath[] { profilePath };
 	}
