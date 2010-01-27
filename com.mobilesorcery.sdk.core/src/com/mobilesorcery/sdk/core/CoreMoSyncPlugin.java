@@ -27,6 +27,8 @@ import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceChangeEvent;
+import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -62,7 +64,7 @@ import com.mobilesorcery.sdk.profiles.filter.elementfactories.VendorFilterFactor
 /**
  * The activator class controls the plug-in life cycle
  */
-public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChangeListener {
+public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChangeListener, IResourceChangeListener {
 	
     // The plug-in ID
     public static final String PLUGIN_ID = "com.mobilesorcery.sdk.core";
@@ -117,6 +119,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         initGlobalDependencyManager();        
         initEmulatorProcessManager();
         installBreakpointHack();
+        installResourceListener();
 		getPreferenceStore().addPropertyChangeListener(this); 
 		initializeOnSeparateThread();
     }
@@ -167,6 +170,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         projectDependencyManager = null;
         MoSyncProject.removeGlobalPropertyChangeListener(reindexListener);
         bpSync.uninstall();
+        deinstallResourceListener();
         super.stop(context);
     }
 
@@ -407,6 +411,14 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		factories.put(ProfileFilterFactory.ID, new ProfileFilterFactory());
 	}
 	
+	private void installResourceListener() {
+		ResourcesPlugin.getWorkspace().addResourceChangeListener(this);
+	}
+	
+	private void deinstallResourceListener() {
+		ResourcesPlugin.getWorkspace().removeResourceChangeListener(this);
+	}
+	
 	/**
 	 * <p>Returns an <code>IDeviceFilterFactory</code>.</p>
 	 * <p>Examples of <code>IDeviceFilterFactories</code> are
@@ -536,6 +548,18 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         }
         
         return null;
+	}
+
+	public void resourceChanged(IResourceChangeEvent event) {
+		if (event.getType() == IResourceChangeEvent.PRE_DELETE) {
+			IResource resource = event.getResource();
+			if (resource.getType() == IResource.PROJECT) {
+				MoSyncProject project = MoSyncProject.create((IProject) resource);
+				if (project != null) {
+					project.dispose();
+				}
+			}
+		}
 	}
 
 }

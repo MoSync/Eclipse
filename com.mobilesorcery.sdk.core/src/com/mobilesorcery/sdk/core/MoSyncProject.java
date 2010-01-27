@@ -286,6 +286,12 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     	for (int i = 0; i < cfgs.length; i++) {
     		String id = cfgs[i].getString(BUILD_CONFIG_ID_KEY);
     		BuildConfiguration cfg = new BuildConfiguration(this, id);
+    		// For older versions of the mosync project, the active
+    		// property might be set as an attribute here instead of
+    		// as a separate tag.
+    		if (Boolean.TRUE.equals(cfgs[i].getBoolean(ACTIVE_BUILD_CONFIG_KEY))) {
+    			currentBuildConfig = cfg;
+    		}
     		configurations.put(id, cfg);
     	}
 	}
@@ -433,6 +439,17 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         }
 
         return result;
+    }
+    
+    /**
+     * Disposes of this mosyncproject, so subsequent calls
+     * to <code>MoSyncProject.create(IProject)</code> will
+     * return another <code>MoSyncProject</code> object.
+     * Clients can, but should not, perform operations on
+     * a disposed mosyncproject.
+     */
+    public void dispose() {
+    	projects.remove(this);
     }
     
     /**
