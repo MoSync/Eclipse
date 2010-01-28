@@ -109,6 +109,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     public void start(BundleContext context) throws Exception {
         super.start(context);
         plugin = this;
+        isHeadless = Boolean.TRUE.equals(System.getProperty("com.mobilesorcery.headless"));
         initReIndexerListener();
         initRebuildOnProfileChangeListener();
         initNativeLibs(context);
@@ -144,7 +145,10 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     }
 
     /**
-     * Sets this app to headless/non-headless mode
+     * Sets this app to headless/non-headless mode.
+     * Please note that this will trigger a bundle activation,
+     * so if you want to make sure headless is set before that
+     * use <code>System.setProperty("com.mobilesorcery.headless", true")</code>
      * @param isHeadless
      */
 	public static void setHeadless(boolean isHeadless) {

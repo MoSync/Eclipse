@@ -70,6 +70,8 @@ public class HeadlessBuild implements IApplication {
 		// OK, kill the splash
 		context.applicationRunning();
 		
+		// Make sure it's headless from the start.
+		System.setProperty("com.mobilesorcery.headless", "true");
 		CoreMoSyncPlugin.setHeadless(true);
 		
 		String[] args = (String[]) context.getArguments().get(
