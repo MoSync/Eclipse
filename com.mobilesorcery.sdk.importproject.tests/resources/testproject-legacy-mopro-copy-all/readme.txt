@@ -1,0 +1,1 @@
+This test project is used to test the "copy all" mopro import functionality

@@ -1,0 +1,1 @@
+This test project is used to test the "copy only files in project description" mopro import functionality - hence the extra .c and .h files that should NOT be imported (since they're not in the project description)

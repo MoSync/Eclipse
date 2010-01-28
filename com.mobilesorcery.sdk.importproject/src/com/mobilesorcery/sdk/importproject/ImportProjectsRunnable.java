@@ -175,7 +175,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 				: null;
 	}
 
-	private boolean shouldUseNewFormatIfAvailable() {
+	public boolean shouldUseNewFormatIfAvailable() {
 		return useNewProjectIfAvailable;
 	}
 
@@ -272,7 +272,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		}
 	}
 
-	private boolean shouldCopy() {
+	public boolean shouldCopy() {
 		return copyStrategy != DO_NOT_COPY;
 	}
 

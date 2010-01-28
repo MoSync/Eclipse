@@ -469,6 +469,10 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     	MoSyncProject result = create(project);
         if (projectMetadataLocation != null) {
         	result.initFromProjectMetaData(projectMetadataLocation, SHARED_PROPERTY);
+        	// There may be a local file too - we just try a reasonable default
+        	IPath localProjectMetaDataLocation = 
+        		projectMetadataLocation.removeLastSegments(1).append(MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME);
+        	result.initFromProjectMetaData(localProjectMetaDataLocation, LOCAL_PROPERTY);
         }
         
         return result;
