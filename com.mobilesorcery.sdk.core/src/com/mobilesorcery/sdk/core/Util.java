@@ -117,14 +117,14 @@ public class Util {
 		return new String(result);
 	}
 
-	public static void unzip(File zip, File sourceDir) throws IOException {
+	public static void unzip(File zip, File targetDir) throws IOException {
 		ZipInputStream input = new ZipInputStream(new FileInputStream(zip));
 		OutputStream currentOutput = null;
-		sourceDir.mkdirs();
+		targetDir.mkdirs();
 		try {
 			for (ZipEntry entry = input.getNextEntry(); entry != null; entry = input
 					.getNextEntry()) {
-				File currentFile = new File(sourceDir, entry.getName());
+				File currentFile = new File(targetDir, entry.getName());
 				if (!entry.isDirectory()) {
 					long size = entry.getSize();
 					int readBytes = 0;
@@ -234,6 +234,14 @@ public class Util {
 				input.close();
 			}
 			monitor.worked(1);
+		}
+	}
+	
+	public static void copy(IProgressMonitor monitor, File src, File dest, FileFilter filter) throws IOException {
+		if (src.isDirectory()) {
+			copyDir(monitor, src, dest, filter);
+		} else {
+			copyFile(monitor, src, dest);
 		}
 	}
 
@@ -409,7 +417,7 @@ public class Util {
 			filename = filename.substring(0, where);
 		}
 
-		return filename + "." + newExtension;
+		return filename + (isEmpty(newExtension) ? "" : ".") + newExtension;
 	}
 
 	public static void safeClose(InputStream input) {

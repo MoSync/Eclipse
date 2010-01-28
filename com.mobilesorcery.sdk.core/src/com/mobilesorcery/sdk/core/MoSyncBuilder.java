@@ -666,7 +666,9 @@ public class MoSyncBuilder extends ACBuilder {
 						buildProperties, EXTRA_LINK_SWITCHES);
 				pipeTool.setExtraSwitches(extraLinkerSwitches);
 
-				pipeTool.run();
+				if (objectFiles.length > 0) {
+					pipeTool.run();
+				}
 
 				if (elim) {
 					PipeTool elimPipeTool = new PipeTool();

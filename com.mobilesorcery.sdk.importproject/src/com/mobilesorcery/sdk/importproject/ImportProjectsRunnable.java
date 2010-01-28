@@ -119,11 +119,20 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 					Messages.ImportProjectsRunnable_SomeProjectsFailed, null);
 			CoreException ex = new CoreException(compoundError);
 			CoreMoSyncPlugin.getDefault().log(ex);
+			throw ex;
 		}
 	}
 
 	private void importProject(IProgressMonitor monitor, File projectDescription)
 			throws CoreException {
+		if (projectDescription.isDirectory()) {
+			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Project description must not be a directory"));
+		}
+		
+		if (shouldUseNewFormatIfAvailable() && copyStrategy != COPY_ALL_FILES) {
+			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "\'Use new format if available\' can only be used with copy all files"));
+		}
+		
 		monitor = new SubProgressMonitor(monitor, 4);
 		String projectName = Util.getNameWithoutExtension(projectDescription);
 
@@ -139,8 +148,11 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
 
-		parseProjectDescription(new SubProgressMonitor(monitor, 1),
-				mosyncProject, projectDescription);
+		if (!shouldUseNewFormatIfAvailable() || projectMetaDataLocation == null) {
+			parseProjectDescription(new SubProgressMonitor(monitor, 1), mosyncProject, projectDescription);
+		} else if (shouldCopy()) {
+			copyFilesToProject(monitor, mosyncProject, projectDescription, new String[] { projectMetaDataLocation.toFile().getParent() });
+		}
 
 		// And we will have to re-initialize in case there is a .mosyncproject file
 		// available.
@@ -300,8 +312,8 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 							path);
 					File copyDest = projectFile.getLocation().toFile();
 					try {
-						Util.copyFile(new SubProgressMonitor(monitor, 1),
-								copySrc, copyDest);
+						Util.copy(new SubProgressMonitor(monitor, 1),
+								copySrc, copyDest, COPY_FILE_FILTER);
 					} catch (IOException e) {
 						e.printStackTrace();
 						success = false;

@@ -1,0 +1,1 @@
+This project is the one used before version numbering and local project files. (With the active attribute used in the build configuration tags)

@@ -7,9 +7,13 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.help.search.ISearchIndex;
 import org.eclipse.help.search.LuceneSearchParticipant;
+import org.eclipse.ui.PlatformUI;
+
+import com.mobilesorcery.sdk.core.Util;
 
 public class MoSyncDocsSearchParticipant extends LuceneSearchParticipant {
 
@@ -29,12 +33,25 @@ public class MoSyncDocsSearchParticipant extends LuceneSearchParticipant {
 					.getEntryPaths(path);
 			while (docs.hasMoreElements()) {
 				String doc = (String) docs.nextElement();
-				allDocs.add("/com.mobilesorcery.sdk.help/" + doc);
+				String id = createId(doc);
+				String url = "/com.mobilesorcery.sdk.help/" + doc;
+				allDocs.add(url + "?id=" + id);
 			}
 		}
 		return allDocs;
 	}
 
+	private String createId(String name) {
+		return Util.replaceExtension(new Path(name).lastSegment(), "");
+	}
+	
+	public boolean open(String id) {
+		// TODO: Argh, lousy support for integrating with help system - use build script instead?
+		// Also, is there a bug in eclipse - it ignores whatever is returned here!
+		PlatformUI.getWorkbench().getHelpSystem().displayHelpResource("/com.mobilesorcery.sdk.help/docs/html/" + id + ".html");
+		return false;
+	}
+	
 	public Set getContributingPlugins() {
 		HashSet<String> result = new HashSet<String>();
 		// TODO: Should we allow platforms to contribute?
