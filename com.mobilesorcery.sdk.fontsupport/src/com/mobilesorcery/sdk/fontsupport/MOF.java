@@ -15,6 +15,7 @@ package com.mobilesorcery.sdk.fontsupport;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.MessageFormat;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -53,7 +54,7 @@ public class MOF {
 		File pageNameFile = Util.relativeTo(fontFile, pageName);
 		
 		if (!pageNameFile.exists()) {
-			throw new IOException(Messages.MOF_FontImageMissing);
+			throw new IOException(MessageFormat.format(Messages.MOF_FontImageMissing, pageName));
 		}
 		
 		if (!isImageFormatSupported(Util.getExtension(pageNameFile))) {

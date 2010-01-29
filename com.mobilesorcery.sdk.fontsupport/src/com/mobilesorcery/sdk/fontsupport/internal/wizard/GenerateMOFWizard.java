@@ -23,6 +23,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.preference.ColorSelector;
 import org.eclipse.jface.wizard.Wizard;
@@ -150,6 +151,7 @@ public class GenerateMOFWizard extends Wizard {
 					Messages.GenerateMOFWizard_8,
 					e.getMessage());
 			mofConfigPage.setErrorMessage(errorMessage);
+			MessageDialog.openError(getShell(), Messages.GenerateMOFWizard_0, errorMessage);
 			return false;
 		} 		
 	}

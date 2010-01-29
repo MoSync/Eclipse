@@ -9,7 +9,7 @@
         objectClass="org.eclipse.core.resources.IFile">
    <filter
         name="projectNature"
-        value="com.mobilesorcery.sdk.builder.nature">
+        value="com.mobilesorcery.sdk.core.nature">
    </filter>
    <action
        id="com.mobilesorcery.sdk.fontsupport.convertwizard.action"
