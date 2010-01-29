@@ -23,12 +23,15 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.preference.ColorSelector;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -95,8 +98,13 @@ public class GenerateMOFWizard extends Wizard {
 			Label outputFileLabel = new Label(main, SWT.NONE);
 			outputFileLabel.setText(Messages.GenerateMOFWizard_5);
 			outputFile = new Text(main, SWT.BORDER);
-			outputFile.setText(computeDefaultOutputFile(file));
 			outputFile.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+			outputFile.addModifyListener(new ModifyListener() {
+				public void modifyText(ModifyEvent e) {
+					validate();
+				}
+			});
+			outputFile.setText(computeDefaultOutputFile(file));
 			
 			Label colorLabel = new Label(main, SWT.NONE);
 			colorLabel.setText(Messages.GenerateMOFWizard_6);
@@ -138,8 +146,7 @@ public class GenerateMOFWizard extends Wizard {
 	}
 	
 	public boolean performFinish() {
-		String output = mofConfigPage.getOutputFile();
-		File outputFile = Util.relativeTo(file, output);
+		File outputFile = getOutputFile();
 		RGB color = mofConfigPage.getOutputColor();
 		GenerateMOFRunnable mofRunnable = new GenerateMOFRunnable(file, outputFile, color);
 		try {
@@ -154,6 +161,22 @@ public class GenerateMOFWizard extends Wizard {
 			MessageDialog.openError(getShell(), Messages.GenerateMOFWizard_0, errorMessage);
 			return false;
 		} 		
+	}
+	
+	private File getOutputFile() {
+		String output = mofConfigPage.getOutputFile();
+		return Util.relativeTo(file, output);
+	}
+
+	public void validate() {
+		String message = null;
+		int severity = IMessageProvider.NONE;
+		File outputFile = getOutputFile();
+		if (outputFile.exists()) {
+			message = "Output file already exists";
+			severity = IMessageProvider.WARNING;
+		}
+		mofConfigPage.setMessage(message, severity);
 	}
 
 	public void setFilename(File osFile) {
