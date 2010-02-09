@@ -204,6 +204,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
 	private HashMap<String, SLD> slds = new HashMap<String, SLD>();
 
+	private boolean disposed = false;
+
     private MoSyncProject(IProject project) {
         Assert.isNotNull(project);
         this.project = project;
@@ -450,6 +452,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
      */
     public void dispose() {
     	projects.remove(this);
+    	disposed = true;
+    }
+    
+    public boolean isDisposed() {
+    	return disposed;
     }
     
     /**
@@ -761,7 +768,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		if (project == null) {
 			return null;
 		}
-		// Efficient?
+		// TODO: Efficient?
 		return PathExclusionFilter.parse(PropertyUtil.getStrings(project.getPropertyOwner(), EXCLUDE_FILTER_KEY));
 	}
 	
@@ -884,6 +891,12 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		return isBuildConfigurationsSupported;
 	}
 	
+	/**
+	 * Activates build configurations for this project.
+	 * If there already are installed build configurations,
+	 * this amounts to calling <code>setBuildConfigurationsSupported(true);</code>,
+	 * otherwise a default set of build configurations are installed.
+	 */
 	public void activateBuildConfigurations() {
 		setBuildConfigurationsSupported(true);
 		

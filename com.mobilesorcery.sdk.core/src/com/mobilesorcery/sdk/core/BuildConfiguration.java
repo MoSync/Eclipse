@@ -43,4 +43,19 @@ public class BuildConfiguration implements IBuildConfiguration {
 		return clone;
 	}
 
+	/**
+	 * Utility method for retrieving a unique configuration id
+	 */
+	public static String createUniqueId(MoSyncProject project, String suggestedId) {
+		String uniqueId = suggestedId;
+        int i = 2;
+
+        while (project.getBuildConfiguration(uniqueId) != null) {
+            uniqueId = suggestedId + i;
+            i++;
+        }
+        
+        return uniqueId;
+	}
+
 }

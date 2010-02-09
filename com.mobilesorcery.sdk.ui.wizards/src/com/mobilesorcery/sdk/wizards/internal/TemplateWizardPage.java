@@ -108,7 +108,7 @@ public class TemplateWizardPage extends WizardPage {
         templateTable.setLabelProvider(new ProjectTemplateLabelProvider());
         
         templateTable.setContentProvider(new ArrayContentProvider());
-        templateTable.setInput(Activator.getDefault().getProjectTemplates());
+        templateTable.setInput(Activator.getDefault().getProjectTemplates(null).toArray());
         
         templateTable.getControl().setLayoutData(new GridData(GridData.FILL_BOTH));
         

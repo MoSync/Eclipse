@@ -56,4 +56,19 @@ icon="icons/testicon.png">
             icon="icons/testicon.png"
             id="com.mobilesorcery.test.launchconfigurationtype.image"/>
    </extension>
+      <extension
+            point="org.eclipse.ui.newWizards">
+         <wizard
+               category="com.mobilesorcery.wizard.category"
+               class="com.mobilesorcery.sdk.testing.internal.ui.wizards.CreateTestWizard"
+               hasPages="true"
+               icon="icons/testicon.png"
+               id="com.mobilesorcery.sdk.testing.wizard"
+               name="Create MoSync Test Suite"
+               project="false">
+            <selection
+                  class="org.eclipse.core.resources.IProject">
+            </selection>
+         </wizard>
+      </extension>
 </plugin>

@@ -22,6 +22,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.PropertyPage;
 
+import com.mobilesorcery.sdk.core.BuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
@@ -33,7 +34,6 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 
 		private IBuildConfiguration configuration;
 		private Text name;
-
 		protected EditDialog(Shell parentShell) {
 			super(parentShell);			
 		}
@@ -121,21 +121,10 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 		}
 
 		public void doHandleEvent(Event event) {
-			String uniqueId = createUniqueId(getProject(), "Configuration");
+			String uniqueId = BuildConfiguration.createUniqueId(getProject(), "Configuration");
 			getProject().installBuildConfiguration(uniqueId);
 		}
 
-		protected String createUniqueId(MoSyncProject project, String originalName) {
-			String uniqueId = originalName;
-	        int i = 2;
-
-	        while (project.getBuildConfiguration(uniqueId) != null) {
-	            uniqueId = originalName + i;
-	            i++;
-	        }
-	        
-	        return uniqueId;
-		}
 	}
 	
 	public class DuplicateListener extends AddListener {
@@ -146,7 +135,7 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 		public void doHandleEvent(Event event) {
 			String cfg = getSelectedConfiguration();
 			if (cfg != null) {
-				String uniqueId = createUniqueId(getProject(), cfg);
+				String uniqueId = BuildConfiguration.createUniqueId(getProject(), cfg);
 				IBuildConfiguration newConfig = getProject().getBuildConfiguration(cfg).clone(uniqueId);
 				getProject().installBuildConfiguration(newConfig);
 			}

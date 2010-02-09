@@ -515,5 +515,23 @@ public class Util {
 	public static boolean isEmpty(String text) {
 		return text == null || text.isEmpty();
 	}
+
+	public static boolean isEmptyDirectory(File file) {
+		return !file.isDirectory() || file.list().length == 0;
+	}
+
+	/**
+	 * A utility method for handling <code>equals</code> of
+	 * <code>null</code> objects. 
+	 * @param o1
+	 * @param o2
+	 */
+	public static boolean equals(String o1, String o2) {
+		if (o1 == null) {
+			return o2 == null;
+		}
+		
+		return o1.equals(o2);
+	}
 	
 }

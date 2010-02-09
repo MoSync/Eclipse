@@ -55,6 +55,10 @@ public class ProjectTemplate {
 	public String getDescription() {
 		return desc.getDescriptionText();
 	}
+	
+	public String getType() {
+		return desc.getType();
+	}
 
 	public String validate() {
 		if (getId() == null) {

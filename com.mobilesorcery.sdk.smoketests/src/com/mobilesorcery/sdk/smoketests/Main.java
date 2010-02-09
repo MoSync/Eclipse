@@ -10,7 +10,7 @@
 
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
-*/
+ */
 package com.mobilesorcery.sdk.smoketests;
 
 import static org.junit.Assert.assertTrue;
@@ -24,10 +24,14 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
+import org.eclipse.swtbot.swt.finder.SWTBot;
+import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotMenu;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
+import org.eclipse.swtbot.swt.finder.widgets.TimeoutException;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,9 +45,10 @@ import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.swtbot.SWTBotProjectExplorer;
 
 /**
- * <p>The main entry point for automated functional testing, with focus on
- * a few major use cases being 'smoke tested' (although we do some asserts
- * while we're at it, so it's a tad more than just 'does it start at all?')
+ * <p>
+ * The main entry point for automated functional testing, with focus on a few
+ * major use cases being 'smoke tested' (although we do some asserts while we're
+ * at it, so it's a tad more than just 'does it start at all?')
  * <p>
  * <b>Tested use cases (or planned to be):</b>
  * <ul>
@@ -52,16 +57,19 @@ import com.mobilesorcery.sdk.swtbot.SWTBotProjectExplorer;
  * <li>Simple incremental build and dependencies between projects</li>
  * </ul>
  * </p>
+ * 
  * @author Mattias Bybro, mattias.bybro@purplescout.com/mattias@bybro.com
- *
+ * 
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class Main {
 
 	private static final int RUN = 0;
 	private static final int DEBUG = 1;
-	
+
 	private static SWTWorkbenchBot ui;
+
+	private static boolean firstTest = true;
 
 	@BeforeClass
 	public static void beforeClass() throws Exception {
@@ -69,10 +77,21 @@ public class Main {
 		// Close welcome view.
 		ui.viewByTitle("Welcome").close();
 	}
+	
+	@Before
+	public void pause() throws InterruptedException {
+		if (!firstTest) {
+			Thread.sleep(3000);
+			// Just to allow sockets etc to close between tests.
+		}
+		firstTest = false;
+	}
 
 	@Test
 	public void createAndRunProject() throws Exception {
-		MoSyncProject projectA = createProjectWithFiles("a", new String[] { "/files/test.c", "/files/dummy.c" }, new String[] { "test.c", "dummy.c" });
+		MoSyncProject projectA = createProjectWithFiles("a", new String[] {
+				"/files/test.c", "/files/dummy.c" }, new String[] { "test.c",
+				"dummy.c" });
 		defaultInit(projectA);
 
 		MockEmulatorProcessListener listener = new MockEmulatorProcessListener();
@@ -85,29 +104,35 @@ public class Main {
 			listener.disconnect();
 		}
 	}
-	
+
 	@Test
 	public void createAndDebugProject() throws Exception {
-		MoSyncProject project = createProjectWithFiles("debug", new String[] { "/files/bp_test.c" }, new String[] { "bp_test.c" });
-		project.setProperty(MoSyncBuilder.DEAD_CODE_ELIMINATION, Boolean.TRUE.toString());
+		MoSyncProject project = createProjectWithFiles("debug",
+				new String[] { "/files/bp_test.c" },
+				new String[] { "bp_test.c" });
+		project.setProperty(MoSyncBuilder.DEAD_CODE_ELIMINATION, Boolean.TRUE
+				.toString());
 		defaultInit(project);
-		
+
 		// Add breakpoints
 		BreakpointTestParser parser = new BreakpointTestParser();
-		parser.parse(getClass().getResourceAsStream("/files/bp_test.c"), project.getWrappedProject().getFile(new Path("bp_test.c")));
-		
+		parser.parse(getClass().getResourceAsStream("/files/bp_test.c"),
+				project.getWrappedProject().getFile(new Path("bp_test.c")));
+
 		MockEmulatorProcessListener listener = new MockEmulatorProcessListener();
 		listener.connect();
-		
+
 		try {
 			botRunProject(project, listener, DEBUG);
-			okPerspectiveSwitch();
 			listener.awaitBreakpointHit(30, TimeUnit.SECONDS);
-			assertTrue("Breakpoint SHOULD contain this message at this point!", listener.getStreamedData().contains("Before breakpoint"));
+			okPerspectiveSwitch();			
 			// TODO; activate this.
-			//assertFalse("Breakpoint should NOT contain this message yet!", listener.getStreamedData().contains("After breakpoint"));
+			// assertFalse("Breakpoint should NOT contain this message yet!",
+			// listener.getStreamedData().contains("After breakpoint"));
 			debugContinue();
 			listener.awaitStopped(30, TimeUnit.SECONDS);
+			assertTrue("Breakpoint SHOULD contain this message at this point!",
+					listener.getStreamedData().contains("BEFORE"));
 			assertTrue(listener.getStreamedData().contains("It still works!"));
 		} finally {
 			listener.disconnect();
@@ -119,28 +144,34 @@ public class Main {
 	}
 
 	private void okPerspectiveSwitch() {
-		SWTBotShell confirmDialog = ui.shell("Confirm Perspective Switch");
-		confirmDialog.activate();
-		ui.button("Yes").click();
+		try {
+			SWTBotShell confirmDialog = ui.shell("Confirm Perspective Switch");
+			confirmDialog.activate();
+			ui.button("Yes").click();
+		} catch (WidgetNotFoundException e) {
+			// So... there was no such dialog, right?
+		}
 	}
 
 	private void defaultInit(MoSyncProject project) {
-		project.setTargetProfile(MoSyncTool.getDefault().getDefaultEmulatorProfile());
+		project.setTargetProfile(MoSyncTool.getDefault()
+				.getDefaultEmulatorProfile());
 		setPerspective("MoSync");
 	}
 
-	private MoSyncProject createProjectWithFiles(String projectName, String[] src, String[] dest) throws Exception {
+	private MoSyncProject createProjectWithFiles(String projectName,
+			String[] src, String[] dest) throws Exception {
 		MoSyncProject project = botCreateProject(projectName);
 		for (int i = 0; i < src.length; i++) {
 			addFile(project, src[i], dest[i]);
 		}
-		return project;		
+		return project;
 	}
-	
+
 	private void addFile(MoSyncProject project, String src, String dest)
 			throws CoreException {
-		IFile destFile = project.getWrappedProject().getFile(new Path(dest));		
-		
+		IFile destFile = project.getWrappedProject().getFile(new Path(dest));
+
 		destFile.create(getClass().getResourceAsStream(src), true,
 				new NullProgressMonitor());
 		assertTrue(destFile.exists());
@@ -150,7 +181,8 @@ public class Main {
 		ui.perspectiveByLabel(perspectiveName).activate();
 	}
 
-	void botRunProject(MoSyncProject project, IEmulatorProcessListener listener, int mode) {
+	void botRunProject(MoSyncProject project,
+			IEmulatorProcessListener listener, int mode) {
 		CoreMoSyncPlugin.getDefault().getEmulatorProcessManager()
 				.addEmulatorProcessListener(listener);
 

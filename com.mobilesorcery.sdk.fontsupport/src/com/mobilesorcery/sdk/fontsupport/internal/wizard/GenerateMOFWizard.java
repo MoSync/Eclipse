@@ -173,7 +173,7 @@ public class GenerateMOFWizard extends Wizard {
 		int severity = IMessageProvider.NONE;
 		File outputFile = getOutputFile();
 		if (outputFile.exists()) {
-			message = "Output file already exists";
+			message = Messages.GenerateMOFWizard_9;
 			severity = IMessageProvider.WARNING;
 		}
 		mofConfigPage.setMessage(message, severity);

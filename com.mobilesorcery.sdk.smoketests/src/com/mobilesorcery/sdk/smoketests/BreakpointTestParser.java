@@ -20,6 +20,7 @@ import java.io.LineNumberReader;
 
 import org.eclipse.cdt.debug.core.CDIDebugModel;
 import org.eclipse.cdt.debug.core.model.ICBreakpointType;
+import org.eclipse.cdt.debug.core.model.ICLineBreakpoint;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 
@@ -31,7 +32,8 @@ public class BreakpointTestParser {
 		for (String line = cReader.readLine(); line != null; line = cReader.readLine()) {
 			if (line.contains("//BREAKPOINT")) {
 				int lineNumber = cReader.getLineNumber();
-				CDIDebugModel.createLineBreakpoint(cFileInProject.getLocation().toOSString(), cFileInProject, ICBreakpointType.REGULAR, lineNumber, true, 0, null, true);
+				ICLineBreakpoint bp = CDIDebugModel.createLineBreakpoint(cFileInProject.getLocation().toOSString(), cFileInProject, ICBreakpointType.REGULAR, lineNumber, true, 0, null, true);
+				bp.setEnabled(true);
 				bpCount++;
 			}			
 		}

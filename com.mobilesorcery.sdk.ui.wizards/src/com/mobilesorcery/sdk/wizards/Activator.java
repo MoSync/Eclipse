@@ -15,6 +15,8 @@ package com.mobilesorcery.sdk.wizards;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeMap;
 
 import org.eclipse.core.runtime.IPath;
@@ -24,6 +26,7 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.templates.ITemplate;
 import com.mobilesorcery.sdk.core.templates.ProjectTemplate;
 import com.mobilesorcery.sdk.core.templates.ProjectTemplateDescription;
@@ -118,8 +121,14 @@ public class Activator extends AbstractUIPlugin {
         templates.put(template.getId(), template);
     }
 
-	public ProjectTemplate[] getProjectTemplates() {
-	    return projectTemplates.values().toArray(new ProjectTemplate[0]);
+	public List<ProjectTemplate> getProjectTemplates(String type) {
+		ArrayList<ProjectTemplate> result = new ArrayList<ProjectTemplate>();
+		for (ProjectTemplate projectTemplate : projectTemplates.values()) {
+			if (Util.equals(type, projectTemplate.getType())) {
+				result.add(projectTemplate);
+			}
+		}
+	    return result;
 	}
 	
 	public ITemplate getTemplate(String id) {

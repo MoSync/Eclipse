@@ -46,7 +46,7 @@ public class PipeTool {
      * The default heap size; if no <code>-heapsize</code> argument is provided
      * to pipe tool, then this is the size that will be used.
      */
-    public static final int DEFAULT_HEAP_SIZE_KB = 64;
+    public static final int DEFAULT_HEAP_SIZE_KB = 16;
     
     /**
      * The default heap size; if no <code>-stacksize</code> argument is provided
@@ -58,7 +58,7 @@ public class PipeTool {
      * The default heap size; if no <code>-datasize</code> argument is provided
      * to pipe tool, then this is the size that will be used.
      */
-    public static final int DEFAULT_DATA_SIZE_KB = 16;
+    public static final int DEFAULT_DATA_SIZE_KB = 64;
     
 	private static final String RESOURCE_DEPENDENCY_FILE_NAME = "resources.deps";
 	private static final int MAX_PIPE_TOOL_ARG_LENGTH = 162;

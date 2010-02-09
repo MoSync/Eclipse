@@ -50,7 +50,7 @@ public class MockEmulatorProcessListener implements IEmulatorProcessListener, ID
 
 	public void awaitStopped(long timeout, TimeUnit unit) throws InterruptedException {
 		if (!latch.await(timeout, unit)) {
-			throw new IllegalStateException("Timeout awating process stopped");
+			throw new IllegalStateException("Timeout awaiting process stopped");
 		}
 	}
 

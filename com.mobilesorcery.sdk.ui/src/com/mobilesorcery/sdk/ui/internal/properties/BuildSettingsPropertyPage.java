@@ -22,6 +22,7 @@ import java.util.HashMap;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -54,6 +55,7 @@ import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.IPropertyOwner.IWorkingCopy;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
+import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class BuildSettingsPropertyPage extends PropertyPage implements PropertyChangeListener {
@@ -207,6 +209,9 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         additionalLibraryPathsText.addListener(SWT.Modify, listener);
         libOutputPath.addListener(SWT.Modify, listener);
         appOutputPath.addListener(SWT.Modify, listener);
+        stackSize.addListener(SWT.Modify, listener);
+        heapSize.addListener(SWT.Modify, listener);
+        dataSize.addListener(SWT.Modify, listener);
         
         changeConfiguration(getProject().getActiveBuildConfiguration());
     	if (getProject().areBuildConfigurationsSupported()) {
@@ -484,35 +489,90 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
     }
 
     private void validate() {
-        String message = null;
-        int severity = NONE;
+        IMessageProvider message = null;
+        
+        message = DefaultMessageProvider.EMPTY;
+        
+        message = warnIfSpaces(message, "Additional Libraries", additionalLibrariesText);
+        message = warnIfSpaces(message, "Additional Library Paths", additionalLibraryPathsText);
+        message = warnIfSpaces(message, "Additional Include Paths", additionalIncludePathsText);
 
-        String warnIfSpaces = warnIfSpaces(null, "Additional Libraries", additionalLibrariesText);
-        warnIfSpaces = warnIfSpaces(warnIfSpaces, "Additional Library Paths", additionalLibraryPathsText);
-        warnIfSpaces = warnIfSpaces(warnIfSpaces, "Additional Include Paths", additionalIncludePathsText);
-
-        if (warnIfSpaces != null) {
-            severity = WARNING;
-            message = warnIfSpaces;
-        }
+        message = validateMemorySettings(message);
 
         if (libraryProjectType.getSelection()) {
             if (libOutputPath.getText().length() > 0 && Util.getExtension(new File(libOutputPath.getText())).length() == 0) {
-                severity = WARNING;
-                message = "Output file has no extension";
+                message = new DefaultMessageProvider("Output file has no extension", IMessageProvider.WARNING);
             }
             
             if (libOutputPath.getText().length() == 0) {
-                severity = ERROR;
-                message = "Library output file must be set";
+                message = new DefaultMessageProvider("Library output file must be set", IMessageProvider.ERROR);
             }
         } 
         
-        setMessage(message, severity);
+        setMessage(message.getMessage(), message.getMessageType());
     }
 
-    private String warnIfSpaces(String shortcurcuit, String fieldName, Text text) {
-        if (shortcurcuit != null) {
+    private IMessageProvider validateMemorySettings(IMessageProvider shortcurcuit) {
+    	if (!DefaultMessageProvider.isEmpty(shortcurcuit)) {
+            return shortcurcuit;
+        }
+    	
+    	shortcurcuit = validateInteger(shortcurcuit, stackSize.getText(), "Stack size", 1L << 22);
+    	shortcurcuit = validateInteger(shortcurcuit, heapSize.getText(), "Heap size", 1L << 22);
+    	shortcurcuit = validateInteger(shortcurcuit, dataSize.getText(), "Data size", 1L << 22);
+    	
+    	if (DefaultMessageProvider.isEmpty(shortcurcuit)) { // They're all integers
+    		long stackSize = Long.parseLong(this.stackSize.getText());
+    		long heapSize = Long.parseLong(this.heapSize.getText());
+    		long dataSize = Long.parseLong(this.dataSize.getText());
+    		
+    		if (dataSize < stackSize + heapSize) {
+    			shortcurcuit = new DefaultMessageProvider(
+    					"Data size must be at least as large as the stack and heap sizes combined",
+    					IMessageProvider.ERROR);
+    		} else if (ceil2p(dataSize) != dataSize) {
+    			shortcurcuit = new DefaultMessageProvider(
+    					MessageFormat.format("Will round up data size to nearest power of 2 ({0} kb)", ceil2p(dataSize)), 
+    					IMessageProvider.WARNING);
+    		}
+    	}
+    	
+    	return shortcurcuit;
+	}
+
+	private long ceil2p(long size) {
+		size--;
+		for (int i = 1; i < 64 / 2; i <<= 1) {
+			size = size | (size >> i);
+		}
+		size++;
+		return size;
+	}
+
+	private IMessageProvider validateInteger(IMessageProvider shortcurcuit,
+			String value, String fieldName, long max) {
+    	if (!DefaultMessageProvider.isEmpty(shortcurcuit)) {
+            return shortcurcuit;
+        }
+    	
+    	try {
+    		long numericalValue = Long.parseLong(value);
+    		if (numericalValue > max) {
+    			return new DefaultMessageProvider(
+    					MessageFormat.format("Value of {0} too large; must be no more than {1}", fieldName, max),
+    					IMessageProvider.ERROR);
+    		}
+    	} catch (Exception e) {
+    		return new DefaultMessageProvider(
+    				MessageFormat.format("{0} must be an integer value", fieldName),
+    				IMessageProvider.ERROR);
+    	}
+    	
+    	return DefaultMessageProvider.EMPTY;
+	}
+
+	private IMessageProvider warnIfSpaces(IMessageProvider shortcurcuit, String fieldName, Text text) {
+		if (!DefaultMessageProvider.isEmpty(shortcurcuit)) {
             return shortcurcuit;
         }
 
@@ -520,11 +580,13 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         IPath[] paths = PropertyUtil.toPaths(str);
         if (paths.length == 1) {
             if (paths[0].toOSString().indexOf(' ') != -1) {
-                return MessageFormat.format("\"{0}\": space is an invalid delimiter - use comma (,) instead", fieldName);
+                return new DefaultMessageProvider(
+                		MessageFormat.format("\"{0}\": space is an invalid delimiter - use comma (,) instead", fieldName),
+                		DefaultMessageProvider.WARNING);
             }
         }
 
-        return null;
+        return DefaultMessageProvider.EMPTY;
     }
 
     public void performDefaults() {

@@ -42,6 +42,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
+import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -520,11 +521,16 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	/**
 	 * Tries to derive a mosync project from whatever object is passed
 	 * as the <code>receiver</code>; this method will accept <code>List</code>s,
-	 * <code>IAdaptable</code>s, <code>IResource</code>s, and then if project
+	 * <code>IAdaptable</code>s, <code>IResource</code>s, as well as <code>IStructuredSelection</code>s
+	 * and then if the project
 	 * associated with these is compatible with a MoSyncProject, return that project.
 	 */
 	// Should it be here?
 	public MoSyncProject extractProject(Object receiver) {
+		if (receiver instanceof IStructuredSelection) {
+			return extractProject(((IStructuredSelection) receiver).toList());
+		}
+		
         if (receiver instanceof IAdaptable) {
             receiver = ((IAdaptable) receiver).getAdapter(IResource.class);             
         }

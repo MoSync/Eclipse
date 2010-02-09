@@ -39,6 +39,7 @@ public class ProjectTemplateDescription {
 	private String name;
 	private List<String> generatedFiles;
 	private String description;
+	private String type;
 
 	public static ProjectTemplateDescription parse(File descFile) throws IOException {
 		return init(SectionedPropertiesFile.parse(descFile));
@@ -76,6 +77,7 @@ public class ProjectTemplateDescription {
 		desc.id = defaultEntries.get("id"); //$NON-NLS-1$
 		desc.name = defaultEntries.get("name"); //$NON-NLS-1$
 		desc.description = defaultEntries.get("description"); //$NON-NLS-1$
+		desc.type = defaultEntries.get("type");
 		
 		return desc;
 	}
@@ -112,6 +114,10 @@ public class ProjectTemplateDescription {
 
 	public String getDescriptionText() {
 		return description;
+	}
+
+	public String getType() {
+		return type;
 	}
 
 }

@@ -50,6 +50,7 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
+import com.mobilesorcery.sdk.ui.MoSyncProjectSelectionDialog;
 
 public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 
@@ -100,38 +101,9 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 	}
 
 	private IProject selectProject() {
-		ILabelProvider labelProvider = new LabelProvider() {
-			public String getText(Object o) {
-				if (o instanceof IProject) {
-					return ((IProject) o).getName();
-				}
-
-				return "?";
-			}
-		};
-
-		ElementListSelectionDialog dialog = new ElementListSelectionDialog(
-				getShell(), labelProvider);
-		dialog.setTitle("Select MoSync Project");
-		dialog.setMessage("Select [an open] MoSync Project for this launch");
-
-		try {
-			dialog.setElements(getMoSyncProjects(getWorkspaceRoot()));
-		} catch (CoreException e) {
-			CoreMoSyncPlugin.getDefault().log(e);
-		}
-
-		IProject project = getProject();
-
-		if (project != null) {
-			dialog.setInitialSelections(new Object[] { project });
-		}
-
-		if (dialog.open() == Window.OK) {
-			return (IProject) dialog.getFirstResult();
-		}
-
-		return null;
+		MoSyncProjectSelectionDialog dialog = new MoSyncProjectSelectionDialog(getShell());
+		dialog.setInitialProject(getProject());
+		return dialog.selectProject();
 	}
 
 	private void createResolutionEditor(Composite control) {
@@ -293,20 +265,6 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 	}
 
 	public void setDefaults(ILaunchConfigurationWorkingCopy arg0) {
-	}
-
-	private IProject[] getMoSyncProjects(IWorkspaceRoot root)
-			throws CoreException {
-		IProject[] allProjects = root.getProjects();
-		ArrayList<IProject> result = new ArrayList<IProject>();
-		for (int i = 0; i < allProjects.length; i++) {
-			if (allProjects[i].isOpen()
-					&& allProjects[i].hasNature(MoSyncNature.ID)) {
-				result.add(allProjects[i]);
-			}
-		}
-
-		return result.toArray(new IProject[0]);
 	}
 
 	private IProject getProject() {

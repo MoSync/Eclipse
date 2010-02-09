@@ -943,7 +943,7 @@ public class MoSyncBuilder extends ACBuilder {
 		}
 	}
 
-	public static IPath[] getIncludePaths(MoSyncProject project) {
+	public static IPath[] getBaseIncludePaths(MoSyncProject project) {
 		return getIncludePaths(project, getActivePropertyOwner(project));
 	}
 

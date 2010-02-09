@@ -197,6 +197,7 @@
 			<arg value="com.mobilesorcery.sdk.smoketests" />
 			<arg value="-className" />
 			<arg value="com.mobilesorcery.sdk.smoketests.Main" />
+			<!-- <arg value="formatter=org.apache.tools.ant.taskdefs.optional.junit.XMLJUnitResultFormatter,${buildDirectory}\junit-results.xml" /> -->
 			<arg value="-suppress-updates" />
 		</java>
 	</target>

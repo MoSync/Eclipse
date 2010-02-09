@@ -33,6 +33,7 @@ public class Messages extends NLS {
 	public static String GenerateMOFWizard_6;
 	public static String GenerateMOFWizard_7;
 	public static String GenerateMOFWizard_8;
+	public static String GenerateMOFWizard_9;
 	static {
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, Messages.class);

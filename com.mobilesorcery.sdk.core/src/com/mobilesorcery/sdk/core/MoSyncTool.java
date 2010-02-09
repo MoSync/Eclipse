@@ -534,6 +534,10 @@ public class MoSyncTool {
     	return result;
     }
 
+    /**
+     * Returns the default emulator profile.
+     * @return
+     */
     public IProfile getDefaultEmulatorProfile() {
         init();
         IVendor defaultVendor = getVendor("MobileSorcery");
