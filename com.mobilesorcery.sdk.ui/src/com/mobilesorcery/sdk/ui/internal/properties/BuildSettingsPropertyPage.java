@@ -510,6 +510,7 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         } 
         
         setMessage(message.getMessage(), message.getMessageType());
+        setValid(DefaultMessageProvider.isEmpty(message) || message.getMessageType() != IMessageProvider.ERROR);
     }
 
     private IMessageProvider validateMemorySettings(IMessageProvider shortcurcuit) {
@@ -533,7 +534,7 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
     		} else if (ceil2p(dataSize) != dataSize) {
     			shortcurcuit = new DefaultMessageProvider(
     					MessageFormat.format("Will round up data size to nearest power of 2 ({0} kb)", ceil2p(dataSize)), 
-    					IMessageProvider.WARNING);
+    					IMessageProvider.INFORMATION);
     		}
     	}
     	
