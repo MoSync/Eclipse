@@ -2,24 +2,22 @@ package com.mobilesorcery.sdk.ui.targetphone.internal.bt;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.MessageFormat;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.window.IShellProvider;
 import org.eclipse.ui.IMemento;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.profiles.ui.Activator;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransport;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
-import com.mobilesorcery.sdk.ui.targetphone.internal.SelectTargetPhoneAction;
 
 public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 
@@ -110,7 +108,7 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 	}
 
 	public ImageDescriptor getIcon() {
-		return null;
+		return Activator.getDefault().getImageRegistry().getDescriptor(Activator.PHONE_IMAGE);
 	}
 
 	public String getDescription(String context) {
