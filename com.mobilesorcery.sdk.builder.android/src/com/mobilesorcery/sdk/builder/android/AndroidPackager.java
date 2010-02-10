@@ -77,9 +77,7 @@ public class AndroidPackager extends AbstractPackager {
 				internal.runCommandLine("cmd", "/c", "copy", "%compile-output-dir%\\resources", "%package-output-dir%\\res\\raw\\resources", "/y");
 			}
 			
-			// Copy default icon
-			internal.runCommandLine("cmd", "/c", "copy", "%mosync-bin%\\..\\etc\\icon.png", "%package-output-dir%\\res\\drawable\\icon.png", "/y");
-/*			
+			// If there was an icon provided, add it, else use the default icon
 			MoSyncIconBuilderVisitor visitor = new MoSyncIconBuilderVisitor();
 			visitor.setProject(project.getWrappedProject());
 			IResource[] iconFiles = visitor.getIconFiles();
@@ -89,10 +87,12 @@ public class AndroidPackager extends AbstractPackager {
 				if (xObj != null && yObj != null) {
 					String sizeStr = ((Long) xObj) + "x" + ((Long) yObj);
 					internal.runCommandLine("%mosync-bin%\\icon-injector", "-src", iconFiles[0].getLocation().toOSString(), 
-						"-size", sizeStr, "-platform", "android", "-dst", projectAPK.getAbsolutePath());
+						"-size", sizeStr, "-platform", "android", "-dst", "%package-output-dir%\\res\\drawable\\icon.png");
 				}
 			}
-*/
+			else // Copy default icon
+				internal.runCommandLine("cmd", "/c", "copy", "%mosync-bin%\\..\\etc\\icon.png", "%package-output-dir%\\res\\drawable\\icon.png", "/y");
+			
 			// build a resources.ap_ file using aapt tool			
 			internal.runCommandLine("%mosync-bin%\\android\\aapt", "package", "-f", "-M", manifest.getAbsolutePath(), "-F",
 				"%package-output-dir%\\resources.ap_", "-I", "%mosync-bin%\\android\\android-1.5.jar", "-S", 
