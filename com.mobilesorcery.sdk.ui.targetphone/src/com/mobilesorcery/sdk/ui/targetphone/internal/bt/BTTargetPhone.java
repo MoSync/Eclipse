@@ -14,29 +14,30 @@
 /**
  * 
  */
-package com.mobilesorcery.sdk.ui.targetphone.internal;
+package com.mobilesorcery.sdk.ui.targetphone.internal.bt;
 
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiles.IProfile;
+import com.mobilesorcery.sdk.ui.targetphone.AbstractTargetPhone;
+import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
+import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransport;
+import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 
 
-public class TargetPhone {
+public class BTTargetPhone extends AbstractTargetPhone {
     
     public static final int PORT_UNASSIGNED = -1;
     
-    private final String name;
     private final byte[] addr;
     private int port;
 
-	private IProfile preferredProfile;
-
-    public TargetPhone(char[] name, byte[] addr, int port) {
-        this.name = sz(name);
+    public BTTargetPhone(char[] name, byte[] addr, int port) {
+        super(sz(name), TargetPhonePlugin.DEFAULT_TARGET_PHONE_TRANSPORT);
         this.addr = addr;
         this.port = port;
     }
     
-    private String sz(char[] sz) {
+    private static String sz(char[] sz) {
         String result = new String(sz);
         int length = result.indexOf('\0');
         return length == -1 ? result : result.substring(0, length);
@@ -44,10 +45,6 @@ public class TargetPhone {
 
     public void assignPort(int port) {
         this.port = port;
-    }
-
-    public String getName() {
-        return name;
     }
     
     public byte[] getAddressAsBytes() {
@@ -61,28 +58,20 @@ public class TargetPhone {
     public int getPort() {
         return port;
     }
-
-    public void setPreferredProfile(IProfile preferredProfile) {
-		this.preferredProfile = preferredProfile;
-	}
-    
-    public IProfile getPreferredProfile() {
-    	return preferredProfile;
-    }
  
     public int hashCode() {
         return getAddress().hashCode() ^ getPort();
     }
     
     public boolean equals(Object o) {
-        if (o instanceof TargetPhone) {
-            return equals((TargetPhone)o);
+        if (o instanceof BTTargetPhone) {
+            return equals((BTTargetPhone)o);
         }
         
         return false;
     }
     
-    public boolean equals(TargetPhone other) {
+    public boolean equals(BTTargetPhone other) {
         if (other == null) {
             return false;
         }
@@ -97,6 +86,7 @@ public class TargetPhone {
     public String toString() {
         return getName() + " " + getAddress() + ":" + getPort();
     }
+
 
 
 }

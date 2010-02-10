@@ -44,33 +44,35 @@ import com.mobilesorcery.sdk.profiles.filter.EmulatorDeviceFilter;
 import com.mobilesorcery.sdk.profiles.ui.ProfileContentProvider;
 import com.mobilesorcery.sdk.profiles.ui.ProfileLabelProvider;
 import com.mobilesorcery.sdk.ui.UIUtils;
-import com.mobilesorcery.sdk.ui.targetphone.Activator;
+import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
+import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
+import com.mobilesorcery.sdk.ui.targetphone.internal.bt.BTTargetPhone;
 
 public class EditDeviceListDialog extends Dialog {
 
 	public class TargetDeviceLabelProvider extends LabelProvider {
 		public String getText(Object o) {
-			TargetPhone t = (TargetPhone) o; 
+			ITargetPhone t = (ITargetPhone) o; 
 			return t.getName();
 		}
 	}
 
 	private ComboViewer deviceList;
 	private TreeViewer preferredProfile;
-	private TargetPhone initialTargetPhone;
+	private ITargetPhone initialTargetPhone;
 
 	protected EditDeviceListDialog(Shell parentShell) {
 		super(parentShell);
 	}
 
-	public void setInitialTargetPhone(TargetPhone initialTargetPhone) {
+	public void setInitialTargetPhone(ITargetPhone initialTargetPhone) {
 		this.initialTargetPhone = initialTargetPhone;
 	}
 	
     public Control createDialogArea(Composite parent) {
         getShell().setText("Select Preferred Profile");
         
-        TargetPhone initialTargetPhone = this.initialTargetPhone == null ? Activator.getDefault().getCurrentlySelectedPhone() : this.initialTargetPhone;
+        ITargetPhone initialTargetPhone = this.initialTargetPhone == null ? TargetPhonePlugin.getDefault().getCurrentlySelectedPhone() : this.initialTargetPhone;
         
         Composite main = (Composite) super.createDialogArea(parent);
         
@@ -121,7 +123,7 @@ public class EditDeviceListDialog extends Dialog {
 				if (element instanceof IProfile) {
 					IProfile profile = (IProfile) element;
 					IStructuredSelection selection = (IStructuredSelection) deviceList.getSelection();
-					TargetPhone currentTargetPhone = (TargetPhone) selection.getFirstElement();
+					ITargetPhone currentTargetPhone = (ITargetPhone) selection.getFirstElement();
 					if (currentTargetPhone!= null) {
 						currentTargetPhone.setPreferredProfile(profile);
 					}
@@ -140,7 +142,7 @@ public class EditDeviceListDialog extends Dialog {
     }
 
 	protected IProfile getCurrentPreferredProfile(ComboViewer deviceList) {
-		TargetPhone selectedPhone = (TargetPhone) ((IStructuredSelection) deviceList.getSelection()).getFirstElement();
+		ITargetPhone selectedPhone = (ITargetPhone) ((IStructuredSelection) deviceList.getSelection()).getFirstElement();
 		IProfile profile = null;
 		if (selectedPhone != null) {
 			profile = selectedPhone.getPreferredProfile();
@@ -149,9 +151,9 @@ public class EditDeviceListDialog extends Dialog {
 		return profile;
 	}
 
-	protected void updateUI(TargetPhone changeToTargetPhone, boolean reloadPhones) {
+	protected void updateUI(ITargetPhone changeToTargetPhone, boolean reloadPhones) {
 		if (reloadPhones) {
-			deviceList.setInput(Activator.getDefault().getSelectedTargetPhoneHistory().toArray());
+			deviceList.setInput(TargetPhonePlugin.getDefault().getSelectedTargetPhoneHistory().toArray());
 		}
 		
         if (changeToTargetPhone != null) {
@@ -163,7 +165,7 @@ public class EditDeviceListDialog extends Dialog {
 
 	protected void clearDeviceList(Shell parent) {
 		if (MessageDialog.openConfirm(parent, "Are you sure?", "This will clear the list of target devices -- are you sure?")) {
-			Activator.getDefault().clearHistory();
+			TargetPhonePlugin.getDefault().clearHistory();
 			close();
 		}
 		

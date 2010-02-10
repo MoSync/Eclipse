@@ -11,7 +11,7 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
-package com.mobilesorcery.sdk.ui.targetphone.internal;
+package com.mobilesorcery.sdk.ui.targetphone.internal.bt;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -193,7 +193,7 @@ public class Bcobex {
         monitor.done();
     }
 
-    public static void sendObexFile(TargetPhone phone, File file, IProgressMonitor monitor) throws IOException {
+    public static void sendObexFile(BTTargetPhone phone, File file, IProgressMonitor monitor) throws IOException {
         sendObexFile(phone.getAddress(), phone.getPort(), file, monitor);
     }
 }

@@ -13,22 +13,25 @@
  */
 package com.mobilesorcery.sdk.ui.targetphone.internal;
 
-import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.util.Policy;
+import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.window.IShellProvider;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -38,40 +41,59 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowPulldownDelegate;
+import org.eclipse.ui.dialogs.ListDialog;
 
 import com.mobilesorcery.sdk.profiles.IProfile;
-import com.mobilesorcery.sdk.ui.targetphone.Activator;
+import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
+import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransport;
+import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 
 public class SelectTargetPhoneAction implements
 		IWorkbenchWindowPulldownDelegate {
 
-	private final class OBEXScanJob extends Job {
-		private final TargetPhone phone;
+	class ScanJob extends Job {
 
-		private OBEXScanJob(TargetPhone phone) {
-			super("Scanning for OBEX service");
-			this.phone = phone;
+		private ITargetPhoneTransport transport;
+
+		public ScanJob(ITargetPhoneTransport transport) {
+			super("Scanning for devices");
+			this.transport = transport;
 		}
 
 		protected IStatus run(IProgressMonitor monitor) {
-			return assignPort(window, monitor, phone, true);
+			try {
+				ITargetPhone phone = transport.scan(window, monitor);
+				if (phone != null) {
+					TargetPhonePlugin.getDefault().addToHistory(phone);
+					if (phone.getPreferredProfile() == null) {
+						monitor.setTaskName(MessageFormat.format(
+								"Assigning profile to {0}", phone.getName()));
+						SelectTargetPhoneAction.selectProfileForPhone(phone,
+								window, true);
+					}
+				}
+				return Status.OK_STATUS;
+			} catch (CoreException e) {
+				return e.getStatus();
+			}
 		}
+
 	}
 
 	private ISelection selection;
 	protected IAction targetDialogAction;
-	private IWorkbenchWindow window;
+	IWorkbenchWindow window;
 
 	public Menu getMenu(Control parent) {
 		Menu menu = new Menu(parent);
-		List<TargetPhone> phones = Activator.getDefault()
+		List<ITargetPhone> phones = TargetPhonePlugin.getDefault()
 				.getSelectedTargetPhoneHistory();
-		for (Iterator<TargetPhone> phoneIterator = phones.iterator(); phoneIterator
+		for (Iterator<ITargetPhone> phoneIterator = phones.iterator(); phoneIterator
 				.hasNext();) {
-			TargetPhone phone = phoneIterator.next();
+			ITargetPhone phone = phoneIterator.next();
 			MenuItem item = new MenuItem(menu, SWT.CHECK);
 			item.setText(computeTargetPhoneLabel(phone));
-			item.setSelection(phone == Activator.getDefault()
+			item.setSelection(phone == TargetPhonePlugin.getDefault()
 					.getCurrentlySelectedPhone());
 			item.setData(phone);
 			item.addSelectionListener(new SelectionListener() {
@@ -80,8 +102,9 @@ public class SelectTargetPhoneAction implements
 				}
 
 				public void widgetSelected(SelectionEvent event) {
-					TargetPhone phone = (TargetPhone) event.widget.getData();
-					Activator.getDefault().setCurrentlySelectedPhone(phone);
+					ITargetPhone phone = (ITargetPhone) event.widget.getData();
+					TargetPhonePlugin.getDefault().setCurrentlySelectedPhone(
+							phone);
 				}
 
 			});
@@ -94,13 +117,25 @@ public class SelectTargetPhoneAction implements
 		}
 
 		new MenuItem(menu, SWT.SEPARATOR);
-		MenuItem select = new MenuItem(menu, SWT.PUSH);
-		select.setText("&Scan for Device...");
-		select.addListener(SWT.Selection, new Listener() {
-			public void handleEvent(Event event) {
-				run(targetDialogAction);
+
+		Collection<ITargetPhoneTransport> transports = TargetPhonePlugin
+				.getDefault().getTargetPhoneTransports();
+
+		for (final ITargetPhoneTransport transport : transports) {
+			MenuItem select = new MenuItem(menu, SWT.PUSH);
+			select.setText(MessageFormat.format("Scan for {0} device", transport.getDescription("")));
+			ImageDescriptor icon = TargetPhonePlugin.getDefault().getImageRegistry().getDescriptor(transport.getId());
+			if (icon != null) {
+				select.setImage(TargetPhonePlugin.getDefault().getImageRegistry().get(transport.getId()));
 			}
-		});
+			select.addListener(SWT.Selection, new Listener() {
+				public void handleEvent(Event event) {
+					ScanJob job = new ScanJob(transport);
+					job.setUser(true);
+					job.schedule();
+				}
+			});
+		}
 
 		if (phones.size() > 0) {
 			new MenuItem(menu, SWT.SEPARATOR);
@@ -116,7 +151,7 @@ public class SelectTargetPhoneAction implements
 		return menu;
 	}
 
-	private static String computeTargetPhoneLabel(TargetPhone phone) {
+	private static String computeTargetPhoneLabel(ITargetPhone phone) {
 		IProfile preferredProfile = phone.getPreferredProfile();
 		String preferredProfileStr = preferredProfile == null ? "" : " - ["
 				+ preferredProfile.getName() + "]";
@@ -136,84 +171,95 @@ public class SelectTargetPhoneAction implements
 		this.window = window;
 	}
 
-	public void run(IAction action) {
-		final TargetPhone[] phone = new TargetPhone[1];
-		try {
-			phone[0] = selectPhone();
-			if (phone[0] == null) {
-				return; // Cancelled.
-			}
-		} catch (IOException e) {
-			Policy.getStatusHandler().show(
-					new Status(IStatus.ERROR, Activator.PLUGIN_ID, e
-							.getMessage(), e), e.toString());
-		}
-
-		Job job = new OBEXScanJob(phone[0]);
-
-		job.setUser(true);
-		job.schedule();
-	}
-
-	/**
-	 * Pops up a dialog where the user can select a [BT] target phone.
-	 * 
-	 * @return
-	 * @throws IOException
-	 */
-	public static TargetPhone selectPhone() throws IOException {
-		SearchDeviceDialog dialog = new SearchDeviceDialog();
-		TargetPhone info = dialog.open();
-		return info;
-	}
-
-	static IStatus assignPort(IShellProvider shellProvider, IProgressMonitor monitor, TargetPhone phone, boolean askIfNoProfileAssigned) {
-		try {
-			monitor.beginTask("Scanning BT device for OBEX service", 1);
-			monitor.setTaskName("Scanning BT device for OBEX service");
-			int port = ServiceSearch.search(phone.getAddress());
-			if (port != -1) {
-				phone.assignPort(port);
-				Activator.getDefault().addToHistory(phone);
-			} else {
-				return new Status(IStatus.ERROR, Activator.PLUGIN_ID,
-						"The device connected to has no OBEX service");
-			}
-			
-			if (!askIfNoProfileAssigned || phone.getPreferredProfile() == null) {
-				monitor.setTaskName(MessageFormat.format("Assigning profile to {0}", phone.getName()));
-				selectProfileForPhone(phone, shellProvider, askIfNoProfileAssigned);
-			}
-			
-			return Status.OK_STATUS;
-		} catch (Exception e) {
-			return new Status(IStatus.ERROR, Activator.PLUGIN_ID, e
-					.getMessage(), e);
-		} finally {
-			monitor.worked(1);
-		}
-	}
-
 	public void selectionChanged(IAction action, ISelection selection) {
 		this.targetDialogAction = action;
 		this.selection = selection;
 	}
 
-	static IProfile selectProfileForPhone(final TargetPhone phone,
+	public static IProfile selectProfileForPhone(final ITargetPhone phone,
 			final IShellProvider shellProvider, boolean askOnlyIfNotAssigned) {
 		if (!askOnlyIfNotAssigned || phone.getPreferredProfile() == null) {
-			Display d = shellProvider == null ? Display.getDefault() : shellProvider.getShell().getDisplay();
+			Display d = shellProvider == null ? Display.getDefault()
+					: shellProvider.getShell().getDisplay();
 			d.syncExec(new Runnable() {
 				public void run() {
 					Shell shell = shellProvider == null ? new Shell(Display
 							.getDefault()) : shellProvider.getShell();
-					EditDeviceListDialog dialog = new EditDeviceListDialog(shell);
+					EditDeviceListDialog dialog = new EditDeviceListDialog(
+							shell);
 					dialog.setInitialTargetPhone(phone);
 					dialog.open();
 				}
 			});
 		}
-		
+
 		return phone.getPreferredProfile();
+	}
+
+	/**
+	 * Lets the user select a target phone. If there is more than one
+	 * <code>ITargetPhoneTransport</code> installed, a dialog is popped up which
+	 * lets the user select type of transport.
+	 * 
+	 * @return
+	 */
+	public static ITargetPhone selectPhone(IShellProvider shellProvider,
+			IProgressMonitor monitor) throws CoreException {
+		ITargetPhoneTransport selectedTransport = selectTransport(shellProvider);
+		if (selectedTransport != null) {
+			return selectedTransport.scan(shellProvider, monitor);
+		}
+
+		return null;
+	}
+
+	public static ITargetPhoneTransport selectTransport(
+			IShellProvider shellProvider) {
+		List<ITargetPhoneTransport> transports = TargetPhonePlugin.getDefault()
+				.getTargetPhoneTransports();
+		ITargetPhoneTransport selectedTransport = null;
+		if (transports.size() == 1) {
+			selectedTransport = transports.get(0);
+		} else {
+			selectedTransport = showTransportsDialog(shellProvider);
+		}
+
+		return selectedTransport;
+	}
+
+	private static ITargetPhoneTransport showTransportsDialog(
+			IShellProvider shellProvider) {
+		final Shell shell = shellProvider.getShell();
+		final ITargetPhoneTransport[] result = new ITargetPhoneTransport[1];
+
+		shell.getDisplay().syncExec(new Runnable() {
+			public void run() {
+				ListDialog dialog = new ListDialog(shell);
+				dialog.setTitle("Select type of transport");
+				dialog.setMessage("Select how you want to scan for the device");
+				dialog.setContentProvider(new ArrayContentProvider());
+				dialog.setLabelProvider(new TargetPhoneTransportLabelProvider());
+				dialog.setInput(TargetPhonePlugin.getDefault()
+						.getTargetPhoneTransports().toArray());
+				if (dialog.open() == ListDialog.OK) {
+					Object[] dialogResult = dialog.getResult();
+					if (dialogResult.length > 0) {
+						result[0] = (ITargetPhoneTransport) dialogResult[0];
+					}
+				}
+			}
+		});
+
+		return result[0];
+
+	}
+
+	public void run(IAction action) {
+		ITargetPhoneTransport transport = selectTransport(window);
+		if (transport != null) {
+			ScanJob job = new ScanJob(transport);
+			job.setUser(true);
+			job.schedule();
+		}
 	}
 }

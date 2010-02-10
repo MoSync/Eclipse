@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.2"?>
 <plugin>
+   <extension-point id="com.mobilesorcery.sdk.targetphonetransports" name="Target Phone Transports" schema="schema/com.mobilesorcery.sdk.targetphonetransports.exsd"/>
         <extension
          point="org.eclipse.ui.actionSets">
       <actionSet

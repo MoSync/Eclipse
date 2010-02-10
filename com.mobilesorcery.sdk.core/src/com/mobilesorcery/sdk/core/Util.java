@@ -24,6 +24,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Reader;
+import java.io.Writer;
 import java.text.FieldPosition;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -440,6 +442,26 @@ public class Util {
 		}
 	}
 
+	public static void safeClose(Writer output) {
+		if (output != null) {
+			try {
+				output.close();
+			} catch (IOException e) {
+				// Ignore.
+			}
+		}
+	}
+	
+	public static void safeClose(Reader input) {
+		if (input != null) {
+			try {
+				input.close();
+			} catch (IOException e) {
+				// Ignore.
+			}
+		}
+	}
+
 	public static String readFile(String filename) throws IOException {
 		return readFile(filename, null);
 	}
@@ -526,7 +548,7 @@ public class Util {
 	 * @param o1
 	 * @param o2
 	 */
-	public static boolean equals(String o1, String o2) {
+	public static boolean equals(Object o1, Object o2) {
 		if (o1 == null) {
 			return o2 == null;
 		}

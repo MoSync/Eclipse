@@ -68,6 +68,7 @@
       <plugin id="com.mobilesorcery.sdk.ui.editors.resources"/>
       <plugin id="com.mobilesorcery.sdk.ui.perspective"/>
       <plugin id="com.mobilesorcery.sdk.ui.targetphone"/>
+      <plugin id="com.mobilesorcery.sdk.ui.targetphone.android"/>
       <plugin id="com.mobilesorcery.sdk.ui.wizards"/>
       <plugin id="com.mobilesorcery.sdk.update"/>
       <plugin id="javax.servlet"/>

@@ -83,6 +83,7 @@
 				<include name="com.mobilesorcery.sdk.ui/**" />
 				<include name="com.mobilesorcery.sdk.ui.editors.resources/**" />
 				<include name="com.mobilesorcery.sdk.ui.targetphone/**" />
+				<include name="com.mobilesorcery.sdk.ui.targetphone.android/**" />
 				<include name="com.mobilesorcery.sdk.ui.wizards/**" />
 				<include name="com.mobilesorcery.sdk.ui.perspective/**" />
 				<include name="com.mobilesorcery.sdk.update/**" />

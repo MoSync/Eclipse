@@ -57,12 +57,19 @@ public class LineReader implements Runnable {
         try {
             LineNumberReader reader = new LineNumberReader(from);
             for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-                callback.newLine(line);
+                if (callback != null) {
+                	callback.newLine(line);
+                }
             }
             
-            callback.stop(null);
+            if (callback != null) {
+            	callback.stop(null);	
+            }
+            
         } catch (IOException e) {
-        	callback.stop(e);
+        	if (callback != null) {
+        		callback.stop(e);
+        	}
             e.printStackTrace();
         }
     }

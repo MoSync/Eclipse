@@ -11,7 +11,7 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
-package com.mobilesorcery.sdk.ui.targetphone.internal;
+package com.mobilesorcery.sdk.ui.targetphone.internal.bt;
 
 import com.sun.jna.Library;
 import com.sun.jna.Native;
