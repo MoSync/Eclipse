@@ -105,8 +105,8 @@ public class AndroidPackager extends AbstractPackager {
 			classes.getParentFile().mkdirs();
 			
 			internal.runCommandLine("%mosync-bin%\\unzip", "-q", "%runtime-dir%\\MoSyncRuntime%D%.zip","-d","%package-output-dir%\\classes");
+			
 			// run dx on class file, generating a dex file
-			//internal.runCommandLine("java","-jar","%mosync-bin%\\android\\dx.jar","--dex","--patch-string","com.mosync.java.android","com.mosync.%project-name%","--output=%package-output-dir%\\classes.dex","%package-output-dir%\\classes");
 			internal.runCommandLine("java","-jar","%mosync-bin%\\android\\dx.jar","--dex","--patch-string","com/mosync/java/android","com/mosync/app_"+fixedName,"--output=%package-output-dir%\\classes.dex","%package-output-dir%\\classes");
 			
 			// generate android package , add dex file and resources.ap_ using apkBuilder
@@ -114,6 +114,13 @@ public class AndroidPackager extends AbstractPackager {
 			
 			// sign apk file using jarSigner
 			internal.runCommandLine("java","-jar","%mosync-bin%\\android\\tools-stripped.jar","-keystore","%mosync-bin%\\..\\etc\\mosync.keystore","-storepass","default","-signedjar","%package-output-dir%\\%project-name%.apk","%package-output-dir%\\%project-name%_unsigned.apk","mosync.keystore");
+			
+			// Clean up!
+			internal.runCommandLine("cmd", "/c", "rd","/s","/q","%package-output-dir%\\classes");
+			internal.runCommandLine("cmd", "/c", "rd","/s","/q","%package-output-dir%\\res");
+			internal.runCommandLine("cmd", "/c", "del","/q","%package-output-dir%\\classes.dex");
+			internal.runCommandLine("cmd", "/c", "del","/q","%package-output-dir%\\resources.ap_");
+			internal.runCommandLine("cmd", "/c", "del","/q","%compile-output-dir%\\package\\AndroidManifest.xml");
 			
 			buildResult.setBuildResult(projectAPK);
 		}
