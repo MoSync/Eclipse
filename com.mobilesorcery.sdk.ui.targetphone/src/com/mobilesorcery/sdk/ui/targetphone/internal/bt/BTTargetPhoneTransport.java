@@ -114,5 +114,9 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 	public String getDescription(String context) {
 		return "Bluetooth";
 	}
+	
+	public boolean isAvailable() {
+		return true;
+	}
 
 }

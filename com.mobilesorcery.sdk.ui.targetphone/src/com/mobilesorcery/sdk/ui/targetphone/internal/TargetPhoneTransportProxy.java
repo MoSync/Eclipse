@@ -88,4 +88,9 @@ public class TargetPhoneTransportProxy implements ITargetPhoneTransport {
 		return delegate.getDescription(context);
 	}
 
+	public boolean isAvailable() {
+		initDelegate();
+		return delegate.isAvailable();
+	}
+
 }

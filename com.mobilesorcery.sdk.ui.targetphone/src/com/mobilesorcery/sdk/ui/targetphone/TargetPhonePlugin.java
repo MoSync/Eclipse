@@ -170,7 +170,13 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 	}
 
 	public List<ITargetPhoneTransport> getTargetPhoneTransports() {
-		return new ArrayList<ITargetPhoneTransport>(transports.values());
+		ArrayList<ITargetPhoneTransport> result = new ArrayList<ITargetPhoneTransport>();
+		for (ITargetPhoneTransport transport : transports.values()) {
+			if (transport.isAvailable()) {
+				result.add(transport);
+			}
+		}
+		return result;
 	}
 	
 	private void storeTargetPhoneHistory() throws CoreException {

@@ -48,4 +48,6 @@ public interface ITargetPhoneTransportDelegate {
 	
 	public String getDescription(String context);
 	
+	public boolean isAvailable();
+	
 }

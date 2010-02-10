@@ -109,4 +109,8 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 		return "Android USB";
 	}
 
+	public boolean isAvailable() {
+		return ADB.getDefault().isValid();
+	}
+
 }

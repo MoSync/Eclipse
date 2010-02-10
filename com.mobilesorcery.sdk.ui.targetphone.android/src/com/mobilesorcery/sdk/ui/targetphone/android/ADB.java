@@ -25,10 +25,10 @@ import java.util.List;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.LineReader;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
@@ -63,14 +63,18 @@ public class ADB {
 	private IPath pathToADB;
 
 	private ADB() {
-		//this(MoSyncTool.getDefault().getMoSyncBin().append("android/adb"));
-		this(new Path("C:/development/tools/android-sdk-windows/tools/adb.exe"));
+		this(MoSyncTool.getDefault().getMoSyncBin().append("android/adb.exe"));
+		//this(new Path("C:/development/tools/android-sdk-windows/tools/adb.exe"));
 	}
 
 	public ADB(IPath pathToADB) {
 		this.pathToADB = pathToADB;
 	}
 
+	public boolean isValid() {
+		return pathToADB.toFile().exists();
+	}
+	
 	public static ADB getDefault() {
 		return instance;
 	}
