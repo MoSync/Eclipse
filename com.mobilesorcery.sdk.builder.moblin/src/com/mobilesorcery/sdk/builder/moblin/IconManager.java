@@ -156,6 +156,26 @@ public class IconManager
 		}
 	}
 	
+	/**
+	 * Returns wether or not an icon type exists
+	 * 
+	 * @param type Icon type, either "svg" of some bitmap format
+	 * 			   such as PNG.
+	 * 
+	 * @return True on success, false otherwise
+	 */
+	public boolean hasIcon ( String type )
+	{
+		if ( type.equals( "svg" ) == true && 
+			 m_iconMap.containsKey( "vector" ) == false )
+			return false;
+		
+		else if ( m_iconMap.containsKey( "bitmap" ) == false )
+			return false;
+		
+		
+		return true;
+	}	
 	
 	/**
 	 * Will "inject", that is copy or convert the best fitting 
@@ -410,16 +430,19 @@ extends DefaultHandler
 				// Parse size
 				if ( size.isEmpty( ) == false )
 				{
-					String[] tmp = size.split( "x" );				
-					if ( tmp.length != 2 )
-						throw new RuntimeException( "Badly formated icon xml: bad size format" );
-					
-					try {
-						w = Integer.parseInt( tmp[0] );
-						h = Integer.parseInt( tmp[1] );					
-					} catch ( NumberFormatException e ) {
-						throw new RuntimeException( "Badly formated icon xml, size attribute", e );
-					}					
+					if ( size.equalsIgnoreCase( "default" ) == false )
+					{
+						String[] tmp = size.split( "x" );				
+						if ( tmp.length != 2 )
+							throw new RuntimeException( "Badly formated icon xml: bad size format" );
+						
+						try {
+							w = Integer.parseInt( tmp[0] );
+							h = Integer.parseInt( tmp[1] );					
+						} catch ( NumberFormatException e ) {
+							throw new RuntimeException( "Badly formated icon xml, size attribute", e );
+						}					
+					}
 				}
 
 				// Add icon to list

@@ -114,35 +114,41 @@ extends AbstractPackager
 	            						.getLocation( ).toFile( ) );            
 	            
 	            // Set SVG icon
-	            try 
-	            {
-		            f = new File( outDir, "icon.svg" );
-		            if ( f.exists( ) == true )
-		            	f.delete( );
-		            if ( icon.inject( f, 0, 0, "svg" ) == true )
-		            	pack.setIconSVG( f.getAbsolutePath( ) );
-	            }
-	            catch ( Exception e ) 
-	            {
-	            	buildResult.addError( e.getMessage( ) );
-	            }	            
-	            
-	            // Set PNG icons
-	            int[] sizes = {16, 32, 48, 64, 128, 256};
-	            for ( int s : sizes )
+	            if ( icon.hasIcon( "svg" ) == true )
 	            {
 		            try 
-		            {	            	
-		                f = new File( outDir, "icon"+s+".png" );
-		                if ( f.exists( ) == true )
-		                	f.delete( );
-		                if ( icon.inject( f, s, s, "png" ) == true )
-		                	pack.setIconPNG( s, f.getAbsolutePath( ) );
+		            {
+			            f = new File( outDir, "icon.svg" );
+			            if ( f.exists( ) == true )
+			            	f.delete( );
+			            if ( icon.inject( f, 0, 0, "svg" ) == true )
+			            	pack.setIconSVG( f.getAbsolutePath( ) );
 		            }
 		            catch ( Exception e ) 
 		            {
 		            	buildResult.addError( e.getMessage( ) );
-		            }		            
+		            }	            
+	            }
+	            
+	            // Set PNG icons
+	            if ( icon.hasIcon( "png" ) == true )
+	            {
+		            int[] sizes = {16, 32, 48, 64, 128, 256};
+		            for ( int s : sizes )
+		            {
+			            try 
+			            {	            	
+			                f = new File( outDir, "icon"+s+".png" );
+			                if ( f.exists( ) == true )
+			                	f.delete( );
+			                if ( icon.inject( f, s, s, "png" ) == true )
+			                	pack.setIconPNG( s, f.getAbsolutePath( ) );
+			            }
+			            catch ( Exception e ) 
+			            {
+			            	buildResult.addError( e.getMessage( ) );
+			            }
+		            }
 	            }
             }
             catch ( Exception e ) 
