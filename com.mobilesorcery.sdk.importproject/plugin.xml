@@ -13,6 +13,13 @@
             icon="icons/mosync_project.png"
             id="com.mobilesorcery.sdk.importproject.wizard"
             name="Old MoBuild project into workspace">
+      </wizard> 
+      <wizard
+            category="org.eclipse.ui.Basic"
+            class="com.mobilesorcery.sdk.importproject.OldMoBuildProjectImportWizard"
+            icon="icons/mosync_project.png"
+            id="com.mobilesorcery.sdk.importproject.wizard"
+            name="Old MoBuild project into workspace">
       </wizard>      
    </extension>
    <extension point="org.eclipse.ui.newWizards">

@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.regex.Matcher;
 
+import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+
 
 
 public class CommandLineExecutor {
@@ -30,6 +32,8 @@ public class CommandLineExecutor {
 	private Process currentProcess;
 	private boolean killed = false;
 	private String consoleName;
+	private ILineHandler stdoutHandler;
+	private ILineHandler stderrHandler;
 
 	public CommandLineExecutor(String consoleName) {
 		this.consoleName = consoleName;
@@ -102,7 +106,7 @@ public class CommandLineExecutor {
 			    currentProcess = Runtime.getRuntime().exec(mergedCommandLine, null, new File(dir));
 			}
 			
-			console.attachProcess(currentProcess, null);
+			console.attachProcess(currentProcess, stdoutHandler, stderrHandler);
 			try {
 				return currentProcess.waitFor();
 			} catch (InterruptedException e) {
@@ -177,6 +181,12 @@ public class CommandLineExecutor {
 
 	public IProcessConsole createConsole() {
 		return CoreMoSyncPlugin.getDefault().createConsole(consoleName);
+	}
+
+	public void setLineHandlers(ILineHandler stdoutHandler,
+			ILineHandler stderrHandler) {
+		this.stdoutHandler = stdoutHandler;
+		this.stderrHandler = stderrHandler;
 	}
 
 }

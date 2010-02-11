@@ -3094,6 +3094,7 @@
             targetId="org.eclipse.cdt.ui.cCode">
       </hyperlinkDetector>
    </extension>
+<!-- MOSYNC SDK REMOVAL
    <extension
          point="org.eclipse.ui.importWizards">
       <category
@@ -3110,7 +3111,7 @@
                class="org.eclipse.core.resources.IProject">
          </selection>
       </wizard>
-   </extension>
+   </extension> -->
    <extension
          point="org.eclipse.cdt.ui.workingSetConfigurations">
       <projectConfigurationFactory

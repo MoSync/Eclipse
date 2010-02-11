@@ -1653,7 +1653,7 @@
             contentTypeId="org.eclipse.cdt.core.asmSource"/>
    </extension>
 <!-- Import Executable Wizard -->
-  <extension
+ <!-- MOSYNC SDK REMOVAL <extension
          point="org.eclipse.ui.importWizards">
       <wizard
             category="org.eclipse.cdt.ui.importWizardCategory"
@@ -1665,7 +1665,7 @@
  				%importExecutableWizard.description
  	        </description>
       </wizard>
-   </extension>
+   </extension> -->
  <!-- Source Not Found Editor -->
    <extension
          point="org.eclipse.ui.editors">

@@ -27,7 +27,9 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
+import com.mobilesorcery.sdk.core.CommandLineExecutor;
 import com.mobilesorcery.sdk.core.LineReader;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
@@ -165,7 +167,11 @@ public class ADB {
 	private int execute(String[] commandLine, ILineHandler stdoutLineHandler, ILineHandler stderrLineHandler)
 			throws CoreException {
 		try {
-			Process process = createProcess(commandLine);
+			CommandLineExecutor executor = new CommandLineExecutor(MoSyncBuilder.CONSOLE_ID);
+			executor.setLineHandlers(stdoutLineHandler, stderrLineHandler);
+			executor.addCommandLine(commandLine);
+			return executor.execute();
+			/*Process process = createProcess(commandLine);
 			final InputStream input = process.getInputStream();
 			final InputStream error = process.getErrorStream();
 
@@ -179,7 +185,7 @@ public class ADB {
 			inputPump.start();
 			errorPump.start();
 
-			return process.waitFor();
+			return process.waitFor();*/
 		} catch (Exception e) {
 			throw new CoreException(new Status(IStatus.ERROR,
 					"com.mobilesorcery.sdk.ui.targetphone.android", e

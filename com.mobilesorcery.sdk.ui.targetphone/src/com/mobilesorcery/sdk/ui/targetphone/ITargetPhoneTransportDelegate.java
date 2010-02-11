@@ -22,7 +22,10 @@ import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.window.IShellProvider;
 import org.eclipse.ui.IMemento;
 
+import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.profiles.IDeviceFilter;
+import com.mobilesorcery.sdk.profiles.IProfile;
 
 public interface ITargetPhoneTransportDelegate {
 
@@ -42,12 +45,35 @@ public interface ITargetPhoneTransportDelegate {
 	
 	public ITargetPhone load(IMemento memento, String name);
 	
+	/**
+	 * Sends a file to a device and may launch it, if the device
+	 * permits it.
+	 * @param shell
+	 * @param project
+	 * @param phone
+	 * @param packageToSend
+	 * @param monitor
+	 * @throws CoreException
+	 */
 	public void send(IShellProvider shell, MoSyncProject project, ITargetPhone phone, File packageToSend, IProgressMonitor monitor) throws CoreException;
 	
 	public ITargetPhone scan(IShellProvider shell, IProgressMonitor monitor) throws CoreException;
 	
+	/**
+	 * Returns a filter indicating which profiles this transport
+	 * supports. 
+	 * @return <code>null</code> if accepts all profiles
+	 */ 
+	public IDeviceFilter getAcceptedProfiles();
+	
 	public String getDescription(String context);
 	
+	/**
+	 * Returns <code>true</code> if this transport is available;
+	 * if for example a certain piece of hardware is not available,
+	 * then this may return <code>false</code>.
+	 * @return
+	 */
 	public boolean isAvailable();
 	
 }

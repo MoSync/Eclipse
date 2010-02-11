@@ -13,6 +13,8 @@
 */
 package com.mobilesorcery.sdk.ui.targetphone.internal;
 
+import java.text.MessageFormat;
+
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -26,6 +28,7 @@ import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
+import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -38,12 +41,16 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.ITargetProfileProvider;
+import com.mobilesorcery.sdk.profiles.filter.CompositeDeviceFilter;
 import com.mobilesorcery.sdk.profiles.filter.EmulatorDeviceFilter;
+import com.mobilesorcery.sdk.profiles.ui.DeviceViewerFilter;
 import com.mobilesorcery.sdk.profiles.ui.ProfileContentProvider;
 import com.mobilesorcery.sdk.profiles.ui.ProfileLabelProvider;
 import com.mobilesorcery.sdk.ui.UIUtils;
+import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransport;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.internal.bt.BTTargetPhone;
@@ -53,7 +60,8 @@ public class EditDeviceListDialog extends Dialog {
 	public class TargetDeviceLabelProvider extends LabelProvider {
 		public String getText(Object o) {
 			ITargetPhone t = (ITargetPhone) o; 
-			return t.getName();
+			ITargetPhoneTransport tt = t.getTransport();
+			return MessageFormat.format("{0} [{1}]", t.getName(), tt.getDescription(""));
 		}
 	}
 
@@ -84,6 +92,7 @@ public class EditDeviceListDialog extends Dialog {
         deviceList.setLabelProvider(new TargetDeviceLabelProvider());
         deviceList.addSelectionChangedListener(new ISelectionChangedListener() {
 			public void selectionChanged(SelectionChangedEvent event) {
+				updateFilter();
 				updateUI(null, false);
 			}
 		});
@@ -114,7 +123,6 @@ public class EditDeviceListDialog extends Dialog {
         preferredProfile.setLabelProvider(labelProvider);
         final ProfileContentProvider contentProvider = new ProfileContentProvider();
         preferredProfile.setContentProvider(contentProvider);
-        preferredProfile.setInput(MoSyncTool.getDefault().getVendors(new EmulatorDeviceFilter(EmulatorDeviceFilter.EXCLUDE_EMULATORS)));
         preferredProfile.getControl().setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), UIUtils.getDefaultListHeight()));
         
         preferredProfile.addDoubleClickListener(new IDoubleClickListener() {
@@ -122,8 +130,8 @@ public class EditDeviceListDialog extends Dialog {
 				Object element = ((IStructuredSelection) event.getSelection()).getFirstElement();
 				if (element instanceof IProfile) {
 					IProfile profile = (IProfile) element;
-					IStructuredSelection selection = (IStructuredSelection) deviceList.getSelection();
-					ITargetPhone currentTargetPhone = (ITargetPhone) selection.getFirstElement();
+					ITargetPhone currentTargetPhone = getSelectedTargetPhone();
+
 					if (currentTargetPhone!= null) {
 						currentTargetPhone.setPreferredProfile(profile);
 					}
@@ -137,7 +145,22 @@ public class EditDeviceListDialog extends Dialog {
         return contents;
     }
 
-    public void createButtonsForButtonBar(Composite parent) {
+    protected ITargetPhone getSelectedTargetPhone() {
+		IStructuredSelection selection = (IStructuredSelection) deviceList.getSelection();
+		ITargetPhone selectedTargetPhone = (ITargetPhone) selection.getFirstElement();
+		return selectedTargetPhone;
+	}
+
+	protected void updateFilter() {
+        IDeviceFilter emulatorFilter = new EmulatorDeviceFilter(EmulatorDeviceFilter.EXCLUDE_EMULATORS);
+        ITargetPhone phone = getSelectedTargetPhone();
+        IDeviceFilter targetPhoneAcceptedProfiles = phone == null ? null : phone.getTransport().getAcceptedProfiles();
+        IDeviceFilter filter = targetPhoneAcceptedProfiles == null ? emulatorFilter : new CompositeDeviceFilter(new IDeviceFilter[] { emulatorFilter, targetPhoneAcceptedProfiles });
+        preferredProfile.setInput(MoSyncTool.getDefault().getVendors(filter));
+        preferredProfile.setFilters(new ViewerFilter[] { new DeviceViewerFilter(filter) });
+	}
+
+	public void createButtonsForButtonBar(Composite parent) {
         createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL, true);
     }
 
@@ -157,11 +180,12 @@ public class EditDeviceListDialog extends Dialog {
 		}
 		
         if (changeToTargetPhone != null) {
-        	deviceList.setSelection(new StructuredSelection(changeToTargetPhone), true);        	
+        	deviceList.setSelection(new StructuredSelection(changeToTargetPhone), true);
+        	
         }    
 		IProfile profile = getCurrentPreferredProfile(deviceList);
-		preferredProfile.setSelection(profile == null ? new StructuredSelection() : new StructuredSelection(profile), true);
 		preferredProfile.refresh();
+		preferredProfile.setSelection(profile == null ? new StructuredSelection() : new StructuredSelection(profile), true);
 	}
 
 	protected void clearDeviceList(Shell parent) {
@@ -171,4 +195,5 @@ public class EditDeviceListDialog extends Dialog {
 		}
 		
 	}
+
 }

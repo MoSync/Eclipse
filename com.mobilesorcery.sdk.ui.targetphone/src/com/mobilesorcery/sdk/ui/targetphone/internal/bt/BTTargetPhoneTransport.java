@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.ui.targetphone.internal.bt;
 
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 
@@ -11,8 +12,12 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.window.IShellProvider;
 import org.eclipse.ui.IMemento;
 
+import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.profiles.IDeviceFilter;
+import com.mobilesorcery.sdk.profiles.IProfile;
+import com.mobilesorcery.sdk.profiles.filter.AbstractDeviceFilter;
 import com.mobilesorcery.sdk.profiles.ui.Activator;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
@@ -117,6 +122,10 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 	
 	public boolean isAvailable() {
 		return true;
+	}
+
+	public IDeviceFilter getAcceptedProfiles() {
+		return null;
 	}
 
 }
