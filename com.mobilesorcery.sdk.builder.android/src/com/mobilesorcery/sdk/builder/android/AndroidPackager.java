@@ -13,11 +13,13 @@
 */
 package com.mobilesorcery.sdk.builder.android;
 
+import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
