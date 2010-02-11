@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<introContent>
+    <!-- Root page -->
+	<page id="root" content="root.xhtml" >
+	</page>
+		    
+    <!-- Standby page -->
+    <page id="standby" content="root.xhtml" />
+    
+    <!--  Example page -->
+    <page id="examples" content="examples.xhtml" />
+    <page id="reading" content="reading.xhtml" />
+    
+</introContent>

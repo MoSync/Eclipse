@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+<plugin
+>
+   <extension
+         id="product"
+         point="org.eclipse.core.runtime.products">
+      <product
+            application="org.eclipse.ui.ide.workbench"
+            name="%productName">
+         <property
+               name="windowImages"
+               value="icons/mosync_16x16.png,icons/mosync_32x32.png">
+         </property>
+         <property
+               name="aboutText"
+               value="http://www.mosync.com">
+         </property>
+         <property
+               name="aboutImage"
+               value="about.png">
+         </property>
+         <property
+               name="startupForegroundColor"
+               value="FF8000">
+         </property>
+         <property
+               name="startupProgressRect"
+               value="80,290,280,10">
+         </property>
+         <property
+               name="startupMessageRect"
+               value="80,265,280,20">
+         </property>
+         <property
+               name="appName"
+               value="%productName">
+         </property>
+         <property
+               name="preferenceCustomization"
+               value="plugin_customization.ini">
+         </property>
+      </product>
+   </extension>
+
+   <extension
+         point="org.eclipse.ui.intro">
+      <intro
+            class="org.eclipse.ui.intro.config.CustomizableIntroPart"
+            id="com.mobilesorcery.sdk.product.intro"
+            icon="icons/mosync_16x16.png"
+            label="Welcome">
+      </intro>
+      <introProductBinding
+            introId="com.mobilesorcery.sdk.product.intro"
+            productId="com.mobilesorcery.sdk.product.product">
+      </introProductBinding>
+   </extension>
+   <extension
+         point="org.eclipse.ui.intro.config">
+      <config
+            content="content/introContent.xml"
+            id="com.mobilesorcery.sdk.product.intro.config"
+            introId="com.mobilesorcery.sdk.product.intro">
+         <presentation
+               home-page-id="root" standby-page-id="standby">
+            <implementation
+                  kind="html">
+                  <!--os="win32,linux,macosx"
+                  style="content/root.css"-->
+            </implementation>
+         </presentation>
+      </config>
+   </extension>
+</plugin>

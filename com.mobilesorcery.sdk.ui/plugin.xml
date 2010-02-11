@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   
+
+   <extension point="org.eclipse.debug.ui.launchShortcuts">
+<shortcut id="com.mobilesorcery.sdk.more.launchShortcut"
+modes="run,debug"
+class=
+"com.mobilesorcery.sdk.ui.internal.launch.MoreLaunchShortCut"
+label=
+"Run MoRE Emulator"
+icon="icons/launchshortcut.png">
+                     <contextualLaunch>
+            <enablement>
+                <test
+                      forcePluginActivation="true"
+                      property="com.mobilesorcery.sdk.testers.hasMoreNature"/>
+            </enablement>
+         </contextualLaunch>
+</shortcut>
+</extension> 
+   
+      <extension
+         point="org.eclipse.debug.ui.launchConfigurationTabGroups">
+      <launchConfigurationTabGroup
+            class="com.mobilesorcery.sdk.ui.internal.launch.EmulatorLaunchConfigurationTabGroup"
+            id="com.mobilesorcery.launchconfigurationtabgroup"
+            type="com.mobilesorcery.launchconfigurationtype"/>
+   </extension>
+   
+      <extension
+         point="org.eclipse.debug.ui.launchConfigurationTypeImages">
+      
+      <launchConfigurationTypeImage
+            configTypeID="com.mobilesorcery.launchconfigurationtype"
+            icon="icons/mosyncproject.png"
+            id="com.mobilesorcery.launchconfigurationtype.image"/>
+   </extension>
+      <extension
+            point="org.eclipse.ui.preferencePages">
+         <page
+               class="com.mobilesorcery.sdk.ui.internal.preferences.MainPreferencePage"
+               id="com.mobilesorcery.sdk.preferences.main"
+               name="MoSync Tool">
+         </page>
+      </extension> 
+      
+         <extension point="org.eclipse.ui.console.consolePatternMatchListeners">
+    <consolePatternMatchListener id="com.mobilesorcery.emulatoroutput.consolepatternmatcher"
+    regex="IP:0x.*"
+    class="com.mobilesorcery.sdk.ui.internal.console.EmulatorStacktracePatternMatchListener">
+      <enablement>
+        <test property="org.eclipse.ui.console.consoleTypeTest" value="org.eclipse.debug.ui.ProcessConsoleType"/>
+      </enablement>
+    </consolePatternMatchListener>
+
+    <consolePatternMatchListener id="com.mobilesorcery.build.consolepatternmatcher"
+    regex="\w.*"
+    class="com.mobilesorcery.sdk.ui.internal.console.GccPatternMatchListener">
+      <enablement>
+        <test property="org.eclipse.ui.console.consoleTypeTest" value="org.eclipse.ui.MessageConsole"/>
+      </enablement>
+    </consolePatternMatchListener>
+    </extension>
+        
+               <extension
+         point="org.eclipse.ui.navigator.navigatorContent">
+      <commonFilter
+            activeByDefault="true"
+            class="com.mobilesorcery.sdk.ui.internal.projectexplorer.MoSyncOutputFileFilter"
+            description="Hide common MoSync output files"
+            id="com.mobilesorcery.sdk.ui.projectexplorer.filter"
+            name="Hide common MoSync output files">
+      </commonFilter>
+   </extension>
+   
+             <extension
+             point="org.eclipse.ui.propertyPages">
+          <page
+                class="com.mobilesorcery.sdk.ui.internal.properties.MoSyncProjectPropertyPage"
+                id="com.mobilesorcery.sdk.ui.properties.project"
+                name="MoSync Project"
+                objectClass="org.eclipse.core.resources.IProject">
+                <enabledWhen>
+                   <test
+                         forcePluginActivation="true"
+                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                   </test>
+                </enabledWhen>
+          </page>          
+          <page
+                class="com.mobilesorcery.sdk.ui.internal.properties.BuildSettingsPropertyPage"
+                id="com.mobilesorcery.sdk.ui.properties.buildsettings"
+                name="Build Settings"
+                objectClass="org.eclipse.core.resources.IProject"
+                category="com.mobilesorcery.sdk.ui.properties.project">
+                <enabledWhen>
+                   <test
+                         forcePluginActivation="true"
+                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                   </test>
+                </enabledWhen>
+          </page>
+                    <page
+                class="com.mobilesorcery.sdk.ui.internal.properties.BuildConfigurationsPropertyPage"
+                id="com.mobilesorcery.sdk.ui.properties.buildconfigs"
+                name="Build Configurations"
+                objectClass="org.eclipse.core.resources.IProject"
+                category="com.mobilesorcery.sdk.ui.properties.project">
+                <enabledWhen>
+                   <test
+                         forcePluginActivation="true"
+                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                   </test>
+                </enabledWhen>
+          </page>
+       </extension>
+      
+         <extension point = "org.eclipse.ui.actionSets">
+       <actionSet id="com.mobilesorcery.sdk.help.actionset"
+           label="Help"
+           visible="true">
+           <!--<action
+                 class="com.mobilesorcery.internal.actions.OpenExampleWorkspaceAction"
+                 id="com.mobilesorcery.sdk.examplews"
+                 label="Switch To Example Workspace"
+                 menubarPath="help/helpStart">
+           </action> -->
+           <action id="com.mobilesorcery.sdk.htmlhelp"
+               menubarPath="help/helpStart"
+               label="MoSync HTML Help"
+               class="com.mobilesorcery.ui.internal.actions.ShowHTMLAction">
+           </action>           ...
+           <action id="com.mobilesorcery.sdk.panic"
+               menubarPath="help/helpStart"
+               label="Translate Panic Code..."
+               class="com.mobilesorcery.ui.internal.actions.TranslatePanicCodeAction">
+           </action>           ...
+       </actionSet>
+   </extension>
+         <extension
+         point="org.eclipse.ui.popupMenus">
+     <objectContribution
+           adaptable="true"
+           id="com.mobilesorcery.sdk.buildconfig"
+           objectClass="org.eclipse.core.resources.IResource">
+        <action
+              class="com.mobilesorcery.sdk.ui.internal.actions.ChangeBuildConfigContextAction"
+              enablesFor="+"
+              id="com.mobilesorcery.sdk.buildconfigs.active"
+              label="Set Active Configuration"
+              menubarPath="com.mobilesorcery.sdk.build.menu/configs"
+              style="pulldown"
+              tooltip="Set and manage build configurations">
+        </action>
+        <action
+              class="com.mobilesorcery.sdk.ui.internal.actions.ManageBuildConfigsAction"
+              enablesFor="+"
+              id="com.mobilesorcery.sdk.buildconfigs.manage"
+              label="Manage..."
+              menubarPath="com.mobilesorcery.sdk.build.menu/meta"
+              />
+        <menu
+              id="com.mobilesorcery.sdk.build.menu"
+              label="Build Configurations"
+              path="buildGroup">
+           <groupMarker name="configs"/>
+           <separator
+                 name="s1">
+           </separator>
+           <groupMarker
+                 name="meta">
+           </groupMarker>
+        </menu>
+        
+        <visibility>
+              <objectState
+                 name="projectNature"
+                 value="com.mobilesorcery.sdk.core.nature"/>
+        </visibility>
+     </objectContribution>
+
+      <objectContribution
+            adaptable="true"
+            id="com.mobilesorcery.sdk.convert.project"
+            objectClass="org.eclipse.core.resources.IProject">
+         <action
+               class="com.mobilesorcery.ui.internal.actions.ConvertToMoSyncProject"
+               id="com.mobilesorcery.mosync.convert.project"
+               label="Convert to MoSync Project"
+               menubarPath="additions">
+         </action>
+               <visibility>
+                  <and>
+		          <objectState name="nature" value="org.eclipse.cdt.core.cnature"/>
+		          <not>
+		          	<objectState name="nature" value="com.mobilesorcery.sdk.core.nature"/>
+		          </not>
+		          <not>
+		          	<objectState name="nature" value="com.mobilesorcery.sdk.builder.nature"/>
+		          </not>
+                  </and>
+               </visibility>
+                         
+      </objectContribution>
+      <objectContribution
+            adaptable="true"
+            id="com.mobilesorcery.sdk.convert.project"
+            objectClass="org.eclipse.core.resources.IProject">
+         <action
+               class="com.mobilesorcery.ui.internal.actions.ConvertToMoSyncProject"
+               id="com.mobilesorcery.mosync.convert.project"
+               label="Update to latest MoSync Project type"
+               menubarPath="additions">
+         </action>
+               <visibility>
+		          <objectState name="nature" value="com.mobilesorcery.sdk.builder.nature"/>
+               </visibility>
+                         
+      </objectContribution>
+      <!--      <objectContribution
+            adaptable="true"
+            id="com.mobilesorcery.sdk.exclude"
+            objectClass="org.eclipse.core.resources.IResource">
+         <action
+               class="com.mobilesorcery.ui.internal.actions.ExcludeFromBuild"
+               id="com.mobilesorcery.sdk.exclude"
+               label="Exclude from build"
+               menubarPath="additions">
+         </action>
+      </objectContribution>-->
+  </extension>
+      <extension
+         point="org.eclipse.ui.ide.projectNatureImages">
+<image
+      icon="icons/mosyncproject.png"
+      id="com.mobilesorcery.mosync.natureimage"
+      natureId="com.mobilesorcery.sdk.core.nature">
+</image>
+<image
+      icon="icons/deprecated-mosyncproject.png"
+      id="com.mobilesorcery.mosync.deprecated.natureimage"
+      natureId="com.mobilesorcery.sdk.builder.nature">
+</image>
+
+   </extension>
+      <extension
+            point="org.eclipse.ui.views">
+      <category
+            id="com.mobilesorcery.sdk.ui.main"
+            name="Mosync">
+      </category>
+      </extension>
+      <extension
+            point="org.eclipse.ui.decorators">
+         <decorator
+               adaptable="false"
+               class="com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator"
+               id="com.mobilesorcery.sdk.ui.decorator.excluderesource"
+               label="Files excluded from MoSync build"
+               lightweight="false"
+               location="TOP_RIGHT"
+               state="true">
+         <description>
+            Show files that are excluded from the MoSync build process
+         </description>
+         <enablement>
+            <objectClass
+                  name="java.lang.Object">
+            </objectClass>
+         </enablement>
+         </decorator>
+      </extension>
+      <extension
+            point="org.eclipse.ui.commands">
+         <category
+               id="com.mobilesorcery.sdk.ui.category.main"
+               name="MoSync IDE">
+         </category>
+         <command
+               categoryId="com.mobilesorcery.sdk.ui.category.main"
+               description="Exclude file from build"
+               id="com.mobilesorcery.sdk.ui.excludefrombuild"
+               name="Exclude file from build">
+         </command>
+         <command
+               categoryId="com.mobilesorcery.sdk.ui.category.main"
+               description="Do Not Exclude file from build"
+               id="com.mobilesorcery.sdk.ui.donotexcludefrombuild"
+               name="Do Not Exclude file from build">
+         </command>
+         <command
+               categoryId="com.mobilesorcery.sdk.ui.category.main"
+               description="Compiles a set of files without any linking"
+               id="com.mobilesorcery.sdk.ui.compilefiles"
+               name="Quick Compile">
+         </command>
+      </extension>
+      <extension
+            point="org.eclipse.ui.handlers">
+         <handler
+               class="com.mobilesorcery.sdk.ui.internal.handlers.ExcludeFromBuildHandler"
+               commandId="com.mobilesorcery.sdk.ui.excludefrombuild">
+            <activeWhen>
+               <test
+                     forcePluginActivation="true"
+                     property="com.mobilesorcery.sdk.testers.isExcludableFromBuild"
+                     value="excludable">
+               </test>
+            </activeWhen>
+         </handler>
+         <handler
+               class="com.mobilesorcery.sdk.ui.internal.handlers.DoNotExcludeFromBuildHandler"
+               commandId="com.mobilesorcery.sdk.ui.donotexcludefrombuild">
+            <activeWhen>
+               <test
+                     forcePluginActivation="true"
+                     property="com.mobilesorcery.sdk.testers.isExcludableFromBuild"
+                     value="includable">
+               </test>
+            </activeWhen>
+         </handler>
+                  <handler
+               class="com.mobilesorcery.sdk.ui.internal.handlers.CompileFilesHandler"
+               commandId="com.mobilesorcery.sdk.ui.compilefiles">
+               <activeWhen>
+               <and>
+                     <with
+            variable="selection">
+         <iterate
+               ifEmpty="false"
+               operator="and">
+            <instanceof
+                  value="org.eclipse.cdt.core.model.ITranslationUnit">
+            </instanceof>
+         </iterate>
+      </with>
+      <test
+                           forcePluginActivation="true"
+                     property="com.mobilesorcery.sdk.testers.hasMoreNature">
+      </test>
+      </and>
+                     </activeWhen>
+         </handler>
+      </extension>
+      <extension
+            point="org.eclipse.ui.menus">
+                     <menuContribution
+               locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+            <command
+                  commandId="com.mobilesorcery.sdk.ui.compilefiles"
+                  label="Quick Compile"
+                  style="push">
+               <visibleWhen
+                     checkEnabled="true">
+               </visibleWhen>
+            </command>
+         </menuContribution>
+         <menuContribution
+               locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+            <command
+                  commandId="com.mobilesorcery.sdk.ui.excludefrombuild"
+                  icon="icons/exclude_ovr.png"
+                  label="Exclude from build"
+                  style="push">
+               <visibleWhen
+                     checkEnabled="true">
+               </visibleWhen>
+            </command>
+         </menuContribution>
+         <menuContribution
+               locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+            <command
+                  commandId="com.mobilesorcery.sdk.ui.donotexcludefrombuild"
+                  icon="icons/include_ovr.png"
+                  label="Do Not Exclude from build"
+                  style="push">
+               <visibleWhen
+                     checkEnabled="true">
+               </visibleWhen>
+            </command>
+         </menuContribution>
+      </extension>
+</plugin>

@@ -1,0 +1,19 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Targetphone Plug-in
+Bundle-SymbolicName: com.mobilesorcery.sdk.ui.targetphone;singleton:=true
+Bundle-Version: 1.0.0
+Bundle-Activator: com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin
+Bundle-Vendor: MOBILESORCERY
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ com.mobilesorcery.sdk.core;bundle-version="1.0.0",
+ org.eclipse.core.resources;bundle-version="3.3.1",
+ com.mobilesorcery.sdk.lib;bundle-version="1.0.0",
+ org.eclipse.cdt.core;bundle-version="5.0.0",
+ com.mobilesorcery.sdk.profiles.ui;bundle-version="1.0.0",
+ com.mobilesorcery.sdk.ui;bundle-version="1.0.0"
+Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: .,
+ lib/bluecove-2.0.3.jar
+Export-Package: com.mobilesorcery.sdk.ui.targetphone

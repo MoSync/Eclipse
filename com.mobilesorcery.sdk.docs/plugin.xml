@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.help.base.luceneSearchParticipants">
+      <searchParticipant
+            icon="icons/searchparticipant.png"
+            id="com.mobilesorcery.sdk.docs.searchParticipant"
+            name="MoSync API Documentation and User Guide"
+            participant="com.mobilesorcery.sdk.docs.MoSyncDocsSearchParticipant">
+      </searchParticipant>
+   </extension>
+</plugin>

@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Docs
+Bundle-SymbolicName: com.mobilesorcery.sdk.docs;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.mobilesorcery.sdk.docs.MoSyncDocsActivator
+Bundle-Vendor: MOBILESORCERY
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.help.ui;bundle-version="3.4.0",
+ com.mobilesorcery.sdk.core;bundle-version="1.0.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy

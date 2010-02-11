@@ -1,0 +1,2 @@
+This test is there to make sure local project info gets imported if 'use new format if available' is set.
+(Hence the conflicting properties in the shared/local project description files, the active build configuration differs. Local should override.)

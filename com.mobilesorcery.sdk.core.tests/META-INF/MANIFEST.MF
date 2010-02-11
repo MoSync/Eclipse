@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Tests
+Bundle-SymbolicName: com.mobilesorcery.sdk.core.tests
+Bundle-Version: 1.0.0.qualifier
+Fragment-Host: com.mobilesorcery.sdk.core;bundle-version="1.0.0"
+Bundle-Vendor: MOBILESORCERY
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Require-Bundle: org.eclipse.core.resources;bundle-version="3.5.0",
+ org.eclipse.core.runtime;bundle-version="3.5.0",
+ org.junit4,
+ org.eclipse.ui.ide;bundle-version="3.5.0"

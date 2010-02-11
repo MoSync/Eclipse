@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.editors">
+         <editor
+            id="com.mobilesorcery.sdk.editor.resources"
+            name="MoSync Resource Editor" icon="icons/editor.gif"
+            class="com.mobilesorcery.sdk.ui.editors.resources.ResourceEditor"
+            extensions="lst"
+            default="true" />
+   </extension>
+   <extension
+         point="org.eclipse.core.filebuffers.documentSetup">
+      <participant
+            class="com.mobilesorcery.sdk.ui.editors.resources.ResourceFileDocumentParticipant"
+            extensions="lst">
+      </participant>
+   </extension>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            category="com.mobilesorcery.sdk.preferences.main"
+            class="com.mobilesorcery.sdk.ui.editors.resources.ResourceEditorPreferencePage"
+            id="com.mobilesorcery.sdk.ui.editors.resources.preferences"
+            name="Resource File Editor">
+      </page>
+   </extension>
+   <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="com.mobilesorcery.sdk.ui.editors.resources.ResourceEditorPreferenceInitializer">
+      </initializer>
+   </extension>
+
+</plugin>

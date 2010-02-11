@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="com.mobilesorcery.sdk.targetphonetransports">
+      <transport
+            icon="icons/droid.png"
+            id="android"
+            implementation="com.mobilesorcery.sdk.ui.targetphone.android.AndroidTargetPhoneTransport">
+      </transport>
+   </extension>
+
+</plugin>
