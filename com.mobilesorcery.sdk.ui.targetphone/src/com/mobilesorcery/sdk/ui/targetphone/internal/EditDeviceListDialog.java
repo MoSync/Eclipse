@@ -161,6 +161,7 @@ public class EditDeviceListDialog extends Dialog {
         }    
 		IProfile profile = getCurrentPreferredProfile(deviceList);
 		preferredProfile.setSelection(profile == null ? new StructuredSelection() : new StructuredSelection(profile), true);
+		preferredProfile.refresh();
 	}
 
 	protected void clearDeviceList(Shell parent) {

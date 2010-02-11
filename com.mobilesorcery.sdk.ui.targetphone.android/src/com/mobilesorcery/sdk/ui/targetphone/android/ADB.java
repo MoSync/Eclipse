@@ -61,6 +61,7 @@ public class ADB {
 
 	private static ADB instance = new ADB();
 	private IPath pathToADB;
+	private boolean valid;
 
 	private ADB() {
 		this(MoSyncTool.getDefault().getMoSyncBin().append("android/adb.exe"));
@@ -69,10 +70,11 @@ public class ADB {
 
 	public ADB(IPath pathToADB) {
 		this.pathToADB = pathToADB;
+		valid = pathToADB.toFile().exists();
 	}
 
 	public boolean isValid() {
-		return pathToADB.toFile().exists();
+		return valid;
 	}
 	
 	public static ADB getDefault() {
@@ -89,7 +91,7 @@ public class ADB {
 		CollectingLineHandler collectingLineHandler = new CollectingLineHandler();
 		execute(
 				new String[] { pathToADB.toFile().getAbsolutePath(), "devices" },
-				collectingLineHandler, null);
+				collectingLineHandler, collectingLineHandler);
 		ArrayList<String> result = new ArrayList<String>();
 		for (String line : collectingLineHandler.getLines()) {
 			line = line.trim();
