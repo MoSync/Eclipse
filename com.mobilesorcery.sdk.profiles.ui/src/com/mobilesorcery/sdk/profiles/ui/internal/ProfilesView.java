@@ -58,6 +58,7 @@ import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.IVendor;
 import com.mobilesorcery.sdk.profiles.filter.CompositeDeviceFilter;
+import com.mobilesorcery.sdk.profiles.ui.DeviceViewerFilter;
 import com.mobilesorcery.sdk.profiles.ui.ProfileContentProvider;
 import com.mobilesorcery.sdk.profiles.ui.ProfileLabelProvider;
 import com.mobilesorcery.sdk.profiles.ui.internal.actions.SetTargetProfileAction;

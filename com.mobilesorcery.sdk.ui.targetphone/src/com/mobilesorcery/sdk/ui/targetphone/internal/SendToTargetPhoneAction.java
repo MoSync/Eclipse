@@ -47,17 +47,31 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 		private MoSyncProject project;
 
 		public SendToTargetJob(MoSyncProject project, ITargetPhone phone) {
-			super(MessageFormat.format("Send to target {0}", phone.getName()));
+			super("");
 			this.project = project;
 			this.phone = phone;
+			setName(createProgressMessage(project, phone));
+		}
+
+		private String createProgressMessage(MoSyncProject project,
+				ITargetPhone phone) {
+			return MessageFormat.format("Send {0} to target {1} for profile {2}", project.getName(), phone.getName(),
+					MoSyncTool.toString(getProfile(project, phone)));
+		}
+
+		private IProfile getProfile(MoSyncProject project, ITargetPhone phone) {
+			IProfile targetProfile = phone.getPreferredProfile();
+			if (targetProfile == null) {
+				targetProfile = project.getTargetProfile();
+			}
+			return targetProfile;
 		}
 
 		protected IStatus run(IProgressMonitor monitor) {
 			ITargetPhone phone = this.phone;
 
 			int workUnits = phone == null ? 4 : 3;
-			monitor.beginTask(MessageFormat.format("Send to target {0}", phone
-					.getName()), workUnits);
+			monitor.beginTask(createProgressMessage(project, phone), workUnits);
 
 			try {
 				if (phone == null) {
@@ -69,10 +83,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 
 				if (phone != null) {
 					assertNotNull(project, "No project selected");
-					IProfile targetProfile = phone.getPreferredProfile();
-					if (targetProfile == null) {
-						targetProfile = project.getTargetProfile();
-					}
+					IProfile targetProfile = getProfile(project, phone);
 					assertNotNull(targetProfile, "No target profile selected");
 					
 					File packageToSend = buildBeforeSend(targetProfile, monitor);

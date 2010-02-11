@@ -13,8 +13,10 @@
  */
 package com.mobilesorcery.sdk.ui.targetphone.android;
 
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -27,7 +29,11 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.dialogs.ListDialog;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.profiles.IDeviceFilter;
+import com.mobilesorcery.sdk.profiles.IProfile;
+import com.mobilesorcery.sdk.profiles.filter.AbstractDeviceFilter;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransportDelegate;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
@@ -35,6 +41,22 @@ import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegate {
 
 	private static final String ID = "android";
+	
+	static final Pattern androidPlatformRegexp = Pattern.compile("^profiles\\\\runtimes\\\\android.*");
+	private static final IDeviceFilter ANDROID_DEVICE_FILTER = new AbstractDeviceFilter() {
+		public boolean acceptProfile(IProfile profile) {
+			String platform = profile.getPlatform();
+			boolean match = androidPlatformRegexp.matcher(platform).matches();
+			return match;
+		}
+
+		public String getFactoryId() {
+			return null;
+		}
+
+		public void saveState(IMemento memento) {
+		}
+	};
 
 	public AndroidTargetPhoneTransport() {
 	}
@@ -111,6 +133,10 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 
 	public boolean isAvailable() {
 		return ADB.getDefault().isValid();
+	}
+
+	public IDeviceFilter getAcceptedProfiles() {
+		return ANDROID_DEVICE_FILTER;
 	}
 
 }

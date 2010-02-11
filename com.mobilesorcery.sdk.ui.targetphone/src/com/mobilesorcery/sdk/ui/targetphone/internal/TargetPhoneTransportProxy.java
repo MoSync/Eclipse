@@ -12,6 +12,7 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransport;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransportDelegate;
@@ -91,6 +92,11 @@ public class TargetPhoneTransportProxy implements ITargetPhoneTransport {
 	public boolean isAvailable() {
 		initDelegate();
 		return delegate.isAvailable();
+	}
+
+	public IDeviceFilter getAcceptedProfiles() {
+		initDelegate();
+		return delegate.getAcceptedProfiles();
 	}
 
 }
