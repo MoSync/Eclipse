@@ -583,14 +583,12 @@
 
    <extension
          point="org.eclipse.ui.preferencePages">
-<!-- MOSYNC SDK REMOVAL
       <page
             name="%CPluginPreferencePage.name"
             class="org.eclipse.cdt.internal.ui.preferences.CPluginPreferencePage"
             id="org.eclipse.cdt.ui.preferences.CPluginPreferencePage">
           <keywordReference id="org.eclipse.cdt.ui.common"/>
       </page>
--->
       <page
             name="%CPluginEditorPreferencePage.name"
             category="org.eclipse.cdt.ui.preferences.CPluginPreferencePage"
