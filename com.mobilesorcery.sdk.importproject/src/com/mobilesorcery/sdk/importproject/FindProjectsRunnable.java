@@ -28,8 +28,12 @@ import org.eclipse.jface.operation.IRunnableWithProgress;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 
+/**
+ * 
+ * @author Mattias Bybro
+ * @deprecated Modify this to ignore .mopro files, until then it's deprecated.
+ */
 public class FindProjectsRunnable implements IRunnableWithProgress {
-
     
     public static final String FINISHED = "finished"; //$NON-NLS-1$
 

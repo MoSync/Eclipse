@@ -11,6 +11,7 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package com.mobilesorcery.sdk.importproject;
 
 import java.io.File;
@@ -62,6 +63,11 @@ import com.mobilesorcery.sdk.profiles.filter.ProfileFilter;
 import com.mobilesorcery.sdk.profiles.filter.ConstantFilter.RelationalOp;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
+/**
+ * 
+ * @author Mattias Bybro
+ * @deprecated Modify this to ignore .mopro files, until then it's deprecated.
+ */
 public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 
 	public final static int COPY_ALL_FILES = 0;
