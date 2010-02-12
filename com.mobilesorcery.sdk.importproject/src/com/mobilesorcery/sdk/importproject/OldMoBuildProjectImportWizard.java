@@ -24,6 +24,13 @@ import org.eclipse.ui.INewWizard;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.statushandlers.StatusManager;
 
+/**
+ * 
+ * @author Mattias Bybro
+ * @deprecated Use MoSyncExternalProjectImportWizard instead - .mopro files are no longer used.
+ * This file is kept until we've migrated those pieces of functionality that we'll need
+ * for the non-.mopro solution
+ */
 public class OldMoBuildProjectImportWizard extends Wizard implements IImportWizard, INewWizard {
 
     private WizardOldMobuildProjectsImportPage mainPage;

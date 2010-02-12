@@ -39,6 +39,13 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 
+/**
+ * 
+ * @author Mattias Bybro
+ * @deprecated Use MoSyncExternalProjectImportWizard instead - .mopro files are no longer used.
+ * This file is kept until we've migrated those pieces of functionality that we'll need
+ * for the non-.mopro solution
+ */
 public class WizardOldMobuildProjectsImportPage extends WizardPage implements PropertyChangeListener {
 
     private final class ProjectContentProvider implements ITreeContentProvider {
