@@ -135,7 +135,7 @@ public class PipeTool {
         }
         
         if (collectStabs) {
-        	args.add("-collect-stabs");
+        	args.add("-stabs=stabs.tab");
         }
         
         boolean programMode = BUILD_C_MODE == mode || BUILD_LIB_MODE == mode;
@@ -149,7 +149,7 @@ public class PipeTool {
             }
             
             if (sld) {
-                args.add("-sld");
+                args.add("-sld=sld.tab");
             }
 
             if (libraryPaths != null) {
