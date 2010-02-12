@@ -73,10 +73,10 @@ public class AndroidPackager extends AbstractPackager {
 			internal.getExecutor().setExecutionDirectory(projectAPK.getParentFile().getParent());
 			
 			// Copy and rename the program and resource file to package/res/raw/
-			internal.runCommandLine("cmd", "/c", "copy", "\"%compile-output-dir%\\program\"", "\"%package-output-dir%\\res\\raw\\program\"");
-			File resources = new File(internal.resolve("%compile-output-dir%resources"));
+			internal.runCommandLine("cmd", "/c", "copy", "%compile-output-dir%\\program", "%package-output-dir%\\res\\raw\\program");
+			File resources = new File(internal.resolve("%compile-output-dir%\\resources"));
 			if (resources.exists()) {
-				internal.runCommandLine("cmd", "/c", "copy", "\"%compile-output-dir%\\resources\"", "\"%package-output-dir%\\res\\raw\\resources\"");
+				internal.runCommandLine("cmd", "/c", "copy", "%compile-output-dir%\\resources", "%package-output-dir%\\res\\raw\\resources");
 			}
 			else
 			{
@@ -98,7 +98,7 @@ public class AndroidPackager extends AbstractPackager {
 				}
 			}
 			else // Copy default icon
-				internal.runCommandLine("cmd", "/c", "copy", "\"%mosync-bin%\\..\\etc\\icon.png\"", "\"%package-output-dir%\\res\\drawable\\icon.png\"");
+				internal.runCommandLine("cmd", "/c", "copy", "%mosync-bin%\\..\\etc\\icon.png", "%package-output-dir%\\res\\drawable\\icon.png");
 			
 			// build a resources.ap_ file using aapt tool			
 			internal.runCommandLine("%mosync-bin%\\android\\aapt", "package", "-f", "-M", manifest.getAbsolutePath(), "-F",
