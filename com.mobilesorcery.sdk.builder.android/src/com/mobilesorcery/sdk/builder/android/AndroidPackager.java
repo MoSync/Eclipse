@@ -72,11 +72,16 @@ public class AndroidPackager extends AbstractPackager {
 			// Need to set execution dir, o/w commandline optiones doesn't understand what to do.
 			internal.getExecutor().setExecutionDirectory(projectAPK.getParentFile().getParent());
 			
-			// Copy and rename the program and resource file to package/res/raw/ and add .zip ending to the resource file to prevent it from being compressed
+			// Copy and rename the program and resource file to package/res/raw/
 			internal.runCommandLine("cmd", "/c", "copy", "%compile-output-dir%\\program", "%package-output-dir%\\res\\raw\\program", "/y");
 			File resources = new File(internal.resolve("%compile-output-dir%\\resources"));
 			if (resources.exists()) {
 				internal.runCommandLine("cmd", "/c", "copy", "%compile-output-dir%\\resources", "%package-output-dir%\\res\\raw\\resources", "/y");
+			}
+			else
+			{
+				String dummyResource = "dummy";
+				DefaultPackager.writeFile(res, dummyResource);
 			}
 			
 			// If there was an icon provided, add it, else use the default icon
