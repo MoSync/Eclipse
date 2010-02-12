@@ -52,15 +52,15 @@ public class AndroidPackager extends AbstractPackager {
 			String fixedName = project.getName().replace(' ', '_');
 			
 			// Create manifest file
-			File manifest = new File(internal.resolve("%compile-output-dir%\\package\\AndroidManifest.xml"));
+			File manifest = new File(internal.resolve("%package-output-dir%\\AndroidManifest.xml"));
 			createManifest(fixedName, manifest);
 
 			// Create layout (main.xml) file
-			File main_xml = new File(internal.resolve("%compile-output-dir%\\package\\res\\layout\\main.xml"));
+			File main_xml = new File(internal.resolve("%package-output-dir%\\res\\layout\\main.xml"));
 			createMain(project.getName(), main_xml);
 			
 			// Create values (strings.xml) file, in this file the application name is written
-			File strings_xml = new File(internal.resolve("%compile-output-dir%\\package\\res\\values\\strings.xml"));
+			File strings_xml = new File(internal.resolve("%package-output-dir%\\res\\values\\strings.xml"));
 			createStrings(project.getName(), strings_xml);
 			
 			File res = new File(internal.resolve("%package-output-dir%\\res\\raw\\resources"));
@@ -72,11 +72,16 @@ public class AndroidPackager extends AbstractPackager {
 			// Need to set execution dir, o/w commandline optiones doesn't understand what to do.
 			internal.getExecutor().setExecutionDirectory(projectAPK.getParentFile().getParent());
 			
-			// Copy and rename the program and resource file to package/res/raw/ and add .zip ending to the resource file to prevent it from being compressed
-			internal.runCommandLine("cmd", "/c", "copy", "%compile-output-dir%\\program", "%package-output-dir%\\res\\raw\\program", "/y");
-			File resources = new File(internal.resolve("%compile-output-dir%\\resources"));
+			// Copy and rename the program and resource file to package/res/raw/
+			internal.runCommandLine("cmd", "/c", "copy", "\"%compile-output-dir%\\program\"", "\"%package-output-dir%\\res\\raw\\program\"");
+			File resources = new File(internal.resolve("%compile-output-dir%resources"));
 			if (resources.exists()) {
-				internal.runCommandLine("cmd", "/c", "copy", "%compile-output-dir%\\resources", "%package-output-dir%\\res\\raw\\resources", "/y");
+				internal.runCommandLine("cmd", "/c", "copy", "\"%compile-output-dir%\\resources\"", "\"%package-output-dir%\\res\\raw\\resources\"");
+			}
+			else
+			{
+				String dummyResource = "dummy";
+				DefaultPackager.writeFile(res, dummyResource);
 			}
 			
 			// If there was an icon provided, add it, else use the default icon
@@ -93,7 +98,7 @@ public class AndroidPackager extends AbstractPackager {
 				}
 			}
 			else // Copy default icon
-				internal.runCommandLine("cmd", "/c", "copy", "%mosync-bin%\\..\\etc\\icon.png", "%package-output-dir%\\res\\drawable\\icon.png", "/y");
+				internal.runCommandLine("cmd", "/c", "copy", "\"%mosync-bin%\\..\\etc\\icon.png\"", "\"%package-output-dir%\\res\\drawable\\icon.png\"");
 			
 			// build a resources.ap_ file using aapt tool			
 			internal.runCommandLine("%mosync-bin%\\android\\aapt", "package", "-f", "-M", manifest.getAbsolutePath(), "-F",
@@ -120,7 +125,7 @@ public class AndroidPackager extends AbstractPackager {
 			internal.runCommandLine("cmd", "/c", "rd","/s","/q","%package-output-dir%\\res");
 			internal.runCommandLine("cmd", "/c", "del","/q","%package-output-dir%\\classes.dex");
 			internal.runCommandLine("cmd", "/c", "del","/q","%package-output-dir%\\resources.ap_");
-			internal.runCommandLine("cmd", "/c", "del","/q","%compile-output-dir%\\package\\AndroidManifest.xml");
+			internal.runCommandLine("cmd", "/c", "del","/q","%package-output-dir%\\AndroidManifest.xml");
 			
 			buildResult.setBuildResult(projectAPK);
 		}
@@ -173,8 +178,7 @@ public class AndroidPackager extends AbstractPackager {
 		DefaultPackager.writeFile(main_xml, main_xml_string);
 	}
 	
-	private 
-	void createStrings(String projectName, File strings_xml) throws IOException {
+	private void createStrings(String projectName, File strings_xml) throws IOException {
 		strings_xml.getParentFile().mkdirs();
 
 		String strings_xml_string = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
