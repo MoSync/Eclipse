@@ -28,6 +28,7 @@ int btDialog(BT_DEVICE* device) {
 	//bsdp.pszInfo = L"MoBuild-specific information";
 	bsdp.fShowRemembered = TRUE;
 	bsdp.fShowUnknown = TRUE;
+	bsdp.fShowAuthenticated = TRUE;
 	bsdp.cNumDevices = 1;
 	if(!BluetoothSelectDevices(&bsdp)) {
 		int error = GetLastError();
