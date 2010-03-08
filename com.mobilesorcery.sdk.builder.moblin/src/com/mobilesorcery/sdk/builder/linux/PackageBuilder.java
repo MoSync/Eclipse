@@ -160,7 +160,7 @@ public class PackageBuilder
     {
         m_resourceMap.put( "svg", p );
     }
-
+    
     /**
      * Set the path to png icons of different sizes.
      * Note: At the very least, a 48x48 png icon always has
@@ -335,6 +335,19 @@ public class PackageBuilder
             
             rpmBuilder.addDependencyMore( n, v );
         }
+        
+        // Set pre/post - install/rm scripts
+        if ( m_resourceMap.containsKey( "preinst" ) == true )
+        	rpmBuilder.setPreInstallScript( m_resourceMap.get( "preinst" ) );
+
+        if ( m_resourceMap.containsKey( "postinst" ) == true )
+        	rpmBuilder.setPostInstallScript( m_resourceMap.get( "postinst" ) );
+
+        if ( m_resourceMap.containsKey( "prerm" ) == true )
+        	rpmBuilder.setPreUninstallScript( m_resourceMap.get( "prerm" ) );
+        
+        if ( m_resourceMap.containsKey( "postrm" ) == true )
+        	rpmBuilder.setPostUninstallScript( m_resourceMap.get( "postrm" ) );        
 
         //
         // Build and return path to package
@@ -372,13 +385,26 @@ public class PackageBuilder
         debBuilder.addHeader( new SectionHeader( SectionHeader.DebianSections.Utils ) );
         debBuilder.addHeader( new PriorityHeader( PriorityHeader.Priorities.Optional ) );
         debBuilder.addHeader( new DescriptionHeader( appSummary, appDescription ) );
-
+        
         // Package dependencies
         for ( String r : m_templateParser.getDependsList( ) )            
             debBuilder.addHeader( new DependsHeader( r ) );
 
         // Add files and directories
         addFilesToDeb( debBuilder, "/", new File( m_tempDir, "." ) );
+        
+        // Set pre/post - install/rm scripts
+        if ( m_resourceMap.containsKey( "preinst" ) == true )
+        	debBuilder.setScriptPreInst( m_resourceMap.get( "preinst" ) );
+
+        if ( m_resourceMap.containsKey( "postinst" ) == true )
+        	debBuilder.setScriptPostInst( m_resourceMap.get( "postinst" ) );
+
+        if ( m_resourceMap.containsKey( "prerm" ) == true )
+        	debBuilder.setScriptPreRm( m_resourceMap.get( "prerm" ) );
+        
+        if ( m_resourceMap.containsKey( "postrm" ) == true )
+        	debBuilder.setScriptPostRm( m_resourceMap.get( "postrm" ) );
 
         //
         // Build and return path to package
@@ -439,6 +465,15 @@ public class PackageBuilder
                 fot = new File( m_tempDir, m_templateParser.getPNGIconDir( s ) );
                 BuilderUtil.getInstance( ).copyFile( fot, fin );
             }
+        }
+        
+        // Set pre/post - install/rm scripts
+        String scriptList[] = { "preinst", "postinst", "prerm", "postrm" };
+        for ( String n : scriptList )
+        {
+        	String script = m_templateParser.getScript( n );
+        	if ( script != null )
+        		m_resourceMap.put( n, script );
         }
     }
 
