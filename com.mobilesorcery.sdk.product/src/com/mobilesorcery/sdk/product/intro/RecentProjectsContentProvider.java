@@ -3,6 +3,7 @@ package com.mobilesorcery.sdk.product.intro;
 import java.io.File;
 import java.io.PrintWriter;
 
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.forms.widgets.FormToolkit;
@@ -44,15 +45,25 @@ public class RecentProjectsContentProvider extends LinkContentProvider {
 	}
 	
 	private void createWorkspaceLink(String ws, Element parent) {
-		createActionLink("com.mobilesorcery.sdk.product.intro.actions.SwitchWorkspaceAction", ws, getWorkspaceName(ws), parent, 1);		
+	    if (isCurrent(ws)) {
+            // Just close the welcome screen
+            createActionLink("com.mobilesorcery.sdk.product.intro.actions.CloseIntroAction", ws, getWorkspaceName(ws), parent, 1);    
+	    } else {
+            createActionLink("com.mobilesorcery.sdk.product.intro.actions.SwitchWorkspaceAction", ws, getWorkspaceName(ws), parent, 1);    
+	    }
 	}
 
 
-	private String getWorkspaceName(String ws) {
+	private boolean isCurrent(String ws) {
+        boolean isCurrent = ResourcesPlugin.getWorkspace().getRoot().getLocation().equals(new Path(ws));
+        return isCurrent;
+    }
+
+    private String getWorkspaceName(String ws) {
 		if (isExampleWorkspace(ws)) {
 			return "Example Workspace";
 		} else {
-			return new Path(ws).lastSegment();
+			return new Path(ws).lastSegment() + (isCurrent(ws) ? " (Current)" : "");
 		}
 	}
 
