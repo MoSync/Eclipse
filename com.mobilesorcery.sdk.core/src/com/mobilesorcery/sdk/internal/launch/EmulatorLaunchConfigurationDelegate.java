@@ -26,9 +26,12 @@ import org.eclipse.cdt.core.ICDescriptor;
 import org.eclipse.cdt.core.IBinaryParser.IBinaryObject;
 import org.eclipse.cdt.core.model.ICModelMarker;
 import org.eclipse.cdt.core.model.ICProject;
+import org.eclipse.cdt.debug.core.CDebugCorePlugin;
 import org.eclipse.cdt.debug.core.cdi.ICDISession;
+import org.eclipse.cdt.debug.core.sourcelookup.ICSourceLocation;
 import org.eclipse.cdt.debug.core.sourcelookup.ICSourceLocator;
 import org.eclipse.cdt.debug.core.sourcelookup.SourceLookupFactory;
+import org.eclipse.cdt.debug.internal.core.sourcelookup.CSourceLookupDirector;
 import org.eclipse.cdt.internal.core.model.CModelManager;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -50,6 +53,8 @@ import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate2;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.LaunchConfigurationDelegate;
+import org.eclipse.debug.core.sourcelookup.ISourceContainer;
+import org.eclipse.debug.core.sourcelookup.ISourceLookupDirector;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -328,8 +333,9 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     public ILaunch getLaunch(ILaunchConfiguration configuration, String mode) throws CoreException {
     	// We implement this ourselves so we can add source lookup (and hence niceties like 
     	// clicking on stack trace -> open editor
-    	ICSourceLocator sourceLocator = SourceLookupFactory.createSourceLocator(getProject(configuration));    	
-    	Launch launch = new Launch(configuration, mode, sourceLocator);
+    	ISourceLookupDirector commonSourceLookupDirector = CDebugCorePlugin.getDefault().getCommonSourceLookupDirector();
+    	
+    	Launch launch = new Launch(configuration, mode, commonSourceLookupDirector);
     	return launch;
     }
     
