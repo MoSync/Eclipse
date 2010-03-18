@@ -32,7 +32,7 @@ public class SelectFilterTypeDialog extends Dialog {
     private IFilterProvider selectedFilterProvider;
     private IDeviceFilter filter;
 
-    protected SelectFilterTypeDialog(Shell parentShell) {
+    public SelectFilterTypeDialog(Shell parentShell) {
         super(parentShell);
     }
 

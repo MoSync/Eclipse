@@ -36,7 +36,7 @@ public class ProfileFilterDialog extends DeviceFilterDialog<ProfileFilter> {
     private Button require;
     private Button disallow;
 
-    protected ProfileFilterDialog(Shell parentShell) {
+    public ProfileFilterDialog(Shell parentShell) {
         super(parentShell);
         setName(Messages.ProfileFilterDialog_VendorAltDevice);
         filter = new ProfileFilter();

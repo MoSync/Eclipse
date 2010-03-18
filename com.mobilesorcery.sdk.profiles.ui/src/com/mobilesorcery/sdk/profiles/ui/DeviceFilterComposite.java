@@ -11,9 +11,10 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
-package com.mobilesorcery.sdk.profiles.ui.internal;
+package com.mobilesorcery.sdk.profiles.ui;
 
 import java.beans.PropertyChangeSupport;
+import java.text.MessageFormat;
 import java.util.Iterator;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -33,12 +34,20 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Label;
 
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.filter.ConstantFilter;
 import com.mobilesorcery.sdk.profiles.filter.FeatureFilter;
 import com.mobilesorcery.sdk.profiles.filter.ProfileFilter;
+import com.mobilesorcery.sdk.profiles.ui.internal.ConstantFilterDialog;
+import com.mobilesorcery.sdk.profiles.ui.internal.DeviceFilterDialog;
+import com.mobilesorcery.sdk.profiles.ui.internal.FeatureFilterDialog;
+import com.mobilesorcery.sdk.profiles.ui.internal.Messages;
+import com.mobilesorcery.sdk.profiles.ui.internal.ProfileFilterDialog;
+import com.mobilesorcery.sdk.profiles.ui.internal.SelectFilterTypeDialog;
 
 public class DeviceFilterComposite extends Composite {
 
@@ -49,6 +58,7 @@ public class DeviceFilterComposite extends Composite {
     private Button add;
     
     PropertyChangeSupport listeners = new PropertyChangeSupport(this);
+    private Label deviceCountLabel;
 
     public DeviceFilterComposite(Composite parent, int style) {
         super(parent, style);
@@ -77,7 +87,7 @@ public class DeviceFilterComposite extends Composite {
                 int result = dialog.open();
                 if (result == IDialogConstants.OK_ID && dialog.getFilter() != null) {
                     filter.addFilter(dialog.getFilter());
-                    updateUI();
+                    updateUI(true);
                 }
             }            
         });
@@ -93,7 +103,7 @@ public class DeviceFilterComposite extends Composite {
         filterTable.setLabelProvider(new LabelProvider());
         filterTable.addSelectionChangedListener(new ISelectionChangedListener() {
             public void selectionChanged(SelectionChangedEvent event) {
-                updateUI();
+                updateUI(false);
             }            
         });
         
@@ -116,7 +126,10 @@ public class DeviceFilterComposite extends Composite {
             }            
         });
         
-        updateUI();
+        deviceCountLabel = new Label(this, SWT.TRAIL);
+        deviceCountLabel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        
+        updateUI(true);
     }
 
     protected void editSelectedFilter() {
@@ -127,7 +140,8 @@ public class DeviceFilterComposite extends Composite {
             DeviceFilterDialog dialog = createDialogForFilter(filter);
             if (DeviceFilterDialog.OK == dialog.open()) {
                 this.filter.update(filter);
-                updateUI();
+                updateUI(true);
+                updateDeviceCount();
             }            
         }
     }            
@@ -154,7 +168,7 @@ public class DeviceFilterComposite extends Composite {
         IStructuredSelection selection = (IStructuredSelection) filterTable.getSelection();
         for (Iterator selected = selection.iterator(); selected.hasNext(); ) {
             filter.removeFilter((IDeviceFilter)selected.next());
-            updateUI();
+            updateUI(true);
         }
     }
 
@@ -166,11 +180,11 @@ public class DeviceFilterComposite extends Composite {
     public void setDeviceFilter(IDeviceFilter filter) {
         if (filter instanceof ICompositeDeviceFilter) {
             this.filter = (ICompositeDeviceFilter) filter;
-            updateUI();
+            updateUI(true);
         }
     }
 
-    private void updateUI() {
+    private void updateUI(final boolean updateCount) {
         filterTable.getControl().getDisplay().asyncExec(new Runnable() {
             public void run() {
                 boolean noFilters = filter == null || filter.getFilters().length == 0;
@@ -182,11 +196,23 @@ public class DeviceFilterComposite extends Composite {
                 
                 IStructuredSelection selection = (IStructuredSelection) filterTable.getSelection();
                 edit.setEnabled(selection.size() == 1 && selection.getFirstElement() instanceof IDeviceFilter && !noFilters);
+                if (updateCount) {
+                    updateDeviceCount();
+                }
             }
         });
-
     }
     
+    private void updateDeviceCount() {
+        deviceCountLabel.setText(getDeviceCountText());        
+    }
+    
+    protected String getDeviceCountText() {
+        int selected = MoSyncTool.getDefault().getProfiles(filter).length;
+        int total = MoSyncTool.getDefault().getProfiles().length;
+        return MessageFormat.format("{0} of {1} included", selected, total);
+    }
+
     public void setEnabled(boolean enabled) {
         filterTable.getControl().setEnabled(enabled);
         add.setEnabled(enabled);
