@@ -27,13 +27,15 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.MutexSchedulingRule;
 import com.mobilesorcery.sdk.update.UpdateManager;
 
-public class UpdateProfilesAction extends Action {
+public class UpdateProfilesAction extends Action implements IWorkbenchWindowActionDelegate {
 
     private final static MutexSchedulingRule updateMutex = new MutexSchedulingRule();
 
@@ -272,5 +274,8 @@ public class UpdateProfilesAction extends Action {
 
     public void setIsStartedByUser(boolean isStartedByUser) {
         this.isStartedByUser = isStartedByUser;
+    }
+
+    public void init(IWorkbenchWindow window) {
     }
 }
