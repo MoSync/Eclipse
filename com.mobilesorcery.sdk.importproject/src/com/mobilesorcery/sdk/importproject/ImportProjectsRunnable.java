@@ -47,7 +47,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import com.mobilesorcery.sdk.builder.s60.PropertyInitializer;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -400,8 +399,13 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		result.put("configType", MoSyncBuilder.PROJECT_TYPE); //$NON-NLS-1$
 
 		// Symbian
-		result.put("S60v2UID", PropertyInitializer.S60V2_UID); //$NON-NLS-1$
-		result.put("S60v3UID", PropertyInitializer.S60V3_UID); //$NON-NLS-1$
+		// NOTE: Changed link time dependency to s60 plugin, since
+		// we do not want that dependency. Also, we will kill this
+		// class soon (or, at least put it in some legacy plugin), so no problem.
+		//result.put("S60v2UID", PropertyInitializer.S60V2_UID); //$NON-NLS-1$
+		//result.put("S60v3UID", PropertyInitializer.S60V3_UID); //$NON-NLS-1$
+		result.put("S60v2UID", "symbian.uids:s60v2uid"); //$NON-NLS-1$
+		result.put("S60v3UID", "symbian.uids:s60v3uid"); //$NON-NLS-1$
 
 		/*
 		 * Not yet implemented: <Property name="configType" value="app"/>
