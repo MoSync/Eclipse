@@ -31,12 +31,10 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.ResourceFilter;
+import com.mobilesorcery.sdk.ui.MoSyncCommandHandler;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
-public class CompileFilesHandler extends ExcludeFromBuildHandler /*
-																 * TODO: Change
-																 * hierachy
-																 */{
+public class CompileFilesHandler extends MoSyncCommandHandler {
 
 	class CompileFilesJob extends Job {
 

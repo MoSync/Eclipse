@@ -100,7 +100,7 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
 
         int candidateCount = candidateConfigs.size();
         if (candidateCount < 1) {
-            configuration = createConfiguration(project);
+            configuration = createConfiguration(project, mode);
         } else if (candidateCount == 1) {
             configuration = (ILaunchConfiguration) candidateConfigs.get(0);
         } else {
@@ -123,7 +123,7 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
         return configType;
     }
 
-    private ILaunchConfiguration createConfiguration(IProject project) {
+    private ILaunchConfiguration createConfiguration(IProject project, String mode) {
         ILaunchConfiguration config = null;
         try {
             ILaunchConfigurationType configType = getConfigType();
@@ -136,8 +136,9 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
             wc.setAttribute(ILaunchConstants.SCREEN_SIZE_WIDTH, "176");
             wc.setAttribute(ILaunchConstants.PROJECT, project.getName());
             
-            wc.setAttribute(DebugPlugin.ATTR_PROCESS_FACTORY_ID, "com.mobilesorcery.sdk.builder.nonterminableprocessfactory");
-
+            if ("run".equals(mode)) {
+                wc.setAttribute(DebugPlugin.ATTR_PROCESS_FACTORY_ID, "com.mobilesorcery.sdk.builder.nonterminableprocessfactory");
+            }
             DebugUITools.setLaunchPerspective(configType, ILaunchManager.RUN_MODE, IDebugUIConstants.PERSPECTIVE_DEFAULT);
             DebugUITools.setLaunchPerspective(configType, ILaunchManager.DEBUG_MODE, IDebugUIConstants.PERSPECTIVE_DEFAULT);
 

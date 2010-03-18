@@ -29,8 +29,9 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.services.IEvaluationService;
 
 import com.mobilesorcery.sdk.core.PathExclusionFilter;
+import com.mobilesorcery.sdk.ui.MoSyncCommandHandler;
 
-public class ExcludeFromBuildHandler extends AbstractHandler {
+public class ExcludeFromBuildHandler extends MoSyncCommandHandler {
 
 	public final static String COMMAND_ID = "com.mobilesorcery.sdk.ui.excludefrombuild";
 	
@@ -43,15 +44,9 @@ public class ExcludeFromBuildHandler extends AbstractHandler {
 
 			refreshCommandState(event);
 			fireHandlerChanged(new HandlerEvent(this, true, false));
-
 		}
 
 		return null;
-	}
-
-	protected List<IResource> extractResources(ISelection selection) {
-		List elements = ((IStructuredSelection) selection).toList();
-		return extractResources(elements);
 	}
 
 	private void refreshCommandState(ExecutionEvent event) {
@@ -65,22 +60,6 @@ public class ExcludeFromBuildHandler extends AbstractHandler {
 		}
 
 	}
-
-	private List<IResource> extractResources(List elements) {
-		List<IResource> resources = new ArrayList<IResource>();
-		for (Object element : elements) {
-			if (element instanceof IAdaptable) {
-				IResource resource = (IResource) ((IAdaptable) element)
-						.getAdapter(IResource.class);
-				if (resource != null) {
-					resources.add(resource);
-				}
-			}
-		}
-
-		return resources;
-	}
-
 
 	/**
 	 * @return true if exclude, false if include
