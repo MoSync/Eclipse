@@ -18,12 +18,15 @@ import java.util.ArrayList;
 
 import org.eclipse.core.resources.IProject;
 
+import com.mobilesorcery.sdk.profiles.IProfile;
+
 public class BuildResult implements IBuildResult {
 
     private File buildResult;
     private ArrayList<String> errors = new ArrayList<String>();
     private IProject project;
 	private boolean success;
+	private IProfile profile;
 
     public BuildResult(IProject project) {
         this.project = project;
@@ -60,5 +63,19 @@ public class BuildResult implements IBuildResult {
     
 	public IProject getProject() {
 		return project;
+	}
+
+	/**
+	 * @deprecated Move to other class
+	 */
+	public IProfile getProfile() {
+		return profile;
+	}
+	
+	/**
+	 * @deprecated Move to other class
+	 */
+	public void setProfile(IProfile profile) {
+		this.profile = profile;
 	}
 }

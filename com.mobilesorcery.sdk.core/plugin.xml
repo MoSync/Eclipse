@@ -114,5 +114,38 @@
             pattern=".mosyncproject.*">
       </ignore>
    </extension>
-      
+   <!--
+   <extension
+         point="org.eclipse.ui.activities">
+      <activity
+            description="Default disablement of CDT specific UI elements"
+            id="com.mobilesorcery.sdk.core.activity"
+            name="MoSync Default Activity">
+      </activity>
+      <defaultEnablement
+            id="com.mobilesorcery.sdk.core.activity">
+      </defaultEnablement>
+      <activityPatternBinding
+            activityId="com.mobilesorcery.sdk.core.activity"
+            isEqualityPattern="false"
+            pattern=".*org\.eclipse\.cdt.*">
+      </activityPatternBinding>
+      <category
+            description="MoSync Default Activity"
+            id="com.mobilesorcery.sdk.core.activity.category"
+            name="MoSync Default Activity">
+      </category>
+      <categoryActivityBinding
+            activityId="com.mobilesorcery.sdk.core.activity"
+            categoryId="com.mobilesorcery.sdk.core.activity.category">
+      </categoryActivityBinding>
+   </extension>
+      <extension
+ point="org.eclipse.ui.preferencePages">
+<page        
+   category="org.eclipse.ui.preferencePages.Workbench"
+   name="Capabilities"
+   id="org.eclipse.sdk.capabilities"
+   class="org.eclipse.ui.activities.ActivitiesPreferencePage"/>
+</extension>-->
 </plugin>

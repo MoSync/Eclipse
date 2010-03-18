@@ -28,7 +28,7 @@ import org.eclipse.debug.core.model.RuntimeProcess;
  * </p>
  * <p>(Make sure to remove this line from MoreLaunchShortCut:
  * wc.setAttribute(DebugPlugin.ATTR_PROCESS_FACTORY_ID,
- * "cm.mobilesorcery.sdk.builder.nonterminableprocessfactory");)</p>
+ * "com.mobilesorcery.sdk.builder.nonterminableprocessfactory");)</p>
  * 
  * @author Mattias
  * 

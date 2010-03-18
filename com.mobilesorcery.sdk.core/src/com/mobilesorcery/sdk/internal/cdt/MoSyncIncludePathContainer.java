@@ -92,21 +92,23 @@ public class MoSyncIncludePathContainer implements IPathEntryContainer {
     		throw new IllegalStateException("Project does not have MoSync Nature");
     	}
     	String extraCompilerSwitchesLine = mosyncProject.getProperty(MoSyncBuilder.EXTRA_COMPILER_SWITCHES);
-    	String[] extraCompilerSwitches = Util.parseCommandLine(extraCompilerSwitchesLine);
-    	
-    	ArrayList<IMacroEntry> compilerSymbols = new ArrayList<IMacroEntry>();
-    	
-    	for (int i = 0; i < extraCompilerSwitches.length; i++) {
-    		String extraCompilerSwitch = extraCompilerSwitches[i];
-    		if (extraCompilerSwitch.startsWith("-D") && extraCompilerSwitch.length() > 2) {
-    			String trimmedExtraCompilerSwitch = extraCompilerSwitch.substring(2);
-    			String[] keyAndValue = trimmedExtraCompilerSwitch.split("=", 2);
-    			String key = keyAndValue[0];
-    			String value = keyAndValue.length > 1 ? keyAndValue[1] : "";
-    			IMacroEntry macroEntry = CoreModel.newMacroEntry(Path.EMPTY, key, value);
-    			compilerSymbols.add(macroEntry);
-    		}
-    	}
+        ArrayList<IMacroEntry> compilerSymbols = new ArrayList<IMacroEntry>();
+        
+        if (!Util.isEmpty(extraCompilerSwitchesLine)) {
+            String[] extraCompilerSwitches = Util.parseCommandLine(extraCompilerSwitchesLine);	
+        	
+        	for (int i = 0; i < extraCompilerSwitches.length; i++) {
+        		String extraCompilerSwitch = extraCompilerSwitches[i];
+        		if (extraCompilerSwitch.startsWith("-D") && extraCompilerSwitch.length() > 2) {
+        			String trimmedExtraCompilerSwitch = extraCompilerSwitch.substring(2);
+        			String[] keyAndValue = trimmedExtraCompilerSwitch.split("=", 2);
+        			String key = keyAndValue[0];
+        			String value = keyAndValue.length > 1 ? keyAndValue[1] : "";
+        			IMacroEntry macroEntry = CoreModel.newMacroEntry(Path.EMPTY, key, value);
+        			compilerSymbols.add(macroEntry);
+        		}
+        	}
+        }
     	
     	return compilerSymbols;
     }

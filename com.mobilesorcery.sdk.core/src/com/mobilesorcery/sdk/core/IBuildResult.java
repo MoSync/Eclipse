@@ -15,6 +15,8 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 
+import com.mobilesorcery.sdk.profiles.IProfile;
+
 public interface IBuildResult {
 
 	/**
@@ -44,5 +46,9 @@ public interface IBuildResult {
      * @param buildResult
      */
     public abstract void setBuildResult(File buildResult);
+
+    // TODO: Move to some kind of 'build settings' class
+    public abstract IProfile getProfile();
+
 
 }

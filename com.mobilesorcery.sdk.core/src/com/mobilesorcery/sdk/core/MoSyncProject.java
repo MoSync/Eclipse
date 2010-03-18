@@ -41,6 +41,7 @@ import org.eclipse.ui.XMLMemento;
 
 import com.mobilesorcery.sdk.internal.ParseException;
 import com.mobilesorcery.sdk.internal.SLD;
+import com.mobilesorcery.sdk.internal.builder.BuildResultManager;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
@@ -206,6 +207,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
 	private boolean disposed = false;
 
+	private IBuildResultManager brManager = null;
+
     private MoSyncProject(IProject project) {
         Assert.isNotNull(project);
         this.project = project;
@@ -213,6 +216,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         initFromProjectMetaData(null, SHARED_PROPERTY);
         initFromProjectMetaData(null, LOCAL_PROPERTY);
         addDeviceFilterListener();
+        brManager = new BuildResultManager(this);
     }
 
     private void addDeviceFilterListener() {        
@@ -705,15 +709,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
      * @return
      */
 	public IProfile[] getFilteredProfiles() {
-		IProfile[] profiles = MoSyncTool.getDefault().getProfiles();
-		ArrayList<IProfile> filtered = new ArrayList<IProfile>();
-		for (int i = 0; i < profiles.length; i++) {
-			if (deviceFilter.accept(profiles[i])) {
-				filtered.add(profiles[i]);
-			}
-		}
-		
-		return filtered.toArray(new IProfile[filtered.size()]);
+		IProfile[] profiles = MoSyncTool.getDefault().getProfiles(deviceFilter);
+		return profiles;
 	}
 
 	/**
@@ -815,12 +812,19 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	}
 
 	/**
-	 * Returns the current build configuration. Does not always return
-	 * a build configuration, but will return one regardless of
-	 * whatever isBuildConfigurationsSupported returns.
+	 * Returns the current build configuration. If none is assigned,
+	 * this method will try to assign a default build configuration
+	 * (<code>IBuildConfiguration.RELEASE_ID</code>). If the default build configuration does
+	 * not exist, <code>null</code> will be returned.
+	 * This method will return a value regardless of what
+	 * <code>isBuildConfigurationsSupported</code> returns.
 	 * @return
 	 */
 	public IBuildConfiguration getActiveBuildConfiguration() {
+	    if (currentBuildConfig == null) {
+	        currentBuildConfig = getBuildConfiguration(IBuildConfiguration.RELEASE_ID);
+	    }
+	    
 		return currentBuildConfig;
 	}
 
@@ -923,6 +927,10 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	public LibraryLookup getLibraryLookup(IPropertyOwner buildProperties) {
 		// TODO: cache?
 		return new LibraryLookup(MoSyncBuilder.getLibraryPaths(getWrappedProject(), buildProperties), MoSyncBuilder.getLibraries(buildProperties));
+	}
+
+	public IBuildResultManager getBuildResults() {
+		return brManager;
 	}
 
 

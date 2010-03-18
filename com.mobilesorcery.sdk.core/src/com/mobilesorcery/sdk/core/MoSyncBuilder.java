@@ -476,12 +476,12 @@ public class MoSyncBuilder extends ACBuilder {
 
 		ErrorParserManager epm = createErrorParserManager(project);
 
-		BuildResult buildResult = new BuildResult(project);
+		MoSyncProject mosyncProject = MoSyncProject.create(project);
+
+		BuildResult buildResult = mosyncProject.getBuildResults().clearBuildResult(targetProfile);
 
 		try {
 			monitor.beginTask(MessageFormat.format("Building {0}", project), 4);
-
-			MoSyncProject mosyncProject = MoSyncProject.create(project);
 
 			IPropertyOwner buildProperties = getActivePropertyOwner(mosyncProject);
 
@@ -783,16 +783,11 @@ public class MoSyncBuilder extends ACBuilder {
 
 	private static IPropertyOwner getActivePropertyOwner(
 			MoSyncProject mosyncProject) {
-		IBuildConfiguration activeBuildConfig = mosyncProject
-				.getActiveBuildConfiguration();
-		if (mosyncProject.areBuildConfigurationsSupported()
-				&& activeBuildConfig == null) {
-			throw new IllegalStateException("No configuration is active");
-		}
-
-		return mosyncProject.areBuildConfigurationsSupported() ? activeBuildConfig
-				.getProperties()
-				: mosyncProject;
+		IBuildConfiguration activeBuildConfig = mosyncProject.getActiveBuildConfiguration();
+		
+		return mosyncProject.areBuildConfigurationsSupported() && activeBuildConfig != null ?
+		        activeBuildConfig.getProperties() :
+		        mosyncProject;
 	}
 
 	/**
