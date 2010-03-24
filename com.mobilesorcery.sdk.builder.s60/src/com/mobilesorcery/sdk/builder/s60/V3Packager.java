@@ -23,6 +23,7 @@ import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.templates.Template;
@@ -36,8 +37,9 @@ public class V3Packager extends S60Packager {
 	public V3Packager() {
 	}
 
-	public void createPackage(MoSyncProject project, IProfile targetProfile, IBuildResult buildResult) throws CoreException {
-		DefaultPackager internal = new DefaultPackager(project, targetProfile, isFinalizerBuild());
+	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+		DefaultPackager internal = new DefaultPackager(project, variant);
+		IProfile targetProfile = variant.getProfile();
 		internal.setParameter("D", shouldUseDebugRuntimes() ? "D" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 		try {
