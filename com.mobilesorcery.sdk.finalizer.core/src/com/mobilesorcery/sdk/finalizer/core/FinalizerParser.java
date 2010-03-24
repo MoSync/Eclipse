@@ -32,6 +32,7 @@ import org.eclipse.jface.operation.IRunnableWithProgress;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -148,7 +149,8 @@ public class FinalizerParser {
 		return new IRunnableWithProgress() {
 			public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
 				try {
-					IBuildResult buildResult = new MoSyncBuilder().fullBuild(project, targetProfile, true, true, monitor);
+				    IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(MoSyncProject.create(project),targetProfile);
+					IBuildResult buildResult = new MoSyncBuilder().fullBuild(project, variant, true, true, true, null, true, false, monitor);
 					if (!buildResult.success()) {
 						throw new InvocationTargetException(new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, Messages.FinalizerParser_BuildFailed)));
 					}
