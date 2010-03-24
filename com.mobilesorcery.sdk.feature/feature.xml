@@ -78,6 +78,14 @@ expat-license.txt covers Expat.
 info-zip-license.txt covers Info-Zip.
    </license>
 
+   <includes
+         id="com.mobilesorcery.sdk.cdt.feature"
+         version="0.0.0"/>
+
+   <includes
+         id="org.eclipse.platform"
+         version="0.0.0"/>
+
    <plugin
          id="com.mobilesorcery.sdk.finalizer.core"
          download-size="0"
@@ -190,13 +198,6 @@ info-zip-license.txt covers Info-Zip.
          unpack="false"/>
 
    <plugin
-         id="com.mobilesorcery.sdk.testing"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
          id="com.mobilesorcery.sdk.ui.wizards"
          download-size="0"
          install-size="0"
@@ -205,6 +206,20 @@ info-zip-license.txt covers Info-Zip.
 
    <plugin
          id="com.mobilesorcery.sdk.builder"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.mobilesorcery.sdk.docs"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.mobilesorcery.sdk.deployment"
          download-size="0"
          install-size="0"
          version="0.0.0"
