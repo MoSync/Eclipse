@@ -64,11 +64,25 @@ PIPELIB_API int proc_wait_for(int handle) {
 }
 
 PIPELIB_API int proc_kill(int pid, int exit_code) {
-	HANDLE handle = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
+	HANDLE handle = OpenProcess(PROCESS_QUERY_INFORMATION |
+           PROCESS_VM_READ | PROCESS_TERMINATE, FALSE, pid);
+	
+	int gotHandle = 0;
+
 	if (handle != NULL) {
-		return TerminateProcess(handle, exit_code);
-	} else {
-		return -1;
+		gotHandle = 0xf0000;
+		int result = TerminateProcess(handle, exit_code);
+		CloseHandle(handle);
+		if (result) {
+			return 0;
+		}
 	}
+
+	int lastError = GetLastError();
+	if (lastError = ERROR_NOACCESS) {
+		lastError = -1;
+	}
+
+	return lastError | gotHandle;
 }
 

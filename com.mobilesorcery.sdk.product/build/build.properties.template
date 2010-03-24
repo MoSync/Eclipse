@@ -265,4 +265,9 @@ javacSource=1.5
 # Default value for the version of the byte code targeted. This value is used when compiling plug-ins that do not set the Bundle-RequiredExecutionEnvironment or set javacTarget in build.properties.
 javacTarget=1.5
 
-
+generate.p2.metadata = true
+p2.gathering = true
+p2.metadata.repo=file:${buildDirectory}/repo
+p2.artifact.repo=file:${buildDirectory}/repo
+p2.flavor=tooling
+p2.publish.artifacts=true

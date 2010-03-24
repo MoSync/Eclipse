@@ -32,6 +32,7 @@ import org.eclipse.core.runtime.IStatus;
 import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -63,7 +64,7 @@ extends AbstractPackager
      * @throws CoreException Error occurred
      */
     public void createPackage ( MoSyncProject project,
-                                IProfile targetProfile,
+                                IBuildVariant variant,
                                 IBuildResult buildResult )
     throws CoreException
     {    	
@@ -75,8 +76,7 @@ extends AbstractPackager
 
         // Was used for printing to console
         intern = new DefaultPackager( project,
-                                      targetProfile,
-                                      isFinalizerBuild( ) );
+                                      variant);
 
 
         try
@@ -163,6 +163,7 @@ extends AbstractPackager
             if ( outputDir.exists( ) == false )
                 outputDir.mkdirs( );
 
+            IProfile targetProfile = variant.getProfile();
             Map<String, Object> props = targetProfile.getProperties();
             String p = (String)props.get( "MA_PROF_CONST_PACKAGER" );
             if ( p == null )

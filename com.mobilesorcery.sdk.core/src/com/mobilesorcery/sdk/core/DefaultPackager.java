@@ -50,18 +50,16 @@ public class DefaultPackager {
 	private MoSyncProject project;
 	private CommandLineExecutor executor;
 	private Map<String, String> userParameters = new HashMap<String, String>();
-	private IProfile targetProfile;
+	private IBuildVariant variant;
 	private Map<String, String> defaultParameters = new HashMap<String, String>();
-	private boolean isFinalizerBuild;
 
 	
 	private CascadingProperties parameters;
 
-	public DefaultPackager(MoSyncProject project, IProfile targetProfile, boolean isFinalizerBuild) {
+	public DefaultPackager(MoSyncProject project, IBuildVariant variant) {
 		parameters = new CascadingProperties(new Map[] { defaultParameters, userParameters });
 		this.project = project;
-		this.targetProfile = targetProfile;
-		this.isFinalizerBuild = isFinalizerBuild;
+		this.variant = variant;
 		setDefaultParameters();
 		initCommandLineExecutor(project);
 	}
@@ -73,22 +71,23 @@ public class DefaultPackager {
 	public void setDefaultParameters() {
         defaultParameters.put(MOSYNC_HOME, MoSyncTool.getDefault().getMoSyncHome().toOSString());
         defaultParameters.put(MOSYNC_BIN, MoSyncTool.getDefault().getMoSyncBin().toOSString());
-		IProfile targetProfile = this.targetProfile == null ? project.getTargetProfile() : this.targetProfile;
+		IProfile targetProfile = variant.getProfile();
+		if (targetProfile == null) {
+		    targetProfile = project.getTargetProfile();
+		}
+		
 		defaultParameters.put(PROFILE_NAME, targetProfile.getName());
 		defaultParameters.put(VENDOR_NAME, targetProfile.getVendor().getName());
 		defaultParameters.put(RUNTIME_DIR, MoSyncTool.getDefault().getRuntimePath(targetProfile).toOSString());
 		defaultParameters.put(PROJECT_NAME, project.getName());
-		defaultParameters.put(OUTPUT_DIR, MoSyncBuilder.getOutputPath(project.getWrappedProject()).toOSString());
-		defaultParameters.put(FINAL_OUTPUT_DIR, MoSyncBuilder.getFinalOutputPath(project.getWrappedProject(), targetProfile)
-				.toOSString());
 		defaultParameters.put(PLATFORM_ID, MoSyncBuilder.getAbbreviatedPlatform(targetProfile));
 		
-		defaultParameters.put(COMPILE_OUTPUT_DIR, MoSyncBuilder.getCompileOutputPath(project.getWrappedProject(), targetProfile, isFinalizerBuild).toOSString());
-        defaultParameters.put(PROGRAM_OUTPUT, MoSyncBuilder.getProgramOutputPath(project.getWrappedProject(), targetProfile, isFinalizerBuild).toOSString());
-        defaultParameters.put(RESOURCE_OUTPUT, MoSyncBuilder.getResourceOutputPath(project.getWrappedProject(), targetProfile, isFinalizerBuild).toOSString());
-        defaultParameters.put(PROGRAMCOMB_OUTPUT, MoSyncBuilder.getProgramCombOutputPath(project.getWrappedProject(), targetProfile, isFinalizerBuild).toOSString());
+		defaultParameters.put(COMPILE_OUTPUT_DIR, MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant).toOSString());
+        defaultParameters.put(PROGRAM_OUTPUT, MoSyncBuilder.getProgramOutputPath(project.getWrappedProject(), variant).toOSString());
+        defaultParameters.put(RESOURCE_OUTPUT, MoSyncBuilder.getResourceOutputPath(project.getWrappedProject(), variant).toOSString());
+        defaultParameters.put(PROGRAMCOMB_OUTPUT, MoSyncBuilder.getProgramCombOutputPath(project.getWrappedProject(), variant).toOSString());
         
-        defaultParameters.put(PACKAGE_OUTPUT_DIR, MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), targetProfile, isFinalizerBuild).toOSString());
+        defaultParameters.put(PACKAGE_OUTPUT_DIR, MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).toOSString());
 	}
 
 	public CascadingProperties getParameters() {

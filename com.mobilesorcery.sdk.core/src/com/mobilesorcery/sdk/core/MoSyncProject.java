@@ -36,6 +36,7 @@ import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.swt.custom.Bullet;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.XMLMemento;
 
@@ -590,7 +591,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
      * @return
      */
 	public IPath getStabsPath(IBuildConfiguration buildConfiguration) {
-		IPath outputPath = MoSyncBuilder.getOutputPath(project, getPropertyOwner(buildConfiguration)).append("stabs.tab");
+	    IPath outputPath = MoSyncBuilder.getOutputPath(project, new BuildVariant(target, buildConfiguration == null ? null : buildConfiguration.getId(), false)).append("stabs.tab");
 		return outputPath;
 	}
 
@@ -602,7 +603,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 * @return
 	 */
 	public synchronized SLD getSLD(IBuildConfiguration buildConfiguration) {
-		IPath outputPath = MoSyncBuilder.getOutputPath(project, getPropertyOwner(buildConfiguration)).append("Sld.tab");
+        IPath outputPath = MoSyncBuilder.getOutputPath(project, new BuildVariant(target, buildConfiguration == null ? null : buildConfiguration.getId(), false)).append("Sld.tab");
 		SLD sld = slds.get(outputPath.toPortableString());
 		if (sld == null) {
 			sld = new SLD(this, outputPath);
@@ -851,8 +852,17 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	public Set<String> getBuildConfigurations() {
 		return new TreeSet<String>(configurations.keySet());
 	}
-	
+
+	/**
+	 * Returns the build configuration for a given id
+	 * @param id
+	 * @return <code>null</code> if the given id is <code>null</code>
+	 * or if there is no build configuration with that id
+	 */
 	public IBuildConfiguration getBuildConfiguration(String id) {
+	    if (id == null) {
+	        return null;
+	    }
 		return configurations.get(id);
 	}
 	

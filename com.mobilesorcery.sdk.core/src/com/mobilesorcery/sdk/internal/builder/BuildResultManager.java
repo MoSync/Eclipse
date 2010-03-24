@@ -5,26 +5,27 @@ import java.util.HashMap;
 import com.mobilesorcery.sdk.core.BuildResult;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildResultManager;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class BuildResultManager implements IBuildResultManager {
 
-	private HashMap<IProfile, BuildResult> results = new HashMap<IProfile, BuildResult>();
+	private HashMap<IBuildVariant, BuildResult> results = new HashMap<IBuildVariant, BuildResult>();
 	private MoSyncProject project;
 	
 	public BuildResultManager(MoSyncProject project) {
 		this.project = project;
 	}
 	
-	public IBuildResult getBuildResult(IProfile profile) {
-		return results.get(profile);
+	public IBuildResult getBuildResult(IBuildVariant variant) {
+		return results.get(variant);
 	}
 
-	public BuildResult clearBuildResult(IProfile profile) {
+	public BuildResult clearBuildResult(IBuildVariant variant) {
 		BuildResult newResult = new BuildResult(project.getWrappedProject());
-		newResult.setProfile(profile);
-		results.put(profile, newResult);
+		newResult.setVariant(variant);
+		results.put(variant, newResult);
 		return newResult;
 	}
 

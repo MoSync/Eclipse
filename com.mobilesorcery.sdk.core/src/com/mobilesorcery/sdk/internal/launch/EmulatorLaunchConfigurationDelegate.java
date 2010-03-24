@@ -196,7 +196,8 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         	CoreMoSyncPlugin.trace("Emulator command line:\n    " + Util.join(Util.ensureQuoted(cmdline), " "));
         }
 
-        File dir = MoSyncBuilder.getOutputPath(mosyncProject.getWrappedProject()).toFile();
+        IPath outputPath = MoSyncBuilder.getOutputPath(mosyncProject.getWrappedProject(), MoSyncBuilder.getActiveVariant(mosyncProject, false));
+        File dir = outputPath.toFile();
         
         String command = Util.join(Util.ensureQuoted(cmdline), " ");
         final SpawnedProcess process = new SpawnedProcess(getMoREExe(), command, dir);
@@ -218,7 +219,6 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 
             IProcess p = DebugPlugin.newProcess(launch, process, project.getName());
      
-            IPath outputPath = MoSyncBuilder.getOutputPath(project);
             IPath program = outputPath.append("program");
             
             if (debug) {
@@ -303,7 +303,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     }
 
     private String[] getCommandLine(IProject project, String width, String height, int fd, int id, boolean debug) {
-        IPath outputPath = MoSyncBuilder.getOutputPath(project);
+        IPath outputPath = MoSyncBuilder.getOutputPath(project, MoSyncBuilder.getActiveVariant(MoSyncProject.create(project), false));
         IPath program = outputPath.append("program");
         IPath resources = outputPath.append("resources");
          
@@ -340,10 +340,10 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     }
     
     public boolean buildForLaunch(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
-        //MoSyncBuilder builder = new MoSyncBuilder();
         IProject project = getProject(configuration);
-        project.build(IncrementalProjectBuilder.INCREMENTAL_BUILD, monitor);
-        //builder.fullBuild(project, MoSyncProject.create(project).getTargetProfile(), false, true, monitor);
+        // We are using auto build to flag to listeners that no dialogs
+        // should pop up.
+        project.build(IncrementalProjectBuilder.AUTO_BUILD, monitor);
         return false;
     }
 }

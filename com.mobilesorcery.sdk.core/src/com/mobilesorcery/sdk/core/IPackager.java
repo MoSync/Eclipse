@@ -39,7 +39,7 @@ public interface IPackager {
      * @see IBuildResult
      * @throws CoreException If the packaging failed.
      */
-    void createPackage(MoSyncProject project, IProfile targetProfile, IBuildResult buildResult) throws CoreException;
+    void createPackage(MoSyncProject project, IBuildVariant targetProfile, IBuildResult buildResult) throws CoreException;
     
     /**
      * <p>Sets a parameter to be used by the packager.</p>

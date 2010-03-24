@@ -25,9 +25,11 @@ import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
@@ -48,8 +50,8 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	protected List<IResource> deletedResources = new ArrayList<IResource>();
 	protected IProject project;
 	protected IProcessConsole console;
-	private IPropertyOwner buildProperties;
 	private IFilter<IResource> resourceFilter;
+    private IBuildVariant variant;
 
 	public boolean visit(IResource resource) throws CoreException {
 		if (doesAffectBuild(resource)) {
@@ -222,12 +224,16 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 		return result;
 	}
 
-	public void setBuildProperties(IPropertyOwner buildProperties) {
-		this.buildProperties = buildProperties;
+	public void setVariant(IBuildVariant variant) {
+		this.variant = variant;
+	}
+	
+	protected IBuildVariant getVariant() {
+	    return variant;
 	}
 	
 	public IPropertyOwner getBuildProperties() {
-		return buildProperties;
+		return MoSyncBuilder.getPropertyOwner(MoSyncProject.create(project), variant.getConfigurationId());
 	}
 	
 	public void setResourceFilter(IFilter<IResource> resourceFilter) {

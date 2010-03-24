@@ -25,20 +25,25 @@ import java.util.Properties;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
+import org.eclipse.core.internal.events.ResourceDelta;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.IJobManager;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -363,10 +368,21 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     }
 
 
+    /**
+     * @deprecated Do we really need this? It is never used outside
+     * the builder + recalculated every time...
+     * @return
+     */
     public DependencyManager<IProject> getProjectDependencyManager() {
     	return getProjectDependencyManager(ResourcesPlugin.getWorkspace());
     }
 
+    /**
+     * @deprecated Do we really need this? It is never used outside
+     * the builder + recalculated every time...
+     * @param ws
+     * @return
+     */
     public DependencyManager<IProject> getProjectDependencyManager(IWorkspace ws) {
     	return projectDependencyManager;
     }
@@ -417,7 +433,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	}
 	
 	private void installResourceListener() {
-		ResourcesPlugin.getWorkspace().addResourceChangeListener(this);
+		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.PRE_DELETE | IResourceChangeEvent.PRE_BUILD);
 	}
 	
 	private void deinstallResourceListener() {
@@ -560,16 +576,47 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         return null;
 	}
 
-	public void resourceChanged(IResourceChangeEvent event) {
+	public void resourceChanged(IResourceChangeEvent event) {	    
 		if (event.getType() == IResourceChangeEvent.PRE_DELETE) {
-			IResource resource = event.getResource();
-			if (resource.getType() == IResource.PROJECT) {
-				MoSyncProject project = MoSyncProject.create((IProject) resource);
-				if (project != null) {
-					project.dispose();
-				}
+		    IResource resource = event.getResource();
+	        IProject project = (resource != null && resource.getType() == IResource.PROJECT) ? (IProject) resource : null;
+
+			MoSyncProject mosyncProject = MoSyncProject.create(project);
+			if (mosyncProject != null) {
+			    // So we do not keep any old references to this project
+			    mosyncProject.dispose();
 			}
+		} else if (event.getType() == IResourceChangeEvent.PRE_BUILD && event.getBuildKind() != IncrementalProjectBuilder.CLEAN_BUILD && event.getBuildKind() != IncrementalProjectBuilder.AUTO_BUILD) {
+		    Object source = event.getSource();
+		    ArrayList<IResource> mosyncProjects = new ArrayList<IResource>();
+		    IProject[] projects = null;
+		    if (source instanceof IWorkspace) {
+		        projects = ((IWorkspace) source).getRoot().getProjects();
+		    } else if (source instanceof IProject) {
+		        projects = new IProject[] { (IProject) source };
+		    }
+		    
+	        for (int i = 0; projects != null && i < projects.length; i++) {
+	            IProject project = projects[i];
+	            try {
+                    if (MoSyncNature.isCompatible(project)) {
+                        mosyncProjects.add(projects[i]);	                
+                    }
+                } catch (CoreException e) {
+                    CoreMoSyncPlugin.getDefault().log(e);
+                }
+		    }
+		    
+	        IJobManager jm = Job.getJobManager();
+	        Job currentJob = jm.currentJob();
+		    if (!MoSyncBuilder.saveAllEditors(mosyncProjects)) {
+		        // If this thread is a build job, then cancel.
+		        // TODO: Could this somewhere or some day cease to work!   
+		        if (currentJob != null) {
+		            currentJob.cancel();
+		        }
+		    }
 		}
 	}
-
+	
 }

@@ -47,8 +47,7 @@ public interface IBuildResult {
      */
     public abstract void setBuildResult(File buildResult);
 
-    // TODO: Move to some kind of 'build settings' class
-    public abstract IProfile getProfile();
+    public abstract IBuildVariant getVariant();
 
 
 }

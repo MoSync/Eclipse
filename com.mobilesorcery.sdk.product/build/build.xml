@@ -5,6 +5,11 @@
 	<!-- We're three levels down; srcroot is the top root, all plugins reside one 
 	     level below this -->
 	<property name="srcroot" location="${basedir}/../../" />
+	
+	<!-- TODO We disable test for now, because we changed from plugins to p2 + features,
+	     we have not kept up re the test plugins. Fix as soon as possible.
+	     -->
+	<property name="no-tests" value="true" />
 
 	<!--
         PDE Build expects that the build directory contains a "plugins" 
@@ -66,7 +71,8 @@
 				<include name="com.mobilesorcery.sdk.builder.headless/**" />
 				<!-- All platforms should have the com.mobilesorcery.sdk.builder prefix -->
 				<include name="com.mobilesorcery.sdk.builder.*/**" />
-				<exclude name="com.mobilesorcery.sdk.builder.*.feature/**"/>
+				<exclude name="com.mobilesorcery.sdk*.feature/**"/>
+				<include name="com.mobilesorcery.sdk.deployment/**" />
 				<include name="com.mobilesorcery.sdk.core/**" />
 				<include name="com.mobilesorcery.sdk.core.templates/**" />
 				<include name="com.mobilesorcery.sdk.docs/**" />
@@ -96,11 +102,7 @@
 		</copy>
 		<copy todir="${buildDirectory}/features">
 			<fileset dir="${srcroot}">
-				<include name="com.mobilesorcery.sdk.feature/**" />
-				<include name="com.mobilesorcery.sdk.builder.java.feature/**" />
-				<include name="com.mobilesorcery.sdk.builder.s60.feature/**" />
-				<include name="com.mobilesorcery.sdk.builder.winmobile.feature/**" />
-				<include name="com.mobilesorcery.sdk.tests.feature/**" />
+				<include name="com.mobilesorcery.sdk*.feature/**" />
 			</fileset>
 		</copy>
 		
@@ -184,7 +186,7 @@
 		</copy>		
 	</target>
 	
-	<target name="run-tests" depends="-prune-cdt, -build-tests, -prepare-test-host, run-tests-standalone" />
+	<target name="run-tests" depends="init, -build-tests, -prepare-test-host, run-tests-standalone" />
 	
 	<target name="run-tests-standalone" depends="init" unless="no-tests">
 		<!-- Run the tests -->		
@@ -206,6 +208,6 @@
 	<target name="clean" depends="-clean-target-platform, -clean-build-dir" />
 
 	<target name="dev" depends="unzip-target-platform, pde-build" />
-	<target name="release" depends="-clean-build-dir, unzip-target-platform, run-tests" />
+	<target name="release" depends="-clean-build-dir, dev, -prune-cdt, run-tests" />
 	
 </project>

@@ -247,7 +247,6 @@ public class EmulatorTestRunner implements ITestRunner {
 	}
 
 
-	@Override
 	public void run(ITestSession session) {
 		// TODO Auto-generated method stub
 		

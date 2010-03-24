@@ -17,9 +17,9 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class PackagerProxy implements IPackager {
 
@@ -39,9 +39,9 @@ public class PackagerProxy implements IPackager {
         }
     }
 
-    public void createPackage(MoSyncProject project, IProfile targetProfile, IBuildResult buildResult) throws CoreException {
+    public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
         initDelegate();
-        delegate.createPackage(project, targetProfile, buildResult);
+        delegate.createPackage(project, variant, buildResult);
     }
 
 	public void setParameter(String param, String value) throws CoreException {

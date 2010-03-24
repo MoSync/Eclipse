@@ -25,6 +25,7 @@ import org.eclipse.core.runtime.Status;
 import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
@@ -33,8 +34,10 @@ public class JavaPackager extends AbstractPackager {
 	public JavaPackager() {
 	}
 
-	public void createPackage(MoSyncProject project, IProfile targetProfile, IBuildResult buildResult) throws CoreException {
-		DefaultPackager internal = new DefaultPackager(project, targetProfile, isFinalizerBuild());
+	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+		DefaultPackager internal = new DefaultPackager(project, variant);
+		IProfile targetProfile = variant.getProfile();
+		
 		internal.setParameters(getParameters());
 		internal.setParameter("D", shouldUseDebugRuntimes() ? "D" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 

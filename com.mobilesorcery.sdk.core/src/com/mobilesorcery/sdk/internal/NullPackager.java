@@ -16,6 +16,7 @@ package com.mobilesorcery.sdk.internal;
 import org.eclipse.core.runtime.CoreException;
 
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -32,7 +33,7 @@ public class NullPackager implements IPackager {
         
     }
     
-    public void createPackage(MoSyncProject project, IProfile targetProfile, IBuildResult buildResult) throws CoreException {
+    public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
         // Do nothing - at this point, anyhoo.
     }
 

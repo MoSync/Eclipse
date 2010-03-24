@@ -31,6 +31,7 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
@@ -269,7 +270,8 @@ public class PipeTool {
 	}
 
 	public static IPath getResourcesDependencyFile(IProject project) {
-    	return MoSyncBuilder.getOutputPath(project).append(RESOURCE_DEPENDENCY_FILE_NAME);
+	    // TODO TODO TODO!
+    	return MoSyncBuilder.getOutputPath(project, MoSyncBuilder.getActiveVariant(MoSyncProject.create(project), false)).append(RESOURCE_DEPENDENCY_FILE_NAME);
     }
 
 	private String[] assembleLibraryPathArgs(IPath[] libraryPaths) {
@@ -298,10 +300,6 @@ public class PipeTool {
     public File getExecDir() {
     	//return getExecDir(project);
     	return outputFile.toFile().getParentFile();
-    }
-
-    private static File getExecDir(IProject project) {
-    	return MoSyncBuilder.getOutputPath(project).toFile();
     }
     
     public void setNoVerify(boolean noVerify) {

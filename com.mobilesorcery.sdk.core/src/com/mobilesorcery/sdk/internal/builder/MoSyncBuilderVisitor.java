@@ -71,7 +71,6 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     private IProfile profile;
     private IPath outputPath;
     private String extraSwitches;
-    private ErrorParserManager epm;
     private IBuildResult buildResult;
     private ILineHandler linehandler;
     private int gccWarnings;
@@ -200,7 +199,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             IPath xgcc = MoSyncTool.getDefault().getMoSyncBin().append("xgcc.exe");
 
             MoSyncProject project = MoSyncProject.create(resource.getProject());
-            List<IPath> includePaths = new ArrayList<IPath>(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project)));
+            List<IPath> includePaths = new ArrayList<IPath>(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, getVariant())));
             
 			// TODO: Too much 'secret sauce' here; add special dialogs for this instead,
 			// like JDT/CDT, to allow user to control this better. Like %output%?			

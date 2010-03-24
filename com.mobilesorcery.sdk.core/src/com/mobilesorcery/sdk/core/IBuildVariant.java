@@ -13,20 +13,22 @@
 */
 package com.mobilesorcery.sdk.core;
 
-import java.util.Set;
+import com.mobilesorcery.sdk.profiles.IProfile;
 
-import org.eclipse.core.resources.IResource;
+/**
+ * <p>An interface representing a 'build variant' - each 
+ * build variant will produce a different build result,
+ * typically the location of the build result should depend
+ * only on the build variant</p>
+ * @author Mattias Bybro, mattias.bybro@purplescout.se
+ *
+ */
+public interface IBuildVariant {
 
-public class ResourceFilter implements IFilter<IResource> {
-
-	private Set<IResource> acceptedResources;
-
-	public ResourceFilter(Set<IResource> acceptedResources) {
-		this.acceptedResources = acceptedResources;
-	}
-	
-	public boolean accept(IResource resource) {
-		return acceptedResources != null && acceptedResources.contains(resource);
-	}
-
+    public String getConfigurationId();
+    
+    public IProfile getProfile();
+    
+    public boolean isFinalizerBuild();
+    
 }

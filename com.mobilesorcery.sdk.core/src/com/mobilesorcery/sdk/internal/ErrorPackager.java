@@ -23,6 +23,7 @@ import org.eclipse.core.runtime.CoreException;
 import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -42,8 +43,10 @@ public class ErrorPackager extends AbstractPackager {
         return instance;
     }
 
-    public void createPackage(MoSyncProject project, IProfile targetProfile, IBuildResult buildResult) throws CoreException {
-        DefaultPackager packager = new DefaultPackager(project, targetProfile, false);
+    public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+        DefaultPackager packager = new DefaultPackager(project, variant);
+        IProfile targetProfile = variant.getProfile();
+        
         IProcessConsole console = packager.getConsole();
         String errorMsg = MessageFormat.format("No packager defined for {0} (Runtime platform: {1})", targetProfile,
                 targetProfile.getPlatform());

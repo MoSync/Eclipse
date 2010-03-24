@@ -37,8 +37,7 @@ public class ResourceFileDependencyProvider implements
 
 	private static final Map<IResource, Collection<IResource>> EMPTY = new HashMap<IResource, Collection<IResource>>();
 
-	public Map<IResource, Collection<IResource>> computeDependenciesOf(
-			IResource obj) throws CoreException {
+	public Map<IResource, Collection<IResource>> computeDependenciesOf(IResource obj) throws CoreException {
 		// TODO: Use centralized:
 		IFile resourceOutputFile = getResourceOutput(obj.getProject());
 		
@@ -53,8 +52,7 @@ public class ResourceFileDependencyProvider implements
 		} else if (obj.equals(resourceOutputFile)) {
 			try {
 				GCCDependencyFileParser parser = new GCCDependencyFileParser();
-				IPath depsFile = PipeTool.getResourcesDependencyFile(obj
-						.getProject());
+				IPath depsFile = PipeTool.getResourcesDependencyFile(obj.getProject());
 				parser.parse(depsFile.toFile());
 				return parser.getDependencies();
 			} catch (IOException e) {

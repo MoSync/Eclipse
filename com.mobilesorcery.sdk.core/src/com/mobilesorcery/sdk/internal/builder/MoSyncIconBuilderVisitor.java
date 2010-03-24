@@ -28,6 +28,7 @@ import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.DefaultPackager;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
@@ -58,7 +59,7 @@ public class MoSyncIconBuilderVisitor extends IncrementalBuilderVisitor {
     	if (iconFiles.length > 0) {
     		IResource iconFile = iconFiles[0];
         	MoSyncProject mosyncProject = MoSyncProject.create(project);
-            DefaultPackager internal = new DefaultPackager(mosyncProject, mosyncProject.getTargetProfile(), false);
+            DefaultPackager internal = new DefaultPackager(mosyncProject, MoSyncBuilder.getActiveVariant(mosyncProject, false));
         	try {
             	internal.runCommandLine("%mosync-bin%\\icon-injector.exe", "-src", iconFile.getLocation().toOSString(), "-size", "16x16", "-platform", "more", "-dst", "%compile-output-dir%\\more.png");                                            		
         	} catch(IOException e) {
