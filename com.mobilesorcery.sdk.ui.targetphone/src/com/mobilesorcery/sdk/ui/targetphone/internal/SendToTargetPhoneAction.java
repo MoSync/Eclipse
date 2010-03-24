@@ -107,7 +107,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 			IBuildResult buildResult = null;
 
 			buildResult = new MoSyncBuilder().fullBuild(project
-					.getWrappedProject(), targetProfile, true, true,
+					.getWrappedProject(), MoSyncBuilder.getFinalizerVariant(project, targetProfile), true,
 					new NullProgressMonitor());
 			monitor.worked(1);
 
