@@ -27,6 +27,7 @@ import org.eclipse.core.runtime.Status;
 import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
@@ -35,9 +36,10 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 */
 public class AndroidPackager extends AbstractPackager {
 
-	public void createPackage(MoSyncProject project, IProfile targetProfile, IBuildResult buildResult) throws CoreException {
+	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+		DefaultPackager internal = new DefaultPackager(project, variant);
+		IProfile targetProfile = variant.getProfile();
 		
-		DefaultPackager internal = new DefaultPackager(project, targetProfile, isFinalizerBuild());
 		internal.setParameters(getParameters());
 		internal.setParameter("D", shouldUseDebugRuntimes() ? "D" : ""); 
 
