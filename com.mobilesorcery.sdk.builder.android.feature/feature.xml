@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="com.mobilesorcery.sdk.builder.android.feature"
-      label="Feature"
+      label="MoSync SDK - Android Platform"
       version="1.0.0.qualifier"
       provider-name="MOBILESORCERY">
 
-   <description url="http://www.example.com/description">
-      [Enter Feature Description here.]
+   <description>
+      Builders and packagers for the Android platform.
    </description>
 
    <copyright url="http://www.example.com/copyright">

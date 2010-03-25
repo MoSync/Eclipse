@@ -5,8 +5,8 @@
       version="1.0.0.qualifier"
       provider-name="MOBILESORCERY">
 
-   <description url="http://www.example.com/description">
-      [Enter Feature Description here.]
+   <description>
+      A modified CDT feature tailored for the MoSync IDE. Only applicable plugins are included and some UI elements have been disabled.
    </description>
 
    <copyright url="http://www.example.com/copyright">
