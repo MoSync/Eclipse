@@ -102,12 +102,13 @@ public class V3Packager extends S60Packager {
 
 			File unsignedSis = new File(packageOutputDir, uid + ".sis"); //$NON-NLS-1$
 			File renamedAppSis = new File(packageOutputDir, project.getName() + ".sis"); //$NON-NLS-1$
-			internal.runCommandLine("%mosync-bin%\\signsis-4.exe", //$NON-NLS-1$
+			internal.runCommandLine(new String[] {"%mosync-bin%\\signsis-4.exe", //$NON-NLS-1$
 							unsignedSis.getAbsolutePath(),
 							renamedAppSis.getAbsolutePath(),
 							project.getProperty(PropertyInitializer.S60_CERT_FILE),
 							project.getProperty(PropertyInitializer.S60_KEY_FILE),
-							project.getProperty(PropertyInitializer.S60_PASS_KEY));
+							project.getProperty(PropertyInitializer.S60_PASS_KEY) }, 
+							"*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***");
 
 			buildResult.setBuildResult(renamedAppSis);
 		} catch (Exception e) {

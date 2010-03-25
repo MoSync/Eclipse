@@ -15,12 +15,20 @@ package com.mobilesorcery.sdk.builder.s60;
 
 import java.util.Random;
 
+import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
+import org.eclipse.jface.preference.IPreferenceStore;
+
 import com.mobilesorcery.sdk.core.IPropertyInitializerDelegate;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 
-public class PropertyInitializer implements IPropertyInitializerDelegate {
+/**
+ * A shared preference/property initializer
+ * @author Mattias Bybro
+ *
+ */
+public class PropertyInitializer extends AbstractPreferenceInitializer implements IPropertyInitializerDelegate {
 
     private static final String PREFIX = "symbian.uids:"; //$NON-NLS-1$
 
@@ -50,14 +58,10 @@ public class PropertyInitializer implements IPropertyInitializerDelegate {
 			p.initProperty(key, value);
 			
 			return value;
-		} else if (key.equals(S60_KEY_FILE)) {
-            return DefaultKeyInitializer.getDefaultKeyFile().getAbsolutePath();
-        } else if (key.equals(S60_CERT_FILE)) {
-            return DefaultKeyInitializer.getDefaultCertFile().getAbsolutePath();
-        } else if (key.equals(S60_PASS_KEY)) {
-            return DefaultKeyInitializer.DEFAULT_PASS_KEY;
-        } else if (key.equals(S60_PROJECT_SPECIFIC_KEYS)) {
+		} else if (key.equals(S60_PROJECT_SPECIFIC_KEYS)) {
             return PropertyUtil.fromBoolean(false);
+        } else if (key.equals(S60_KEY_FILE) || key.equals(S60_CERT_FILE) || key.equals(S60_PASS_KEY)) {
+            return Activator.getDefault().getPreferenceStore().getString(key);
         }
 		
 		return null;
@@ -77,5 +81,12 @@ public class PropertyInitializer implements IPropertyInitializerDelegate {
     
     public static int getLengthOfRange(String property) {
     	return 0x0FFFFFFF;
+    }
+
+    public void initializeDefaultPreferences() {
+        IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+        store.setDefault(S60_KEY_FILE, DefaultKeyInitializer.getDefaultKeyFile().getAbsolutePath());
+        store.setDefault(S60_CERT_FILE, DefaultKeyInitializer.getDefaultCertFile().getAbsolutePath());
+        store.setDefault(S60_PASS_KEY, DefaultKeyInitializer.DEFAULT_PASS_KEY);
     }
 }

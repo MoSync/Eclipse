@@ -55,5 +55,19 @@
                 prefix="symbian.uids">
           </initializer>
        </extension>
-
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            category="com.mobilesorcery.sdk.preferences.main"
+            class="com.mobilesorcery.sdk.builder.s60.ui.preferences.SymbianSigningPreferencePage"
+            id="com.mobilesorcery.sdk.builder.s60.preferences"
+            name="Symbian Self-Signing">
+      </page>
+   </extension>
+      <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="com.mobilesorcery.sdk.builder.s60.PropertyInitializer">
+      </initializer>
+   </extension>
 </plugin>
