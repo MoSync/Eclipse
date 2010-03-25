@@ -814,15 +814,22 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		return dependencyManager;
 	}
 
-	/**
-	 * Returns the current build configuration. Does not always return
-	 * a build configuration, but will return one regardless of
-	 * whatever isBuildConfigurationsSupported returns.
-	 * @return
-	 */
-	public IBuildConfiguration getActiveBuildConfiguration() {
-		return currentBuildConfig;
-	}
+        /**
+         * Returns the current build configuration. If none is assigned,
+         * this method will try to assign a default build configuration
+         * (<code>IBuildConfiguration.RELEASE_ID</code>). If the default build configuration does
+         * not exist, <code>null</code> will be returned.
+         * This method will return a value regardless of what
+         * <code>isBuildConfigurationsSupported</code> returns.
+         * @return
+         */
+        public IBuildConfiguration getActiveBuildConfiguration() {
+            if (currentBuildConfig == null) {
+                currentBuildConfig = getBuildConfiguration(IBuildConfiguration.RELEASE_ID);
+            }
+            
+                return currentBuildConfig;
+        }
 
 	/**
 	 * Sets the current build configuration. A property change

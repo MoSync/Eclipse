@@ -781,20 +781,15 @@ public class MoSyncBuilder extends ACBuilder {
 		marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_ERROR);
 	}
 
-	private static IPropertyOwner getActivePropertyOwner(
-			MoSyncProject mosyncProject) {
-		IBuildConfiguration activeBuildConfig = mosyncProject
-				.getActiveBuildConfiguration();
-		if (mosyncProject.areBuildConfigurationsSupported()
-				&& activeBuildConfig == null) {
-			throw new IllegalStateException("No configuration is active");
-		}
-
-		return mosyncProject.areBuildConfigurationsSupported() ? activeBuildConfig
-				.getProperties()
-				: mosyncProject;
-	}
-
+        private static IPropertyOwner getActivePropertyOwner(
+                        MoSyncProject mosyncProject) {
+                IBuildConfiguration activeBuildConfig = mosyncProject.getActiveBuildConfiguration();
+                
+                return mosyncProject.areBuildConfigurationsSupported() && activeBuildConfig != null ?
+                        activeBuildConfig.getProperties() :
+                        mosyncProject;
+        }
+	
 	/**
 	 * 'Prepares' a console for printing -- first checks whether the CDT
 	 * preference is set to clear the console, and if so, clears it.
