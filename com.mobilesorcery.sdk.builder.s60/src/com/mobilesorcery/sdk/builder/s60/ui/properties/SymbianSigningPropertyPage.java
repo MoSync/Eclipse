@@ -32,6 +32,7 @@ import org.eclipse.ui.dialogs.PropertyPage;
 import com.mobilesorcery.sdk.builder.s60.PropertyInitializer;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.ui.PasswordTextFieldDecorator;
 
 public class SymbianSigningPropertyPage extends PropertyPage implements IWorkbenchPropertyPage {
 
@@ -41,6 +42,7 @@ public class SymbianSigningPropertyPage extends PropertyPage implements IWorkben
     private Group signingGroup;
     private Text passkey;
     private Label passkeyLabel;
+    private PasswordTextFieldDecorator passkeyDec;
 
     public SymbianSigningPropertyPage() {
     }
@@ -81,6 +83,7 @@ public class SymbianSigningPropertyPage extends PropertyPage implements IWorkben
         passkeyLabel.setText(Messages.SymbianSigningPropertyPage_Passkey);
         
         passkey = new Text(signingGroup, SWT.BORDER | SWT.SINGLE);
+        passkeyDec = new PasswordTextFieldDecorator(passkey);
         GridData passkeyData = new GridData(GridData.FILL_HORIZONTAL);
         passkeyData.horizontalSpan = 2;
         passkey.setLayoutData(passkeyData);
@@ -94,7 +97,7 @@ public class SymbianSigningPropertyPage extends PropertyPage implements IWorkben
         keyFile.setEnabled(useProjectSpecific.getSelection(), signingGroup);
         certFile.setEnabled(useProjectSpecific.getSelection(), signingGroup);
         passkeyLabel.setEnabled(useProjectSpecific.getSelection());
-        passkey.setEnabled(useProjectSpecific.getSelection());
+        passkeyDec.setEnabled(useProjectSpecific.getSelection());
         
         if (!useProjectSpecific.getSelection()) {
             keyFile.setStringValue(getProject().getDefaultProperty(PropertyInitializer.S60_KEY_FILE));

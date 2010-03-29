@@ -8,6 +8,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 
 import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
+import com.mobilesorcery.sdk.ui.PasswordTextFieldDecorator;
 
 public class AndroidSigningPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
 
@@ -21,10 +22,12 @@ public class AndroidSigningPreferencePage extends FieldEditorPreferencePage impl
         addField(keyStore);
         StringFieldEditor storepass = new StringFieldEditor(PropertyInitializer.ANDROID_PASS_STORE, "Keystore password", getFieldEditorParent());
         addField(storepass);
+        PasswordTextFieldDecorator storepassDec = new PasswordTextFieldDecorator(storepass.getTextControl(getFieldEditorParent()));
         StringFieldEditor alias = new StringFieldEditor(PropertyInitializer.ANDROID_ALIAS, "Alias", getFieldEditorParent());
         addField(alias);
         StringFieldEditor keypass = new StringFieldEditor(PropertyInitializer.ANDROID_PASS_KEY, "Private key password", getFieldEditorParent());
         addField(keypass);
+        PasswordTextFieldDecorator keypassDec = new PasswordTextFieldDecorator(keypass.getTextControl(getFieldEditorParent()));
     }
 
     public void init(IWorkbench workbench) {

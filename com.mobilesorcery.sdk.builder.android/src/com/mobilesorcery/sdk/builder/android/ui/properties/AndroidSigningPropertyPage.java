@@ -32,6 +32,7 @@ import org.eclipse.ui.dialogs.PropertyPage;
 import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.ui.PasswordTextFieldDecorator;
 
 public class AndroidSigningPropertyPage extends PropertyPage implements IWorkbenchPropertyPage {
 
@@ -44,6 +45,8 @@ public class AndroidSigningPropertyPage extends PropertyPage implements IWorkben
     private Label storekeyLabel;
     private Label aliasLabel;
     private Text alias;
+    private PasswordTextFieldDecorator storekeyDec;
+    private PasswordTextFieldDecorator passkeyDec;
 
     public AndroidSigningPropertyPage() {
     }
@@ -78,10 +81,13 @@ public class AndroidSigningPropertyPage extends PropertyPage implements IWorkben
         storekeyLabel = new Label(signingGroup, SWT.PASSWORD);
         storekeyLabel.setText("&Keystore password");
         
-        storekey = new Text(signingGroup, SWT.BORDER | SWT.SINGLE | SWT.PASSWORD);
+        storekey = new Text(signingGroup, SWT.BORDER | SWT.SINGLE);
+        storekeyDec = new PasswordTextFieldDecorator(storekey);
         GridData storekeyData = new GridData(GridData.FILL_HORIZONTAL);
         storekeyData.horizontalSpan = 2;
         storekey.setLayoutData(storekeyData);
+        String storekeyValue = getProject().getProperty(PropertyInitializer.ANDROID_PASS_STORE);
+        storekey.setText(storekeyValue == null ? "" : storekeyValue); //$NON-NLS-1$
         
         aliasLabel = new Label(signingGroup, SWT.NONE);
         aliasLabel.setText("Key &Alias");
@@ -90,14 +96,19 @@ public class AndroidSigningPropertyPage extends PropertyPage implements IWorkben
         GridData aliasData = new GridData(GridData.FILL_HORIZONTAL);
         aliasData.horizontalSpan = 2;
         alias.setLayoutData(aliasData);
+        String aliasValue = getProject().getProperty(PropertyInitializer.ANDROID_ALIAS);
+        alias.setText(aliasValue == null ? "" : aliasValue);
         
         passkeyLabel = new Label(signingGroup, SWT.NONE);
         passkeyLabel.setText("&Private key password");
         
         passkey = new Text(signingGroup, SWT.BORDER | SWT.SINGLE | SWT.PASSWORD);
+        passkeyDec = new PasswordTextFieldDecorator(passkey);
         GridData passkeyData = new GridData(GridData.FILL_HORIZONTAL);
         passkeyData.horizontalSpan = 2;
         passkey.setLayoutData(passkeyData);
+        String passkeyValue = getProject().getProperty(PropertyInitializer.ANDROID_PASS_KEY);
+        passkey.setText(passkeyValue == null ? "" : passkeyValue);
         
         updateUI();
         
@@ -108,11 +119,11 @@ public class AndroidSigningPropertyPage extends PropertyPage implements IWorkben
         boolean isEnabled = useProjectSpecific.getSelection();
         keyStore.setEnabled(isEnabled, signingGroup);
         storekeyLabel.setEnabled(isEnabled);
-        storekey.setEnabled(isEnabled);
+        storekeyDec.setEnabled(isEnabled);
         aliasLabel.setEnabled(isEnabled);
         alias.setEnabled(isEnabled);
         passkeyLabel.setEnabled(isEnabled);
-        passkey.setEnabled(isEnabled);
+        passkeyDec.setEnabled(isEnabled);
         
         if (!useProjectSpecific.getSelection()) {
             keyStore.setStringValue(getProject().getDefaultProperty(PropertyInitializer.ANDROID_KEYSTORE));

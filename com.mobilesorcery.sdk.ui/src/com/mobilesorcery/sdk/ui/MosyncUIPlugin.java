@@ -83,6 +83,10 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 
 	public static final String IMG_OVR_EXCLUDED_RESOURCE = "excl.res";
 
+    static final String PASSWORD_SHOW = "p.show";
+
+    static final String PASSWORD_HIDE = "p.hide";
+
 	// The shared instance
 	private static MosyncUIPlugin plugin;
 
@@ -422,9 +426,13 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 
 	public void initializeImageRegistry(ImageRegistry reg) {
 		super.initializeImageRegistry(reg);
-		reg.put(IMG_OVR_EXCLUDED_RESOURCE, AbstractUIPlugin
-				.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID,
-						"$nl$/icons/exclude_ovr.png"));
+        reg.put(IMG_OVR_EXCLUDED_RESOURCE, AbstractUIPlugin.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID,
+            "$nl$/icons/exclude_ovr.png"));
+        reg.put(PASSWORD_HIDE, AbstractUIPlugin.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID,
+            "$nl$/icons/hide_pwd.png"));
+        reg.put(PASSWORD_SHOW, AbstractUIPlugin.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID,
+            "$nl$/icons/show_pwd.png"));
+		
 	}
 
 }
