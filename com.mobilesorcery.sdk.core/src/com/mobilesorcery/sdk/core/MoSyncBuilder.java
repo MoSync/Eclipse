@@ -80,8 +80,6 @@ public class MoSyncBuilder extends ACBuilder {
 
     public static final String CONSOLE_ID = "com.mobilesorcery.build.console";
 
-    public final static String IS_FINALIZER_BUILD = "finalizer-build";
-
     private static final String BUILD_PREFS_PREFIX = "build.prefs:";
 
     public final static String ADDITIONAL_INCLUDE_PATHS = BUILD_PREFS_PREFIX + "additional.include.paths";
@@ -648,9 +646,8 @@ public class MoSyncBuilder extends ACBuilder {
 
             if (doPack && !isLib) {
                 IPackager packager = targetProfile.getPackager();
-                packager.setParameter(IS_FINALIZER_BUILD, Boolean.toString(variant.isFinalizerBuild()));
                 packager.setParameter(USE_DEBUG_RUNTIME_LIBS, Boolean.toString(PropertyUtil
-                        .getBoolean(mosyncProject.getPropertyOwner(), USE_DEBUG_RUNTIME_LIBS)));
+                        .getBoolean(getPropertyOwner(mosyncProject, variant.getConfigurationId()), USE_DEBUG_RUNTIME_LIBS)));
 
                 if (ec == 0) {
                     packager.createPackage(mosyncProject, variant, buildResult);
