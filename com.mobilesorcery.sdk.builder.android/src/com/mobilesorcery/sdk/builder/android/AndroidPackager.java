@@ -23,13 +23,18 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiles.IProfile;
+import com.mobilesorcery.sdk.ui.PasswordDialog;
 
 /*
 	Built on the JavaMe packager code
@@ -121,8 +126,16 @@ public class AndroidPackager extends AbstractPackager {
 			
 			// sign apk file using jarSigner
             String keystore = project.getProperty(PropertyInitializer.ANDROID_KEYSTORE);
-            String storepass = project.getProperty(PropertyInitializer.ANDROID_PASS_STORE);
-            String keypass = project.getProperty(PropertyInitializer.ANDROID_PASS_KEY);
+            String storepass = getPassword(project, PropertyInitializer.ANDROID_PASS_STORE);
+            if (Util.isEmpty(storepass)) {
+                throw new IllegalArgumentException("Keystore password missing");
+            }
+            
+            String keypass = getPassword(project, PropertyInitializer.ANDROID_PASS_KEY);
+            if (Util.isEmpty(keypass)) {
+                throw new IllegalArgumentException("Keystore password missing");
+            }
+            
             String[] jarSignerCommandLine = new String[] {
                     "java", "-jar", "%mosync-bin%\\android\\tools-stripped.jar",
                     "-keystore", keystore, "-storepass", storepass, "-keypass", keypass,
@@ -142,19 +155,36 @@ public class AndroidPackager extends AbstractPackager {
 			
 			buildResult.setBuildResult(projectAPK);
 		}
-		catch ( Exception e )
-        {
-            StringWriter s = new StringWriter( );
-            PrintWriter  pr= new PrintWriter( s );
-            e.printStackTrace( pr );
-			
-            // Return stack trace in case of error
-            throw new CoreException( new Status( IStatus.ERROR, "com.mobilesorcery.builder.android", s.toString( ) ));
+		catch (Exception e) {
+            throw new CoreException(new Status(IStatus.ERROR, "com.mobilesorcery.builder.android", "Could not package for android platform", e));
         }
 
 	}
 
-	private void createManifest(String projectName, File manifest) throws IOException {
+	private String getPassword(final MoSyncProject project, final String propertyKey) {
+        String pwd = project.getProperty(propertyKey);
+        if (Util.isEmpty(pwd)) {
+            final String[] result = new String[1];
+            Display display = PlatformUI.getWorkbench().getDisplay();
+            display.syncExec(new Runnable() {
+                public void run() {
+                    Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+                    PasswordDialog dialog = new PasswordDialog(shell);
+                    if (dialog.open() == PasswordDialog.OK) {
+                        result[0] = dialog.getPassword();
+                        if (dialog.shouldRememberPassword()) {
+                            project.setProperty(propertyKey, result[0]);
+                        }
+                    }
+                }
+            });
+            return result[0];
+        } else {
+            return pwd;
+        }
+    }
+
+    private void createManifest(String projectName, File manifest) throws IOException {
 		manifest.getParentFile().mkdirs();
 
 		String manifest_string = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"

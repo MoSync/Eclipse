@@ -926,7 +926,7 @@ public class MoSyncBuilder extends ACBuilder {
     }
     
     public static IBuildSession createFinalizerBuildSession(List<IBuildVariant> variants) {
-        return new BuildSession(variants, BuildSession.DO_LINK | BuildSession.DO_LINK | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_CLEAN);
+        return new BuildSession(variants, BuildSession.DO_LINK | BuildSession.DO_PACK | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_CLEAN);
     }
     
     public static IBuildSession createCompileOnlySession(IBuildVariant variant) {
