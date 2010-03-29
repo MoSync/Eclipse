@@ -84,8 +84,10 @@ public class FinalizerParser {
 		LineNumberReader lines = new LineNumberReader(script);
 		for (String line = lines.readLine(); line != null; line = lines.readLine()) {
 			IProfile profileToBuild = parse(line, lineNo);
-			IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, profileToBuild);
-			variantsToBuild.add(variant);
+			if (profileToBuild != null) {
+			    IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, profileToBuild);
+			    variantsToBuild.add(variant);
+			}
 			lineNo++;
 		}
 
