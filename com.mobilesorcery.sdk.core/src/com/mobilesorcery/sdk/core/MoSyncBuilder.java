@@ -53,6 +53,7 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.internal.ide.actions.BuildUtilities;
 
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.internal.BuildSession;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.builder.MoSyncBuilderVisitor;
 import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
@@ -304,7 +305,9 @@ public class MoSyncBuilder extends ACBuilder {
 
         // Default incremental build does link but does not ask for confirmation
         // if it's an autobuild
-        incrementalBuild(project, deltas, getActiveVariant(MoSyncProject.create(project), false), true, doPack, null, true, monitor);
+        IBuildVariant variant = getActiveVariant(MoSyncProject.create(project), false);
+        BuildSession session = new BuildSession(Arrays.asList(variant), BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (doPack ? BuildSession.DO_PACK : 0));
+        incrementalBuild(project, deltas, session, variant, null, monitor);
 
         Set<IProject> dependencies = CoreMoSyncPlugin.getDefault().getProjectDependencyManager(ResourcesPlugin.getWorkspace()).getDependenciesOf(project);
         dependencies.add(project);
@@ -380,23 +383,6 @@ public class MoSyncBuilder extends ACBuilder {
     }
 
     /**
-     * Performs a full build of a project.
-     * 
-     * @param project
-     * @param targetProfile
-     * @param isFinalizerBuild
-     * @param doClean
-     * @param monitor
-     * @return
-     * @throws CoreException
-     * @throws {@link OperationCanceledException} If the operation was cancelled
-     */
-    public IBuildResult fullBuild(IProject project, IBuildVariant variant, boolean doClean, IProgressMonitor monitor) throws CoreException,
-            OperationCanceledException {
-        return fullBuild(project, variant, doClean, true, true, null, true, true, monitor);
-    }
-
-    /**
      * Perfoms a full build of a project
      * 
      * @param project
@@ -412,25 +398,25 @@ public class MoSyncBuilder extends ACBuilder {
      * @throws CoreException
      * @throws {@link OperationCanceledException} If the operation was cancelled
      */
-    public IBuildResult fullBuild(IProject project, IBuildVariant variant, boolean doClean, boolean doBuildResources, boolean doPack,
-            IFilter<IResource> resourceFilter, boolean doLink, boolean saveDirtyEditors, IProgressMonitor monitor) throws CoreException,
+    public IBuildResult fullBuild(IProject project, IBuildSession session, IBuildVariant variant, 
+            IFilter<IResource> resourceFilter, IProgressMonitor monitor) throws CoreException,
             OperationCanceledException {
         try {
             // TODO: Allow for setting build config explicitly!
             monitor.beginTask(MessageFormat.format("Full build of {0}", project.getName()), 8);
-            if (doClean) {
+            if (session.doClean()) {
                 clean(project, variant, new SubProgressMonitor(monitor, 1));
             } else {
                 monitor.worked(1);
             }
 
-            if (!doClean && saveDirtyEditors) {
+            if (!session.doClean() && session.doSaveDirtyEditors()) {
                 if (!saveAllEditors(project)) {
                     throw new OperationCanceledException();
                 }
             }
 
-            return incrementalBuild(project, null, variant, doBuildResources, doPack, resourceFilter, doLink, monitor);
+            return incrementalBuild(project, null, session, variant, resourceFilter, monitor);
         } finally {
             monitor.done();
         }
@@ -439,8 +425,8 @@ public class MoSyncBuilder extends ACBuilder {
     // TODO: Refactor, this is becoming a jack-of-all-trades method, esp. now
     // with the partial builds as well. Maybe need a new class like 'build
     // parameters' to avoid all setters and this huge method signature...
-    IBuildResult incrementalBuild(IProject project, IResourceDelta[] deltas, IBuildVariant variant, boolean doBuildResources, boolean doPack,
-            IFilter<IResource> resourceFilter, boolean doLink, IProgressMonitor monitor) throws CoreException {
+    IBuildResult incrementalBuild(IProject project, IResourceDelta[] deltas, IBuildSession session, IBuildVariant variant, 
+            IFilter<IResource> resourceFilter, IProgressMonitor monitor) throws CoreException {
 
         if (CoreMoSyncPlugin.getDefault().isDebugging()) {
             CoreMoSyncPlugin.trace("Building project {0}", project);
@@ -489,7 +475,7 @@ public class MoSyncBuilder extends ACBuilder {
                 console.addMessage("- go to Window > Preferences > MoSync Tool to set the MoSync home directory");
             }
 
-            if (doLink && !doBuildResources) {
+            if (session.doLink() && !session.doBuildResources()) {
                 throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
                         "If resource building is suppressed, then linking should also be."));
             }
@@ -523,7 +509,7 @@ public class MoSyncBuilder extends ACBuilder {
             resourceVisitor.setDelta(deltas);
             resourceVisitor.setResourceFilter(resourceFilter);
 
-            if (doBuildResources) {
+            if (session.doBuildResources()) {
                 // First we build the resources...
                 monitor.setTaskName("Assembling resources");
                 resourceVisitor.incrementalCompile(monitor, mosyncProject.getDependencyManager());
@@ -582,7 +568,7 @@ public class MoSyncBuilder extends ACBuilder {
                 }
             }
 
-            requiresLinking &= doLink;
+            requiresLinking &= session.doLink();
 
             if (ec == 0 && requiresLinking) {
                 boolean elim = !isLib && PropertyUtil.getBoolean(buildProperties, DEAD_CODE_ELIMINATION);
@@ -644,7 +630,7 @@ public class MoSyncBuilder extends ACBuilder {
             iconVisitor.setResourceFilter(resourceFilter);
             iconVisitor.incrementalCompile(monitor, mosyncProject.getDependencyManager());
 
-            if (doPack && !isLib) {
+            if (session.doPack() && !isLib) {
                 IPackager packager = targetProfile.getPackager();
                 packager.setParameter(USE_DEBUG_RUNTIME_LIBS, Boolean.toString(PropertyUtil
                         .getBoolean(getPropertyOwner(mosyncProject, variant.getConfigurationId()), USE_DEBUG_RUNTIME_LIBS)));
@@ -937,5 +923,21 @@ public class MoSyncBuilder extends ACBuilder {
         IBuildConfiguration cfg = project.getActiveBuildConfiguration();
         String cfgId = project.areBuildConfigurationsSupported() && cfg != null ? cfg.getId() : null;
         return new BuildVariant(profile, cfgId, true);
+    }
+    
+    public static IBuildSession createFinalizerBuildSession(List<IBuildVariant> variants) {
+        return new BuildSession(variants, BuildSession.DO_LINK | BuildSession.DO_LINK | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_CLEAN);
+    }
+    
+    public static IBuildSession createCompileOnlySession(IBuildVariant variant) {
+        return new BuildSession(Arrays.asList(variant), 0);
+    }
+
+    public static IBuildSession createDefaultBuildSession(IBuildVariant variant) {
+        return new BuildSession(Arrays.asList(variant), BuildSession.ALL - BuildSession.DO_CLEAN);
+    }
+
+    public static IBuildSession createCleanBuildSession(IBuildVariant variant) {
+        return new BuildSession(Arrays.asList(variant), BuildSession.ALL - BuildSession.DO_CLEAN);
     }
 }

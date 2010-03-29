@@ -31,6 +31,8 @@ import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildSession;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -105,9 +107,10 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 		private File buildBeforeSend(IProfile targetProfile,
 				IProgressMonitor monitor) throws CoreException {
 			IBuildResult buildResult = null;
-
+            IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, targetProfile);
+            IBuildSession session = MoSyncBuilder.createCleanBuildSession(variant);
 			buildResult = new MoSyncBuilder().fullBuild(project
-					.getWrappedProject(), MoSyncBuilder.getFinalizerVariant(project, targetProfile), true,
+					.getWrappedProject(), session, variant, null,
 					new NullProgressMonitor());
 			monitor.worked(1);
 

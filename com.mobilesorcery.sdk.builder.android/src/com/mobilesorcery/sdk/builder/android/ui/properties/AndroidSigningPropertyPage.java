@@ -70,7 +70,7 @@ public class AndroidSigningPropertyPage extends PropertyPage implements IWorkben
         keyStore = new FileFieldEditor("dummy.1", "Keystore", signingGroup); //$NON-NLS-1$
         keyStore.setPage(this);
 
-        String keyStorePath = getProject().getProperty(PropertyInitializer.KEYSTORE);
+        String keyStorePath = getProject().getProperty(PropertyInitializer.ANDROID_KEYSTORE);
         keyStore.setStringValue(keyStorePath == null ? "" : keyStorePath); //$NON-NLS-1$
 
         storekeyLabel = new Label(signingGroup, SWT.PASSWORD);
@@ -103,7 +103,7 @@ public class AndroidSigningPropertyPage extends PropertyPage implements IWorkben
         passkey.setEnabled(isEnabled);
         
         if (!useProjectSpecific.getSelection()) {
-            keyStore.setStringValue(getProject().getDefaultProperty(PropertyInitializer.KEYSTORE));
+            keyStore.setStringValue(getProject().getDefaultProperty(PropertyInitializer.ANDROID_KEYSTORE));
             passkey.setText(getProject().getDefaultProperty(PropertyInitializer.ANDROID_PASS_KEY));
             storekey.setText(getProject().getDefaultProperty(PropertyInitializer.ANDROID_PASS_STORE));
         }
@@ -111,7 +111,7 @@ public class AndroidSigningPropertyPage extends PropertyPage implements IWorkben
     
     public boolean performOk() {
         PropertyUtil.setBoolean(getProject(), PropertyInitializer.ANDROID_PROJECT_SPECIFIC_KEYS, useProjectSpecific.getSelection());
-        getProject().setProperty(PropertyInitializer.KEYSTORE, useProjectSpecific.getSelection() ? keyStore.getStringValue() : null);
+        getProject().setProperty(PropertyInitializer.ANDROID_KEYSTORE, useProjectSpecific.getSelection() ? keyStore.getStringValue() : null);
         getProject().setProperty(PropertyInitializer.ANDROID_PASS_KEY, useProjectSpecific.getSelection() ? passkey.getText() : null);
         getProject().setProperty(PropertyInitializer.ANDROID_PASS_STORE, useProjectSpecific.getSelection() ? storekey.getText() : null);
         

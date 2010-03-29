@@ -28,7 +28,7 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
 
     private static final String PREFIX = "android:"; //$NON-NLS-1$
     
-    public static final String KEYSTORE = PREFIX + "keystore"; //$NON-NLS-1$
+    public static final String ANDROID_KEYSTORE = PREFIX + "keystore"; //$NON-NLS-1$
     
     public static final String ANDROID_PASS_STORE = PREFIX + "pass.store"; //$NON-NLS-1$
 
@@ -51,7 +51,7 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
 
     public void initializeDefaultPreferences() {
         IPreferenceStore store = Activator.getDefault().getPreferenceStore();
-        store.setDefault(KEYSTORE, MoSyncTool.getDefault().getMoSyncHome().append("etc/mosync.keystore").toOSString());
+        store.setDefault(ANDROID_KEYSTORE, MoSyncTool.getDefault().getMoSyncHome().append("etc/mosync.keystore").toOSString());
         store.setDefault(ANDROID_PASS_KEY, "default");
         store.setDefault(ANDROID_PASS_STORE, "default");
     }

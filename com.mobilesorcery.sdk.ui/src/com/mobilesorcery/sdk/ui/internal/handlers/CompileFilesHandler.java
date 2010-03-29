@@ -32,6 +32,8 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.internal.ide.actions.BuildUtilities;
 
+import com.mobilesorcery.sdk.core.IBuildSession;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.ResourceSet;
@@ -85,10 +87,9 @@ public class CompileFilesHandler extends MoSyncCommandHandler {
     					HashSet<IResource> resourceSet = new HashSet<IResource>(
     							resources);
     					ResourceSet resourcesToCompile = new ResourceSet(resourceSet);
-    										
-    					builder.fullBuild(project.getWrappedProject(), MoSyncBuilder.getActiveVariant(project, false),
-    							false, false, false, resourcesToCompile, false, false, new SubProgressMonitor(
-    									monitor, resourceSet.size()));
+    					IBuildVariant variant = MoSyncBuilder.getActiveVariant(project, false);
+                        IBuildSession session = MoSyncBuilder.createCompileOnlySession(variant);
+    					builder.fullBuild(project.getWrappedProject(), session, variant, resourcesToCompile, new SubProgressMonitor(monitor, resourceSet.size()));
     				}
     				return Status.OK_STATUS;
 				} else {

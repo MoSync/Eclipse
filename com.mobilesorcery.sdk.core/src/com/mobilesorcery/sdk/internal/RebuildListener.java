@@ -28,6 +28,8 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildSession;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.cdt.MoSyncIncludePathContainer;
@@ -66,7 +68,9 @@ public class RebuildListener implements PropertyChangeListener {
                 try {
                 	monitor.beginTask("Building", 2);
                 	project.getWrappedProject().refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
-                    new MoSyncBuilder().fullBuild(project.getWrappedProject(), MoSyncBuilder.getActiveVariant(project, false), false, new SubProgressMonitor(monitor, 1));
+                    IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, targetProfile);
+                    IBuildSession session = MoSyncBuilder.createCleanBuildSession(variant);
+                    new MoSyncBuilder().fullBuild(project.getWrappedProject(), session, variant, null, new SubProgressMonitor(monitor, 1));
                 } catch (CoreException e) {
                     return new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, MessageFormat.format(
                             "Could not build for target {0}. Root cause: {1}", targetProfile, e.getMessage()), e);

@@ -32,6 +32,7 @@ import org.eclipse.jface.operation.IRunnableWithProgress;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -69,41 +70,43 @@ public class FinalizerParser {
 
 	public void execute(Reader script, IProgressMonitor monitor) throws IOException, ParseException, InvocationTargetException,
 			InterruptedException {
-		ArrayList<IRunnableWithProgress> buildJobs = new ArrayList<IRunnableWithProgress>();
+		ArrayList<IBuildVariant> variantsToBuild = new ArrayList<IBuildVariant>();
 
+      MoSyncProject project = MoSyncProject.create(this.project);
+        if (project != null && PropertyUtil.getBoolean(project, AUTO_CHANGE_CONFIG)) {
+            String buildConfiguration = project.getProperty(BUILD_CONFIG);
+            if (project.areBuildConfigurationsSupported()) {
+                project.setActiveBuildConfiguration(buildConfiguration);
+            }
+        }
+	        
 		int lineNo = 1;
 		LineNumberReader lines = new LineNumberReader(script);
 		for (String line = lines.readLine(); line != null; line = lines.readLine()) {
-			IRunnableWithProgress buildJob = parse(line, lineNo);
-			if (buildJob != null) {
-				buildJobs.add(buildJob);
-			}
+			IProfile profileToBuild = parse(line, lineNo);
+			IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, profileToBuild);
+			variantsToBuild.add(variant);
 			lineNo++;
 		}
 
-		monitor.beginTask(Messages.FinalizerParser_FinalizingProgress, buildJobs.size());
+		monitor.beginTask(Messages.FinalizerParser_FinalizingProgress, variantsToBuild.size());
 
-		if (buildJobs.isEmpty()) {
+		if (variantsToBuild.isEmpty()) {
 			throw new ParseException(Messages.FinalizerParser_ParseError_0, 0);
 		}
 
-		MoSyncProject project = MoSyncProject.create(this.project);
-		if (project != null && PropertyUtil.getBoolean(project, AUTO_CHANGE_CONFIG)) {
-			String buildConfiguration = project.getProperty(BUILD_CONFIG);
-			if (project.areBuildConfigurationsSupported()) {
-				project.setActiveBuildConfiguration(buildConfiguration);
-			}
-		}
-		
-		for (IRunnableWithProgress buildJob : buildJobs) {
+        IBuildSession buildSession = MoSyncBuilder.createFinalizerBuildSession(variantsToBuild);
+        
+		for (IBuildVariant variantToBuild : variantsToBuild) {
 			SubProgressMonitor jobMonitor = new SubProgressMonitor(monitor, 1);
 			if (!monitor.isCanceled()) {
+                IRunnableWithProgress buildJob = createBuildJob(project.getWrappedProject(), buildSession, variantToBuild);
 				buildJob.run(jobMonitor);
 			}
 		}
 	}
 
-	private IRunnableWithProgress parse(String line, int lineNo) throws ParseException {
+	private IProfile parse(String line, int lineNo) throws ParseException {
 		if (line.trim().length() == 0 || line.trim().startsWith("#")) { //$NON-NLS-1$
 			return null;
 		}
@@ -124,7 +127,7 @@ public class FinalizerParser {
 				throw new ParseException(MessageFormat.format(Messages.FinalizerParser_ParseError_UnknownProfile, profileName), lineNo);
 			}
 
-			return createBuildJob(project, profile);
+			return profile;
 		} else {
 			throw new ParseException(Messages.FinalizerParser_ParseError_3, lineNo);
 		}
@@ -145,17 +148,16 @@ public class FinalizerParser {
 		return result.toString();
 	}
 
-	private IRunnableWithProgress createBuildJob(final IProject project, final IProfile targetProfile) {
+	private IRunnableWithProgress createBuildJob(final IProject project, final IBuildSession session, final IBuildVariant variant) {
 		return new IRunnableWithProgress() {
 			public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
 				try {
-				    IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(MoSyncProject.create(project),targetProfile);
-					IBuildResult buildResult = new MoSyncBuilder().fullBuild(project, variant, true, true, true, null, true, false, monitor);
+					IBuildResult buildResult = new MoSyncBuilder().fullBuild(project, session, variant, null, monitor);
 					if (!buildResult.success()) {
 						throw new InvocationTargetException(new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, Messages.FinalizerParser_BuildFailed)));
 					}
 				} catch (CoreException e) {
-					throw new InvocationTargetException(e, targetProfile + ": " + e.getMessage()); //$NON-NLS-1$
+					throw new InvocationTargetException(e, variant.getProfile() + ": " + e.getMessage()); //$NON-NLS-1$
 				}
 			}
 		};

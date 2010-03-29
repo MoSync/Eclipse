@@ -30,6 +30,8 @@ import com.mobilesorcery.sdk.core.CascadingProperties;
 import com.mobilesorcery.sdk.core.CommandLineExecutor;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildSession;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
@@ -165,8 +167,11 @@ public class FTPDeploymentStrategy implements IDeploymentStrategy {
 
 	private IBuildResult buildBeforeDeploy(MoSyncProject project,
 			IProfile profile, IProgressMonitor monitor) throws CoreException {
-		IBuildResult buildResult = new MoSyncBuilder().fullBuild(project
-				.getWrappedProject(), MoSyncBuilder.getFinalizerVariant(project, profile), true, monitor);
+	    IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, profile);
+		IBuildSession session = MoSyncBuilder.createDefaultBuildSession(variant);
+		
+        IBuildResult buildResult = new MoSyncBuilder().fullBuild(project
+				.getWrappedProject(), session, variant, null, monitor);
 		return buildResult;
 	}
 

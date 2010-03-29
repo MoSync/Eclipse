@@ -120,7 +120,7 @@ public class AndroidPackager extends AbstractPackager {
 			internal.runCommandLine("java", "-jar", "%mosync-bin%\\android\\apkbuilder.jar","%package-output-dir%\\%project-name%_unsigned.apk","-u","-z","%package-output-dir%\\resources.ap_","-f","%package-output-dir%\\classes.dex");
 			
 			// sign apk file using jarSigner
-            String keystore = project.getProperty(PropertyInitializer.KEYSTORE);
+            String keystore = project.getProperty(PropertyInitializer.ANDROID_KEYSTORE);
             String storepass = project.getProperty(PropertyInitializer.ANDROID_PASS_STORE);
             String keypass = project.getProperty(PropertyInitializer.ANDROID_PASS_KEY);
             String[] jarSignerCommandLine = new String[] {

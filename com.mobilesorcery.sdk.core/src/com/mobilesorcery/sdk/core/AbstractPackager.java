@@ -30,10 +30,6 @@ public abstract class AbstractPackager implements IPackager {
 		return parameters;
 	}
 	
-	public boolean isFinalizerBuild() {
-		return Boolean.parseBoolean(parameters.get(MoSyncBuilder.IS_FINALIZER_BUILD));
-	}
-	
 	public boolean shouldUseDebugRuntimes() {
 		return Boolean.parseBoolean(parameters.get(MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS));
 	}
