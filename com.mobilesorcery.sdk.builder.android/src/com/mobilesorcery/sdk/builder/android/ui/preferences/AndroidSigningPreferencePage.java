@@ -21,6 +21,8 @@ public class AndroidSigningPreferencePage extends FieldEditorPreferencePage impl
         addField(keyStore);
         StringFieldEditor storepass = new StringFieldEditor(PropertyInitializer.ANDROID_PASS_STORE, "Keystore password", getFieldEditorParent());
         addField(storepass);
+        StringFieldEditor alias = new StringFieldEditor(PropertyInitializer.ANDROID_ALIAS, "Alias", getFieldEditorParent());
+        addField(alias);
         StringFieldEditor keypass = new StringFieldEditor(PropertyInitializer.ANDROID_PASS_KEY, "Private key password", getFieldEditorParent());
         addField(keypass);
     }

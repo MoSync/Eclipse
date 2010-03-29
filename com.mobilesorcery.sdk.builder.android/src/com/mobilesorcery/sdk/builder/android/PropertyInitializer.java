@@ -36,6 +36,8 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
 
     public static final String ANDROID_PROJECT_SPECIFIC_KEYS = PREFIX + "proj.spec.keys"; //$NON-NLS-1$
 
+    public static final String ANDROID_ALIAS = PREFIX + "key.alias";
+
     private static Random rnd = new Random(System.currentTimeMillis());
     
     public PropertyInitializer() {
@@ -54,6 +56,7 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
         store.setDefault(ANDROID_KEYSTORE, MoSyncTool.getDefault().getMoSyncHome().append("etc/mosync.keystore").toOSString());
         store.setDefault(ANDROID_PASS_KEY, "default");
         store.setDefault(ANDROID_PASS_STORE, "default");
+        store.setDefault(ANDROID_ALIAS, "mosync.keystore");
     }
 
 

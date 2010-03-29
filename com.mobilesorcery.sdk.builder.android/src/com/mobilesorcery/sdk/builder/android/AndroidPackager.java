@@ -126,6 +126,7 @@ public class AndroidPackager extends AbstractPackager {
 			
 			// sign apk file using jarSigner
             String keystore = project.getProperty(PropertyInitializer.ANDROID_KEYSTORE);
+            String alias = project.getProperty(PropertyInitializer.ANDROID_ALIAS);
             String storepass = getPassword(project, PropertyInitializer.ANDROID_PASS_STORE);
             if (Util.isEmpty(storepass)) {
                 throw new IllegalArgumentException("Keystore password missing");
@@ -141,7 +142,7 @@ public class AndroidPackager extends AbstractPackager {
                     "-keystore", keystore, "-storepass", storepass, "-keypass", keypass,
                     "-signedjar", "%package-output-dir%\\%project-name%.apk",
                     "%package-output-dir%\\%project-name%_unsigned.apk", 
-                    "mosync.keystore"
+                    alias
             };
             
 			internal.runCommandLine(jarSignerCommandLine, "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***");
