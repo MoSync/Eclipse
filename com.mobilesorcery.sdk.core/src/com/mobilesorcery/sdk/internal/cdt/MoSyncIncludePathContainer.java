@@ -28,6 +28,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
@@ -54,7 +55,8 @@ public class MoSyncIncludePathContainer implements IPathEntryContainer {
         List<IPathEntry> entries = new ArrayList<IPathEntry>();
         MoSyncProject project = MoSyncProject.create(this.project);
         if (project != null) {
-        	IPath[] includePaths = MoSyncBuilder.getBaseIncludePaths(project, MoSyncBuilder.getActiveVariant(project, false));
+            IBuildVariant variant = MoSyncBuilder.getActiveVariant(project, false);
+        	IPath[] includePaths = MoSyncBuilder.getBaseIncludePaths(project, variant);
         	for (int i = 0; i < includePaths.length; i++) {
         		IContainer[] includePathInWorkspace = ResourcesPlugin.getWorkspace().getRoot().findContainersForLocation(includePaths[i]);
         		IPath resourcePath = includePathInWorkspace.length > 0 ? includePathInWorkspace[0].getProjectRelativePath() : Path.EMPTY;

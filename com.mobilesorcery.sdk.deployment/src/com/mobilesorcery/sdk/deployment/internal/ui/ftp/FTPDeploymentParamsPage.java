@@ -1,11 +1,16 @@
 package com.mobilesorcery.sdk.deployment.internal.ui.ftp;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
 
 import com.mobilesorcery.sdk.core.Util;
@@ -14,7 +19,7 @@ import com.mobilesorcery.sdk.deployment.IDeploymentStrategy;
 import com.mobilesorcery.sdk.deployment.IDeploymentStrategyFactory;
 import com.mobilesorcery.sdk.deployment.internal.ftp.FTPDeploymentStrategy;
 
-public class FTPDeploymentParamsPage extends WizardPage {
+public class FTPDeploymentParamsPage extends WizardPage implements Listener {
 
 	private Text hostText;
 	private Text pathText;
@@ -61,6 +66,9 @@ public class FTPDeploymentParamsPage extends WizardPage {
 		userText.setText(notNull(strategy.getUsername()));
 		passwordText.setText(notNull(strategy.getPassword()));
 		
+		hostText.addListener(SWT.Modify, this);
+        pathText.addListener(SWT.Modify, this);
+        userText.addListener(SWT.Modify, this);
 		setControl(main);
 	}
 	
@@ -86,6 +94,39 @@ public class FTPDeploymentParamsPage extends WizardPage {
         if (strategyToEdit instanceof FTPDeploymentStrategy) {
             this.strategy = (FTPDeploymentStrategy) strategyToEdit;
         }
+    }
+
+
+    public void handleEvent(Event event) {
+        validate();
+    }
+
+    private void validate() {
+        String errorMessage = validateHost();
+        if (errorMessage == null) {
+            errorMessage = validatePath();
+        }
+        
+        setMessage(errorMessage, errorMessage == null ? NONE : ERROR);
+    }
+
+    private String validatePath() {
+        return pathText.getText().length() == 0 ? "Path must not be empty" : null;
+    }
+
+    private String validateHost() {
+        String host = hostText.getText();
+        try {
+            URL hostURL = new URL(host);
+            String protocol = hostURL.getProtocol();
+            if (!"ftp".equals(protocol)) {
+                return "Only the FTP: protocol is allowed"; 
+            }
+        } catch (MalformedURLException e) {
+            return "Invalid URL";
+        }
+        
+        return null;
     }
 
 }

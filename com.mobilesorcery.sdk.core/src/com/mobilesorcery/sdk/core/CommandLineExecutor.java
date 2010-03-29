@@ -26,7 +26,8 @@ import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 public class CommandLineExecutor {
 
 	private static final int MAX_DEPTH = 100;
-	private ArrayList<String[]> lines = new ArrayList<String[]>();
+    private ArrayList<String[]> lines = new ArrayList<String[]>();
+    private ArrayList<String> consoleMsgs = new ArrayList<String>();
 	private CascadingProperties parameters;
 	private String dir;
 	private Process currentProcess;
@@ -39,14 +40,27 @@ public class CommandLineExecutor {
 		this.consoleName = consoleName;
 	}
 
-	/**
-	 * Adds a <emph>parameterized</emph> command line
-	 * 
-	 * @param line
+    /**
+     * Adds a <emph>parameterized</emph> command line
+     * 
+     * @param line
+     */
+    public void addCommandLine(String[] line) {
+        addCommandLine(line, null);
+    }
+   
+   /**
+    * Adds a <emph>parameterized</emph> command line
+    * 
+    * @param line
+	 * @param consoleMsg the line to display in the console, or <code>null</code> for
+	 * just outputting the resolved <code>line</code>. Any parameters in <code>consoleMsg</code>
+	 * will also be resolved
 	 */
-	public void addCommandLine(String[] line) {
-		lines.add(line);
-	}
+    public void addCommandLine(String[] line, String consoleMsg) {
+        lines.add(line);
+        consoleMsgs.add(consoleMsg);
+    }
 
 	/**
 	 * Convenience method for running exactly one line.
@@ -54,13 +68,22 @@ public class CommandLineExecutor {
 	 * @param commandLine
 	 * @throws IOException
 	 */
-	public void runCommandLine(String[] commandLine) throws IOException {
-		lines.clear();
-		lines.add(commandLine);
-		execute();
-		lines.clear();
+    public void runCommandLine(String[] commandLine) throws IOException {
+        lines.clear();
+        consoleMsgs.clear();
+        addCommandLine(commandLine, null);
+        execute();
+        lines.clear();
+        consoleMsgs.clear();
 	}
 	
+    public void runCommandLine(String[] commandLine, String consoleMsg) throws IOException {
+        lines.clear();
+        addCommandLine(commandLine, consoleMsg);
+        execute();
+        lines.clear();       
+    }
+    
 	/**
 	 * Convenience method for running exactly one line.
 	 * 
@@ -73,7 +96,7 @@ public class CommandLineExecutor {
 	{
 		int res;
 		lines.clear();
-		lines.add(commandLine);
+		addCommandLine(commandLine, null);
 		res = execute();
 		lines.clear();
 		
@@ -91,6 +114,8 @@ public class CommandLineExecutor {
 	public int execute() throws IOException {
 		IProcessConsole console = createConsole();
 
+		int result = -1;
+		
 		for (int i = 0; !killed && i < lines.size(); i++) {
 			String[] line = lines.get(i);
 			String[] resolvedLine = new String[line.length];
@@ -99,7 +124,13 @@ public class CommandLineExecutor {
 			}
 
 			String mergedCommandLine = mergeCommandLine(resolvedLine);
-			console.addMessage(mergedCommandLine);
+			String consoleMsg = consoleMsgs.get(i);
+			if (consoleMsg == null) {
+			    console.addMessage(mergedCommandLine);
+			} else {
+			    console.addMessage(replace(consoleMsg, parameters));
+			}
+			
 			if (dir == null) {
 			    currentProcess = Runtime.getRuntime().exec(mergedCommandLine);
 			} else {
@@ -108,13 +139,13 @@ public class CommandLineExecutor {
 			
 			console.attachProcess(currentProcess, stdoutHandler, stderrHandler);
 			try {
-				return currentProcess.waitFor();
+				result = currentProcess.waitFor();
 			} catch (InterruptedException e) {
 				throw new IOException("Process interrupted.");
 			}
 		}
 		
-		return 0;
+		return result;
 	}
 
 	private String mergeCommandLine(String[] commandLine) {

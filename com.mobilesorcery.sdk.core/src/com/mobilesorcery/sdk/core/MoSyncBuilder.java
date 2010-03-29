@@ -806,15 +806,14 @@ public class MoSyncBuilder extends ACBuilder {
     }
 
     public static IPath[] getBaseIncludePaths(MoSyncProject project, IBuildVariant variant) {
-        return getIncludePaths(project, getPropertyOwner(project, variant.getConfigurationId()));
-    }
-
-    public static IPath[] getIncludePaths(MoSyncProject project, IPropertyOwner buildProperties) {
+        IPropertyOwner buildProperties = getPropertyOwner(project, variant.getConfigurationId());
+        
         ArrayList<IPath> result = new ArrayList<IPath>();
         if (!PropertyUtil.getBoolean(buildProperties, IGNORE_DEFAULT_INCLUDE_PATHS)) {
             result.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
             // result.add(getOutputPath(project.getWrappedProject(),
             // buildProperties).removeTrailingSeparator());
+            result.addAll(Arrays.asList(MoSyncBuilder.getProfileIncludes(variant.getProfile())));
         }
 
         IPath[] additionalIncludePaths = PropertyUtil.getPaths(buildProperties, ADDITIONAL_INCLUDE_PATHS);

@@ -13,7 +13,7 @@ import com.mobilesorcery.sdk.builder.s60.ui.properties.Messages;
 public class SymbianSigningPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
 
     public SymbianSigningPreferencePage() {
-        super();
+        super(GRID);
         setPreferenceStore(Activator.getDefault().getPreferenceStore());
     }
     

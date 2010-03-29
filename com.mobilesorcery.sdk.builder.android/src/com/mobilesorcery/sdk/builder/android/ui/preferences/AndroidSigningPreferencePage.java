@@ -12,7 +12,7 @@ import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 public class AndroidSigningPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
 
     public AndroidSigningPreferencePage() {
-        super();
+        super(GRID);
         setPreferenceStore(Activator.getDefault().getPreferenceStore());
     }
     

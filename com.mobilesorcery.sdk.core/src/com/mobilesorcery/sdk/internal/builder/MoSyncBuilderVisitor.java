@@ -206,7 +206,6 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             includePaths.add(outputPath);
             
             String[] includeStr = assembleIncludeString(includePaths.toArray(new IPath[0]));
-            String[] profileIncludesStr = assembleIncludeString(MoSyncBuilder.getProfileIncludes(profile));
 
             ArrayList<String> args = new ArrayList<String>();
             args.add(Util.ensureQuoted(xgcc.toOSString()));
@@ -227,7 +226,6 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             args.addAll(Arrays.asList(extra));
             args.add(Util.ensureQuoted(cFile.getLocation().toOSString()));
             args.addAll(Arrays.asList(includeStr));
-            args.addAll(Arrays.asList(profileIncludesStr));
 
             // Create output if it does not exist
             output.toFile().getParentFile().mkdirs();

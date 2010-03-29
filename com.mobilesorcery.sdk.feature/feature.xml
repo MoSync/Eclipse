@@ -4,6 +4,7 @@
       label="MoBuild SDK"
       version="1.0.0"
       provider-name="MOBILESORCERY"
+      plugin="com.mobilesorcery.sdk.product"
       os="win32">
 
    <description>
