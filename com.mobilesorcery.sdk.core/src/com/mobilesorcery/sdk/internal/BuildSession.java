@@ -14,7 +14,7 @@ public class BuildSession implements IBuildSession {
     public final static int DO_BUILD_RESOURCES = 1 << 3;
     public final static int DO_PACK = 1 << 4;
     public final static int DO_SAVE_DIRTY_EDITORS = 1 << 5;
-    public static final int ALL = DO_CLEAN | DO_LINK | DO_BUILD_RESOURCES | DO_SAVE_DIRTY_EDITORS;
+    public static final int ALL = DO_PACK | DO_CLEAN | DO_LINK | DO_BUILD_RESOURCES | DO_SAVE_DIRTY_EDITORS;
     
     private List<IBuildVariant> variants;
     private Map<String, String> properties = new HashMap<String, String>();
