@@ -137,6 +137,7 @@ public class UpdateManager {
     public boolean isRegistered(String email) throws IOException {        
         Map<String, String> params = new HashMap<String, String>();
         params.put("email", email); //$NON-NLS-1$
+        addProfileVersion(params);
      
         Response response = sendRequest(getRequestURL("registered", params)); //$NON-NLS-1$
         
