@@ -57,14 +57,18 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 
 		private String createProgressMessage(MoSyncProject project,
 				ITargetPhone phone) {
-			return MessageFormat.format("Send {0} to target {1} for profile {2}", project.getName(), phone.getName(),
-					MoSyncTool.toString(getProfile(project, phone)));
+		    if (project == null || phone == null) {
+		        return "Send to target";
+		    } else {
+		        return MessageFormat.format("Send {0} to target {1} for profile {2}", project == null ? "?" : project.getName(), phone == null ? "?" : phone.getName(),
+		               MoSyncTool.toString(getProfile(project, phone)));
+		    }
 		}
 
 		private IProfile getProfile(MoSyncProject project, ITargetPhone phone) {
-			IProfile targetProfile = phone.getPreferredProfile();
+			IProfile targetProfile = phone == null ? null : phone.getPreferredProfile();
 			if (targetProfile == null) {
-				targetProfile = project.getTargetProfile();
+				targetProfile = project == null ? null : project.getTargetProfile();
 			}
 			return targetProfile;
 		}
@@ -76,6 +80,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 			monitor.beginTask(createProgressMessage(project, phone), workUnits);
 
 			try {
+                assertNotNull(project, "No project selected");
 				if (phone == null) {
 					SubProgressMonitor subMonitor = new SubProgressMonitor(
 							monitor, 1);
@@ -84,7 +89,6 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 				}
 
 				if (phone != null) {
-					assertNotNull(project, "No project selected");
 					IProfile targetProfile = getProfile(project, phone);
 					assertNotNull(targetProfile, "No target profile selected");
 					

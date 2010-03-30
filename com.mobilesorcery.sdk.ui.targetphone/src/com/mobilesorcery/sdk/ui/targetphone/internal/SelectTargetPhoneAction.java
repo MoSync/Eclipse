@@ -78,6 +78,10 @@ public class SelectTargetPhoneAction implements
 				return e.getStatus();
 			}
 		}
+		
+		public static ITargetPhone scan(ITargetPhoneTransport transport) {
+		    
+		}
 
 	}
 
@@ -206,12 +210,20 @@ public class SelectTargetPhoneAction implements
 	 */
 	public static ITargetPhone selectPhone(IShellProvider shellProvider,
 			IProgressMonitor monitor) throws CoreException {
+	    ITargetPhone result = null;
 		ITargetPhoneTransport selectedTransport = selectTransport(shellProvider);
 		if (selectedTransport != null) {
-			return selectedTransport.scan(shellProvider, monitor);
+			result = selectedTransport.scan(shellProvider, monitor);
+            TargetPhonePlugin.getDefault().addToHistory(result);
+            if (result.getPreferredProfile() == null) {
+                monitor.setTaskName(MessageFormat.format(
+                        "Assigning profile to {0}", result.getName()));
+                SelectTargetPhoneAction.selectProfileForPhone(result,
+                        shellProvider, true);
+            }
 		}
 
-		return null;
+		return result;
 	}
 
 	public static ITargetPhoneTransport selectTransport(
