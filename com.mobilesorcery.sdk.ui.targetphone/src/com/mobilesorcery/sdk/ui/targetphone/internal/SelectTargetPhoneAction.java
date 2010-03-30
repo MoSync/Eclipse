@@ -78,10 +78,6 @@ public class SelectTargetPhoneAction implements
 				return e.getStatus();
 			}
 		}
-		
-		public static ITargetPhone scan(ITargetPhoneTransport transport) {
-		    
-		}
 
 	}
 
