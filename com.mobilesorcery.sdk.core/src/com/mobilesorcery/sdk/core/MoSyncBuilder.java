@@ -840,15 +840,28 @@ public class MoSyncBuilder extends ACBuilder {
     static IPath[] getLibraries(IPropertyOwner buildProperties) {
         // Ehm, I think I've seen this code elsewhere...
         ArrayList<IPath> result = new ArrayList<IPath>();
-        if (!PropertyUtil.getBoolean(buildProperties, IGNORE_DEFAULT_LIBRARIES)) {
-            result.addAll(Arrays.asList(PropertyUtil.getPaths(buildProperties, DEFAULT_LIBRARIES)));
-        }
 
         IPath[] additionalLibraries = PropertyUtil.getPaths(buildProperties, ADDITIONAL_LIBRARIES);
 
         if (additionalLibraries != null) {
             result.addAll(Arrays.asList(additionalLibraries));
         }
+        
+        // 
+        // Moved here by Ali Mosavian
+        //
+        // The reason is that pipe-tool executes embedded scripts 
+        // in the assembly, i.e crtlib.s, as soon as they're seen.
+        // The result of this is that any symbol they refer to, i.e
+        // MAMain or MATestMain has to be assembled before the script
+        // which refers to them. In other words, the order of the 
+        // arguments matter, and mastd.lib always has to passed as 
+        // the last library because some other library might contain
+        // an MAMain or MATestMain (such as Testify).
+        //
+        if (!PropertyUtil.getBoolean(buildProperties, IGNORE_DEFAULT_LIBRARIES)) {
+            result.addAll(Arrays.asList(PropertyUtil.getPaths(buildProperties, DEFAULT_LIBRARIES)));
+        }       
 
         return result.toArray(new IPath[0]);
     }
