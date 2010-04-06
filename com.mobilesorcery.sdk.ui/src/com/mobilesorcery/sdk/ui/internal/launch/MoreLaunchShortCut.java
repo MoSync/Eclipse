@@ -42,6 +42,7 @@ import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.ILaunchConstants;
+import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 
 public class MoreLaunchShortCut implements ILaunchShortcut2 {
 
@@ -142,6 +143,7 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
             DebugUITools.setLaunchPerspective(configType, ILaunchManager.RUN_MODE, IDebugUIConstants.PERSPECTIVE_DEFAULT);
             DebugUITools.setLaunchPerspective(configType, ILaunchManager.DEBUG_MODE, IDebugUIConstants.PERSPECTIVE_DEFAULT);
 
+            EmulatorLaunchConfigurationDelegate.configureLaunchConfigForSourceLookup(wc);
             config = wc.doSave();
         } catch (CoreException ce) {
             CoreMoSyncPlugin.getDefault().getLog().log(

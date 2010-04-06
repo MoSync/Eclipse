@@ -50,14 +50,17 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.core.Launch;
 import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate2;
 import org.eclipse.debug.core.model.IPersistableSourceLocator;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.LaunchConfigurationDelegate;
+import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupDirector;
 import org.eclipse.debug.core.sourcelookup.ISourceContainer;
 import org.eclipse.debug.core.sourcelookup.ISourceLookupDirector;
+import org.eclipse.debug.core.sourcelookup.containers.AbstractSourceContainer;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -349,6 +352,9 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
             String id = configuration.getAttribute(ILaunchConfiguration.ATTR_SOURCE_LOCATOR_ID, (String)null);
             if (id == null) {
                 sourceLocator = CDebugUIPlugin.createDefaultSourceLocator();
+                if (sourceLocator instanceof AbstractSourceLookupDirector) {
+                    ((AbstractSourceLookupDirector)sourceLocator).setId(CDebugUIPlugin.getDefaultSourceLocatorID());
+                }
                 sourceLocator.initializeDefaults(configuration);
             } else {
                 sourceLocator = DebugPlugin.getDefault().getLaunchManager().newSourceLocator(id);
@@ -363,6 +369,10 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         }
     }
     
+    public static void configureLaunchConfigForSourceLookup(ILaunchConfigurationWorkingCopy wc) {
+        wc.setAttribute(ILaunchConfiguration.ATTR_SOURCE_LOCATOR_ID, CDebugUIPlugin.getDefaultSourceLocatorID());
+    }
+    
     public boolean buildForLaunch(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
         IProject project = getProject(configuration);
         // We are using auto build to flag to listeners that no dialogs
@@ -370,4 +380,5 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         project.build(IncrementalProjectBuilder.AUTO_BUILD, monitor);
         return false;
     }
+
 }

@@ -13,17 +13,24 @@
 */
 package com.mobilesorcery.sdk.ui.internal.launch;
 
+import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.ui.AbstractLaunchConfigurationTabGroup;
 import org.eclipse.debug.ui.ILaunchConfigurationDialog;
 import org.eclipse.debug.ui.ILaunchConfigurationTab;
+import org.eclipse.debug.ui.sourcelookup.SourceLookupTab;
 
 public class EmulatorLaunchConfigurationTabGroup extends AbstractLaunchConfigurationTabGroup {
 
+    public void initializeFrom(ILaunchConfiguration configuration) {
+        super.initializeFrom(configuration);
+    }
+    
     public void createTabs(ILaunchConfigurationDialog dialog, String mode) {
     	MoSyncLaunchParamsTab launchTab = new MoSyncLaunchParamsTab();
     	launchTab.setMode(mode);
+    	SourceLookupTab sourceLookup = new SourceLookupTab();
     	
-        ILaunchConfigurationTab[] tabs = new ILaunchConfigurationTab[] { launchTab };
+        ILaunchConfigurationTab[] tabs = new ILaunchConfigurationTab[] { launchTab, sourceLookup };
 
         for (int i = 0; i < tabs.length; i++) {
             tabs[i].setLaunchConfigurationDialog(dialog);

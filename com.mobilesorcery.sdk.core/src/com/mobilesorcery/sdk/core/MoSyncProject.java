@@ -929,10 +929,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		
 		return this;
 	}
-	
-	private IPropertyOwner getPropertyOwner(IBuildConfiguration config) {
-		return config == null ? this : config.getProperties();
-	}
+
 
 	public LibraryLookup getLibraryLookup(IPropertyOwner buildProperties) {
 		// TODO: cache?
