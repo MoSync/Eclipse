@@ -27,11 +27,13 @@ import org.eclipse.cdt.core.IBinaryParser.IBinaryObject;
 import org.eclipse.cdt.core.model.ICModelMarker;
 import org.eclipse.cdt.core.model.ICProject;
 import org.eclipse.cdt.debug.core.CDebugCorePlugin;
+import org.eclipse.cdt.debug.core.CDebugUtils;
 import org.eclipse.cdt.debug.core.cdi.ICDISession;
 import org.eclipse.cdt.debug.core.sourcelookup.ICSourceLocation;
 import org.eclipse.cdt.debug.core.sourcelookup.ICSourceLocator;
 import org.eclipse.cdt.debug.core.sourcelookup.SourceLookupFactory;
 import org.eclipse.cdt.debug.internal.core.sourcelookup.CSourceLookupDirector;
+import org.eclipse.cdt.debug.ui.CDebugUIPlugin;
 import org.eclipse.cdt.internal.core.model.CModelManager;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -51,6 +53,7 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.Launch;
 import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate2;
+import org.eclipse.debug.core.model.IPersistableSourceLocator;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.LaunchConfigurationDelegate;
 import org.eclipse.debug.core.sourcelookup.ISourceContainer;
@@ -331,12 +334,33 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     }
 
     public ILaunch getLaunch(ILaunchConfiguration configuration, String mode) throws CoreException {
-    	// We implement this ourselves so we can add source lookup (and hence niceties like 
-    	// clicking on stack trace -> open editor
-    	ISourceLookupDirector commonSourceLookupDirector = CDebugCorePlugin.getDefault().getCommonSourceLookupDirector();
+    	//ISourceLookupDirector commonSourceLookupDirector = CDebugCorePlugin.getDefault().getCommonSourceLookupDirector();
     	
-    	Launch launch = new Launch(configuration, mode, commonSourceLookupDirector);
+    	Launch launch = new Launch(configuration, mode, null);
+    	// We implement this ourselves so we can add source lookup (and hence niceties like 
+        // clicking on stack trace -> open editor
+        setDefaultSourceLocator(launch, configuration);
     	return launch;
+    }
+    
+    protected void setDefaultSourceLocator(ILaunch launch, ILaunchConfiguration configuration) throws CoreException {
+        if (launch.getSourceLocator() == null) {
+            IPersistableSourceLocator sourceLocator;
+            String id = configuration.getAttribute(ILaunchConfiguration.ATTR_SOURCE_LOCATOR_ID, (String)null);
+            if (id == null) {
+                sourceLocator = CDebugUIPlugin.createDefaultSourceLocator();
+                sourceLocator.initializeDefaults(configuration);
+            } else {
+                sourceLocator = DebugPlugin.getDefault().getLaunchManager().newSourceLocator(id);
+                String memento = configuration.getAttribute(ILaunchConfiguration.ATTR_SOURCE_LOCATOR_MEMENTO, (String)null);
+                if (memento == null) {
+                    sourceLocator.initializeDefaults(configuration);
+                } else {
+                    sourceLocator.initializeFromMemento(memento);
+                }
+            }
+            launch.setSourceLocator(sourceLocator);
+        }
     }
     
     public boolean buildForLaunch(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
