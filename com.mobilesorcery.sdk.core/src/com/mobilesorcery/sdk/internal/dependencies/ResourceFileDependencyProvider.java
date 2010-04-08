@@ -20,15 +20,20 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.builder.MoSyncResourceBuilderVisitor;
 
@@ -65,7 +70,16 @@ public class ResourceFileDependencyProvider implements
 	}
 	
 	public static IFile getResourceOutput(IProject project) {
-		return project.getFolder("Output").getFile("resources");		
+	    // TODO: Should work with any build variant.
+	    IBuildVariant variant = MoSyncBuilder.getActiveVariant(MoSyncProject.create(project), false);
+	    IPath outputPath = MoSyncBuilder.getOutputPath(project, variant);
+	    IContainer[] outputFiles = project.getWorkspace().getRoot().findContainersForLocation(outputPath);
+	    for (int i = 0; i < outputFiles.length; i++) {
+	        if (outputFiles[i].getProject().equals(project)) {
+	            return outputFiles[i].getFile(new Path("resources"));
+	        }
+	    }
+		return null;
 	}
 
 	public static boolean isResourceOutput(IResource resource) {

@@ -15,8 +15,10 @@ package com.mobilesorcery.sdk.core;
 
 import java.util.Map;
 
+import org.eclipse.core.runtime.IAdaptable;
 
-public class BuildConfiguration implements IBuildConfiguration {
+
+public class BuildConfiguration implements IBuildConfiguration, IAdaptable {
 
 	private MoSyncProject project;
 	private String id;
@@ -57,5 +59,15 @@ public class BuildConfiguration implements IBuildConfiguration {
         
         return uniqueId;
 	}
+
+    public Object getAdapter(Class adapter) {
+        if (IBuildConfiguration.class.equals(adapter)) {
+            return this;
+        } else if (MoSyncProject.class.equals(adapter)) {
+            return project;
+        }
+        
+        return null;
+    }
 
 }
