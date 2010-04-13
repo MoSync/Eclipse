@@ -41,7 +41,7 @@ public class ProfileLabelProvider extends LabelProvider {
         this.style = style;
     }
     
-    public void setTargetProfilerProvider(ITargetProfileProvider targetProfileProvider) {
+    public void setTargetProfileProvider(ITargetProfileProvider targetProfileProvider) {
         this.targetProfileProvider = targetProfileProvider;
     }
 

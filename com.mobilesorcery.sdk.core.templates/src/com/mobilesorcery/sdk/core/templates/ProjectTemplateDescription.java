@@ -22,7 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.mobilesorcery.sdk.core.templates.SectionedPropertiesFile.Section;
+import com.mobilesorcery.sdk.core.SectionedPropertiesFile;
+import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
 
 /**
  * Given a "project template description file",

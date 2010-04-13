@@ -35,6 +35,8 @@ public class Activator extends AbstractUIPlugin {
 
     public static final String TARGET_PHONE_IMAGE = "target.phone"; //$NON-NLS-1$
 
+    public static final String BUILD_FOR_PROFILE_IMAGE = "build";
+
 	// The shared instance
 	private static Activator plugin;
 
@@ -74,6 +76,7 @@ public class Activator extends AbstractUIPlugin {
 	public void initializeImageRegistry(ImageRegistry reg) {
         reg.put(PHONE_IMAGE, ImageDescriptor.createFromFile(getClass(), "/icons/phone.png")); //$NON-NLS-1$
         reg.put(TARGET_PHONE_IMAGE, ImageDescriptor.createFromFile(getClass(), "/icons/phoneTarget.png")); //$NON-NLS-1$
+        reg.put(BUILD_FOR_PROFILE_IMAGE, ImageDescriptor.createFromFile(getClass(), "/icons/binary.gif"));
 	}
 	
 	public static Image resize(Image original, int width, int height, boolean disposeOriginal) {

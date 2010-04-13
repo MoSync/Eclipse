@@ -23,9 +23,11 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
@@ -57,34 +59,34 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 		if (doesAffectBuild(resource)) {
 			changedOrAddedResources.add(resource);
 		}
-		return true;
+		return !resource.isDerived();
 	}
 
 	public void addChangedOrAddedResources(IResource[] changedOrAddedResources) {
-		if (this.changedOrAddedResources == null) {
-			this.changedOrAddedResources = new ArrayList<IResource>();
-		}
-
 		for (int i = 0; i < changedOrAddedResources.length; i++) {
 			IResource resource = changedOrAddedResources[i];
-			if (doesAffectBuild(resource)) {
-				this.changedOrAddedResources.add(resource);
-			}
+			addChangedOrAddedResource(resource);
 		}
 	}
-
-	public void addDeletedResources(IResource[] deletedResources) {
-		if (this.deletedResources == null) {
-			this.deletedResources = new ArrayList<IResource>();
-		}
-
-		for (int i = 0; i < deletedResources.length; i++) {
-			IResource resource = deletedResources[i];
-			if (doesAffectBuild(resource)) {
-				this.deletedResources.add(resource);
-			}
-		}
+	
+	public void addChangedOrAddedResource(IResource changedOrAddedResource) {
+        if (doesAffectBuild(changedOrAddedResource)) {
+            this.changedOrAddedResources.add(changedOrAddedResource);
+        }
 	}
+
+    public void addDeletedResources(IResource[] deletedResources) {
+        for (int i = 0; i < deletedResources.length; i++) {
+            IResource resource = deletedResources[i];
+            addDeletedResource(resource);
+        }
+    }
+    
+    public void addDeletedResource(IResource deletedResource) {
+        if (doesAffectBuild(deletedResource)) {
+            this.deletedResources.add(deletedResource);
+        }
+    }
 
 	public void addChangedOrAddedResources(
 			IResourceDelta[] changedOrAddedResourceDeltas) {
@@ -148,17 +150,19 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	 *            full visit is performed
 	 * @throws CoreException
 	 */
-	public void setDelta(IResourceDelta[] deltas) throws CoreException {
-		if (deltas == null) {
+	public void setDiff(IFileTreeDiff diff) throws CoreException {
+		if (diff == null) {
 			project.accept(this);
 		} else {
-			for (int i = 0; i < deltas.length; i++) {
-				addChangedOrAddedResources(deltas[i]
-						.getAffectedChildren(IResourceDelta.ADDED
-								| IResourceDelta.CHANGED));
-				addDeletedResources(deltas[i]
-						.getAffectedChildren(IResourceDelta.REMOVED));
-			}
+		    for (IPath added : diff.getAdded()) {
+                addChangedOrAddedResource(project.findMember(added));
+            }
+		    for (IPath changed : diff.getChanged()) {
+                addChangedOrAddedResource(project.findMember(changed));
+            }
+		    for (IPath removed : diff.getRemoved()) {
+                addDeletedResource(project.findMember(removed));
+            }
 		}
 	}
 

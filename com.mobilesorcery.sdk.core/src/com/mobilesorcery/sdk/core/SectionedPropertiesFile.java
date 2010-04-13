@@ -11,7 +11,7 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
-package com.mobilesorcery.sdk.core.templates;
+package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 import java.io.FileReader;
@@ -23,8 +23,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.mobilesorcery.sdk.core.templates.SectionedPropertiesFile.Section.Entry;
+import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section.Entry;
 
+/**
+ * A utility class for parsing and producing section-based properties files,
+ * ie files that look like this:
+ * <blockquote><code>
+ * [section1]
+ * a = b
+ * b = c
+ * [section2]
+ * f = g
+ * g = h
+ * </code></blockquote>
+ * <p>There may exist several sections with the same name.
+ * @author Mattias Bybro, mattias.bybro@purplescout.se
+ *
+ */
 public class SectionedPropertiesFile {
 
 	public static class Section {
@@ -76,7 +91,7 @@ public class SectionedPropertiesFile {
 		private String name;
 		private ArrayList<Entry> entries = new ArrayList<Entry>();
 
-		public Section(String name) {
+		Section(String name) {
 			this.name = name;
 		}
 		
@@ -117,7 +132,7 @@ public class SectionedPropertiesFile {
 			if (name != null) {
 				toString.append("["); //$NON-NLS-1$
 				toString.append(name);
-				toString.append("]\n\n"); //$NON-NLS-1$
+				toString.append("]\n"); //$NON-NLS-1$
 			}
 			
 			for (Entry entry : entries) {
@@ -125,7 +140,7 @@ public class SectionedPropertiesFile {
 				String value = entry.getValue();
 				if (key != null) {
 					toString.append(unescape(key));
-					toString.append("= "); //$NON-NLS-1$
+					toString.append(" = "); //$NON-NLS-1$
 				}
 				
 				toString.append(unescape(value));
@@ -152,7 +167,7 @@ public class SectionedPropertiesFile {
 	}
 	
 	public static SectionedPropertiesFile parse(Reader input) throws IOException {
-		SectionedPropertiesFile result = new SectionedPropertiesFile();
+	    SectionedPropertiesFile result = new SectionedPropertiesFile();
 		LineNumberReader lines = new LineNumberReader(input);
 		
 		Section currentSection = new Section(null);
@@ -176,6 +191,12 @@ public class SectionedPropertiesFile {
 		result.sections.add(currentSection);
 		return result;
 	}
+	
+	public static SectionedPropertiesFile create() {
+	    SectionedPropertiesFile result = new SectionedPropertiesFile();
+	    result.sections.add(new Section(null));
+	    return result;
+	}
 
 	private ArrayList<Section> sections = new ArrayList<Section>();
 
@@ -196,11 +217,21 @@ public class SectionedPropertiesFile {
 		return null;
 	}
 	
+	public Section addSection(String name) {
+	    Section section = new Section(name);
+	    sections.add(section);
+	    return section;
+	}
+	
+	/**
+	 * Returns a string representation of this sectioned
+	 * properties that can be parsed using the <code>parse</code>
+	 * methods.
+	 */
 	public String toString() {
 		StringBuffer toString = new StringBuffer();
 		for (Section section : sections) {
 			toString.append(section);
-			toString.append('\n');
 			toString.append('\n');
 		}
 		

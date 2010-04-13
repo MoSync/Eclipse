@@ -22,6 +22,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
+import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.viewers.DoubleClickEvent;
@@ -62,6 +63,7 @@ import com.mobilesorcery.sdk.profiles.ui.DeviceFilterComposite;
 import com.mobilesorcery.sdk.profiles.ui.DeviceViewerFilter;
 import com.mobilesorcery.sdk.profiles.ui.ProfileContentProvider;
 import com.mobilesorcery.sdk.profiles.ui.ProfileLabelProvider;
+import com.mobilesorcery.sdk.profiles.ui.internal.actions.FinalizeForProfileAction;
 import com.mobilesorcery.sdk.profiles.ui.internal.actions.SetTargetProfileAction;
 import com.mobilesorcery.sdk.profiles.ui.internal.actions.ShowProfileInfoAction;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
@@ -70,6 +72,7 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
 
     private SetTargetProfileAction setTargetAction = new SetTargetProfileAction();
     private ShowProfileInfoAction showProfileInfo = new ShowProfileInfoAction();
+    private FinalizeForProfileAction buildForProfile = new FinalizeForProfileAction();
 
     private TreeViewer profileTree;
     private ProfileLabelProvider profileLabelProvider;
@@ -176,6 +179,7 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
             public void selectionChanged(SelectionChangedEvent event) {
                 setTargetAction.setSelection(event.getSelection());
                 showProfileInfo.setSelection(event.getSelection());
+                buildForProfile.setSelection(event.getSelection());
             }
         });
 
@@ -224,6 +228,8 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
                 IStructuredSelection selection = (IStructuredSelection) profileTree.getSelection();
                 if (selection.size() == 1 && selection.getFirstElement() instanceof IProfile) {
                     menuMgr.add(setTargetAction);
+                    menuMgr.add(buildForProfile);
+                    menuMgr.add(new Separator());
                     menuMgr.add(showProfileInfo);
                 }
             }
@@ -261,7 +267,8 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
         }
 
         setTargetAction.setCurrentProject(currentProject);
-        profileLabelProvider.setTargetProfilerProvider(currentProject);
+        buildForProfile.setCurrentProject(currentProject);
+        profileLabelProvider.setTargetProfileProvider(currentProject);
 
         profileTree.getTree().getDisplay().asyncExec(new Runnable() {
             public void run() {

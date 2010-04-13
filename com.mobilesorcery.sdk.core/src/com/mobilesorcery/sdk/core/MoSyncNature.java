@@ -163,7 +163,7 @@ public class MoSyncNature implements IProjectNature {
      * happen if the project does not exist, if it is closed, etc)
      */
 	public static boolean isCompatible(IProject project) throws CoreException {
-		return project.hasNature(MoSyncNature.ID) || project.hasNature(MoSyncNature.COMPATIBLE_ID);
+		return project != null && (project.hasNature(MoSyncNature.ID) || project.hasNature(MoSyncNature.COMPATIBLE_ID));
 	}
 	
 	public static boolean hasNature(IProject project) throws CoreException {

@@ -114,7 +114,7 @@ public class EditDeviceListDialog extends Dialog {
         
         preferredProfile = new TreeViewer(contents, SWT.SINGLE | SWT.BORDER);
         ProfileLabelProvider labelProvider = new ProfileLabelProvider(SWT.NONE);
-        labelProvider.setTargetProfilerProvider(new ITargetProfileProvider() {
+        labelProvider.setTargetProfileProvider(new ITargetProfileProvider() {
 			public IProfile getTargetProfile() {
 				return getCurrentPreferredProfile(deviceList);
 			}

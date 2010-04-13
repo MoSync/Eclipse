@@ -16,6 +16,7 @@ package com.mobilesorcery.sdk.core;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 
@@ -77,6 +78,15 @@ public class PropertyUtil {
     public static String fromPaths(IPath[] paths) {
         return Util.join(paths, ", ");
     }
+    
+    public static String fromPaths(IResource[] resources) {
+        IPath[] fullPaths = new IPath[resources.length];
+        for (int i = 0; i < resources.length; i++) {
+            fullPaths[i] = resources[i].getFullPath();
+        }
+        
+        return fromPaths(fullPaths);
+    }
 
     public static String[] getStrings(IPropertyOwner p, String key) {
     	if (p == null) {
@@ -123,6 +133,16 @@ public class PropertyUtil {
     
     public static boolean setInteger(IPropertyOwner p, String key, int value) {
         return p.setProperty(key, Integer.toString(value));
+    }
+
+    public static String fromObject(Object value) {
+        if (value == null) {
+            return "";
+        } else if (value instanceof IPath[]) {
+            return fromPaths((IPath[]) value);
+        } else {
+            return value.toString();
+        }
     }
 
 

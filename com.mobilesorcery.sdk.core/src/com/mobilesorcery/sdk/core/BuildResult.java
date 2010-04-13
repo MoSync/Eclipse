@@ -25,6 +25,7 @@ public class BuildResult implements IBuildResult {
     private IProject project;
 	private boolean success;
 	private IBuildVariant variant;
+    private long timestamp;
 
     public BuildResult(IProject project) {
         this.project = project;
@@ -61,4 +62,12 @@ public class BuildResult implements IBuildResult {
 	public void setVariant(IBuildVariant variant) {
 		this.variant = variant;
 	}
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long utc) {
+        this.timestamp = utc;
+    }
 }

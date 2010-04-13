@@ -20,7 +20,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -31,19 +30,17 @@ import java.util.TreeSet;
 import java.util.Map.Entry;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.swt.custom.Bullet;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.XMLMemento;
 
+import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.ParseException;
 import com.mobilesorcery.sdk.internal.SLD;
 import com.mobilesorcery.sdk.internal.builder.BuildResultManager;
-import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
@@ -196,8 +193,6 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
     private DeviceFilterListener deviceFilterListener;
 
-	private DependencyManager<IResource> dependencyManager = new DependencyManager<IResource>();
-
 	private IBuildConfiguration currentBuildConfig;
 
 	private TreeMap<String, IBuildConfiguration> configurations = new TreeMap<String, IBuildConfiguration>(String.CASE_INSENSITIVE_ORDER);
@@ -209,6 +204,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	private boolean disposed = false;
 
 	private IBuildResultManager brManager = null;
+
+    private HashMap<IBuildVariant, IBuildState> cachedBuildStates = new HashMap<IBuildVariant, IBuildState>();
 
     private MoSyncProject(IProject project) {
         Assert.isNotNull(project);
@@ -805,11 +802,22 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     }
     
     /**
-     * Returns the dependency manager of this project.
+     * <p>Returns the build state for a variant manager of this project.
+     * All non-finalizer build states may be cached.</p>
      * @return
      */
-	public DependencyManager<IResource> getDependencyManager() {
-		return dependencyManager;
+	public IBuildState getBuildState(IBuildVariant variant) {
+	    IBuildState result = cachedBuildStates.get(variant);
+	    boolean wasNull = result == null;
+        if (wasNull) {
+            result = new BuildState(this, variant);
+        }
+        
+	    if (wasNull && !variant.isFinalizerBuild()) {
+            cachedBuildStates.put(variant, result);   
+	    }
+	    
+		return result;
 	}
 
 	/**

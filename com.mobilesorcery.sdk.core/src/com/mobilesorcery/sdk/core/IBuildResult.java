@@ -47,7 +47,23 @@ public interface IBuildResult {
      */
     public abstract void setBuildResult(File buildResult);
 
+    /**
+     * Returns the variant built.
+     * @return
+     */
     public abstract IBuildVariant getVariant();
 
+    /**
+     * Returns the timestamp of this build result (set before
+     * actually building)
+     * @return The timestamp as UTC
+     */
+    public abstract long getTimestamp();
+    
+    /**
+     * Sets the timestamp of this build result
+     * @param utc
+     */
+    public abstract void setTimestamp(long utc);
 
 }

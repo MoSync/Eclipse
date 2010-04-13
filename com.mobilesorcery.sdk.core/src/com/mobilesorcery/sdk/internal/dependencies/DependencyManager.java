@@ -45,6 +45,10 @@ public class DependencyManager<T> {
 		return new ArrayList<T>(result);
 	}
 	
+	public Set<T> getAllDependees() {
+	    return dependencyMap.keySet();
+	}
+	
 	public Set<T> getDependenciesOf(T obj) {
 		Set<T> result = dependencyMap.get(obj);
 		result = result == null ? emptySet : result;

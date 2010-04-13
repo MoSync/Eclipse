@@ -20,7 +20,7 @@ import java.io.StringReader;
 import org.junit.Test;
 
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
-import com.mobilesorcery.sdk.core.templates.SectionedPropertiesFile.Section.Entry;
+import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section.Entry;
 
 public class ProjectTemplateDescriptionParserTest {
 

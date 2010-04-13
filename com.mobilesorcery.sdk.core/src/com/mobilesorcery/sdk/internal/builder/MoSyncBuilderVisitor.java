@@ -68,7 +68,6 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
     private ArrayList<String> objectFiles = new ArrayList<String>();
     private int errors;
-    private IProfile profile;
     private IPath outputPath;
     private String extraSwitches;
     private IBuildResult buildResult;
@@ -302,10 +301,6 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
         objectFiles = new ArrayList<String>();
         project.accept(this);        
         return (String[]) objectFiles.toArray(new String[0]);
-    }
-
-    public void setProfile(IProfile profile) {
-        this.profile = profile;
     }
 
     public int getErrorCount() {

@@ -292,14 +292,6 @@ public class MoSyncBuilder extends ACBuilder {
             // "always full build" strategy
             kind = FULL_BUILD;
         }
-
-        // TODO: Smarter incr for changed configs - not too difficult, actually,
-        // so
-        // do it asap.
-        if (hasConfigChanged(MoSyncProject.create(project))) {
-            kind = FULL_BUILD;
-        }
-
         IResourceDelta[] deltas = kind == FULL_BUILD ? null : getDeltas(getProject());
         boolean doPack = kind == FULL_BUILD;
 
@@ -321,20 +313,6 @@ public class MoSyncBuilder extends ACBuilder {
 
     private boolean hasErrorMarkers(IProject project, int depth) throws CoreException {
         return project.findMaxProblemSeverity(ICModelMarker.C_MODEL_PROBLEM_MARKER, true, depth) == IMarker.SEVERITY_ERROR;
-    }
-
-    private boolean hasConfigChanged(MoSyncProject project) {
-        // TODO: Don't store transient build vars like this.
-        String lastBuildConfigKey = "last.build.config";
-        String oldConfig = project.getProperty(lastBuildConfigKey);
-        if ("".equals(oldConfig)) {
-            oldConfig = null;
-        }
-        IBuildConfiguration activeConfig = project.getActiveBuildConfiguration();
-        String activeConfigId = activeConfig == null ? null : activeConfig.getId();
-        boolean changedConfig = !NameSpacePropertyOwner.equals(oldConfig, activeConfigId);
-        project.initProperty(lastBuildConfigKey, activeConfigId, MoSyncProject.LOCAL_PROPERTY);
-        return changedConfig;
     }
 
     /**
@@ -364,7 +342,6 @@ public class MoSyncBuilder extends ACBuilder {
         MoSyncProject mosyncProject = MoSyncProject.create(project);
         IBuildVariant variant = getActiveVariant(mosyncProject, false);
         clean(project, variant, monitor);
-        mosyncProject.getDependencyManager().clear();
     }
 
     public void clean(IProject project, IBuildVariant variant, IProgressMonitor monitor) {
@@ -380,6 +357,11 @@ public class MoSyncBuilder extends ACBuilder {
         Util.deleteFiles(getProgramCombOutputPath(project, variant).toFile(), null, 1, monitor);
         Util.deleteFiles(getResourceOutputPath(project, variant).toFile(), null, 1, monitor);
         Util.deleteFiles(outputFile, Util.getExtensionFilter("s"), 512, monitor);
+        
+        IBuildState buildState = MoSyncProject.create(project).getBuildState(variant);
+        buildState.clear();
+        buildState.save();
+        buildState.setValid(true);
     }
 
     /**
@@ -425,7 +407,7 @@ public class MoSyncBuilder extends ACBuilder {
     // TODO: Refactor, this is becoming a jack-of-all-trades method, esp. now
     // with the partial builds as well. Maybe need a new class like 'build
     // parameters' to avoid all setters and this huge method signature...
-    IBuildResult incrementalBuild(IProject project, IResourceDelta[] deltas, IBuildSession session, IBuildVariant variant, 
+    IBuildResult incrementalBuild(IProject project, IResourceDelta[] ignoreMe, IBuildSession session, IBuildVariant variant, 
             IFilter<IResource> resourceFilter, IProgressMonitor monitor) throws CoreException {
 
         if (CoreMoSyncPlugin.getDefault().isDebugging()) {
@@ -443,6 +425,9 @@ public class MoSyncBuilder extends ACBuilder {
 
         BuildResult buildResult = mosyncProject.getBuildResults().clearBuildResult(variant);
 
+        IBuildState buildState = mosyncProject.getBuildState(variant);
+        IFileTreeDiff diff = buildState.createDiff();
+        
         try {
             monitor.beginTask(MessageFormat.format("Building {0}", project), 4);
 
@@ -455,11 +440,11 @@ public class MoSyncBuilder extends ACBuilder {
 
             if (hadSevereBuildErrors) {
                 // Build all
-                deltas = null;
+                diff = null;
             }
 
-            if (deltas == null) {
-                mosyncProject.getDependencyManager().clear();
+            if (diff == null || !buildState.isValid()) {
+                buildState.getDependencyManager().clear();
             }
 
             boolean isLib = PROJECT_TYPE_LIBRARY.equals(mosyncProject.getProperty(PROJECT_TYPE));
@@ -506,20 +491,19 @@ public class MoSyncBuilder extends ACBuilder {
             resourceVisitor.setPipeTool(pipeTool);
             resourceVisitor.setOutputFile(resource);
             resourceVisitor.setDependencyProvider(compilerVisitor.getDependencyProvider());
-            resourceVisitor.setDelta(deltas);
+            resourceVisitor.setDiff(diff);
             resourceVisitor.setResourceFilter(resourceFilter);
 
             if (session.doBuildResources()) {
                 // First we build the resources...
                 monitor.setTaskName("Assembling resources");
-                resourceVisitor.incrementalCompile(monitor, mosyncProject.getDependencyManager());
+                resourceVisitor.incrementalCompile(monitor, buildState.getDependencyManager());
             }
 
             // ...and then the actual code is compiled
             IPath compileDir = getOutputPath(project, variant);
             monitor.setTaskName(MessageFormat.format("Compiling for {0}", targetProfile));
 
-            compilerVisitor.setProfile(targetProfile);
             compilerVisitor.setProject(project);
             compilerVisitor.setVariant(variant);
             compilerVisitor.setConsole(console);
@@ -529,12 +513,12 @@ public class MoSyncBuilder extends ACBuilder {
             compilerVisitor.setOutputPath(compileDir);
             compilerVisitor.setLineHandler(linehandler);
             compilerVisitor.setBuildResult(buildResult);
-            compilerVisitor.setDelta(deltas);
+            compilerVisitor.setDiff(diff);
             compilerVisitor.setResourceFilter(resourceFilter);
-            compilerVisitor.incrementalCompile(monitor, mosyncProject.getDependencyManager());
+            compilerVisitor.incrementalCompile(monitor, buildState.getDependencyManager());
 
             IResource[] allAffectedResources = compilerVisitor.getAllAffectedResources();
-            Set<IProject> projectDependencies = computeProjectDependencies(monitor, mosyncProject, allAffectedResources);
+            Set<IProject> projectDependencies = computeProjectDependencies(monitor, mosyncProject, buildState, allAffectedResources);
             DependencyManager<IProject> projectDependencyMgr = CoreMoSyncPlugin.getDefault().getProjectDependencyManager(ResourcesPlugin.getWorkspace());
             projectDependencyMgr.setDependencies(project, projectDependencies);
             monitor.worked(1);
@@ -626,9 +610,9 @@ public class MoSyncBuilder extends ACBuilder {
             iconVisitor.setProject(project);
             iconVisitor.setVariant(variant);
             iconVisitor.setConsole(console);
-            iconVisitor.setDelta(deltas);
+            iconVisitor.setDiff(diff);
             iconVisitor.setResourceFilter(resourceFilter);
-            iconVisitor.incrementalCompile(monitor, mosyncProject.getDependencyManager());
+            iconVisitor.incrementalCompile(monitor, buildState.getDependencyManager());
 
             if (session.doPack() && !isLib) {
                 IPackager packager = targetProfile.getPackager();
@@ -665,7 +649,16 @@ public class MoSyncBuilder extends ACBuilder {
             } else if (buildResult.success()) {
                 clearCMarkers(project);
             }
+            
+            saveBuildState(buildState, project, buildResult);
         }
+    }
+
+    private void saveBuildState(IBuildState buildState, IProject project, BuildResult buildResult) throws CoreException {
+        buildState.updateResult(buildResult);
+        buildState.updateState(project);
+        buildState.save();
+        buildState.setValid(true);
     }
 
     private void addBuildFailedMarker(IProject project) throws CoreException {
@@ -700,13 +693,13 @@ public class MoSyncBuilder extends ACBuilder {
         console.prepare();
     }
 
-    private Set<IProject> computeProjectDependencies(IProgressMonitor monitor, MoSyncProject mosyncProject, IResource[] allAffectedResources) {
+    private Set<IProject> computeProjectDependencies(IProgressMonitor monitor, MoSyncProject mosyncProject, IBuildState buildState, IResource[] allAffectedResources) {
         IProject project = mosyncProject.getWrappedProject();
         monitor.setTaskName(MessageFormat.format("Computing project dependencies for {0}", project.getName()));
         DependencyManager<IProject> projectDependencies = CoreMoSyncPlugin.getDefault().getProjectDependencyManager(ResourcesPlugin.getWorkspace());
         projectDependencies.clearDependencies(project);
         HashSet<IProject> allProjectDependencies = new HashSet<IProject>();
-        Set<IResource> dependencies = mosyncProject.getDependencyManager().getDependenciesOf(Arrays.asList(allAffectedResources));
+        Set<IResource> dependencies = buildState.getDependencyManager().getDependenciesOf(Arrays.asList(allAffectedResources));
         for (IResource resourceDependency : dependencies) {
             if (resourceDependency.getType() != IResource.ROOT) {
                 allProjectDependencies.add(resourceDependency.getProject());
@@ -730,14 +723,6 @@ public class MoSyncBuilder extends ACBuilder {
         }
 
         return toAbsolute(mosyncProject.getWrappedProject().getLocation().append("Output"), outputPath);
-        /*
-         * String libraryOutputSetting =
-         * buildProperties.getProperty(MoSyncBuilder.LIB_OUTPUT_PATH); IPath
-         * libraryOutput = (libraryOutputSetting == null ||
-         * libraryOutputSetting.length() == 0) ?
-         * computeDefaultLibraryOutput(mosyncProject) : new
-         * Path(libraryOutputSetting); return libraryOutput;
-         */
     }
 
     /**
@@ -840,28 +825,15 @@ public class MoSyncBuilder extends ACBuilder {
     static IPath[] getLibraries(IPropertyOwner buildProperties) {
         // Ehm, I think I've seen this code elsewhere...
         ArrayList<IPath> result = new ArrayList<IPath>();
+        if (!PropertyUtil.getBoolean(buildProperties, IGNORE_DEFAULT_LIBRARIES)) {
+            result.addAll(Arrays.asList(PropertyUtil.getPaths(buildProperties, DEFAULT_LIBRARIES)));
+        }
 
         IPath[] additionalLibraries = PropertyUtil.getPaths(buildProperties, ADDITIONAL_LIBRARIES);
 
         if (additionalLibraries != null) {
             result.addAll(Arrays.asList(additionalLibraries));
         }
-        
-        // 
-        // Moved here by Ali Mosavian
-        //
-        // The reason is that pipe-tool executes embedded scripts 
-        // in the assembly, i.e crtlib.s, as soon as they're seen.
-        // The result of this is that any symbol they refer to, i.e
-        // MAMain or MATestMain has to be assembled before the script
-        // which refers to them. In other words, the order of the 
-        // arguments matter, and mastd.lib always has to passed as 
-        // the last library because some other library might contain
-        // an MAMain or MATestMain (such as Testify).
-        //
-        if (!PropertyUtil.getBoolean(buildProperties, IGNORE_DEFAULT_LIBRARIES)) {
-            result.addAll(Arrays.asList(PropertyUtil.getPaths(buildProperties, DEFAULT_LIBRARIES)));
-        }       
 
         return result.toArray(new IPath[0]);
     }
@@ -952,5 +924,9 @@ public class MoSyncBuilder extends ACBuilder {
 
     public static IBuildSession createCleanBuildSession(IBuildVariant variant) {
         return new BuildSession(Arrays.asList(variant), BuildSession.ALL - BuildSession.DO_CLEAN);
+    }
+
+    public static IPath getMetaDataPath(MoSyncProject project, IBuildVariant variant) {
+        return getOutputPath(project.getWrappedProject(), variant).append(".metadata");
     }
 }
