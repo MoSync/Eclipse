@@ -167,10 +167,6 @@ public class PathExclusionFilter implements IFilter<IResource> {
 		}
 
 		boolean result = state == EXCLUDE;
-		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-			CoreMoSyncPlugin.trace("{0} {1}", resource.getFullPath(),
-					result ? "Accepted" : "NOT accepted");
-		}
 		return result;
 	}
 

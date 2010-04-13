@@ -31,6 +31,8 @@ import org.eclipse.cdt.core.IErrorParser;
 import org.eclipse.cdt.core.IMarkerGenerator;
 import org.eclipse.cdt.core.model.ICModelMarker;
 import org.eclipse.cdt.core.resources.ACBuilder;
+import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -40,6 +42,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
@@ -424,9 +427,12 @@ public class MoSyncBuilder extends ACBuilder {
         IProfile targetProfile = variant.getProfile();
 
         BuildResult buildResult = mosyncProject.getBuildResults().clearBuildResult(variant);
-
+        buildResult.setTimestamp(System.currentTimeMillis());
+        
         IBuildState buildState = mosyncProject.getBuildState(variant);
         IFileTreeDiff diff = buildState.createDiff();
+        
+        ensureOutputIsMarkedDerived(project, variant);
         
         try {
             monitor.beginTask(MessageFormat.format("Building {0}", project), 4);
@@ -651,6 +657,34 @@ public class MoSyncBuilder extends ACBuilder {
             }
             
             saveBuildState(buildState, project, buildResult);
+        }
+    }
+
+    private void ensureOutputIsMarkedDerived(IProject project, IBuildVariant variant) throws CoreException {
+        ensureFolderIsMarkedDerived(project.getFolder("FinalOutput"));
+        ensureFolderIsMarkedDerived(project.getFolder("Output"));
+        
+        IPath outputPath = getOutputPath(project, variant);
+        IContainer[] outputFolder = project.getWorkspace().getRoot().findContainersForLocation(outputPath);
+        for (int i = 0; i < outputFolder.length; i++) {
+            ensureFolderIsMarkedDerived((IFolder) outputFolder[i]);
+        }
+    }
+    
+    private void ensureFolderExists(IFolder folder) throws CoreException {
+        if (!folder.exists()) {
+            if (!folder.getParent().exists() && folder.getParent().getType() == IResource.FOLDER) {
+                ensureFolderExists((IFolder) folder.getParent());
+            }
+            folder.create(true, true, new NullProgressMonitor());
+        }        
+    }
+    
+    private void ensureFolderIsMarkedDerived(IFolder folder) throws CoreException {
+        ensureFolderExists(folder);
+        
+        if (!folder.isDerived()) {
+            folder.setDerived(true);
         }
     }
 

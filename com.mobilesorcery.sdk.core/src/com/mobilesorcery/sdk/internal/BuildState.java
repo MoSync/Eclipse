@@ -105,14 +105,14 @@ public class BuildState implements IBuildState {
         }
         
         public boolean visit(IResource resource) throws CoreException {
-            internalUpdateResource(resource);            
+            internalUpdateResource(resource);
             return !resource.isDerived();
         }
         
         private void internalUpdateResource(IResource resource) {
             if (resource.getType() == IResource.FILE || resource.getType() == IResource.FOLDER) {
                 internalUpdateState(resource.getProjectRelativePath());
-            }            
+            }
         }
 
         private void internalUpdateState(IPath path) {
