@@ -815,7 +815,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
      */
 	public IBuildState getBuildState(IBuildVariant variant) {
 	    IBuildState result = cachedBuildStates.get(variant);
-	    boolean wasNull = result == null;
+	    boolean wasNull = true; //result == null;
         if (wasNull) {
             result = new BuildState(this, variant);
         }

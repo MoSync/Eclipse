@@ -94,21 +94,64 @@ public class PropertyUtil {
     	}
     	
         String value = p.getProperty(key);
+        return toStrings(value);
+    }
+    
+    public static boolean setStrings(IPropertyOwner p, String key, String[] value) {
+    	if (p != null) {
+    		String valueStr = fromStrings(value);
+    		return p.setProperty(key, valueStr);
+    	}
+    	
+    	return false;
+    }
+    
+    public static String[] toStrings(String value) {
         if (value == null) {
             return new String[0];
         }
         
-        String[] strings = value.split("\\s+");
-        return strings;
-    }
-    
-    public static void setStrings(IPropertyOwner p, String key, String[] value) {
-    	if (p != null) {
-    		String valueStr = Util.join(value, " ");
-    		p.setProperty(key, valueStr);
-    	}
+        ArrayList<String> result = new ArrayList<String>();
+        char[] chValue = value.toCharArray();
+        boolean inEscape = false;
+        boolean doAdd = false;
+        char[] current = new char[chValue.length];
+        int posInCurrent = 0;
+        for (int i = 0; i < chValue.length; i++) {
+            char ch = chValue[i];
+            if (!inEscape && ch =='\\') {
+                inEscape = true;
+            } else if (!inEscape && ch == ' ') {
+                doAdd = true;
+            } else if (inEscape || ch != ' '){
+                current[posInCurrent] = ch;
+                posInCurrent++;
+                inEscape = false;
+            }
+            
+            doAdd = doAdd || i == chValue.length - 1;
+            
+            if (doAdd) {
+                String addThis = new String(current, 0, posInCurrent).trim();
+                if (addThis.length() > 0) {
+                    result.add(new String(current, 0, posInCurrent));
+                }
+                posInCurrent = 0;
+                inEscape = false;
+                doAdd = false;
+            }
+        }
+        
+        return result.toArray(new String[result.size()]);
     }
 
+    public static String fromStrings(String[] value) {
+        for (int i = 0; i < value.length; i++) {
+            value[i] = value[i].replace("\\", "\\\\").replace(" ", "\\ ");
+        }
+        return Util.join(value, " ");
+    }
+    
     public static Integer getInteger(IPropertyOwner p, String key) {
     	if (p == null) {
     		return null;

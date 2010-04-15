@@ -354,7 +354,7 @@ public class MoSyncBuilder extends ACBuilder {
         IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(CONSOLE_ID);
         prepareConsole(console);
 
-        console.addMessage(MessageFormat.format("Cleaning project {0}", project.getName()));
+        console.addMessage(createBuildMessage("Cleaning", MoSyncProject.create(project), variant));
         Util.deleteFiles(getPackageOutputPath(project, variant).toFile(), null, 512, monitor);
         Util.deleteFiles(getProgramOutputPath(project, variant).toFile(), null, 1, monitor);
         Util.deleteFiles(getProgramCombOutputPath(project, variant).toFile(), null, 1, monitor);
@@ -475,10 +475,7 @@ public class MoSyncBuilder extends ACBuilder {
                     .addMessage("Build started at "
                             + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG).format(Calendar.getInstance().getTime()));
 
-            console.addMessage(MessageFormat.format("Building project {0} for profile {1}", project.getName(), targetProfile));
-            if (mosyncProject.areBuildConfigurationsSupported() && cfg != null) {
-                console.addMessage(MessageFormat.format("Building configuration {0}", cfg.getId()));
-            }
+            console.addMessage(createBuildMessage("Building", mosyncProject, variant));
 
             MoSyncBuilderVisitor compilerVisitor = new MoSyncBuilderVisitor();
 
@@ -660,12 +657,34 @@ public class MoSyncBuilder extends ACBuilder {
         }
     }
 
+    private String createBuildMessage(String buildType, MoSyncProject project, IBuildVariant variant) {
+        StringBuffer result = new StringBuffer();
+        
+        if (variant.isFinalizerBuild()) {
+            result.append("*** FINALIZER BUILD ***\n");
+        }
+        
+        result.append(MessageFormat.format("{0}: Project {1} for profile {2}", buildType, project.getName(), variant.getProfile()));
+        if (project.areBuildConfigurationsSupported() && variant.getConfigurationId() != null) {
+            result.append(MessageFormat.format("\nConfiguration: {0}", variant.getConfigurationId()));
+        }
+        
+        return result.toString();
+    }
+
     // returns null if a full build should be performed.
     private IFileTreeDiff createDiff(IBuildState buildState, IBuildSession session) throws CoreException {
         Set<String> changedProperties = buildState.getChangedBuildProperties();
         
-        if (session.doClean()) {
+        if (session.doClean() || buildState.fullRebuildNeeded()) {
             // Always full build after clean.
+            return null;
+        }
+        
+        // Also, if the variant we want to build does not match what was previously built here,
+        // then we'll do a full rebuild.
+        IBuildResult previousResult = buildState.getBuildResult();
+        if (previousResult == null || !buildState.getBuildVariant().equals(previousResult.getVariant())) {
             return null;
         }
         
@@ -712,6 +731,7 @@ public class MoSyncBuilder extends ACBuilder {
         buildState.updateResult(buildResult);
         buildState.updateState(project.getWrappedProject());
         buildState.updateBuildProperties(project.getProperties());
+        buildState.fullRebuildNeeded(buildResult == null || !buildResult.success());
         buildState.save();
         buildState.setValid(true);
     }

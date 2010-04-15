@@ -34,6 +34,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 
 import com.mobilesorcery.sdk.core.BuildResult;
+import com.mobilesorcery.sdk.core.BuildVariant;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildState;
@@ -239,6 +240,7 @@ public class BuildState implements IBuildState {
         
         Map<String, String> resultMap = resultSection.getEntriesAsMap();
         BuildResult buildResult = new BuildResult(project.getWrappedProject());
+        IBuildVariant variant = BuildVariant.parse(resultMap.get("variant"));
         buildResult.setVariant(variant);
         buildResult.setSuccess(Boolean.parseBoolean(resultMap.get("success")));
         fullRebuildNeeded = Boolean.parseBoolean(resultMap.get("rebuild-needed"));
@@ -304,6 +306,7 @@ public class BuildState implements IBuildState {
         resultSection.addEntry(new Entry("rebuild-needed", Boolean.toString(fullRebuildNeeded)));
 
         if (buildResult != null) {
+            resultSection.addEntry(new Entry("variant", BuildVariant.toString(buildResult.getVariant())));
             resultSection.addEntry(new Entry("success", Boolean.toString(buildResult.success())));
             resultSection.addEntry(new Entry("timestamp", Long.toString(buildResult.getTimestamp())));
             File output = buildResult.getBuildResult();
@@ -368,6 +371,10 @@ public class BuildState implements IBuildState {
         return fullRebuildNeeded;
     }
     
+    public void fullRebuildNeeded(boolean fullRebuildNeeded) {
+        this.fullRebuildNeeded = fullRebuildNeeded;
+    }
+    
     /* (non-Javadoc)
      * @see com.mobilesorcery.sdk.internal.IBuildState#getDependencyManager()
      */
@@ -412,6 +419,10 @@ public class BuildState implements IBuildState {
         }
         
         return changed;
+    }
+
+    public void updateBuildVariant(IBuildVariant variant) {
+        this.variant = variant;
     }
 
 }

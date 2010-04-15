@@ -26,7 +26,10 @@ import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
  * of different devices.</p>
  * <p>Since Eclipse natively only supports one delta state per
  * builder, we need to augment this to one build state per
- * <code>IBuildVariant</code></p>
+ * <code>IBuildVariant</code>. (Note: several build variants
+ * may actually share output location -- it is up to clients
+ * to compare which build variant this object represents with
+ * the variant actually built.)</p>
  * <p>Clients may call this class to store and load build state
  * to extract build deltas on a per-buildvariant basis.</p>
  * <p>The information persisted by this class includes the
@@ -122,6 +125,10 @@ public interface IBuildState {
      * right after this method will return <code>true</code>.
      */
     public abstract void clear();
+
+    public abstract void fullRebuildNeeded(boolean fullRebuildNeeded);
+
+    public IBuildResult getBuildResult();
 
 
 }

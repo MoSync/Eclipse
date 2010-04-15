@@ -43,4 +43,39 @@ public class BuildVariant implements IBuildVariant {
         int finHC = new Boolean(isFinalizerBuild).hashCode();
         return profileHC ^ cfgHC ^ finHC;
     }
+
+    /**
+     * <p>Returns an <code>IBuildVariant</code> object from a given
+     * string of this format: <code>profile, cfgid[,finalize|normal]</code></p>
+     * @param string
+     * @return <code>null</code> if there was no profile with the given id, or if
+     * <code>variantStr</code> was null, or if the given string was otherwise malformed
+     */
+    public static IBuildVariant parse(String variantStr) {
+        if (variantStr == null) {
+            return null;
+        }
+        
+        String[] variantComponents = PropertyUtil.toStrings(variantStr);
+        if (variantComponents.length == 2 || variantComponents.length == 3) {
+            String profileStr = variantComponents[0];
+            IProfile profile = MoSyncTool.getDefault().getProfile(profileStr);
+            String cfgId = variantComponents[1];
+            boolean isFinalizerBuild = variantComponents.length == 3 && "Finalizer".equals(variantComponents[2]);
+            if (profile != null) {
+                return new BuildVariant(profile, cfgId, isFinalizerBuild);
+            }
+        }
+        
+        return null;
+    }
+    
+    public static String toString(IBuildVariant variant) {
+        String profileStr = MoSyncTool.toString(variant.getProfile());
+        return PropertyUtil.fromStrings(new String[] { profileStr, variant.getConfigurationId(), variant.isFinalizerBuild() ? "Finalizer" : "Non-finalizer" });
+    }
+    
+    public String toString() {
+        return toString(this);
+    }
 }
