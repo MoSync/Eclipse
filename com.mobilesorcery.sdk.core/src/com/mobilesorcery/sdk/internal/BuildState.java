@@ -18,6 +18,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -136,6 +137,7 @@ public class BuildState implements IBuildState {
 
     private boolean valid = true;
     private boolean fullRebuildNeeded;
+    private Map<String, String> properties;
 
     public BuildState(MoSyncProject project, IBuildVariant variant) {
         this.project = project;
@@ -181,8 +183,19 @@ public class BuildState implements IBuildState {
         
         Section dependenciesSection = props.getFirstSection("dependencies");
         parseDependencies(dependenciesSection);
+        
+        Section buildPropertiesSection = props.getFirstSection("build-properties");
+        parseBuildProperties(buildPropertiesSection);
     }
     
+    private void parseBuildProperties(Section buildPropertiesSection) {
+        if (buildPropertiesSection == null) {
+            return;
+        }
+     
+        properties = buildPropertiesSection.getEntriesAsMap();
+    }
+
     private void parseDependencies(Section dependenciesSection) {
         if (dependenciesSection == null) {
             return;
@@ -240,6 +253,10 @@ public class BuildState implements IBuildState {
         this.buildResult = buildResult;
     }
 
+    public void setValid(boolean valid) {
+        this.valid = valid;
+    }
+    
     /* (non-Javadoc)
      * @see com.mobilesorcery.sdk.internal.IBuildState#save()
      */
@@ -259,6 +276,9 @@ public class BuildState implements IBuildState {
             Section deps = props.addSection("dependencies");
             saveDependencies(deps);
             
+            Section buildPropertiesSection = props.addSection("build-properties");
+            saveBuildProperties(buildPropertiesSection);
+            
             buildStateWriter.write(props.toString());
         } catch (Exception e) {
             CoreMoSyncPlugin.getDefault().log(e);
@@ -268,8 +288,8 @@ public class BuildState implements IBuildState {
         }
     }
     
-    public void setValid(boolean valid) {
-        this.valid = valid;
+    private void saveBuildProperties(Section buildPropertiesSection) {
+        buildPropertiesSection.addEntries(properties);
     }
     
     private void saveDependencies(Section deps) {
@@ -371,8 +391,27 @@ public class BuildState implements IBuildState {
     public void clear() {
         tree = new FileInfoTree();
         dependencies = new DependencyManager<IResource>();
+        properties = new HashMap<String, String>();
         buildResult = null;
         fullRebuildNeeded = true;
+    }
+
+    public void updateBuildProperties(Map<String, String> properties) {
+        this.properties = properties;
+    }
+
+    public Set<String> getChangedBuildProperties() {
+        Map<String, String> currentBuildProperties = project.getProperties();
+        Set<String> changed = new HashSet<String>();
+        for (Map.Entry<String, String> entry : currentBuildProperties.entrySet()) {
+            String key = entry.getKey();
+            String currentValue = entry.getValue();
+            if (!currentValue.equals(properties.get(key))) {
+                changed.add(key);
+            }
+        }
+        
+        return changed;
     }
 
 }

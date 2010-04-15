@@ -13,6 +13,9 @@
 */
 package com.mobilesorcery.sdk.core;
 
+import java.util.Map;
+import java.util.Set;
+
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 
@@ -76,6 +79,13 @@ public interface IBuildState {
      * @param result
      */
     public abstract void updateResult(IBuildResult buildResult);
+    
+    /**
+     * <p>Updates the properties used for this build (will serve as a nice log
+     * of 'what did I build with'.</p>
+     * @param properties
+     */
+    public abstract void updateBuildProperties(Map<String, String> properties);
 
     /**
      * Returns the variant this build state is applicable for.
@@ -102,9 +112,16 @@ public interface IBuildState {
     public abstract IFileTreeDiff createDiff() throws CoreException;
 
     /**
+     * A diff for the build properties used for this build state vs
+     * the ones currently set for the project.
+     */
+    public abstract Set<String> getChangedBuildProperties();
+    
+    /**
      * Clears all build state. Calling <code>fullRebuildNeeded</code>
      * right after this method will return <code>true</code>.
      */
     public abstract void clear();
+
 
 }

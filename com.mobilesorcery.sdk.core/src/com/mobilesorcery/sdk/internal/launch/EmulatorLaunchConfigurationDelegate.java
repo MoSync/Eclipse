@@ -102,22 +102,12 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 
     public boolean preLaunchCheck(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
     	IProject project = getProject(configuration);
-    	MoSyncProject mosyncProject = MoSyncProject.create(project);
-    	// We'll let non-mosync projects slip through; they'll be handled in launchSync
-    	if (mosyncProject != null && mosyncProject.areBuildConfigurationsSupported()) {
-    		boolean isDebugMode = "debug".equals(mode);
-    		
-			String autoChangeConfigKey = isDebugMode ? ILaunchConstants.AUTO_CHANGE_CONFIG_DEBUG : ILaunchConstants.AUTO_CHANGE_CONFIG;
-    		String buildConfigKey = isDebugMode ? ILaunchConstants.BUILD_CONFIG_DEBUG : ILaunchConstants.BUILD_CONFIG;
-
-    		if (configuration.getAttribute(autoChangeConfigKey, true)) {
-    			String buildConfig = configuration.getAttribute(buildConfigKey, getDefaultBuildConfiguration(mode));
-    			IBuildConfiguration activeBuildConfig = mosyncProject.getActiveBuildConfiguration();
-    			String activeBuildConfigId = activeBuildConfig == null ? null : activeBuildConfig.getId();
-    			if (buildConfig != null && !buildConfig.equals(activeBuildConfigId)) {
-    				mosyncProject.setActiveBuildConfiguration(buildConfig);
-    			}
-    		}
+    	// We need here as well as in the buildbeforelaunch method since that method may never be called
+    	// depending on user prefs.
+    	autoSwitchBuildConfiguration(configuration, mode);
+        
+    	if (!getLaunchDir(MoSyncProject.create(project)).toFile().exists()) {
+    	    throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could not find build directory - please make sure your project is built"));
     	}
     	
     	return super.preLaunchCheck(configuration, mode, monitor);
@@ -202,7 +192,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         	CoreMoSyncPlugin.trace("Emulator command line:\n    " + Util.join(Util.ensureQuoted(cmdline), " "));
         }
 
-        IPath outputPath = MoSyncBuilder.getOutputPath(mosyncProject.getWrappedProject(), MoSyncBuilder.getActiveVariant(mosyncProject, false));
+        IPath outputPath = getLaunchDir(mosyncProject);
         File dir = outputPath.toFile();
         
         String command = Util.join(Util.ensureQuoted(cmdline), " ");
@@ -241,12 +231,15 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
             } finally {
 				CoreMoSyncPlugin.getDefault().getEmulatorProcessManager().processStopped(emulatorId);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-            CoreMoSyncPlugin.getDefault().log(e);
+        } catch (Exception e) {
+           throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
         }
 
         pu.pipe_close(dupWriteFd);
+    }
+
+    private IPath getLaunchDir(MoSyncProject project) {
+        return MoSyncBuilder.getOutputPath(project.getWrappedProject(), MoSyncBuilder.getActiveVariant(project, false));
     }
 
     private void attachDebugger(ILaunch launch, IProcess process, IPath program) throws CoreException {
@@ -309,7 +302,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     }
 
     private String[] getCommandLine(IProject project, String width, String height, int fd, int id, boolean debug) {
-        IPath outputPath = MoSyncBuilder.getOutputPath(project, MoSyncBuilder.getActiveVariant(MoSyncProject.create(project), false));
+        IPath outputPath = getLaunchDir(MoSyncProject.create(project));
         IPath program = outputPath.append("program");
         IPath resources = outputPath.append("resources");
          
@@ -375,10 +368,33 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     
     public boolean buildForLaunch(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
         IProject project = getProject(configuration);
+        autoSwitchBuildConfiguration(configuration, mode);
+        
         // We are using auto build to flag to listeners that no dialogs
         // should pop up.
         project.build(IncrementalProjectBuilder.AUTO_BUILD, monitor);
         return false;
+    }
+    
+    private void autoSwitchBuildConfiguration(ILaunchConfiguration configuration, String mode) throws CoreException {
+        IProject project = getProject(configuration);
+        MoSyncProject mosyncProject = MoSyncProject.create(project);
+        // We'll let non-mosync projects slip through; they'll be handled in launchSync
+        if (mosyncProject != null && mosyncProject.areBuildConfigurationsSupported()) {
+            boolean isDebugMode = "debug".equals(mode);
+            
+            String autoChangeConfigKey = isDebugMode ? ILaunchConstants.AUTO_CHANGE_CONFIG_DEBUG : ILaunchConstants.AUTO_CHANGE_CONFIG;
+            String buildConfigKey = isDebugMode ? ILaunchConstants.BUILD_CONFIG_DEBUG : ILaunchConstants.BUILD_CONFIG;
+
+            if (configuration.getAttribute(autoChangeConfigKey, true)) {
+                String buildConfig = configuration.getAttribute(buildConfigKey, getDefaultBuildConfiguration(mode));
+                IBuildConfiguration activeBuildConfig = mosyncProject.getActiveBuildConfiguration();
+                String activeBuildConfigId = activeBuildConfig == null ? null : activeBuildConfig.getId();
+                if (buildConfig != null && !buildConfig.equals(activeBuildConfigId)) {
+                    mosyncProject.setActiveBuildConfiguration(buildConfig);
+                }
+            }
+        }
     }
 
 }

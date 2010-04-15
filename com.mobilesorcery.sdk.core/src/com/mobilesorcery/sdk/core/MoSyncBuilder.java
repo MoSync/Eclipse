@@ -430,7 +430,7 @@ public class MoSyncBuilder extends ACBuilder {
         buildResult.setTimestamp(System.currentTimeMillis());
         
         IBuildState buildState = mosyncProject.getBuildState(variant);
-        IFileTreeDiff diff = buildState.createDiff();
+        IFileTreeDiff diff = createDiff(buildState, session);
         
         ensureOutputIsMarkedDerived(project, variant);
         
@@ -656,8 +656,28 @@ public class MoSyncBuilder extends ACBuilder {
                 clearCMarkers(project);
             }
             
-            saveBuildState(buildState, project, buildResult);
+            saveBuildState(buildState, mosyncProject, buildResult);
         }
+    }
+
+    // returns null if a full build should be performed.
+    private IFileTreeDiff createDiff(IBuildState buildState, IBuildSession session) throws CoreException {
+        Set<String> changedProperties = buildState.getChangedBuildProperties();
+        
+        if (session.doClean()) {
+            // Always full build after clean.
+            return null;
+        }
+        
+        if (changedProperties.isEmpty()) {
+            return buildState.createDiff();    
+        } else {
+            if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+                CoreMoSyncPlugin.trace("Changed build properties, full rebuild required. Changed properties: {0}", changedProperties);
+            }
+            return null;
+        }
+        
     }
 
     private void ensureOutputIsMarkedDerived(IProject project, IBuildVariant variant) throws CoreException {
@@ -688,9 +708,10 @@ public class MoSyncBuilder extends ACBuilder {
         }
     }
 
-    private void saveBuildState(IBuildState buildState, IProject project, BuildResult buildResult) throws CoreException {
+    private void saveBuildState(IBuildState buildState, MoSyncProject project, BuildResult buildResult) throws CoreException {
         buildState.updateResult(buildResult);
-        buildState.updateState(project);
+        buildState.updateState(project.getWrappedProject());
+        buildState.updateBuildProperties(project.getProperties());
         buildState.save();
         buildState.setValid(true);
     }

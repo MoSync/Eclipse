@@ -106,6 +106,12 @@ public class SectionedPropertiesFile {
 		public void addEntry(Entry entry) {
 			entries.add(entry);
 		}
+		
+        public void addEntries(Map<String, String> properties) {
+            for (String key : properties.keySet()) {
+                addEntry(new Entry(key, properties.get(key)));
+            }
+        }
 
 		public String[] getValues() {
 			String[] values = new String[entries.size()];

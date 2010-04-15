@@ -651,6 +651,13 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         return property;
     }
     
+    /**
+     * <p>Returns all properties of this project, including 
+     * properties for all build configurations.</p>
+     * <p>This method will return a copy of the properties, so the map returned may be freely modified by clients</p>
+     * <p><b>NOTE:</b> Are you sure you want to use this method? You probably want to use getPropertyOwner(), which
+     * will properly handle build configurations, etc.</code>
+     */
     public Map<String, String> getProperties() {
     	return properties.toMap();
     }

@@ -68,6 +68,10 @@ public class SpawnedProcess extends Process {
     	notifyListeners(IProcessListener.START);
     	final IProcessUtil pu = CoreMoSyncPlugin.getDefault().getProcessUtil();
     	
+    	if (!dir.exists()) {
+    	    throw new IllegalStateException("The directory to launch in does not exist");
+    	}
+    	
         handle = pu.proc_spawn((cmd + '\0').getBytes(), (args + '\0').getBytes(), (dir.getAbsolutePath() + '\0')
                 .getBytes());
         

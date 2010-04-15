@@ -88,9 +88,6 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 			pipeTool.setInputFiles(getResourceFiles());
 			pipeTool.setOutputFile(outputFile);
 			pipeTool.run();
-
-			// We do this mostly in order for MAHeaders.h to be explicitly refreshed
-			project.refreshLocal(IResource.DEPTH_INFINITE, monitor);
 			
 			// Explicitly add dependencies for the pipetool output file -- TODO:
 			// outputfile must equal getresourceoutput; remove one.
