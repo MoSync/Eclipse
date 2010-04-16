@@ -59,7 +59,7 @@ public class WinMobilePackager extends AbstractPackager {
             
             preprocessTemplate(defines, infFile);*/
             
-            internal.runCommandLine("%mosync-bin%\\cabwiz.exe", infFile.getAbsolutePath(), "/dest", internal.resolve("%package-output-dir%")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            internal.runCommandLine("%mosync-bin%\\cabwiz.exe", infFile.getAbsolutePath(), "/dest", internal.resolve("%package-output-dir%"), "/compress"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
             Util.copyFile(new NullProgressMonitor(), cabFile, renamedCabFile);
             
             buildResult.setBuildResult(renamedCabFile);
