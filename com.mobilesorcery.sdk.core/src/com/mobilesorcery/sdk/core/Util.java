@@ -26,10 +26,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.reflect.Array;
 import java.text.FieldPosition;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -555,5 +557,61 @@ public class Util {
 		
 		return o1.equals(o2);
 	}
+	
+	/**
+	 * Replaces parameters tagged with <code>%</code>s and returns
+	 * the resolved string.
+	 * @param input
+	 * @param map
+	 * @return
+	 */
+    public static String replace(String input, Map<String, String> map) {
+        return innerReplace(input, map, 0).toString();
+    }
+    
+    private static StringBuffer innerReplace(String input, Map<String, String> map, int depth) {
+        if (depth > 12) {
+            throw new IllegalArgumentException("Cyclic parameters"); //$NON-NLS-1$
+        }
+        
+        StringBuffer result = new StringBuffer();
+        char[] chars = input.toCharArray();
+        boolean inParam = false;
+        int paramStart = 0;
+        
+        for (int i = 0; i < chars.length; i++) {
+            if ('%' == chars[i]) {
+                if (!inParam) {
+                    paramStart = i;
+                } else {
+                    String paramName = input.substring(paramStart + 1, i);
+                    if (paramName.length() > 0 && paramName.charAt(0) == '#') {
+                        // TODO.
+                    } else {
+                        if (paramName.length() == 0) { // Escape pattern %% => %
+                            result.append("%"); //$NON-NLS-1$
+                        } else {
+                            String paramValue = map.get(paramName);
+                            if (paramValue != null) {
+                                result.append(innerReplace(paramValue, map, depth + 1));
+                            } else {
+                                // Just leave as-is
+                                result.append('%');
+                                result.append(paramName);
+                                result.append('%');
+                            }
+                        }
+                    }
+                }
+                
+                inParam = !inParam;
+            } else if (!inParam) {
+                result.append(chars[i]);
+            }
+        }
+        
+        return result;
+    }
+
 	
 }

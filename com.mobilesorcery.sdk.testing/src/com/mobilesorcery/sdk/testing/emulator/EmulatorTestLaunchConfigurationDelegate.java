@@ -15,11 +15,15 @@ package com.mobilesorcery.sdk.testing.emulator;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.testing.TestManager;
+import com.mobilesorcery.sdk.testing.TestPlugin;
 
 public class EmulatorTestLaunchConfigurationDelegate extends
 		EmulatorLaunchConfigurationDelegate {
@@ -34,5 +38,15 @@ public class EmulatorTestLaunchConfigurationDelegate extends
 		} finally {
 			session.finish();
 		}
+	}
+	
+	public boolean preLaunchCheck(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
+	    boolean result = super.preLaunchCheck(configuration, mode, monitor);
+	    MoSyncProject project = MoSyncProject.create(getProject(configuration));
+	    if (!project.areBuildConfigurationsSupported()) {
+	        throw new CoreException(new Status(IStatus.ERROR, TestPlugin.PLUGIN_ID, "Running tests requires build configurations to be active"));
+	    }
+	    
+	    return result;
 	}
 }

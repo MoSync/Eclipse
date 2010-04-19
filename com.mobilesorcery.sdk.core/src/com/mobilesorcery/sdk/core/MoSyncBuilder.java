@@ -407,6 +407,11 @@ public class MoSyncBuilder extends ACBuilder {
         }
     }
 
+    IBuildResult build(IProject project, IResourceDelta[] ignoreMe, IBuildSession session, IBuildVariant variant, 
+            IFilter<IResource> resourceFilter, IProgressMonitor monitor) {
+        return null;
+    }
+    
     // TODO: Refactor, this is becoming a jack-of-all-trades method, esp. now
     // with the partial builds as well. Maybe need a new class like 'build
     // parameters' to avoid all setters and this huge method signature...
@@ -427,7 +432,8 @@ public class MoSyncBuilder extends ACBuilder {
         IProfile targetProfile = variant.getProfile();
 
         BuildResult buildResult = mosyncProject.getBuildResults().clearBuildResult(variant);
-        buildResult.setTimestamp(System.currentTimeMillis());
+        Calendar timestamp = Calendar.getInstance();
+        buildResult.setTimestamp(timestamp.getTimeInMillis());
         
         IBuildState buildState = mosyncProject.getBuildState(variant);
         IFileTreeDiff diff = createDiff(buildState, session);
@@ -473,7 +479,7 @@ public class MoSyncBuilder extends ACBuilder {
 
             console
                     .addMessage("Build started at "
-                            + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG).format(Calendar.getInstance().getTime()));
+                            + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG).format(timestamp.getTime()));
 
             console.addMessage(createBuildMessage("Building", mosyncProject, variant));
 
@@ -993,6 +999,11 @@ public class MoSyncBuilder extends ACBuilder {
         return new BuildSession(Arrays.asList(variant), 0);
     }
 
+    /**
+     * Creates a build session with all build steps except CLEAN
+     * @param variant
+     * @return
+     */
     public static IBuildSession createDefaultBuildSession(IBuildVariant variant) {
         return new BuildSession(Arrays.asList(variant), BuildSession.ALL - BuildSession.DO_CLEAN);
     }

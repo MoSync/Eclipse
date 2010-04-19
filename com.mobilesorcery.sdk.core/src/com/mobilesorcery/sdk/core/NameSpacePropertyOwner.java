@@ -91,7 +91,7 @@ public class NameSpacePropertyOwner implements IPropertyOwner {
 		String[] fullKeys = assembleFullKeys(key);
 		for (int i = 0; i < levels + 1; i++) {
 			String prop = parent.getProperty(fullKeys[levels - i]);
-			if (prop != null) {
+			if (!Util.isEmpty(prop)) {
 				return prop;
 			}
 		}		
@@ -171,7 +171,9 @@ public class NameSpacePropertyOwner implements IPropertyOwner {
 	}
 
 	public Map<String, String> getProperties() {
-		throw new UnsupportedOperationException();
+	    Map<String, String> result = parent.getProperties();
+	    result.putAll(getProperties(fullNamespace));
+	    return result;
 	}
 
 	/**

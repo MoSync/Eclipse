@@ -161,7 +161,7 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
                 addChangedOrAddedResource(project.findMember(changed));
             }
 		    for (IPath removed : diff.getRemoved()) {
-                addDeletedResource(project.findMember(removed));
+                addDeletedResource(project.getFile(removed));
             }
 		}
 	}
@@ -174,6 +174,9 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	 * @return
 	 */
 	public boolean doesAffectBuild(IResource resource) {
+	    if (resource == null) {
+	        return false;
+	    }
 		// TODO: Make this much faster!
 		MoSyncProject project = MoSyncProject.create(this.project);
 		IFilter<IResource> resourceFilter = this.resourceFilter;

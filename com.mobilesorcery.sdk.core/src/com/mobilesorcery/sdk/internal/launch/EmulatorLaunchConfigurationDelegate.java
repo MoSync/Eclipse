@@ -324,9 +324,11 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         return MoSyncTool.getDefault().getMoSyncBin().append("MoRE.exe").toOSString();
     }
 
-    private synchronized int getNextId() {
-        GLOBAL_ID %= 256;
-        return GLOBAL_ID++;
+    private int getNextId() {
+        synchronized (EmulatorLaunchConfigurationDelegate.class) {
+            GLOBAL_ID %= 256;
+            return GLOBAL_ID++;
+        }
     }
 
     public ILaunch getLaunch(ILaunchConfiguration configuration, String mode) throws CoreException {

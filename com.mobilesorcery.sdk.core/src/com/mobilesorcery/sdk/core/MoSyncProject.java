@@ -20,6 +20,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -89,6 +91,12 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
      * @see PathExclusionFilter
      */
     public static final String EXCLUDE_FILTER_KEY = "excludes";
+    
+    /**
+     * The standard file excludes for this project (usually NOT an a per-configuration
+     * basis).
+     */
+    public static final String STANDARD_EXCLUDES_FILTER_KEY = "standard.excludes";
 
     /**
      * The project type of MoSync Projects (used only by CDT).
@@ -207,6 +215,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
     private HashMap<IBuildVariant, IBuildState> cachedBuildStates = new HashMap<IBuildVariant, IBuildState>();
 
+    private HashMap<IPropertyOwner, PathExclusionFilter> excludes = new HashMap<IPropertyOwner, PathExclusionFilter>();
+    
     private MoSyncProject(IProject project) {
         Assert.isNotNull(project);
         this.project = project;
@@ -519,6 +529,9 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     }
     
     private void firePropertyChange(PropertyChangeEvent event) {
+        // TODO: A bit out of place, but it works
+        excludes.clear();
+        
     	globalListeners.firePropertyChange(event);
         listeners.firePropertyChange(event);
 	}
@@ -579,7 +592,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         removeDeviceFilterListener();
         this.deviceFilter = deviceFilter;
         addDeviceFilterListener();
-        listeners.firePropertyChange(new PropertyChangeEvent(this, IDeviceFilter.FILTER_CHANGED, oldFilter, deviceFilter));
+        firePropertyChange(new PropertyChangeEvent(this, IDeviceFilter.FILTER_CHANGED, oldFilter, deviceFilter));
     }
     
     /**
@@ -770,8 +783,29 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		if (project == null) {
 			return null;
 		}
-		// TODO: Efficient?
-		return PathExclusionFilter.parse(PropertyUtil.getStrings(project.getPropertyOwner(), EXCLUDE_FILTER_KEY));
+		
+		IPropertyOwner properties = project.getPropertyOwner();
+		if (project.excludes.get(properties) == null) {		    
+    		// TODO: Efficient - well, not really... And this method is heavily used!
+    		String[] standardExclusion = PropertyUtil.getStrings(properties, STANDARD_EXCLUDES_FILTER_KEY);
+    		String[] exclusions = PropertyUtil.getStrings(properties, EXCLUDE_FILTER_KEY);
+    		String[] aggregateExclusions = new String[standardExclusion.length + exclusions.length];
+    		System.arraycopy(standardExclusion, 0, aggregateExclusions, 0, standardExclusion.length);
+    		System.arraycopy(exclusions, 0, aggregateExclusions, standardExclusion.length, exclusions.length);
+    		Map<String, String> params = properties.getProperties();
+    		
+    		ArrayList<String> finalExclusions = new ArrayList<String>();
+    		// TODO: All params should be able to have % tags.
+    		for (int i = 0; i < aggregateExclusions.length; i++) {
+    		    String excluded = Util.replace(aggregateExclusions[i], params);
+    		    String[] excludedPaths = PropertyUtil.toStrings(excluded);
+    		    finalExclusions.addAll(Arrays.asList(excludedPaths));
+    		}
+    		
+    		project.excludes.put(properties, PathExclusionFilter.parse(finalExclusions.toArray(new String[0])));
+		}
+		
+		return project.excludes.get(properties);
 	}
 	
 	public static void setExclusionFilter(MoSyncProject project, PathExclusionFilter filter) {

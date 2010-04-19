@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import com.mobilesorcery.sdk.core.Util;
+
 // TODO: How [if] integrate with org.eclipse.ui.editors.templates??
 public class Template implements ITemplate {
 
@@ -101,53 +103,6 @@ public class Template implements ITemplate {
         return verySimplePreprocessing(replace(template, map), map.keySet());
     }
     
-    public static String replace(String input, Map<String, String> map) {
-        return innerReplace(input, map, 0).toString();
-    }
-    
-    private static StringBuffer innerReplace(String input, Map<String, String> map, int depth) {
-        if (depth > 12) {
-            throw new IllegalArgumentException("Cyclic parameters"); //$NON-NLS-1$
-        }
-        
-        StringBuffer result = new StringBuffer();
-        char[] chars = input.toCharArray();
-        boolean inParam = false;
-        int paramStart = 0;
-        
-        for (int i = 0; i < chars.length; i++) {
-            if ('%' == chars[i]) {
-                if (!inParam) {
-                    paramStart = i;
-                } else {
-                    String paramName = input.substring(paramStart + 1, i);
-                    if (paramName.length() > 0 && paramName.charAt(0) == '#') {
-                        // TODO.
-                    } else {
-                        if (paramName.length() == 0) { // Escape pattern %% => %
-                            result.append("%"); //$NON-NLS-1$
-                        } else {
-                            String paramValue = map.get(paramName);
-                            if (paramValue != null) {
-                                result.append(innerReplace(paramValue, map, depth + 1));
-                            } else {
-                                // Just leave as-is
-                                result.append('%');
-                                result.append(paramName);
-                                result.append('%');
-                            }
-                        }
-                    }
-                }
-                
-                inParam = !inParam;
-            } else if (!inParam) {
-                result.append(chars[i]);
-            }
-        }
-        
-        return result;
-    }
 
     public static String verySimplePreprocessing(String input, Set<String> flags) {
         String[] lines = input.split("\n"); //$NON-NLS-1$
@@ -169,6 +124,10 @@ public class Template implements ITemplate {
         }
         
         return result.toString();
+    }    
+    
+    public static String replace(String input, Map<String, String> map) {
+        return Util.replace(input, map);
     }
         
     public static void main(String[] args) {

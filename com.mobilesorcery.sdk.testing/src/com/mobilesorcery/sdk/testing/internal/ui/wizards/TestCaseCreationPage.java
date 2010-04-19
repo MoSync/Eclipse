@@ -28,6 +28,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.ContainerSelectionDialog;
+import org.eclipse.ui.wizards.newresource.BasicNewFileResourceWizard;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
@@ -169,16 +170,16 @@ public class TestCaseCreationPage extends WizardPage {
 	}
 	
 	
-	public void configureProject() throws CoreException {
+	public IFile configureProject() throws CoreException {
 		try {
-		IResource sourceFolderFile = getSourceFolderFile();
-		// TODO: Not finished.
-		IProject project = sourceFolderFile.getProject();
-		MoSyncProjectTestManager tm = new MoSyncProjectTestManager(MoSyncProject.create(project));
-		tm.assignTestResource(sourceFolderFile, true);
-		tm.configureProject();
-		
-		createTestFile();
+    		IResource sourceFolderFile = getSourceFolderFile();
+    		// TODO: Not finished.
+    		IProject project = sourceFolderFile.getProject();
+    		MoSyncProjectTestManager tm = new MoSyncProjectTestManager(MoSyncProject.create(project));
+    		tm.assignTestResource(sourceFolderFile.getProjectRelativePath(), true);
+    		tm.configureProject();
+    		
+    		return createTestFile();
 		} catch (Exception e) {
 			if (e instanceof CoreException) {
 				throw (CoreException) e;
@@ -187,7 +188,7 @@ public class TestCaseCreationPage extends WizardPage {
 		}
 	}
 	
-	private void createTestFile() throws IOException, CoreException {
+	private IFile createTestFile() throws IOException, CoreException {
 		// TODO: Templates? Several suites per project? One small step at a time.
 		InputStream is = null;
 		try {
@@ -201,6 +202,8 @@ public class TestCaseCreationPage extends WizardPage {
 			URL template = TestPlugin.getDefault().getBundle().getResource("/test_template.c");
 			is = template.openStream();
 			testCaseFile.create(is, true, null);
+			
+			return testCaseFile;
 		} finally {
 			Util.safeClose(is);
 		}

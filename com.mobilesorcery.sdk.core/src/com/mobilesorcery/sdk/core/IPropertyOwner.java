@@ -16,7 +16,7 @@ package com.mobilesorcery.sdk.core;
 import java.util.Map;
 
 public interface IPropertyOwner {
-
+    
 	public interface IWorkingCopy extends IPropertyOwner {
 		/**
 		 * Applies all changes to the original property owner.
@@ -44,14 +44,11 @@ public interface IPropertyOwner {
     
     /**
      * Applies a set of properties
+     * @return <code>true</code> if at least one of the properties was
+     * different from a previous value
      */
     public boolean applyProperties(Map<String, String> properties);
     
-    /**
-     * Returns the value of a property
-     * @param key
-     * @return
-     */
     public String getProperty(String key);
     
     public String getDefaultProperty(String key);

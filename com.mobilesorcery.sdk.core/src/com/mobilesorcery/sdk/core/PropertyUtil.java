@@ -55,6 +55,10 @@ public class PropertyUtil {
         return toPaths(p.getProperty(key));
     }
     
+    public static void setPaths(IPropertyOwner p, String key, IPath[] paths) {
+        p.setProperty(key, fromPaths(paths));
+    }
+    
     public static IPath[] toPaths(String value) {
 		if (value == null) {
 			return new IPath[0];

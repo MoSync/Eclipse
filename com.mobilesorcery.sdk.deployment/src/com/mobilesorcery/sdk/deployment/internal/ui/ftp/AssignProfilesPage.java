@@ -25,7 +25,7 @@ public class AssignProfilesPage extends WizardPage {
 	}
 
 	public void setDeviceFilter(IDeviceFilter filter) {
-		this.filter = filter;
+		this.filter = filter == null ? new CompositeDeviceFilter() : filter;
 	}
 	
 	public IDeviceFilter getDeviceFilter() {

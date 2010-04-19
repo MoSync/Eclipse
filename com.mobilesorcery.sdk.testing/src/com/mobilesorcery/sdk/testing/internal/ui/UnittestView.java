@@ -213,19 +213,20 @@ public class UnittestView extends ViewPart implements ITestSessionListener {
 	void handleMenuAboutToShow(IMenuManager manager) {
 		IStructuredSelection selection = (IStructuredSelection) testRun
 				.getSelectionProvider().getSelection();
+        ITestSession session = testRun.getTestSession();
+        
+        if (session instanceof IRelaunchableTestSession) {
+            manager.add(new RerunAction());
+            manager.add(new Separator());
+        }
+        
 		if (!selection.isEmpty()) {
-			ITestSession session = testRun.getTestSession();
 			ITest testElement = (ITest) selection.getFirstElement();
 			
 			gotoLineAction.setSelection(selection);
 			manager.add(gotoLineAction);
 			
-			if (session instanceof IRelaunchableTestSession) {
-				manager.add(new RerunAction());
-			}
-			
 			if (session.getTestCount() > 0) {
-				manager.add(new Separator());
 				manager.add(new ExpandAllAction());
 			}
 

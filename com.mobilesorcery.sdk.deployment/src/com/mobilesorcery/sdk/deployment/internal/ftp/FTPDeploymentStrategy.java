@@ -31,6 +31,7 @@ import com.mobilesorcery.sdk.core.CommandLineExecutor;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
+import com.mobilesorcery.sdk.core.IBuildState;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -115,14 +116,7 @@ public class FTPDeploymentStrategy implements IDeploymentStrategy {
 
 				monitor.setTaskName(MessageFormat.format(
 						"Deploying {0} of {1} packages", i, profiles.size()));
-				IBuildResult result = project.getBuildResults().getBuildResult(MoSyncBuilder.getFinalizerVariant(project, profile));
-				if (result == null) {
-					// TODO: Incr build for finalizer too - but this is a good
-					// heuristic...
-					monitor.subTask("Building");
-					result = buildBeforeDeploy(project, profile,
-							new NullProgressMonitor());
-				}
+				IBuildResult result = buildBeforeDeploy(project, profile, new NullProgressMonitor());
 				monitor.subTask("Uploading");
 				deploy(ftp, project, profile, result, new SubProgressMonitor(
 						monitor, 1));
