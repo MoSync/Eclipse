@@ -122,7 +122,7 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 
 		public void doHandleEvent(Event event) {
 			String uniqueId = BuildConfiguration.createUniqueId(getProject(), "Configuration");
-			getProject().installBuildConfiguration(uniqueId);
+			getProject().installBuildConfiguration(uniqueId, new String[] { IBuildConfiguration.RELEASE_TYPE });
 		}
 
 	}

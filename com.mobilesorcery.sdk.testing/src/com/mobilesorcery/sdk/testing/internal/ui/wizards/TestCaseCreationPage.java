@@ -64,7 +64,10 @@ public class TestCaseCreationPage extends WizardPage {
 		int severity = IMessageProvider.INFORMATION;
 		
 		IResource sourceFolderFile = getSourceFolderFile();
-		if (sourceFolderFile.exists()) {
+		if (sourceFolderFile == null) {
+		    message = "Please specify a source folder";
+		    severity = IMessageProvider.ERROR;
+		} else if (sourceFolderFile.exists()) {
 			if (!Util.isEmptyDirectory(sourceFolderFile.getLocation().toFile())) {
 				message = MessageFormat.format("Directory {0} is not empty - this may cause build problems.", sourceFolderFile.getFullPath()); 
 				severity = IMessageProvider.WARNING;
@@ -211,6 +214,11 @@ public class TestCaseCreationPage extends WizardPage {
 
 	private IResource getSourceFolderFile() {
 		Path sourceFolderPath = new Path(sourceFolder.getText());
+		
+		if (sourceFolderPath.segmentCount() == 0) {
+		    return null;
+		}
+		
 		if (sourceFolderPath.segmentCount() == 1) {
 			return ResourcesPlugin.getWorkspace().getRoot().getProject(sourceFolderPath.lastSegment());
 		}

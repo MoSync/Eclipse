@@ -144,6 +144,13 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
             DebugUITools.setLaunchPerspective(configType, ILaunchManager.DEBUG_MODE, IDebugUIConstants.PERSPECTIVE_DEFAULT);
 
             EmulatorLaunchConfigurationDelegate.configureLaunchConfigForSourceLookup(wc);
+            
+            String initialCfg = getInitialConfigurationId(project, mode);
+            if (initialCfg != null) {
+                String key = "run".equals(mode) ? ILaunchConstants.BUILD_CONFIG : ILaunchConstants.BUILD_CONFIG_DEBUG;
+                wc.setAttribute(key, initialCfg);
+            }
+            
             config = wc.doSave();
         } catch (CoreException ce) {
             CoreMoSyncPlugin.getDefault().getLog().log(
@@ -151,6 +158,14 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
         }
 
         return config;
+    }
+    
+    /**
+     * Returns the configuration to launch with (or null if none, in which case a default configuration will be selected)
+     * @return
+     */
+    protected String getInitialConfigurationId(IProject project, String mode) {
+        return null;
     }
 
     private List<ILaunchConfiguration> getCandidateConfigs(IProject project) {

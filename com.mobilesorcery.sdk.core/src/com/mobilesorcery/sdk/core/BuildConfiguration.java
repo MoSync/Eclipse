@@ -13,20 +13,30 @@
 */
 package com.mobilesorcery.sdk.core;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.runtime.IAdaptable;
 
 
 public class BuildConfiguration implements IBuildConfiguration, IAdaptable {
 
+    private final static Set<String> DEFAULT_TYPE_SET = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(RELEASE_TYPE)));
+    private final static Set<String> DEFAULT_DEBUG_TYPE_SET = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(DEBUG_TYPE)));
+    
 	private MoSyncProject project;
 	private String id;
 	private NameSpacePropertyOwner properties;
+    private HashSet<String> types;
 
-	public BuildConfiguration(MoSyncProject project, String id) {
+	public BuildConfiguration(MoSyncProject project, String id, String... types) {
 		this.project = project;
 		this.id = id;
+		this.types = new HashSet(Arrays.asList(types));
 		properties = new NameSpacePropertyOwner(project, id);
 	}
 
@@ -40,6 +50,7 @@ public class BuildConfiguration implements IBuildConfiguration, IAdaptable {
 
 	public IBuildConfiguration clone(String id) {
 		BuildConfiguration clone = new BuildConfiguration(project, id);
+		clone.types = types;
 		Map<String, String> propertiesClone = getProperties().getProperties(this.id);
 		clone.getProperties().applyProperties(propertiesClone);
 		return clone;
@@ -68,6 +79,17 @@ public class BuildConfiguration implements IBuildConfiguration, IAdaptable {
         }
         
         return null;
+    }
+
+    public Set<String> getTypes() {
+        if (types.isEmpty()) {
+            return DEBUG_ID.equals(id) ? DEFAULT_DEBUG_TYPE_SET : DEFAULT_TYPE_SET;
+        }
+        return types;
+    }
+    
+    public void setTypes(Collection<String> types) {
+        this.types = new HashSet<String>(types);
     }
 
 }

@@ -13,10 +13,16 @@
 */
 package com.mobilesorcery.sdk.testing.emulator;
 
+import java.util.List;
+
+import org.eclipse.core.resources.IProject;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunchConfigurationType;
 import org.eclipse.debug.core.ILaunchManager;
 
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
+import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.testing.project.MoSyncProjectTestManager;
 import com.mobilesorcery.sdk.ui.internal.launch.MoreLaunchShortCut;
 
 public class MoSyncTestLaunchShortCut extends MoreLaunchShortCut {
@@ -27,4 +33,13 @@ public class MoSyncTestLaunchShortCut extends MoreLaunchShortCut {
         return configType;
     }
 
+    protected String getInitialConfigurationId(IProject project, String mode) {
+        boolean isDebug = "debug".equals(mode);
+        List<IBuildConfiguration> testCfgs = new MoSyncProjectTestManager(MoSyncProject.create(project)).getTestConfigs(isDebug);
+        if (testCfgs.size() > 0) {
+            return testCfgs.get(0).getId();
+        }
+        
+        return null;
+    }
 }

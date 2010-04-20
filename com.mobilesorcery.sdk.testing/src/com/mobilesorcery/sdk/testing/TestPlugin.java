@@ -44,6 +44,8 @@ public class TestPlugin extends AbstractUIPlugin implements ITestSessionListener
 	public static final String TEST_SUITE_ERROR_IMAGE = "test.suite.error.image";
 	public static final String TEST_SUITE_RUNNING_IMAGE = "test.suite.running.image";
 
+    public static final String TEST_BUILD_CONFIGURATION_TYPE = "Test";
+
 	// The shared instance
 	private static TestPlugin plugin;
 	

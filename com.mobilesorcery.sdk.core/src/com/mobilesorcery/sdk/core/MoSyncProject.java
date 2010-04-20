@@ -23,6 +23,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -148,6 +149,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     private static final String VALUE_KEY = "value";
 
 	private static final String BUILD_CONFIG = "build.cfg";
+
+    private static final String BUILD_CONFIG_TYPES = "types";
 	
 	private static final String ACTIVE_BUILD_CONFIG = "active.build.cfg";
 
@@ -174,6 +177,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	public static final int SHARED_PROPERTY = 0;
 
 	public static final int LOCAL_PROPERTY = 1;
+
 
     private static IdentityHashMap<IProject, MoSyncProject> projects = new IdentityHashMap<IProject, MoSyncProject>();
     
@@ -299,7 +303,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     	IMemento[] cfgs = memento.getChildren(BUILD_CONFIG);
     	for (int i = 0; i < cfgs.length; i++) {
     		String id = cfgs[i].getString(BUILD_CONFIG_ID_KEY);
-    		BuildConfiguration cfg = new BuildConfiguration(this, id);
+    		String[] cfgTypes = PropertyUtil.toStrings(cfgs[i].getString(BUILD_CONFIG_TYPES));
+    		BuildConfiguration cfg = new BuildConfiguration(this, id, cfgTypes);
     		// For older versions of the mosync project, the active
     		// property might be set as an attribute here instead of
     		// as a separate tag.
@@ -397,9 +402,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     	// Older versions of the project file format do not have build configs,
     	// so we save a marker denoting that we do.
     	root.putBoolean(BUILD_CONFIGS_SUPPORTED, isBuildConfigurationsSupported);
-    	for (String cfg : getBuildConfigurations()) {
+    	for (String cfgId : getBuildConfigurations()) {
     		IMemento node = root.createChild(BUILD_CONFIG);
-    		node.putString(BUILD_CONFIG_ID_KEY, cfg);
+    		node.putString(BUILD_CONFIG_ID_KEY, cfgId);
+    		IBuildConfiguration cfg = getBuildConfiguration(cfgId);
+    		node.putString(BUILD_CONFIG_TYPES, PropertyUtil.fromStrings(cfg.getTypes().toArray(new String[0])));
     	}    	
 	}
 
@@ -901,6 +908,28 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	public Set<String> getBuildConfigurations() {
 		return new TreeSet<String>(configurations.keySet());
 	}
+	
+	/**
+	 * Returns the ids of all build configurations that has
+	 * a set of types
+	 * @param types The types to match against
+	 * @return The build configurations that have <b>all</b> the specified types 
+	 */
+    public Set<IBuildConfiguration> getBuildConfigurations(String... types) {
+        HashSet<IBuildConfiguration> result = new HashSet<IBuildConfiguration>();
+        for (IBuildConfiguration cfg : configurations.values()) {
+            boolean doAdd = true;
+            for (int i = 0; i < types.length; i++) {
+                doAdd &= cfg.getTypes().contains(types[i]);
+            }
+            
+            if (doAdd) {
+                result.add(cfg);
+            }
+        }
+        
+        return result;
+    }
 
 	/**
 	 * Returns the build configuration for a given id
@@ -915,8 +944,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		return configurations.get(id);
 	}
 	
-	public IBuildConfiguration installBuildConfiguration(String id) {
-		BuildConfiguration newConfig = new BuildConfiguration(this, id);
+	public IBuildConfiguration installBuildConfiguration(String id, String[] types) {
+		BuildConfiguration newConfig = new BuildConfiguration(this, id, types);
 		installBuildConfiguration(newConfig);
 		return newConfig;
 	}
@@ -964,9 +993,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		setBuildConfigurationsSupported(true);
 		
 		if (configurations.isEmpty()) {
-			configurations.put("Release", new BuildConfiguration(this, IBuildConfiguration.RELEASE_ID));
-			configurations.put("Debug", new BuildConfiguration(this, IBuildConfiguration.DEBUG_ID));
-			//configurations.put("Test", new BuildConfiguration(this, IBuildConfiguration.TEST_ID));
+			configurations.put("Release", new BuildConfiguration(this, IBuildConfiguration.RELEASE_ID, IBuildConfiguration.RELEASE_TYPE));
+			configurations.put("Debug", new BuildConfiguration(this, IBuildConfiguration.DEBUG_ID, IBuildConfiguration.DEBUG_TYPE));
 			setActiveBuildConfiguration("Release");
 		}
 	}
@@ -988,6 +1016,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	public IBuildResultManager getBuildResults() {
 		return brManager;
 	}
+
 
 
 }

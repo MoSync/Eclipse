@@ -127,6 +127,8 @@ class XMLTestReportParser extends DefaultHandler {
 			session.getTestResult().endTest(currentTest, currentTestTime);
 			if (currentAssertionFailed != null) {
 				session.getTestResult().addFailure(currentTest, currentAssertionFailed);
+			} else if (currentTestMessage != null && currentTestMessage.toString().trim().startsWith("failed:")) {
+			    session.getTestResult().addFailure(currentTest, currentTestMessage.toString());
 			}
 		}
 	}

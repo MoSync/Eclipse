@@ -34,8 +34,10 @@ icon="icons/testicon.png">
             <enablement>
                 <test
                       forcePluginActivation="true"
-                      property="com.mobilesorcery.sdk.testers.hasMoreNature"/>
+                      property="com.mobilesorcery.sdk.testers.config-type"
+                      value="Test"/>
             </enablement>
+            
          </contextualLaunch>
 </shortcut>
 </extension> 
