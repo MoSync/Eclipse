@@ -16,6 +16,7 @@ package com.mobilesorcery.sdk.core;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -25,8 +26,16 @@ import org.eclipse.core.runtime.IAdaptable;
 
 public class BuildConfiguration implements IBuildConfiguration, IAdaptable {
 
+    public final static Comparator<IBuildConfiguration> DEFAULT_COMPARATOR = new Comparator<IBuildConfiguration>() {
+        public int compare(IBuildConfiguration cfg1, IBuildConfiguration cfg2) {
+            return cfg1.getId().compareTo(cfg2.getId());
+        }
+    };
+    
     private final static Set<String> DEFAULT_TYPE_SET = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(RELEASE_TYPE)));
     private final static Set<String> DEFAULT_DEBUG_TYPE_SET = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(DEBUG_TYPE)));
+
+    public static final String TYPE_EXTENSION_POINT = "com.mobilesorcery.core.buildconfigurationtypes";
     
 	private MoSyncProject project;
 	private String id;

@@ -44,6 +44,7 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.ILaunchConstants;
 import com.mobilesorcery.sdk.core.MoSyncNature;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -159,7 +160,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 		if (project != null) {
 			configurations
 					.setContentProvider(new BuildConfigurationsContentProvider(
-							project));
+							project, isDebugMode() ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE));
 			configurations
 					.setLabelProvider(new BuildConfigurationsLabelProvider(
 							project));

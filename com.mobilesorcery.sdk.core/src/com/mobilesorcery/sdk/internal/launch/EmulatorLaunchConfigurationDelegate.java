@@ -238,7 +238,12 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         pu.pipe_close(dupWriteFd);
     }
 
-    private IPath getLaunchDir(MoSyncProject project) {
+    /**
+     * Returns the launch directory of this launch.
+     * @param project
+     * @return
+     */
+    protected IPath getLaunchDir(MoSyncProject project) {
         return MoSyncBuilder.getOutputPath(project.getWrappedProject(), MoSyncBuilder.getActiveVariant(project, false));
     }
 

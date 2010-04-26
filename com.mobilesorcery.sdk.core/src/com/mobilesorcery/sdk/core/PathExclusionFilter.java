@@ -193,13 +193,14 @@ public class PathExclusionFilter implements IFilter<IResource> {
 		for (IResource resource : resources) {
 			MoSyncProject project = MoSyncProject.create(resource.getProject());
 			IPath path = resource.getProjectRelativePath();
-			PathExclusionFilter filter = MoSyncProject.getExclusionFilter(project);
+            PathExclusionFilter filter = MoSyncProject.getExclusionFilter(project, true);
+            PathExclusionFilter filterWithoutStandardExcludes = MoSyncProject.getExclusionFilter(project, false);
 			boolean accept = filter.accept(resource);
 			boolean shouldAdd = excluded ? accept : !accept;
 			if (shouldAdd) {
 				added++;
-				filter = filter.addExclusions(Arrays.asList(path.toPortableString()), excluded);
-				MoSyncProject.setExclusionFilter(project, filter);				
+				filterWithoutStandardExcludes = filterWithoutStandardExcludes.addExclusions(Arrays.asList(path.toPortableString()), excluded);
+				MoSyncProject.setExclusionFilter(project, filterWithoutStandardExcludes);				
 			}
 		}
 		
@@ -218,6 +219,10 @@ public class PathExclusionFilter implements IFilter<IResource> {
 		}
 		
 		return result.toArray(new String[0]);
+	}
+	
+	public String toString() {
+	    return Util.join(getFileSpecs(), " ");
 	}
 
 }

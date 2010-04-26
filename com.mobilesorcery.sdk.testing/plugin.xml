@@ -73,4 +73,27 @@ icon="icons/testicon.png">
             </selection>
          </wizard>
       </extension>
+      <extension
+            point="org.eclipse.ui.propertyPages">
+                      <page
+                class="com.mobilesorcery.sdk.testing.internal.ui.TestingPropertyPage"
+                id="com.mobilesorcery.sdk.testing.properties"
+                name="Testing"
+                objectClass="org.eclipse.core.resources.IProject"
+                category="com.mobilesorcery.sdk.ui.properties.project">
+                <enabledWhen>
+                   <test
+                         forcePluginActivation="true"
+                         property="com.mobilesorcery.sdk.testers.config-type"
+                         value="Test">
+                   </test>
+                </enabledWhen>
+          </page>
+      </extension>
+      <extension
+            point="com.mobilesorcery.core.buildconfigurationtypes">
+         <type
+               id="Test">
+         </type>
+      </extension>
 </plugin>

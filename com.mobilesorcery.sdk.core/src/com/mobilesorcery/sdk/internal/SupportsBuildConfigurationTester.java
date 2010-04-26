@@ -14,7 +14,7 @@ public class SupportsBuildConfigurationTester extends MoSyncNatureTester {
 		if (cfgsSupported && ID.equals(property)) {
 		    return project.getBuildConfigurations().contains(expectedValue);
 		} else if (cfgsSupported && TYPE.equals(property)) {
-		    return !project.getBuildConfigurations((String) expectedValue).isEmpty();
+		    return !project.getBuildConfigurationsOfType((String) expectedValue).isEmpty();
 		}
 		
 		return cfgsSupported;

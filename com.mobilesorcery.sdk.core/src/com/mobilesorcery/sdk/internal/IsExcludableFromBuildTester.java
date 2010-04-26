@@ -80,8 +80,7 @@ public class IsExcludableFromBuildTester extends MoSyncNatureTester {
 			if (resource.getType() == IResource.FILE
 					|| resource.getType() == IResource.FOLDER) {
 				IFilter<IResource> filter = MoSyncProject
-						.getExclusionFilter(MoSyncProject.create(resource
-								.getProject()));
+						.getExclusionFilter(MoSyncProject.create(resource.getProject()), true);
 				boolean isIncluded = filter.accept(resource);
 				return isExcludable ? isIncluded : !isIncluded;
 			}

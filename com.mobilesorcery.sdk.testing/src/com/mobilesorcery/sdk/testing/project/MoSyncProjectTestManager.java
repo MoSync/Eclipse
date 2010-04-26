@@ -24,8 +24,7 @@ public class MoSyncProjectTestManager {
 
 	private static final String TEST_PREFIX = "test.ns:";
 	private static final String IS_TEST_PROJECT = TEST_PREFIX + "is.testproject";
-	public static final String IS_TEST_CONFIG = TEST_PREFIX + "is.test.cfg";
-	private static final String TEST_RESOURCES = TEST_PREFIX + "test.res";
+	public static final String TEST_RESOURCES = TEST_PREFIX + "test.res";
 
     private static final String TEST_LIBRARY = "testify.lib";
     private static final String TEST_LIBRARY_DEBUG = "testifyD.lib";
@@ -35,9 +34,14 @@ public class MoSyncProjectTestManager {
 
 	public MoSyncProjectTestManager(MoSyncProject project) {
 		this.project = project;
+		init();
 	}
 	
-	/**
+	private void init() {
+	    testResources = new HashSet<IPath>(Arrays.asList(PropertyUtil.getPaths(project, TEST_RESOURCES)));
+    }
+
+    /**
 	 * Returns whether the project associated with this manager
 	 * has been configured to execute tests.
 	 * @return
@@ -54,6 +58,10 @@ public class MoSyncProjectTestManager {
 	 * Configures a project to become a test project
 	 */
 	public void configureProject() {
+	    // TODO: We now use a specific property page to modify this; and this
+	    // property page is specific to the testing plugin. So we kind of assume
+	    // that the only plugin that will ever modify this property is the testing
+	    // plugin. Kind of ugly, so FIXME. Maybe even time to implement path containers...
 	    project.setProperty(MoSyncProject.STANDARD_EXCLUDES_FILTER_KEY, "%" + TEST_RESOURCES + "%");
         
 	    configureBuildConfiguration(true);
@@ -64,7 +72,7 @@ public class MoSyncProjectTestManager {
         IBuildConfiguration testCfg = ensureHasTestConfigs(isDebug);
         
         // Now we just brutally set the standard excludes to be the test resources
-        testCfg.getProperties().setProperty(MoSyncProject.STANDARD_EXCLUDES_FILTER_KEY, " ");
+        testCfg.getProperties().setProperty(MoSyncProject.STANDARD_EXCLUDES_FILTER_KEY, "%EMPTY%");
         PropertyUtil.setPaths(project, TEST_RESOURCES, testResources.toArray(new IPath[0]));
         
         addRequiredLibraries(testCfg.getProperties(), isDebug);
@@ -106,7 +114,7 @@ public class MoSyncProjectTestManager {
     }
 
     public List<IBuildConfiguration> getTestConfigs(boolean isDebug) {
-        return new ArrayList<IBuildConfiguration>(project.getBuildConfigurations(getTypes(isDebug)));
+        return new ArrayList<IBuildConfiguration>(project.getBuildConfigurations(project.getBuildConfigurationsOfType(getTypes(isDebug))));
 	}
 	
 	private IBuildConfiguration ensureHasTestConfigs(boolean isDebug) {
@@ -121,14 +129,14 @@ public class MoSyncProjectTestManager {
 		
 		// We try to create the test configuration to be as close as possible to existing configurations.
 		// TODO: If more than 1, use wizard to let user select which cfg to base it on?
-		List<IBuildConfiguration> prototypes = new ArrayList<IBuildConfiguration>(project.getBuildConfigurations(isDebug ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE));
+		List<String> prototypes = new ArrayList<String>(project.getBuildConfigurationsOfType(isDebug ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE));
 		
 		String[] types = getTypes(isDebug);
 		IBuildConfiguration testCfg = null;
 		if (prototypes.isEmpty()) {
 		    testCfg = project.installBuildConfiguration(testCfgId, types);
 		} else {
-		    testCfg = prototypes.get(0).clone(testCfgId);
+		    testCfg = project.getBuildConfiguration(prototypes.get(0)).clone(testCfgId);
 		    testCfg.setTypes(Arrays.asList(types));
 		    project.installBuildConfiguration(testCfg);
 		}
@@ -152,7 +160,7 @@ public class MoSyncProjectTestManager {
 	}
 	
 	public boolean isTestResource(IResource resource) {
-		return testResources.contains(resource);
+		return testResources.contains(resource.getProjectRelativePath());
 	}
 	
 	/**

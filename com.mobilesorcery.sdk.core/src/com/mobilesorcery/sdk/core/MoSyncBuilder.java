@@ -302,7 +302,7 @@ public class MoSyncBuilder extends ACBuilder {
         // if it's an autobuild
         IBuildVariant variant = getActiveVariant(MoSyncProject.create(project), false);
         BuildSession session = new BuildSession(Arrays.asList(variant), BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (doPack ? BuildSession.DO_PACK : 0));
-        incrementalBuild(project, deltas, session, variant, null, monitor);
+        incrementalBuild(project, session, variant, null, monitor);
 
         Set<IProject> dependencies = CoreMoSyncPlugin.getDefault().getProjectDependencyManager(ResourcesPlugin.getWorkspace()).getDependenciesOf(project);
         dependencies.add(project);
@@ -401,7 +401,7 @@ public class MoSyncBuilder extends ACBuilder {
                 }
             }
 
-            return incrementalBuild(project, null, session, variant, resourceFilter, monitor);
+            return incrementalBuild(project, session, variant, resourceFilter, monitor);
         } finally {
             monitor.done();
         }
@@ -412,10 +412,7 @@ public class MoSyncBuilder extends ACBuilder {
         return null;
     }
     
-    // TODO: Refactor, this is becoming a jack-of-all-trades method, esp. now
-    // with the partial builds as well. Maybe need a new class like 'build
-    // parameters' to avoid all setters and this huge method signature...
-    IBuildResult incrementalBuild(IProject project, IResourceDelta[] ignoreMe, IBuildSession session, IBuildVariant variant, 
+    IBuildResult incrementalBuild(IProject project, IBuildSession session, IBuildVariant variant, 
             IFilter<IResource> resourceFilter, IProgressMonitor monitor) throws CoreException {
 
         if (CoreMoSyncPlugin.getDefault().isDebugging()) {
@@ -431,7 +428,8 @@ public class MoSyncBuilder extends ACBuilder {
 
         IProfile targetProfile = variant.getProfile();
 
-        BuildResult buildResult = mosyncProject.getBuildResults().clearBuildResult(variant);
+        BuildResult buildResult = new BuildResult(project);
+        buildResult.setVariant(variant);
         Calendar timestamp = Calendar.getInstance();
         buildResult.setTimestamp(timestamp.getTimeInMillis());
         

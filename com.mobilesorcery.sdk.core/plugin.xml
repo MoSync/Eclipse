@@ -4,6 +4,7 @@
    <extension-point id="com.mobilesorcery.core.packagers" name="Packager" schema="schema/com.mobilesorcery.core.packager.exsd"/>
    <extension-point id="com.mobilesorcery.core.propertyinitializers" name="Property Initializer" schema="schema/com.mobilesorcery.core.propertyinitializers.exsd"/>
    <extension-point id="com.mobilesorcery.sdk.updater" name="Auto Updater" schema="schema/com.mobilesorcery.sdk.updater.exsd"/>
+   <extension-point id="com.mobilesorcery.core.buildconfigurationtypes" name="Build Configuration Types" schema="schema/com.mobilesorcery.core.buildconfigurationtypes.exsd"/>
 
    <extension
          id="builder"

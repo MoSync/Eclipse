@@ -66,8 +66,7 @@ public class ExcludedResourceDecorator extends LabelProvider implements
 			IResource resource = (IResource) element;
 			MoSyncProject project = MoSyncProject.create(resource.getProject());
 			if (project != null) {
-				return !MoSyncProject.getExclusionFilter(project).accept(
-						resource);
+				return !MoSyncProject.getExclusionFilter(project, true).accept(resource);
 			}
 		}
 

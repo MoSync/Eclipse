@@ -1,5 +1,10 @@
 package com.mobilesorcery.sdk.ui.internal.properties;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.TreeSet;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.viewers.DoubleClickEvent;
@@ -19,14 +24,18 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.PropertyPage;
 
 import com.mobilesorcery.sdk.core.BuildConfiguration;
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
+import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class BuildConfigurationsPropertyPage extends PropertyPage {
 
@@ -34,6 +43,7 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 
 		private IBuildConfiguration configuration;
 		private Text name;
+        private Table cfgTypesTable;
 		protected EditDialog(Shell parentShell) {
 			super(parentShell);			
 		}
@@ -50,19 +60,50 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 			name = new Text(main, SWT.SINGLE | SWT.BORDER);
 			name.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 			name.setText(configuration.getId());
-			name.selectAll();			
+			name.selectAll();
+			
+			Label cfgTypesLabel = new Label(main, SWT.NONE);
+			cfgTypesLabel.setText("Configuration &Types:");
+			cfgTypesTable = new Table(main, SWT.CHECK | SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
+			GridData cfgTypesData = new GridData(GridData.FILL_HORIZONTAL);
+			cfgTypesData.heightHint = UIUtils.getDefaultListHeight() / 2; 
+			cfgTypesTable.setLayoutData(cfgTypesData);
+			
+			TreeSet<String> sortedCfgTypes = new TreeSet<String>(Arrays.asList(CoreMoSyncPlugin.getDefault().getBuildConfigurationTypes()));
+			for (String cfgType : sortedCfgTypes) {
+			    TableItem cfgTypeItem = new TableItem(cfgTypesTable, SWT.NONE);
+			    cfgTypeItem.setText(cfgType);
+			    cfgTypeItem.setData(cfgType);
+			    cfgTypeItem.setChecked(configuration.getTypes().contains(cfgType));
+			}
+			
 			return main;
 		}
 		
 		public void okPressed() {
 			IBuildConfiguration newConfiguration = configuration.clone(name.getText());
+			newConfiguration.setTypes(getSelectedBuildConfigurationTypes());
+			
 			boolean wasActive = getProject().getActiveBuildConfiguration() == configuration;
+            getProject().deinstallBuildConfiguration(configuration.getId());
 			getProject().installBuildConfiguration(newConfiguration);
-			getProject().deinstallBuildConfiguration(configuration.getId());
 			if (wasActive) {
 				getProject().setActiveBuildConfiguration(newConfiguration.getId());
 			}
+			
 			super.okPressed();
+		}
+		
+		List<String> getSelectedBuildConfigurationTypes() {
+		    ArrayList<String> cfgTypes = new ArrayList<String>();
+            TableItem[] tableItems = cfgTypesTable.getItems();
+            for (int i = 0; i < tableItems.length; i++) {
+                if (tableItems[i].getChecked()) {
+                    cfgTypes.add((String) tableItems[i].getData());
+                }
+            }
+            
+            return cfgTypes;
 		}
 	}
 

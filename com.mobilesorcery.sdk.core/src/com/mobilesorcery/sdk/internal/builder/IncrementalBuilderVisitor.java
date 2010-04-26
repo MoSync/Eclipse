@@ -181,7 +181,7 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 		MoSyncProject project = MoSyncProject.create(this.project);
 		IFilter<IResource> resourceFilter = this.resourceFilter;
 		if (resourceFilter == null) {
-			resourceFilter = MoSyncProject.getExclusionFilter(project);
+			resourceFilter = MoSyncProject.getExclusionFilter(project, true);
 		}
 		return project == null || resourceFilter.accept(resource);
 	}

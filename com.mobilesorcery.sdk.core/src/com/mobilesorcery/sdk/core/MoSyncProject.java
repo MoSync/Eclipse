@@ -22,10 +22,12 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -43,7 +45,6 @@ import org.eclipse.ui.XMLMemento;
 import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.ParseException;
 import com.mobilesorcery.sdk.internal.SLD;
-import com.mobilesorcery.sdk.internal.builder.BuildResultManager;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
@@ -96,6 +97,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     /**
      * The standard file excludes for this project (usually NOT an a per-configuration
      * basis).
+     * @deprecated Move this to the testing plugin
      */
     public static final String STANDARD_EXCLUDES_FILTER_KEY = "standard.excludes";
 
@@ -215,8 +217,6 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
 	private boolean disposed = false;
 
-	private IBuildResultManager brManager = null;
-
     private HashMap<IBuildVariant, IBuildState> cachedBuildStates = new HashMap<IBuildVariant, IBuildState>();
 
     private HashMap<IPropertyOwner, PathExclusionFilter> excludes = new HashMap<IPropertyOwner, PathExclusionFilter>();
@@ -228,7 +228,6 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         initFromProjectMetaData(null, SHARED_PROPERTY);
         initFromProjectMetaData(null, LOCAL_PROPERTY);
         addDeviceFilterListener();
-        brManager = new BuildResultManager(this);
     }
 
     private void addDeviceFilterListener() {        
@@ -780,21 +779,23 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		}
 	}
 	
-	
 	/**
 	 * A convenience method for returning the exclusion filter for a project/config.
-	 * @param properties
+	 * @param project The project for which to find the filter
+	 * @param withStandardExcludes Whether to use the standard excludes of the project when
+	 * computing the filter
 	 * @return
 	 */
-	public static PathExclusionFilter getExclusionFilter(MoSyncProject project) {
+	public static PathExclusionFilter getExclusionFilter(MoSyncProject project, boolean withStandardExcludes) {
 		if (project == null) {
 			return null;
 		}
 		
 		IPropertyOwner properties = project.getPropertyOwner();
-		if (project.excludes.get(properties) == null) {		    
+		PathExclusionFilter result = withStandardExcludes ? project.excludes.get(properties) : null;
+		if (result == null) {		    
     		// TODO: Efficient - well, not really... And this method is heavily used!
-    		String[] standardExclusion = PropertyUtil.getStrings(properties, STANDARD_EXCLUDES_FILTER_KEY);
+    		String[] standardExclusion = withStandardExcludes ? PropertyUtil.getStrings(properties, STANDARD_EXCLUDES_FILTER_KEY) : new String[0];
     		String[] exclusions = PropertyUtil.getStrings(properties, EXCLUDE_FILTER_KEY);
     		String[] aggregateExclusions = new String[standardExclusion.length + exclusions.length];
     		System.arraycopy(standardExclusion, 0, aggregateExclusions, 0, standardExclusion.length);
@@ -805,14 +806,22 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     		// TODO: All params should be able to have % tags.
     		for (int i = 0; i < aggregateExclusions.length; i++) {
     		    String excluded = Util.replace(aggregateExclusions[i], params);
-    		    String[] excludedPaths = PropertyUtil.toStrings(excluded);
-    		    finalExclusions.addAll(Arrays.asList(excludedPaths));
+    		    IPath[] excludedPaths = PropertyUtil.toPaths(excluded);
+    		    String[] excludedPathsStr = new String[excludedPaths.length];
+    		    for (int j = 0; j < excludedPathsStr.length; j++) {
+    		        excludedPathsStr[j] = excludedPaths[j].toPortableString();
+    		    }
+    		    
+    		    finalExclusions.addAll(Arrays.asList(excludedPathsStr));
     		}
     		
-    		project.excludes.put(properties, PathExclusionFilter.parse(finalExclusions.toArray(new String[0])));
+    	    result = PathExclusionFilter.parse(finalExclusions.toArray(new String[0]));
+    		if (withStandardExcludes) {
+    		    project.excludes.put(properties, result);
+    		}
 		}
 		
-		return project.excludes.get(properties);
+		return result;
 	}
 	
 	public static void setExclusionFilter(MoSyncProject project, PathExclusionFilter filter) {
@@ -851,7 +860,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     
     /**
      * <p>Returns the build state for a variant manager of this project.
-     * All non-finalizer build states may be cached.</p>
+     * All non-finalizer build states are be cached.</p>
      * @return
      */
 	public IBuildState getBuildState(IBuildVariant variant) {
@@ -908,6 +917,15 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	public Set<String> getBuildConfigurations() {
 		return new TreeSet<String>(configurations.keySet());
 	}
+
+	public Set<IBuildConfiguration> getBuildConfigurations(Collection<String> ids) {
+	    TreeSet<IBuildConfiguration> configs = new TreeSet<IBuildConfiguration>(BuildConfiguration.DEFAULT_COMPARATOR);
+	    for (String id : ids) {
+	        configs.add(getBuildConfiguration(id));
+	    }
+	    
+	    return configs;
+	}
 	
 	/**
 	 * Returns the ids of all build configurations that has
@@ -915,8 +933,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 * @param types The types to match against
 	 * @return The build configurations that have <b>all</b> the specified types 
 	 */
-    public Set<IBuildConfiguration> getBuildConfigurations(String... types) {
-        HashSet<IBuildConfiguration> result = new HashSet<IBuildConfiguration>();
+    public Set<String> getBuildConfigurationsOfType(String... types) {
+        HashSet<String> result = new HashSet<String>();
         for (IBuildConfiguration cfg : configurations.values()) {
             boolean doAdd = true;
             for (int i = 0; i < types.length; i++) {
@@ -924,7 +942,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
             }
             
             if (doAdd) {
-                result.add(cfg);
+                result.add(cfg.getId());
             }
         }
         
@@ -1012,11 +1030,5 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		// TODO: cache?
 		return new LibraryLookup(MoSyncBuilder.getLibraryPaths(getWrappedProject(), buildProperties), MoSyncBuilder.getLibraries(buildProperties));
 	}
-
-	public IBuildResultManager getBuildResults() {
-		return brManager;
-	}
-
-
 
 }

@@ -68,9 +68,16 @@ public class TestCaseCreationPage extends WizardPage {
 		    message = "Please specify a source folder";
 		    severity = IMessageProvider.ERROR;
 		} else if (sourceFolderFile.exists()) {
-			if (!Util.isEmptyDirectory(sourceFolderFile.getLocation().toFile())) {
-				message = MessageFormat.format("Directory {0} is not empty - this may cause build problems.", sourceFolderFile.getFullPath()); 
-				severity = IMessageProvider.WARNING;
+		    MoSyncProject projectToConfigure = getProjectToConfigure();
+		    if (projectToConfigure == null) {
+		        message = "The source folder must be located in a MoSync enabled project";
+		        severity = IMessageProvider.ERROR;
+		    } else {
+		        boolean isTestFolder = new MoSyncProjectTestManager(projectToConfigure).isTestResource(sourceFolderFile);
+		        if (!isTestFolder && !Util.isEmptyDirectory(sourceFolderFile.getLocation().toFile())) {
+		            message = MessageFormat.format("Directory {0} is not empty - this may cause build problems.", sourceFolderFile.getFullPath()); 
+		            severity = IMessageProvider.WARNING;
+		        }
 			}
 		}
 		
@@ -98,7 +105,16 @@ public class TestCaseCreationPage extends WizardPage {
 		setPageComplete(severity != IMessageProvider.ERROR);
 	}
 
-	public void createControl(Composite parent) {
+	private MoSyncProject getProjectToConfigure() {
+	    IResource sourceFolderFile = getSourceFolderFile();
+	    if (sourceFolderFile == null) {
+	        return null;
+	    }
+	    
+        return MoSyncProject.create(sourceFolderFile.getProject());
+    }
+
+    public void createControl(Composite parent) {
 		Composite control = new Composite(parent, SWT.NONE);
 		control.setLayout(new GridLayout(3, false));
 		listener = new PageListener();

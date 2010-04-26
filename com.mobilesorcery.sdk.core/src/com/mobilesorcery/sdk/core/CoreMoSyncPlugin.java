@@ -106,6 +106,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	private EmulatorProcessManager emulatorProcessManager;
 
+    private String[] buildConfigurationTypes;
+
     /**
      * The constructor
      */
@@ -127,10 +129,31 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         initEmulatorProcessManager();
         installBreakpointHack();
         installResourceListener();
+        initBuildConfigurationTypes();
 		getPreferenceStore().addPropertyChangeListener(this); 
 		initializeOnSeparateThread();
     }
     
+    private void initBuildConfigurationTypes() {
+        IConfigurationElement[] types = Platform.getExtensionRegistry().getConfigurationElementsFor(
+                BuildConfiguration.TYPE_EXTENSION_POINT);
+        ArrayList<String> buildConfigurationTypes = new ArrayList<String>();
+        
+        // Add defaults
+        buildConfigurationTypes.add(IBuildConfiguration.RELEASE_TYPE);
+        buildConfigurationTypes.add(IBuildConfiguration.DEBUG_TYPE);
+        
+        // Add extensions
+        for (int i = 0; i < types.length; i++) {
+            String typeId = types[i].getAttribute("id");
+            if (typeId != null) {
+                buildConfigurationTypes.add(typeId);
+            }
+        }
+
+        this.buildConfigurationTypes = buildConfigurationTypes.toArray(new String[0]);
+    }
+
     void initializeOnSeparateThread() {
     	Thread initializerThread = new Thread(new Runnable() {
 			public void run() {
@@ -618,5 +641,9 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		    }
 		}
 	}
+
+    public String[] getBuildConfigurationTypes() {
+        return buildConfigurationTypes;
+    }
 	
 }

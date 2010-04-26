@@ -19,7 +19,6 @@ import java.io.File;
 import java.text.MessageFormat;
 import java.util.HashMap;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.dialogs.IMessageProvider;
@@ -43,7 +42,6 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.dialogs.PropertyPage;
 
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
@@ -56,9 +54,10 @@ import com.mobilesorcery.sdk.core.IPropertyOwner.IWorkingCopy;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
 import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
+import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
 import com.mobilesorcery.sdk.ui.UIUtils;
 
-public class BuildSettingsPropertyPage extends PropertyPage implements PropertyChangeListener {
+public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements PropertyChangeListener {
 
 	public class BuildConfigurationChangedListener implements
 			ISelectionChangedListener {
@@ -473,10 +472,6 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
     	return result;
     }
 
-    private void setText(Text text, String value) {
-        text.setText(value == null ? "" : value);
-    }
-
     private void updateUI(Event event) {
         listener.setActive(false);
         boolean isLibraryProject = libraryProjectType.getSelection();
@@ -493,9 +488,9 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         
         message = DefaultMessageProvider.EMPTY;
         
-        message = warnIfSpaces(message, "Additional Libraries", additionalLibrariesText);
-        message = warnIfSpaces(message, "Additional Library Paths", additionalLibraryPathsText);
-        message = warnIfSpaces(message, "Additional Include Paths", additionalIncludePathsText);
+        message = validatePathsField(message, "Additional Libraries", additionalLibrariesText, null);
+        message = validatePathsField(message, "Additional Library Paths", additionalLibraryPathsText, null);
+        message = validatePathsField(message, "Additional Include Paths", additionalIncludePathsText, null);
 
         message = validateMemorySettings(message);
 
@@ -572,24 +567,6 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
     	return DefaultMessageProvider.EMPTY;
 	}
 
-	private IMessageProvider warnIfSpaces(IMessageProvider shortcurcuit, String fieldName, Text text) {
-		if (!DefaultMessageProvider.isEmpty(shortcurcuit)) {
-            return shortcurcuit;
-        }
-
-        String str = text.getText().trim();
-        IPath[] paths = PropertyUtil.toPaths(str);
-        if (paths.length == 1) {
-            if (paths[0].toOSString().indexOf(' ') != -1) {
-                return new DefaultMessageProvider(
-                		MessageFormat.format("\"{0}\": space is an invalid delimiter - use comma (,) instead", fieldName),
-                		DefaultMessageProvider.WARNING);
-            }
-        }
-
-        return DefaultMessageProvider.EMPTY;
-    }
-
     public void performDefaults() {
         ignoreDefaultIncludePaths.setSelection(false);
         additionalIncludePathsText.setText("");
@@ -661,13 +638,6 @@ public class BuildSettingsPropertyPage extends PropertyPage implements PropertyC
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS, useDebugRuntimes.getSelection());
         
         return changed;
-    }
-
-    private MoSyncProject getProject() {
-        IProject wrappedProject = (IProject) getElement();
-        MoSyncProject project = MoSyncProject.create(wrappedProject);
-
-        return project;
     }
 
 	public void propertyChange(PropertyChangeEvent event) {

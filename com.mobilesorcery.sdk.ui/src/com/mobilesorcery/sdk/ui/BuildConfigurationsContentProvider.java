@@ -15,23 +15,32 @@ package com.mobilesorcery.sdk.ui;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.Set;
 
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 
 public class BuildConfigurationsContentProvider implements IStructuredContentProvider, PropertyChangeListener {
 
 	private MoSyncProject project;
+    private String[] buildConfigurationTypes;
 
-	public BuildConfigurationsContentProvider(MoSyncProject project) {
+    public BuildConfigurationsContentProvider(MoSyncProject project) {
+        this(project, (String[])null);
+    }
+    
+    public BuildConfigurationsContentProvider(MoSyncProject project, String... buildConfigurationTypes) {
 		this.project = project;
+		this.buildConfigurationTypes = buildConfigurationTypes;
 		project.addPropertyChangeListener(this);
 	}
 
 	public Object[] getElements(Object inputElement) {
-		return project.areBuildConfigurationsSupported() ? project.getBuildConfigurations().toArray() : new Object[0];
+	    Set<String> cfgIds = buildConfigurationTypes == null ? project.getBuildConfigurations() : project.getBuildConfigurationsOfType(buildConfigurationTypes);
+	    return project.areBuildConfigurationsSupported() ? cfgIds.toArray() : new Object[0];
 	}
 
 	public void dispose() {
