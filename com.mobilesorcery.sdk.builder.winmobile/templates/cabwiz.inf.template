@@ -8,7 +8,7 @@ AppName="%project-name%"
 InstallDir=%CE1%\%AppName%
 
 [Strings]
-Manufacturer="Mobile Sorcery"
+Manufacturer="%app-vendor%"
 
 [CEDevice]
 VersionMin=4.0

@@ -70,15 +70,10 @@ public class FinalizerParser {
 
 	public void execute(Reader script, IProgressMonitor monitor) throws IOException, ParseException, InvocationTargetException,
 			InterruptedException {
-		ArrayList<IBuildVariant> variantsToBuild = new ArrayList<IBuildVariant>();
+	    ArrayList<IBuildVariant> variantsToBuild = new ArrayList<IBuildVariant>();
 
-      MoSyncProject project = MoSyncProject.create(this.project);
-        if (project != null && PropertyUtil.getBoolean(project, AUTO_CHANGE_CONFIG)) {
-            String buildConfiguration = project.getProperty(BUILD_CONFIG);
-            if (project.areBuildConfigurationsSupported()) {
-                project.setActiveBuildConfiguration(buildConfiguration);
-            }
-        }
+	    MoSyncProject project = MoSyncProject.create(this.project);
+	    autoSwitchConfiguration(project);
 	        
 		int lineNo = 1;
 		LineNumberReader lines = new LineNumberReader(script);
@@ -164,5 +159,19 @@ public class FinalizerParser {
 			}
 		};
 	}
+
+	/**
+	 * If applicable, changes the active configuration of the project
+	 * to whatever is set in the project's "Finalizer" properties page.
+	 * @param project
+	 */
+    public static void autoSwitchConfiguration(MoSyncProject project) {
+        if (project != null && PropertyUtil.getBoolean(project, AUTO_CHANGE_CONFIG)) {
+            String buildConfiguration = project.getProperty(BUILD_CONFIG);
+            if (project.areBuildConfigurationsSupported()) {
+                project.setActiveBuildConfiguration(buildConfiguration);
+            }
+        }
+    }
 
 }

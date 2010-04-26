@@ -75,7 +75,7 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
         	return PropertyUtil.fromInteger(PipeTool.DEFAULT_STACK_SIZE_KB);        	
         } else if (MoSyncBuilder.MEMORY_DATASIZE_KB.equals(namespacedKey)) {
         	return PropertyUtil.fromInteger(PipeTool.DEFAULT_DATA_SIZE_KB);
-        } else if (DefaultPackager.APP_VENDOR_NAME.equals(namespacedKey)) {
+        } else if (DefaultPackager.APP_VENDOR_NAME_BUILD_PROP.equals(namespacedKey)) {
             return "Mobile Sorcery";
         }
         

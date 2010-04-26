@@ -31,6 +31,8 @@ import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.finalizer.core.FinalizerParser;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.ui.Activator;
 
@@ -71,6 +73,7 @@ public class FinalizeForProfileAction extends Action {
         if (selection instanceof IStructuredSelection) {
             Object selected = ((IStructuredSelection)selection).getFirstElement();
             if (selected instanceof IProfile && project != null) {
+                FinalizerParser.autoSwitchConfiguration(project);
                 IProfile profile = (IProfile) selected;
                 IBuildConfiguration cfg = project.getActiveBuildConfiguration();
                 BuildVariant variant = new BuildVariant(profile, cfg == null ? null : cfg.getId(), true);

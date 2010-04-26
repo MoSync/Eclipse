@@ -51,7 +51,7 @@ public class JavaPackager extends AbstractPackager {
 			projectJar.delete();
 			projectJad.delete();
 
-			String appVendorName = internal.getProjectProperties().getProperty(DefaultPackager.APP_VENDOR_NAME);
+			String appVendorName = internal.getParameters().get(DefaultPackager.APP_VENDOR_NAME);
 			File manifest = new File(internal.resolve("%compile-output-dir%\\META-INF\\manifest.mf")); //$NON-NLS-1$
 			createManifest(project.getName(), appVendorName, manifest);
 

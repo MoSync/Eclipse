@@ -29,7 +29,7 @@ import com.mobilesorcery.sdk.profiles.IProfile;
  */
 public class DefaultPackager {
 
-    public final static String APP_VENDOR_NAME = MoSyncBuilder.BUILD_PREFS_PREFIX + "app.vendor";
+    public final static String APP_VENDOR_NAME_BUILD_PROP = MoSyncBuilder.BUILD_PREFS_PREFIX + "app.vendor";
     
     public final static String MOSYNC_HOME = "mosync-home";
     public final static String MOSYNC_BIN = "mosync-bin";
@@ -42,7 +42,20 @@ public class DefaultPackager {
 
 	public final static String PLATFORM_ID = "platform";
 
+	/**
+	 * The name of the device vendor (not the same as app vendor)
+	 */
 	public final static String VENDOR_NAME = "vendor";
+	
+	/**
+	 * The name of the application vendor/publisher
+	 */
+	public final static String APP_VENDOR_NAME = "app-vendor";
+	
+	/**
+	 * The name of the profile 
+	 * @see IProfile
+	 */
 	public final static String PROFILE_NAME = "profile";
 	
     private static final String PROGRAM_OUTPUT = "program-output";
@@ -51,9 +64,10 @@ public class DefaultPackager {
 
 	private MoSyncProject project;
 	private CommandLineExecutor executor;
-	private Map<String, String> userParameters = new HashMap<String, String>();
 	private IBuildVariant variant;
+
 	private Map<String, String> defaultParameters = new HashMap<String, String>();
+    private Map<String, String> userParameters = new HashMap<String, String>();
 
 	
 	private CascadingProperties parameters;
@@ -79,6 +93,7 @@ public class DefaultPackager {
 		}
 		
 		defaultParameters.put(PROFILE_NAME, targetProfile.getName());
+		defaultParameters.put(APP_VENDOR_NAME, getProjectProperties().getProperty(APP_VENDOR_NAME_BUILD_PROP));
 		defaultParameters.put(VENDOR_NAME, targetProfile.getVendor().getName());
 		defaultParameters.put(RUNTIME_DIR, MoSyncTool.getDefault().getRuntimePath(targetProfile).toOSString());
 		defaultParameters.put(PROJECT_NAME, project.getName());

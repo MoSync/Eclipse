@@ -438,7 +438,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         setText(dataSize, configProperties.getProperty(MoSyncBuilder.MEMORY_DATASIZE_KB));
         
         useDebugRuntimes.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS));
-        setText(vendor, configProperties.getProperty(DefaultPackager.APP_VENDOR_NAME));
+        setText(vendor, configProperties.getProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP));
         updateUI(null);
     }
     
@@ -647,7 +647,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         changed |= configProperties.setProperty(MoSyncBuilder.MEMORY_DATASIZE_KB, dataSize.getText());
         
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS, useDebugRuntimes.getSelection());
-        changed |= configProperties.setProperty(DefaultPackager.APP_VENDOR_NAME, vendor.getText());
+        changed |= configProperties.setProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP, vendor.getText());
         return changed;
     }
 

@@ -38,7 +38,7 @@ public class WinMobilePackager extends AbstractPackager {
         DefaultPackager internal = new DefaultPackager(project, variant);
 
 		internal.setParameter("D", shouldUseDebugRuntimes() ? "D" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-
+		
         if (internal.resolveFile("%resource-output%").exists()) { //$NON-NLS-1$
             internal.setParameter("HAS_RESOURCES", Boolean.toString(true)); //$NON-NLS-1$
         }

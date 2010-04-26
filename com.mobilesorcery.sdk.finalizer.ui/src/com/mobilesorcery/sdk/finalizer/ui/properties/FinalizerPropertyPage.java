@@ -68,7 +68,7 @@ public class FinalizerPropertyPage extends PropertyPage implements
 
 		changeConfiguration = new Button(configurationGroup, SWT.CHECK);
 		changeConfiguration
-				.setText("&Automatically switch to this configuration before launching");
+				.setText("&Automatically switch to this configuration before finalizing");
 
 		configurations = new ComboViewer(configurationGroup, SWT.READ_ONLY | SWT.BORDER);
 	}
