@@ -1,6 +1,6 @@
 [Version]
 Signature="$Windows NT$"
-Provider="Mobile Sorcery"
+Provider="%app-vendor%"
 CESignature="$Windows CE$"
 
 [CEStrings]
