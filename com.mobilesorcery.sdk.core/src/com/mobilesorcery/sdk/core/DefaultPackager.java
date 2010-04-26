@@ -29,6 +29,8 @@ import com.mobilesorcery.sdk.profiles.IProfile;
  */
 public class DefaultPackager {
 
+    public final static String APP_VENDOR_NAME = MoSyncBuilder.BUILD_PREFS_PREFIX + "app.vendor";
+    
     public final static String MOSYNC_HOME = "mosync-home";
     public final static String MOSYNC_BIN = "mosync-bin";
 	public final static String RUNTIME_DIR = "runtime-dir";
@@ -149,6 +151,10 @@ public class DefaultPackager {
 		this.userParameters.putAll(userParameters);
 	}
 
+	public IPropertyOwner getProjectProperties() {
+	    return MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
+	}
+	
     public File resolveFile(String path) {
         return new File(resolve(path));
     }

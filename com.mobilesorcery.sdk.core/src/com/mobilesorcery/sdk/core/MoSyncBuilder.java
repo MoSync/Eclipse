@@ -84,7 +84,10 @@ public class MoSyncBuilder extends ACBuilder {
 
     public static final String CONSOLE_ID = "com.mobilesorcery.build.console";
 
-    private static final String BUILD_PREFS_PREFIX = "build.prefs:";
+    /**
+     * The prefix used by property initializers.
+     */
+    public static final String BUILD_PREFS_PREFIX = "build.prefs:";
 
     public final static String ADDITIONAL_INCLUDE_PATHS = BUILD_PREFS_PREFIX + "additional.include.paths";
 

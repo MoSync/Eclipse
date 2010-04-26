@@ -43,6 +43,7 @@ import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
 
+import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
@@ -130,6 +131,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 	private Text heapSize;
 	private Text stackSize;
 	private Text dataSize;
+    private Text vendor;
 
     protected Control createContents(Composite parent) {
     	placeHolder = new Composite(parent, SWT.NONE);
@@ -309,11 +311,20 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 		Composite packaging = new Composite(tabs, SWT.NONE);
 		packagingTab.setControl(packaging);
 		
-        packaging.setLayout(new GridLayout(1, false));
+        packaging.setLayout(new GridLayout(2, false));
         packaging.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         
         useDebugRuntimes = new Button(packaging, SWT.CHECK);
         useDebugRuntimes.setText("Use Debug &Runtimes");
+        GridData useDebugRuntimesData = new GridData(GridData.FILL_HORIZONTAL);
+        useDebugRuntimesData.horizontalSpan = 2;
+        useDebugRuntimes.setLayoutData(useDebugRuntimesData);
+        
+        Label vendorNameLabel = new Label(packaging, SWT.NONE);
+        vendorNameLabel.setText("&Vendor:");
+        
+        vendor = new Text(packaging,  SWT.BORDER | SWT.SINGLE);
+        vendor.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 	}
 
 	private void createPathsTab(TabFolder tabs) {
@@ -427,7 +438,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         setText(dataSize, configProperties.getProperty(MoSyncBuilder.MEMORY_DATASIZE_KB));
         
         useDebugRuntimes.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS));
-        
+        setText(vendor, configProperties.getProperty(DefaultPackager.APP_VENDOR_NAME));
         updateUI(null);
     }
     
@@ -636,7 +647,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         changed |= configProperties.setProperty(MoSyncBuilder.MEMORY_DATASIZE_KB, dataSize.getText());
         
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS, useDebugRuntimes.getSelection());
-        
+        changed |= configProperties.setProperty(DefaultPackager.APP_VENDOR_NAME, vendor.getText());
         return changed;
     }
 

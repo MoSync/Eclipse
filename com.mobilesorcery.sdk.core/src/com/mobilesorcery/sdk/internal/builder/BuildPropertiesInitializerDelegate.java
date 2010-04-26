@@ -16,6 +16,7 @@ package com.mobilesorcery.sdk.internal.builder;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 
+import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IPropertyInitializerDelegate;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
@@ -74,6 +75,8 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
         	return PropertyUtil.fromInteger(PipeTool.DEFAULT_STACK_SIZE_KB);        	
         } else if (MoSyncBuilder.MEMORY_DATASIZE_KB.equals(namespacedKey)) {
         	return PropertyUtil.fromInteger(PipeTool.DEFAULT_DATA_SIZE_KB);
+        } else if (DefaultPackager.APP_VENDOR_NAME.equals(namespacedKey)) {
+            return "Mobile Sorcery";
         }
         
         return null;

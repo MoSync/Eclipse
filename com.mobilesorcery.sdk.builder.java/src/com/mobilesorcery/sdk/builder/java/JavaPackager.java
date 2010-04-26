@@ -51,8 +51,9 @@ public class JavaPackager extends AbstractPackager {
 			projectJar.delete();
 			projectJad.delete();
 
+			String appVendorName = internal.getProjectProperties().getProperty(DefaultPackager.APP_VENDOR_NAME);
 			File manifest = new File(internal.resolve("%compile-output-dir%\\META-INF\\manifest.mf")); //$NON-NLS-1$
-			createManifest(project.getName(), manifest);
+			createManifest(project.getName(), appVendorName, manifest);
 
 			// Need to set execution dir, o/w zip will not understand what we
 			// really want.
@@ -68,7 +69,7 @@ public class JavaPackager extends AbstractPackager {
 				internal.runCommandLine("%mosync-bin%\\zip", "-j", "-9", projectJar.getAbsolutePath(), "%compile-output-dir%\\resources"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			}
 
-			createJAD(project.getWrappedProject().getName(), projectJad, projectJar);
+			createJAD(project.getWrappedProject().getName(), appVendorName, projectJad, projectJar);
 
 			MoSyncIconBuilderVisitor visitor = new MoSyncIconBuilderVisitor();
 			visitor.setProject(project.getWrappedProject());
@@ -89,22 +90,22 @@ public class JavaPackager extends AbstractPackager {
 		}
 	}
 
-	private void createManifest(String projectName, File manifest) throws IOException {
+	private void createManifest(String projectName, String vendorName, File manifest) throws IOException {
 		manifest.getParentFile().mkdirs();
 
-		DefaultPackager.writeFile(manifest, getManifest(projectName));
+		DefaultPackager.writeFile(manifest, getManifest(projectName, vendorName));
 	}
 
-	private void createJAD(String projectName, File jad, File jar) throws IOException {
+	private void createJAD(String projectName, String vendorName, File jad, File jar) throws IOException {
 		long jarSize = jar.length();
 		String jarName = jar.getName();
-		String jadString = getManifest(projectName) + "MIDlet-Jar-Size: " + Long.toString(jarSize) + "\n" + "MIDlet-Jar-URL: " + jarName + "\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		String jadString = getManifest(projectName, vendorName) + "MIDlet-Jar-Size: " + Long.toString(jarSize) + "\n" + "MIDlet-Jar-URL: " + jarName + "\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 
 		DefaultPackager.writeFile(jad, jadString);
 	}
 
-	private String getManifest(String projectName) {
-		return "Manifest-Version: 1.0\n" + "MIDlet-Vendor: Mobile Sorcery\n" + "MIDlet-Name: " + projectName + "\n" + "MIDlet-1: " + projectName + ", " //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
+	private String getManifest(String projectName, String vendorName) {
+		return "Manifest-Version: 1.0\n" + "MIDlet-Vendor: " + vendorName + "\n" + "MIDlet-Name: " + projectName + "\n" + "MIDlet-1: " + projectName + ", " //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
 				+ projectName + ".png, MAMidlet\n" + "MIDlet-Version: 1.0\n" + "MicroEdition-Configuration: CLDC-1.1\n" + "MicroEdition-Profile: MIDP-2.0\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	}
 
