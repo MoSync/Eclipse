@@ -647,6 +647,9 @@ public class MoSyncBuilder extends ACBuilder {
 
             buildResult.setSuccess(true);
             return buildResult;
+        } catch (OperationCanceledException e) { 
+            // That's ok
+            return buildResult; 
         } catch (Exception e) {
             e.printStackTrace();
             throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));

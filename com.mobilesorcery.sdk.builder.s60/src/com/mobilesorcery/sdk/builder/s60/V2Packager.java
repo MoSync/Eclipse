@@ -72,7 +72,7 @@ public class V2Packager extends S60Packager {
 			// Create the launcherapp.pkg
 			String template = Util.readFile(runtimeDir.getAbsolutePath() + "/MoSync-template.pkg"); //$NON-NLS-1$
 			internal.setParameter("uid", uid); //$NON-NLS-1$
-			internal.setParameter("vendor-name", "MOBILE SORCERY"); //$NON-NLS-1$ //$NON-NLS-2$
+			internal.setParameter("vendor-name", internal.getProjectProperties().getProperty(DefaultPackager.APP_VENDOR_NAME)); //$NON-NLS-1$ //$NON-NLS-2$
 			String resolvedTemplate = Template.preprocess(template, internal.getParameters().toMap());
 			File pkgFile = new File(packageOutputDir, uid + ".pkg"); //$NON-NLS-1$
 			Util.writeToFile(pkgFile, resolvedTemplate);
