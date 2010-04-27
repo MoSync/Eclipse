@@ -45,6 +45,7 @@ import com.mobilesorcery.sdk.builder.linux.deb.fields.DescriptionHeader;
 import com.mobilesorcery.sdk.builder.linux.deb.fields.MaintainerHeader;
 import com.mobilesorcery.sdk.builder.linux.deb.fields.PriorityHeader;
 import com.mobilesorcery.sdk.builder.linux.deb.fields.SectionHeader;
+import com.mobilesorcery.sdk.core.Version;
 
 
 
@@ -90,6 +91,7 @@ public class PackageBuilder
     private File            m_tempDir;
     private File            m_template;
     private PackageParser   m_templateParser;
+    private Version         m_version;
     private Map<String,String> m_resourceMap;
     
 
@@ -107,6 +109,10 @@ public class PackageBuilder
         m_tempDir = File.createTempFile( "pkgbld", System.currentTimeMillis( ) + "" );
     }
 
+    public void setVersion ( Version v )
+    {
+        m_version = v;
+    }
 
     /**
      * Set the application name.
@@ -309,7 +315,7 @@ public class PackageBuilder
         rpmBuilder = new Builder( );
 
         //rpmBuilder.addSignature( m_privKey );
-        rpmBuilder.setPackage(  appName, "1.0", "0" );
+        rpmBuilder.setPackage(  appName, m_version.asCanonicalString(Version.MICRO), "0" );
         rpmBuilder.setType( RpmType.BINARY );
         // FIXME: Doesn't have to be i386
         rpmBuilder.setPlatform( Architecture.I386, Os.LINUX );
@@ -364,7 +370,7 @@ public class PackageBuilder
         //
         // Set package parameters
         //
-        debBuilder = new DebBuilder( appName, "1.0", "0" );
+        debBuilder = new DebBuilder( appName, m_version.asCanonicalString(Version.MICRO), "0" );
 
         // FIXME: Doesn't have to be i386
         debBuilder.addHeader( new ArchitectureHeader( ArchitectureHeader.CpuArch.I386 ) );
