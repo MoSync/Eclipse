@@ -24,3 +24,12 @@ public:
 };
 
 static TestHook hook( new MyTestCase( ) );
+
+#ifndef TESTIFY_IDE_SETUP
+#define TESTIFY_IDE_SETUP
+// TBD: Move this elsewhere
+#include "testify/listenerhook.hpp"
+#include "testify/idelistener.hpp"
+
+static ListenerHook __h__( new IDEListener() );
+#endif

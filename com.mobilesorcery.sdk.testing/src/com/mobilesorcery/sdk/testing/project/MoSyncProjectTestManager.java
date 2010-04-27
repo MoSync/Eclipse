@@ -31,6 +31,8 @@ public class MoSyncProjectTestManager {
 	
 	private MoSyncProject project;
 	private Set<IPath> testResources = new HashSet<IPath>();
+    private IBuildConfiguration prototypeDebugCfg;
+    private IBuildConfiguration prototypeReleaseCfg;
 
 	public MoSyncProjectTestManager(MoSyncProject project) {
 		this.project = project;
@@ -117,6 +119,14 @@ public class MoSyncProjectTestManager {
         return new ArrayList<IBuildConfiguration>(project.getBuildConfigurations(project.getBuildConfigurationsOfType(getTypes(isDebug))));
 	}
 	
+    public void setPrototypeConfiguration(IBuildConfiguration prototypeCfg, boolean isDebug) {
+        if (isDebug) {
+            prototypeDebugCfg = prototypeCfg;
+        } else {
+            prototypeReleaseCfg = prototypeCfg;
+        }
+    }
+    
 	private IBuildConfiguration ensureHasTestConfigs(boolean isDebug) {
 		project.activateBuildConfigurations();
 		List<IBuildConfiguration> cfgs = getTestConfigs(isDebug);
@@ -128,22 +138,25 @@ public class MoSyncProjectTestManager {
 		String testCfgId = BuildConfiguration.createUniqueId(project, cfgName);
 		
 		// We try to create the test configuration to be as close as possible to existing configurations.
-		// TODO: If more than 1, use wizard to let user select which cfg to base it on?
-		List<String> prototypes = new ArrayList<String>(project.getBuildConfigurationsOfType(isDebug ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE));
+		IBuildConfiguration prototype = isDebug ? prototypeDebugCfg : prototypeReleaseCfg;
+		if (prototype == null) {
+		    List<String> prototypes = new ArrayList<String>(project.getBuildConfigurationsOfType(isDebug ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE));
+	        prototype = prototypes.isEmpty() ? null : project.getBuildConfiguration(prototypes.get(0));
+		}
 		
 		String[] types = getTypes(isDebug);
 		IBuildConfiguration testCfg = null;
-		if (prototypes.isEmpty()) {
+		if (prototype == null) {
 		    testCfg = project.installBuildConfiguration(testCfgId, types);
 		} else {
-		    testCfg = project.getBuildConfiguration(prototypes.get(0)).clone(testCfgId);
+		    testCfg = prototype.clone(testCfgId);
 		    testCfg.setTypes(Arrays.asList(types));
 		    project.installBuildConfiguration(testCfg);
 		}
 		return testCfg;
 	}
-	
-	private String[] getTypes(boolean isDebug) {
+
+    private String[] getTypes(boolean isDebug) {
         String baseCfgId = isDebug ? IBuildConfiguration.DEBUG_ID : IBuildConfiguration.RELEASE_ID;
         String[] types = new String[] { baseCfgId , TestPlugin.TEST_BUILD_CONFIGURATION_TYPE };
         return types; 
@@ -155,8 +168,6 @@ public class MoSyncProjectTestManager {
 		} else {
 			testResources.remove(path);
 		}
-		
-		configureProject();
 	}
 	
 	public boolean isTestResource(IResource resource) {

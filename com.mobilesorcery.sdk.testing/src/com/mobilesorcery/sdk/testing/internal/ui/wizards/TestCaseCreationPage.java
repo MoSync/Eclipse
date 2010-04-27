@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.text.MessageFormat;
+import java.util.Set;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -17,24 +18,33 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.IMessageProvider;
+import org.eclipse.jface.viewers.ComboViewer;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.ContainerSelectionDialog;
 import org.eclipse.ui.wizards.newresource.BasicNewFileResourceWizard;
 
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.internal.builder.MoSyncBuilderVisitor;
 import com.mobilesorcery.sdk.testing.TestPlugin;
 import com.mobilesorcery.sdk.testing.project.MoSyncProjectTestManager;
+import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
+import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
 
 public class TestCaseCreationPage extends WizardPage {
 
@@ -52,6 +62,10 @@ public class TestCaseCreationPage extends WizardPage {
 	private Button projectButton;
 	private PageListener listener;
 	private Text testCaseName;
+    private Group buildConfigs;
+    private ComboViewer debugBuildCfgs;
+    private ComboViewer releaseBuildCfgs;
+    private MoSyncProject previousProject;
 
 	protected TestCaseCreationPage(MoSyncProject initialProject) {
 		super("ProjectSelection");
@@ -64,8 +78,8 @@ public class TestCaseCreationPage extends WizardPage {
 		int severity = IMessageProvider.INFORMATION;
 		
 		IResource sourceFolderFile = getSourceFolderFile();
-		if (sourceFolderFile == null) {
-		    message = "Please specify a source folder";
+		if (sourceFolderFile == null || !sourceFolderFile.getProject().exists()) {
+		    message = "Please specify a valid source folder (project/path)";
 		    severity = IMessageProvider.ERROR;
 		} else if (sourceFolderFile.exists()) {
 		    MoSyncProject projectToConfigure = getProjectToConfigure();
@@ -82,10 +96,10 @@ public class TestCaseCreationPage extends WizardPage {
 		}
 		
 		String testCaseName = this.testCaseName.getText();
-		if (Util.isEmpty(testCaseName)) {
+		if (message == null && Util.isEmpty(testCaseName)) {
 			message = "Test case name cannot be empty";
 			severity = IMessageProvider.ERROR;
-		} else {
+		} else if (message == null) {
 			IPath testCasePath = sourceFolderFile.getLocation().append(testCaseName);
 			if (testCasePath.segmentCount() > 1) {
 				IFile testCaseResource = ResourcesPlugin.getWorkspace().getRoot().getFile(testCasePath);
@@ -96,7 +110,7 @@ public class TestCaseCreationPage extends WizardPage {
 			}
 		}
 		
-		if (getTestCaseFile().exists()) {
+		if (getTestCaseFile() != null && getTestCaseFile().exists()) {
 			message = "Test case file already exists";
 			severity = IMessageProvider.ERROR;
 		}
@@ -120,12 +134,37 @@ public class TestCaseCreationPage extends WizardPage {
 		listener = new PageListener();
 		createSourceFolderEditor(control);
 		createTestCaseEditor(control);
+		createBuildConfigsGroup(control);
 
 		updateUI();
 		setControl(control);
 	}
 
-	protected void createSourceFolderEditor(Composite parent) {
+	private void createBuildConfigsGroup(Composite control) {
+	    buildConfigs = new Group(control, SWT.NONE);
+	    buildConfigs.setText("Build &Configurations");
+	    buildConfigs.setLayout(new GridLayout(2, false));
+	    buildConfigs.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 3, 1));
+	    Label buildConfigsInfo = new Label(buildConfigs, SWT.WRAP);
+	    buildConfigsInfo.setText("Select configurations to base test configurations on:\n" +
+	    		"(Include paths, libraries, etc from the selected configurations will be used " +
+	    		"by the test configuration.)");
+	    buildConfigsInfo.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
+	    
+
+        Label releaseBuildCfgsLabel = new Label(buildConfigs, SWT.NONE);
+        releaseBuildCfgsLabel.setText("Test:");
+        releaseBuildCfgs = new ComboViewer(buildConfigs, SWT.READ_ONLY);
+        releaseBuildCfgs.getCombo().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        
+        Label debugBuildCfgsLabel = new Label(buildConfigs, SWT.NONE);
+        debugBuildCfgsLabel.setText("Test/Debug:");
+	    debugBuildCfgs = new ComboViewer(buildConfigs, SWT.READ_ONLY);
+        debugBuildCfgs.getCombo().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+	    
+    }
+
+    protected void createSourceFolderEditor(Composite parent) {
 		Label sourceFolderLabel = new Label(parent, SWT.NONE);
 		sourceFolderLabel.setText("&Source Folder");
 		sourceFolder = new Text(parent, SWT.SINGLE | SWT.BORDER);
@@ -167,13 +206,48 @@ public class TestCaseCreationPage extends WizardPage {
 
 	private void updateUI() {
 		validate();
+		initialProject = getSourceFolderFile() == null ? null : MoSyncProject.create(getSourceFolderFile().getProject());
+		
+		boolean showDebugCfgs = false;
+		boolean showReleaseCfgs = false;
+        
+		if (previousProject != initialProject) {
+		    previousProject = initialProject;
+		    if (initialProject != null) {
+    		    Set<String> debugCfgs = initialProject.getBuildConfigurationsOfType(IBuildConfiguration.DEBUG_TYPE);
+    		    Set<String> releaseCfgs = initialProject.getBuildConfigurationsOfType(IBuildConfiguration.RELEASE_TYPE);
+    		    Set<String> testCfgs = initialProject.getBuildConfigurationsOfType(TestPlugin.TEST_BUILD_CONFIGURATION_TYPE);
+    	        showDebugCfgs = testCfgs.isEmpty() && debugCfgs.size() > 1;
+    	        showReleaseCfgs = testCfgs.isEmpty() && releaseCfgs.size() > 1;
+    	        
+    	        debugBuildCfgs.setContentProvider(new BuildConfigurationsContentProvider(initialProject, IBuildConfiguration.DEBUG_TYPE));
+    	        releaseBuildCfgs.setContentProvider(new BuildConfigurationsContentProvider(initialProject, IBuildConfiguration.RELEASE_TYPE));
+    
+                debugBuildCfgs.setLabelProvider(new BuildConfigurationsLabelProvider(initialProject));
+                releaseBuildCfgs.setLabelProvider(new BuildConfigurationsLabelProvider(initialProject));
+                
+    	        debugBuildCfgs.setInput(initialProject);
+    	        releaseBuildCfgs.setInput(initialProject);
+    	        
+    	        if (debugCfgs.size() > 0) {
+    	            debugBuildCfgs.setSelection(new StructuredSelection(debugCfgs.toArray()[0]));
+    	        }
+    	        if (releaseCfgs.size() > 0) {
+    	            releaseBuildCfgs.setSelection(new StructuredSelection(releaseCfgs.toArray()[0]));
+    	        }
+		    }
+		    buildConfigs.setVisible(showDebugCfgs || showReleaseCfgs);
+		    debugBuildCfgs.getCombo().setEnabled(showDebugCfgs);
+		    releaseBuildCfgs.getCombo().setEnabled(showReleaseCfgs);
+		}
 	}
 
 	private IContainer selectContainer() {
 		// MoSyncProjectSelectionDialog dialog = new
 		// MoSyncProjectSelectionDialog(getShell());
+	    IContainer dialogRoot = initialProject == null ? ResourcesPlugin.getWorkspace().getRoot() : initialProject.getWrappedProject();
 		ContainerSelectionDialog dialog = new ContainerSelectionDialog(
-				getShell(), initialProject.getWrappedProject(), true,
+				getShell(), dialogRoot, true,
 				"Select location of test case source file");
 		// dialog.setInitialProject(initialProject.getWrappedProject());
 		// return dialog.selectProject();
@@ -195,8 +269,12 @@ public class TestCaseCreationPage extends WizardPage {
     		// TODO: Not finished.
     		IProject project = sourceFolderFile.getProject();
     		MoSyncProjectTestManager tm = new MoSyncProjectTestManager(MoSyncProject.create(project));
-    		tm.assignTestResource(sourceFolderFile.getProjectRelativePath(), true);
-    		tm.configureProject();
+    		IBuildConfiguration debugPrototype = getPrototypeConfiguration(true);
+    		IBuildConfiguration releasePrototype = getPrototypeConfiguration(false);
+            tm.setPrototypeConfiguration(debugPrototype, true);
+            tm.setPrototypeConfiguration(releasePrototype, false);
+            tm.assignTestResource(sourceFolderFile.getProjectRelativePath(), true);
+            tm.configureProject();
     		
     		return createTestFile();
 		} catch (Exception e) {
@@ -207,11 +285,25 @@ public class TestCaseCreationPage extends WizardPage {
 		}
 	}
 	
-	private IFile createTestFile() throws IOException, CoreException {
+	private IBuildConfiguration getPrototypeConfiguration(boolean isDebug) {
+        ComboViewer source = isDebug ? debugBuildCfgs : releaseBuildCfgs;
+        IStructuredSelection selection = (IStructuredSelection) source.getSelection();
+        if (!selection.isEmpty()) {
+            String cfgId = (String) selection.getFirstElement();
+            return initialProject.getBuildConfiguration(cfgId);
+        }
+        
+        return null;
+    }
+
+    private IFile createTestFile() throws IOException, CoreException {
 		// TODO: Templates? Several suites per project? One small step at a time.
 		InputStream is = null;
 		try {
 			IFile testCaseFile = getTestCaseFile();
+			if (testCaseFile == null) {
+			    throw new CoreException(new Status(IStatus.ERROR, TestPlugin.PLUGIN_ID, "No test case file provided"));
+			}
 			IResource testCaseFolder = getSourceFolderFile();
 			if (!testCaseFolder.exists()) {
 				IFolder testCaseFolderFolder = (IFolder) testCaseFolder;
@@ -244,6 +336,9 @@ public class TestCaseCreationPage extends WizardPage {
 	}
 	
 	private IFile getTestCaseFile() {
+	    if (getSourceFolderFile() == null) {
+	        return null;
+	    }
 		IPath testCasePath = getSourceFolderFile().getFullPath().append(testCaseName.getText());
 		IFile testCaseFile = ResourcesPlugin.getWorkspace().getRoot().getFile(testCasePath);
 		return testCaseFile;
