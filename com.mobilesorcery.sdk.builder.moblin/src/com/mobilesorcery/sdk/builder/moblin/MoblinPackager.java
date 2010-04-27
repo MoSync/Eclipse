@@ -34,6 +34,7 @@ import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
@@ -93,6 +94,7 @@ extends AbstractPackager
             //
             pack = new PackageBuilder( new File( intern.resolve( "%runtime-dir%" ), runtime ) );
 
+            pack.setVersion( new Version( intern.getParameters().get(DefaultPackager.APP_VERSION) ) );
             pack.setAppName( appName );
             pack.setProgramFile( intern.resolve( "%program-output%" ) );
             if ( new File( intern.resolve( "%resource-output%" ) ).exists( ) )
