@@ -19,6 +19,8 @@ import org.eclipse.debug.ui.ILaunchConfigurationDialog;
 import org.eclipse.debug.ui.ILaunchConfigurationTab;
 import org.eclipse.debug.ui.sourcelookup.SourceLookupTab;
 
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
+
 public class EmulatorLaunchConfigurationTabGroup extends AbstractLaunchConfigurationTabGroup {
 
     public void initializeFrom(ILaunchConfiguration configuration) {
@@ -28,6 +30,8 @@ public class EmulatorLaunchConfigurationTabGroup extends AbstractLaunchConfigura
     public void createTabs(ILaunchConfigurationDialog dialog, String mode) {
     	MoSyncLaunchParamsTab launchTab = new MoSyncLaunchParamsTab();
     	launchTab.setMode(mode);
+    	launchTab.setBuildConfigurationTypes(true, getBuildConfigurationTypes(true));
+    	launchTab.setBuildConfigurationTypes(false, getBuildConfigurationTypes(false));
     	SourceLookupTab sourceLookup = new SourceLookupTab();
     	
         ILaunchConfigurationTab[] tabs = new ILaunchConfigurationTab[] { launchTab, sourceLookup };
@@ -37,6 +41,10 @@ public class EmulatorLaunchConfigurationTabGroup extends AbstractLaunchConfigura
         }
 
         setTabs(tabs);
+    }
+
+    protected String[] getBuildConfigurationTypes(boolean isDebug) {
+        return new String[] { isDebug ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE };
     }
 
 }

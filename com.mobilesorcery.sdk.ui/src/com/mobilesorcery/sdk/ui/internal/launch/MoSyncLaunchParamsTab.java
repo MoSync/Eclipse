@@ -91,6 +91,8 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 	private Button changeConfiguration;
 	private ComboViewer configurations;
 	private Group configurationGroup;
+    private String[] debugBuildConfigurationTypes = new String[] { IBuildConfiguration.DEBUG_TYPE };
+    private String[] buildConfigurationTypes = new String[] { IBuildConfiguration.RELEASE_TYPE };
 
 	public void createControl(Composite parent) {
 		Composite control = new Composite(parent, SWT.NONE);
@@ -160,7 +162,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 		if (project != null) {
 			configurations
 					.setContentProvider(new BuildConfigurationsContentProvider(
-							project, isDebugMode() ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE));
+							project, isDebugMode() ? debugBuildConfigurationTypes : buildConfigurationTypes));
 			configurations
 					.setLabelProvider(new BuildConfigurationsLabelProvider(
 							project));
@@ -168,6 +170,14 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 		}
 	}
 
+	public void setBuildConfigurationTypes(boolean isDebug, String... types) {
+	    if (isDebug) {
+	        debugBuildConfigurationTypes = types;
+	    } else {
+	        buildConfigurationTypes = types;
+	    }
+	}
+	
 	protected void handleProjectButtonSelected() {
 		IProject project = selectProject();
 		if (project == null) {

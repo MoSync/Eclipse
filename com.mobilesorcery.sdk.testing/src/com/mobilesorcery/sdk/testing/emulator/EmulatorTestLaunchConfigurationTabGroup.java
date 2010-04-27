@@ -13,10 +13,15 @@
 */
 package com.mobilesorcery.sdk.testing.emulator;
 
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
+import com.mobilesorcery.sdk.testing.TestPlugin;
 import com.mobilesorcery.sdk.ui.internal.launch.EmulatorLaunchConfigurationTabGroup;
 
 public class EmulatorTestLaunchConfigurationTabGroup extends
 		EmulatorLaunchConfigurationTabGroup {
 
-	// Empty for now.
+    protected String[] getBuildConfigurationTypes(boolean isDebug) {
+        return new String[] { isDebug ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE, TestPlugin.TEST_BUILD_CONFIGURATION_TYPE };
+    }
+    
 }
