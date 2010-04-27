@@ -78,7 +78,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 	private CompoundDependencyProvider<IResource> dependencyProvider;
 
     public boolean visit(IResource resource) throws CoreException {
-    	super.visit(resource);
+    	boolean shouldVisitChildren = super.visit(resource);
     	if (isBuildable(resource)) {
 	        IFile cFile = getCFile(resource, false);
 	        if (cFile != null) {
@@ -86,7 +86,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 	        }
     	}
         
-        return true;
+        return shouldVisitChildren;
     }
 
     /**
