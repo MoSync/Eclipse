@@ -180,7 +180,6 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
 	public static final int LOCAL_PROPERTY = 1;
 
-
     private static IdentityHashMap<IProject, MoSyncProject> projects = new IdentityHashMap<IProject, MoSyncProject>();
     
     private IProject project;

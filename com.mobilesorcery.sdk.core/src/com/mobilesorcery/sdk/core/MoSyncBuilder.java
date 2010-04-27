@@ -132,6 +132,8 @@ public class MoSyncBuilder extends ACBuilder {
     public static final String MEMORY_DATASIZE_KB = MEMORY_PREFS_PREFIX + "data";
 
     public static final String USE_DEBUG_RUNTIME_LIBS = BUILD_PREFS_PREFIX + "runtime.debug";
+    
+    public static final String PROJECT_VERSION = BUILD_PREFS_PREFIX + "app.version";
 
     public static final int GCC_WALL = 1 << 1;
 

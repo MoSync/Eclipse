@@ -51,6 +51,7 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PropertyOwnerWorkingCopy;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.core.IPropertyOwner.IWorkingCopy;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
@@ -132,6 +133,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 	private Text stackSize;
 	private Text dataSize;
     private Text vendor;
+    private Text version;
 
     protected Control createContents(Composite parent) {
     	placeHolder = new Composite(parent, SWT.NONE);
@@ -213,6 +215,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         stackSize.addListener(SWT.Modify, listener);
         heapSize.addListener(SWT.Modify, listener);
         dataSize.addListener(SWT.Modify, listener);
+        version.addListener(SWT.Modify, listener);
         
         changeConfiguration(getProject().getActiveBuildConfiguration());
     	if (getProject().areBuildConfigurationsSupported()) {
@@ -320,8 +323,14 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         useDebugRuntimesData.horizontalSpan = 2;
         useDebugRuntimes.setLayoutData(useDebugRuntimesData);
         
+        Label versionLabel = new Label(packaging, SWT.NONE);
+        versionLabel.setText("&Version:");
+        
+        version = new Text(packaging,  SWT.BORDER | SWT.SINGLE);
+        version.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        
         Label vendorNameLabel = new Label(packaging, SWT.NONE);
-        vendorNameLabel.setText("&Vendor:");
+        vendorNameLabel.setText("&Publisher:");
         
         vendor = new Text(packaging,  SWT.BORDER | SWT.SINGLE);
         vendor.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -438,6 +447,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         setText(dataSize, configProperties.getProperty(MoSyncBuilder.MEMORY_DATASIZE_KB));
         
         useDebugRuntimes.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS));
+        setText(version, configProperties.getProperty(MoSyncBuilder.PROJECT_VERSION));
         setText(vendor, configProperties.getProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP));
         updateUI(null);
     }
@@ -523,6 +533,12 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     	if (!DefaultMessageProvider.isEmpty(shortcurcuit)) {
             return shortcurcuit;
         }
+    	
+    	if (DefaultMessageProvider.isEmpty(shortcurcuit)) {
+    	    if (!new Version(version.getText()).isValid()) {
+    	        shortcurcuit = new DefaultMessageProvider("Invalid version format, must comply to major[.minor][.micro][.qualifier]", IMessageProvider.ERROR);
+    	    }
+    	}
     	
     	shortcurcuit = validateInteger(shortcurcuit, stackSize.getText(), "Stack size", 1L << 22);
     	shortcurcuit = validateInteger(shortcurcuit, heapSize.getText(), "Heap size", 1L << 22);
@@ -647,6 +663,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         changed |= configProperties.setProperty(MoSyncBuilder.MEMORY_DATASIZE_KB, dataSize.getText());
         
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS, useDebugRuntimes.getSelection());
+        changed |= configProperties.setProperty(MoSyncBuilder.PROJECT_VERSION, version.getText());
         changed |= configProperties.setProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP, vendor.getText());
         return changed;
     }

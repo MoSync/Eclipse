@@ -33,6 +33,7 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.ui.PasswordDialog;
 
@@ -60,7 +61,7 @@ public class AndroidPackager extends AbstractPackager {
 			
 			// Create manifest file
 			File manifest = new File(internal.resolve("%package-output-dir%\\AndroidManifest.xml"));
-			createManifest(fixedName, manifest);
+			createManifest(fixedName, new Version(internal.getParameters().get(DefaultPackager.APP_VERSION)), manifest);
 
 			// Create layout (main.xml) file
 			File main_xml = new File(internal.resolve("%package-output-dir%\\res\\layout\\main.xml"));
@@ -185,14 +186,14 @@ public class AndroidPackager extends AbstractPackager {
         }
     }
 
-    private void createManifest(String projectName, File manifest) throws IOException {
+    private void createManifest(String projectName, Version version, File manifest) throws IOException {
 		manifest.getParentFile().mkdirs();
 
 		String manifest_string = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 		+"<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\n"
 			+"\tpackage=\"com.mosync.app_"+projectName+"\"\n"
 			+"\tandroid:versionCode=\"1\"\n"
-			+"\tandroid:versionName=\"1.0\">\n"
+			+"\tandroid:versionName=\"" + version.toString() + "\">\n"
 			+"\t<application android:icon=\"@drawable/icon\" android:label=\"@string/app_name\">\n"
 				+"\t\t<activity android:name=\".MoSync\"\n"
 					+"\t\t\tandroid:label=\"@string/app_name\">\n"

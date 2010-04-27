@@ -38,7 +38,10 @@ public class DefaultPackager {
 	public final static String OUTPUT_DIR = "output-dir";
 	public final static String FINAL_OUTPUT_DIR = "final-output-dir";
 	public static final String COMPILE_OUTPUT_DIR = "compile-output-dir";
-	public static final String PACKAGE_OUTPUT_DIR = "package-output-dir";
+    public static final String PACKAGE_OUTPUT_DIR = "package-output-dir";
+    public static final String APP_VERSION_MAJOR = "version-major";
+    public static final String APP_VERSION_MINOR = "version-minor";
+    public static final String APP_VERSION_MICRO = "version-micro";
 
 	public final static String PLATFORM_ID = "platform";
 
@@ -51,6 +54,8 @@ public class DefaultPackager {
 	 * The name of the application vendor/publisher
 	 */
 	public final static String APP_VENDOR_NAME = "app-vendor";
+	
+	public final static String APP_VERSION = "app-version";
 	
 	/**
 	 * The name of the profile 
@@ -85,6 +90,7 @@ public class DefaultPackager {
 	}
 
 	public void setDefaultParameters() {
+	    initVersionParameters();
         defaultParameters.put(MOSYNC_HOME, MoSyncTool.getDefault().getMoSyncHome().toOSString());
         defaultParameters.put(MOSYNC_BIN, MoSyncTool.getDefault().getMoSyncBin().toOSString());
 		IProfile targetProfile = variant.getProfile();
@@ -107,7 +113,15 @@ public class DefaultPackager {
         defaultParameters.put(PACKAGE_OUTPUT_DIR, MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).toOSString());
 	}
 
-	public CascadingProperties getParameters() {
+	private void initVersionParameters() {
+	    Version version = new Version(getProjectProperties().getProperty(MoSyncBuilder.PROJECT_VERSION));
+	    defaultParameters.put(APP_VERSION, version.toString());
+        defaultParameters.put(APP_VERSION_MAJOR, Integer.toString(version.getMajor() == Version.UNDEFINED ? 0 : version.getMajor()));
+        defaultParameters.put(APP_VERSION_MINOR, Integer.toString(version.getMinor() == Version.UNDEFINED ? 0 : version.getMinor()));
+        defaultParameters.put(APP_VERSION_MICRO, Integer.toString(version.getMicro() == Version.UNDEFINED ? 0 : version.getMicro()));
+    }
+
+    public CascadingProperties getParameters() {
 	    return parameters;
 	}
 	

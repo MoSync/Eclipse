@@ -27,6 +27,7 @@ import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class JavaPackager extends AbstractPackager {
@@ -45,6 +46,8 @@ public class JavaPackager extends AbstractPackager {
 			File packageOutputDir = internal.resolveFile("%package-output-dir%"); //$NON-NLS-1$
 			packageOutputDir.mkdirs();
 
+			Version appVersion = new Version(internal.getParameters().get(DefaultPackager.APP_VERSION));
+			
 			File projectJar = new File(internal.resolve("%package-output-dir%\\%project-name%.jar")); //$NON-NLS-1$
 			File projectJad = new File(internal.resolve("%package-output-dir%\\%project-name%.jad")); //$NON-NLS-1$
 
@@ -53,7 +56,7 @@ public class JavaPackager extends AbstractPackager {
 
 			String appVendorName = internal.getParameters().get(DefaultPackager.APP_VENDOR_NAME);
 			File manifest = new File(internal.resolve("%compile-output-dir%\\META-INF\\manifest.mf")); //$NON-NLS-1$
-			createManifest(project.getName(), appVendorName, manifest);
+			createManifest(project.getName(), appVendorName, appVersion, manifest);
 
 			// Need to set execution dir, o/w zip will not understand what we
 			// really want.
@@ -69,7 +72,7 @@ public class JavaPackager extends AbstractPackager {
 				internal.runCommandLine("%mosync-bin%\\zip", "-j", "-9", projectJar.getAbsolutePath(), "%compile-output-dir%\\resources"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			}
 
-			createJAD(project.getWrappedProject().getName(), appVendorName, projectJad, projectJar);
+			createJAD(project.getWrappedProject().getName(), appVendorName, appVersion, projectJad, projectJar);
 
 			MoSyncIconBuilderVisitor visitor = new MoSyncIconBuilderVisitor();
 			visitor.setProject(project.getWrappedProject());
@@ -90,23 +93,23 @@ public class JavaPackager extends AbstractPackager {
 		}
 	}
 
-	private void createManifest(String projectName, String vendorName, File manifest) throws IOException {
+	private void createManifest(String projectName, String vendorName, Version version, File manifest) throws IOException {
 		manifest.getParentFile().mkdirs();
 
-		DefaultPackager.writeFile(manifest, getManifest(projectName, vendorName));
+		DefaultPackager.writeFile(manifest, getManifest(projectName, vendorName, version));
 	}
 
-	private void createJAD(String projectName, String vendorName, File jad, File jar) throws IOException {
+	private void createJAD(String projectName, String vendorName, Version version, File jad, File jar) throws IOException {
 		long jarSize = jar.length();
 		String jarName = jar.getName();
-		String jadString = getManifest(projectName, vendorName) + "MIDlet-Jar-Size: " + Long.toString(jarSize) + "\n" + "MIDlet-Jar-URL: " + jarName + "\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		String jadString = getManifest(projectName, vendorName, version) + "MIDlet-Jar-Size: " + Long.toString(jarSize) + "\n" + "MIDlet-Jar-URL: " + jarName + "\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 
 		DefaultPackager.writeFile(jad, jadString);
 	}
 
-	private String getManifest(String projectName, String vendorName) {
+	private String getManifest(String projectName, String vendorName, Version version) {
 		return "Manifest-Version: 1.0\n" + "MIDlet-Vendor: " + vendorName + "\n" + "MIDlet-Name: " + projectName + "\n" + "MIDlet-1: " + projectName + ", " //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
-				+ projectName + ".png, MAMidlet\n" + "MIDlet-Version: 1.0\n" + "MicroEdition-Configuration: CLDC-1.1\n" + "MicroEdition-Profile: MIDP-2.0\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				+ projectName + ".png, MAMidlet\n" + "MIDlet-Version: " + version.asCanonicalString(Version.MICRO) + "\n" + "MicroEdition-Configuration: CLDC-1.1\n" + "MicroEdition-Profile: MIDP-2.0\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	}
 
 }
