@@ -53,7 +53,9 @@ public class DefaultPackager {
 	/**
 	 * The name of the application vendor/publisher
 	 */
-	public final static String APP_VENDOR_NAME = "app-vendor";
+    public final static String APP_VENDOR_NAME = "app-vendor";
+
+    public final static String APP_NAME = "app-name";
 	
 	public final static String APP_VERSION = "app-version";
 	
@@ -98,8 +100,10 @@ public class DefaultPackager {
 		    targetProfile = project.getTargetProfile();
 		}
 		
+		// TODO: Do not repeat these parameter keys, just strip namespaces by default (and in case of collision ask for namespace)
 		defaultParameters.put(PROFILE_NAME, targetProfile.getName());
 		defaultParameters.put(APP_VENDOR_NAME, getProjectProperties().getProperty(APP_VENDOR_NAME_BUILD_PROP));
+		defaultParameters.put(APP_NAME, getProjectProperties().getProperty(MoSyncBuilder.APP_NAME));
 		defaultParameters.put(VENDOR_NAME, targetProfile.getVendor().getName());
 		defaultParameters.put(RUNTIME_DIR, MoSyncTool.getDefault().getRuntimePath(targetProfile).toOSString());
 		defaultParameters.put(PROJECT_NAME, project.getName());

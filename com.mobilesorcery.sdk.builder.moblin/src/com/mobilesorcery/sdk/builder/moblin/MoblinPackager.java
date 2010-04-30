@@ -82,7 +82,7 @@ extends AbstractPackager
 
         try
         {
-            appName = intern.resolve( "%project-name%" );
+            appName = intern.resolve( "%app-name%" );
 
             if ( shouldUseDebugRuntimes( ) == true )
                 runtime = "runtime.dbg.tar.gz";

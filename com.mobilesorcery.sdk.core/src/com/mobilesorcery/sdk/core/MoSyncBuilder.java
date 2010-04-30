@@ -134,6 +134,8 @@ public class MoSyncBuilder extends ACBuilder {
     public static final String USE_DEBUG_RUNTIME_LIBS = BUILD_PREFS_PREFIX + "runtime.debug";
     
     public static final String PROJECT_VERSION = BUILD_PREFS_PREFIX + "app.version";
+    
+    public static final String APP_NAME = BUILD_PREFS_PREFIX + "app.name";
 
     public static final int GCC_WALL = 1 << 1;
 
@@ -642,12 +644,14 @@ public class MoSyncBuilder extends ACBuilder {
 
             monitor.worked(1);
 
+            console.addMessage(MessageFormat.format("Created package: {0}", buildResult.getBuildResult()));
             console.addMessage("Build finished at "
                     + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG).format(Calendar.getInstance().getTime()));
 
             project.refreshLocal(IProject.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
 
             buildResult.setSuccess(true);
+            
             return buildResult;
         } catch (OperationCanceledException e) { 
             // That's ok

@@ -82,10 +82,10 @@ public class V2Packager extends S60Packager {
 
 			// Rename
 			File unsignedSis = new File(packageOutputDir, uid + ".sis"); //$NON-NLS-1$
-			File renamedAppSis = new File(packageOutputDir, project.getName() + ".sis"); //$NON-NLS-1$
+			String app = internal.resolve("%app-name%.sis");
+            File renamedAppSis = new File(packageOutputDir, app); //$NON-NLS-1$
 			Util.copyFile(new NullProgressMonitor(), unsignedSis, renamedAppSis);
 			unsignedSis.delete();
-
 			buildResult.setBuildResult(renamedAppSis);
 		} catch (Exception e) {
 			throw new CoreException(new Status(IStatus.ERROR, "com.mobilesorcery.builder.s60", Messages.V2Packager_PackageError, e)); //$NON-NLS-1$

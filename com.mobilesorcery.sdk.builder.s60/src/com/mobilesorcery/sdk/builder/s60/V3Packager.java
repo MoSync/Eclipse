@@ -101,7 +101,7 @@ public class V3Packager extends S60Packager {
 			internal.runCommandLine("%mosync-bin%\\makesis-4.exe", pkgFile.getAbsolutePath()); //$NON-NLS-1$
 
 			File unsignedSis = new File(packageOutputDir, uid + ".sis"); //$NON-NLS-1$
-			File renamedAppSis = new File(packageOutputDir, project.getName() + ".sis"); //$NON-NLS-1$
+            File renamedAppSis = new File(packageOutputDir, internal.resolve("%app-name%.sis")); //$NON-NLS-1$
 			internal.runCommandLine(new String[] {"%mosync-bin%\\signsis-4.exe", //$NON-NLS-1$
 							unsignedSis.getAbsolutePath(),
 							renamedAppSis.getAbsolutePath(),

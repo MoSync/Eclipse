@@ -37,8 +37,8 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
     	
     	String namespacedKey = NameSpacePropertyOwner.getKey(key);
     	String namespace = NameSpacePropertyOwner.getFullNamespace(key);
-    	String namespaceSegment = null;
-    	String projectName = null;
+    	String namespaceSegment = "";
+    	String projectName = "";
     	
     	if (p instanceof MoSyncProject) {
     		MoSyncProject project = (MoSyncProject) p;
@@ -79,6 +79,8 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
             return "Mobile Sorcery";
         } else if (MoSyncBuilder.PROJECT_VERSION.equals(namespacedKey)) {
             return "1.0";
+        } else if (MoSyncBuilder.APP_NAME.equals(namespacedKey)) {
+            return projectName;
         }
         
         return null;

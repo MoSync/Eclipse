@@ -48,7 +48,7 @@ public class WinMobilePackager extends AbstractPackager {
             
             File infFile = new File(internal.resolve("%package-output-dir%\\cabwiz.inf")); //$NON-NLS-1$
             File cabFile = new File(internal.resolve("%package-output-dir%\\cabwiz.cab")); //$NON-NLS-1$
-            File renamedCabFile = new File(internal.resolve("%package-output-dir%\\%project-name%.cab")); //$NON-NLS-1$
+            File renamedCabFile = new File(internal.resolve("%package-output-dir%\\%app-name%.cab")); //$NON-NLS-1$
             
             Template template = new Template(getClass().getResource("/templates/cabwiz.inf.template")); //$NON-NLS-1$
             String resolvedTemplate = template.resolve(internal.getParameters().toMap());

@@ -54,7 +54,7 @@ public class AndroidPackager extends AbstractPackager {
 			packageOutputDir.mkdirs();
 
 			// Delete previous apk file if any
-			File projectAPK = new File(internal.resolve("%package-output-dir%\\%project-name%.apk"));
+			File projectAPK = new File(internal.resolve("%package-output-dir%\\%app-name%.apk"));
 			projectAPK.delete();
 			
 			String fixedName = project.getName().replace(' ', '_');
@@ -123,7 +123,7 @@ public class AndroidPackager extends AbstractPackager {
 			internal.runCommandLine("java","-jar","%mosync-bin%\\android\\dx.jar","--dex","--patch-string","com/mosync/java/android","com/mosync/app_"+fixedName,"--output=%package-output-dir%\\classes.dex","%package-output-dir%\\classes");
 			
 			// generate android package , add dex file and resources.ap_ using apkBuilder
-			internal.runCommandLine("java", "-jar", "%mosync-bin%\\android\\apkbuilder.jar","%package-output-dir%\\%project-name%_unsigned.apk","-u","-z","%package-output-dir%\\resources.ap_","-f","%package-output-dir%\\classes.dex");
+			internal.runCommandLine("java", "-jar", "%mosync-bin%\\android\\apkbuilder.jar","%package-output-dir%\\%app-name%_unsigned.apk","-u","-z","%package-output-dir%\\resources.ap_","-f","%package-output-dir%\\classes.dex");
 			
 			// sign apk file using jarSigner
             String keystore = project.getProperty(PropertyInitializer.ANDROID_KEYSTORE);
@@ -141,8 +141,8 @@ public class AndroidPackager extends AbstractPackager {
             String[] jarSignerCommandLine = new String[] {
                     "java", "-jar", "%mosync-bin%\\android\\tools-stripped.jar",
                     "-keystore", keystore, "-storepass", storepass, "-keypass", keypass,
-                    "-signedjar", "%package-output-dir%\\%project-name%.apk",
-                    "%package-output-dir%\\%project-name%_unsigned.apk", 
+                    "-signedjar", "%package-output-dir%\\%app-name%.apk",
+                    "%package-output-dir%\\%app-name%_unsigned.apk", 
                     alias
             };
             

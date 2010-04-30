@@ -48,8 +48,8 @@ public class JavaPackager extends AbstractPackager {
 
 			Version appVersion = new Version(internal.getParameters().get(DefaultPackager.APP_VERSION));
 			
-			File projectJar = new File(internal.resolve("%package-output-dir%\\%project-name%.jar")); //$NON-NLS-1$
-			File projectJad = new File(internal.resolve("%package-output-dir%\\%project-name%.jad")); //$NON-NLS-1$
+			File projectJar = new File(internal.resolve("%package-output-dir%\\%app-name%.jar")); //$NON-NLS-1$
+			File projectJad = new File(internal.resolve("%package-output-dir%\\%app-name%.jad")); //$NON-NLS-1$
 
 			projectJar.delete();
 			projectJad.delete();
