@@ -22,6 +22,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunchConfiguration;
@@ -83,7 +84,7 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
             ILaunchConfiguration config = findLaunchConfiguration(project, mode);
             if (config != null) {
                 try {
-                    config.launch(mode, null, true);
+                    DebugUITools.buildAndLaunch(config, mode, new NullProgressMonitor());
                 } catch (CoreException e) {
                     ErrorDialog.openError(getShell(), "Error Launching " + config.getName(), e.getMessage(), e.getStatus());
                 }

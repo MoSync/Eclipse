@@ -26,13 +26,7 @@ import org.eclipse.cdt.core.ICDescriptor;
 import org.eclipse.cdt.core.IBinaryParser.IBinaryObject;
 import org.eclipse.cdt.core.model.ICModelMarker;
 import org.eclipse.cdt.core.model.ICProject;
-import org.eclipse.cdt.debug.core.CDebugCorePlugin;
-import org.eclipse.cdt.debug.core.CDebugUtils;
 import org.eclipse.cdt.debug.core.cdi.ICDISession;
-import org.eclipse.cdt.debug.core.sourcelookup.ICSourceLocation;
-import org.eclipse.cdt.debug.core.sourcelookup.ICSourceLocator;
-import org.eclipse.cdt.debug.core.sourcelookup.SourceLookupFactory;
-import org.eclipse.cdt.debug.internal.core.sourcelookup.CSourceLookupDirector;
 import org.eclipse.cdt.debug.ui.CDebugUIPlugin;
 import org.eclipse.cdt.internal.core.model.CModelManager;
 import org.eclipse.core.resources.IFile;
@@ -47,6 +41,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
@@ -58,9 +53,7 @@ import org.eclipse.debug.core.model.IPersistableSourceLocator;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.LaunchConfigurationDelegate;
 import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupDirector;
-import org.eclipse.debug.core.sourcelookup.ISourceContainer;
-import org.eclipse.debug.core.sourcelookup.ISourceLookupDirector;
-import org.eclipse.debug.core.sourcelookup.containers.AbstractSourceContainer;
+import org.eclipse.ui.actions.BuildAction;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -85,19 +78,21 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 
     public void launch(final ILaunchConfiguration launchConfig, final String mode, final ILaunch launch,
             final IProgressMonitor monitor) throws CoreException {
-        Thread thread = new Thread(new Runnable() {
-            public void run() {
-                try {
-                    final int emulatorId = getNextId();
-                    launchSync(launchConfig, mode, launch, emulatorId, monitor);
-                } catch (CoreException e) {
-                    StatusManager.getManager().handle(e.getStatus(), StatusManager.SHOW);
-                }
+        IProject project = getProject(launchConfig);
+        // We use a job just to let all current build jobs finish - but we need to spawn 
+        // a new thread within the job to avoid this job to block other operations that
+        // we may want perform as the emulator is running.
+        Job job = new Job("Launching") {
+            public IStatus run(IProgressMonitor monitor) {
+                final int emulatorId = getNextId();
+                launchAsync(launchConfig, mode, launch, emulatorId, monitor);
+                return Status.OK_STATUS;
             }
-        });
-
-        thread.setDaemon(true);
-        thread.start();
+        };
+        
+        job.setRule(project);
+        job.setSystem(true);
+        job.schedule();
     }
 
     public boolean preLaunchCheck(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
@@ -105,10 +100,6 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     	// We need here as well as in the buildbeforelaunch method since that method may never be called
     	// depending on user prefs.
     	autoSwitchBuildConfiguration(configuration, mode);
-        
-    	if (!getLaunchDir(MoSyncProject.create(project)).toFile().exists()) {
-    	    throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could not find build directory - please make sure your project is built"));
-    	}
     	
     	return super.preLaunchCheck(configuration, mode, monitor);
     }
@@ -120,6 +111,21 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
      */
     public static String getDefaultBuildConfiguration(String mode) {
     	return "debug".equals(mode) ? IBuildConfiguration.DEBUG_ID : IBuildConfiguration.RELEASE_ID;
+    }
+    
+    public void launchAsync(final ILaunchConfiguration launchConfig, final String mode, final ILaunch launch, final int emulatorId, final IProgressMonitor monitor) {
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                try {
+                    launchSync(launchConfig, mode, launch, emulatorId, monitor);
+                } catch (CoreException e) {
+                    StatusManager.getManager().handle(e.getStatus(), StatusManager.SHOW);
+                }
+            }
+        }, MessageFormat.format("Emulator {0}", emulatorId)); 
+        
+        t.setDaemon(true);
+        t.start();
     }
     
     public void launchSync(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor)
@@ -138,6 +144,10 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 
         if (project.findMaxProblemSeverity(ICModelMarker.C_MODEL_PROBLEM_MARKER, true, IResource.DEPTH_INFINITE) == IMarker.SEVERITY_ERROR) {
             throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, MessageFormat.format("Could not launch; build errors in project {0}", project.getName())));
+        }
+        
+        if (!getLaunchDir(MoSyncProject.create(project)).toFile().exists()) {
+            throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could not find build directory - please make sure your project is built"));
         }
         
         MoSyncProject mosyncProject = MoSyncProject.create(project);
@@ -306,11 +316,15 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         thread.start();        
     }
 
-    private String[] getCommandLine(IProject project, String width, String height, int fd, int id, boolean debug) {
+    private String[] getCommandLine(IProject project, String width, String height, int fd, int id, boolean debug) throws CoreException {
         IPath outputPath = getLaunchDir(MoSyncProject.create(project));
         IPath program = outputPath.append("program");
         IPath resources = outputPath.append("resources");
          
+        if (!program.toFile().exists()) {
+            throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could find no executable - please rebuild"));
+        }
+        
         ArrayList<String> args = new ArrayList<String>();
         
         args.addAll(Arrays.asList(new String[] { getMoREExe(), "-program", program.toOSString(), "-resource", resources.toOSString(),
@@ -374,12 +388,23 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     }
     
     public boolean buildForLaunch(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
-        IProject project = getProject(configuration);
+        final IProject project = getProject(configuration);
         autoSwitchBuildConfiguration(configuration, mode);
         
         // We are using auto build to flag to listeners that no dialogs
         // should pop up.
-        project.build(IncrementalProjectBuilder.AUTO_BUILD, monitor);
+        Job job = new Job("Prelaunch build") {
+            protected IStatus run(IProgressMonitor monitor) {
+                try {
+                    project.build(IncrementalProjectBuilder.AUTO_BUILD, monitor);
+                    return Status.OK_STATUS;
+                } catch (CoreException e) {
+                    return e.getStatus();
+                }
+            }            
+        };
+        job.setSystem(true);
+        job.schedule();
         return false;
     }
     

@@ -302,13 +302,11 @@ public class MoSyncBuilder extends ACBuilder {
             // "always full build" strategy
             kind = FULL_BUILD;
         }
-        IResourceDelta[] deltas = kind == FULL_BUILD ? null : getDeltas(getProject());
-        boolean doPack = kind == FULL_BUILD;
 
         // Default incremental build does link but does not ask for confirmation
         // if it's an autobuild
         IBuildVariant variant = getActiveVariant(MoSyncProject.create(project), false);
-        BuildSession session = new BuildSession(Arrays.asList(variant), BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (doPack ? BuildSession.DO_PACK : 0));
+        IBuildSession session = createIncrementalBuildSession(project, kind);
         incrementalBuild(project, session, variant, null, monitor);
 
         Set<IProject> dependencies = CoreMoSyncPlugin.getDefault().getProjectDependencyManager(ResourcesPlugin.getWorkspace()).getDependenciesOf(project);
@@ -1020,6 +1018,18 @@ public class MoSyncBuilder extends ACBuilder {
 
     public static IBuildSession createCleanBuildSession(IBuildVariant variant) {
         return new BuildSession(Arrays.asList(variant), BuildSession.ALL - BuildSession.DO_CLEAN);
+    }
+    
+    /**
+     * Returns a build session for incremental builds (ie the kind of build session
+     * created upon calls to the <code>build</code> method).
+     * @param kind The build kind, for example <code>IncrementalProjectBuilder.FULL_BUILD</code>.
+     * @return
+     */
+    public static IBuildSession createIncrementalBuildSession(IProject project, int kind) {
+        boolean doPack = kind == FULL_BUILD;
+        IBuildVariant variant = getActiveVariant(MoSyncProject.create(project), false);
+        return new BuildSession(Arrays.asList(variant), BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (doPack ? BuildSession.DO_PACK : 0));
     }
 
     public static IPath getMetaDataPath(MoSyncProject project, IBuildVariant variant) {

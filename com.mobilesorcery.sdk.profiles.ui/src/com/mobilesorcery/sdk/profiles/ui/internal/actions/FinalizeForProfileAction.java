@@ -13,55 +13,21 @@
 */
 package com.mobilesorcery.sdk.profiles.ui.internal.actions;
 
-import java.text.MessageFormat;
-import java.util.Arrays;
 
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 
+import com.mobilesorcery.sdk.core.FinalizerBuildJob;
 import com.mobilesorcery.sdk.core.BuildVariant;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
-import com.mobilesorcery.sdk.core.IBuildVariant;
-import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.finalizer.core.FinalizerParser;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.ui.Activator;
 
 public class FinalizeForProfileAction extends Action {
 
-    class BuildJob extends Job {
-        private IBuildVariant variant;
-        private MoSyncProject project;
-
-        public BuildJob(MoSyncProject project, IBuildVariant variant) {
-            super(MessageFormat.format("Finalizing project {0} for profile {1}", project.getName(), variant.getProfile()));
-            this.variant = variant;
-            this.project = project;
-            setUser(true);
-        }
-
-        protected IStatus run(IProgressMonitor monitor) {
-            try {
-                new MoSyncBuilder().fullBuild(project.getWrappedProject(), MoSyncBuilder.createFinalizerBuildSession(Arrays.asList(variant)), variant, null, monitor);
-            } catch (OperationCanceledException e) {
-                return Status.CANCEL_STATUS;
-            } catch (CoreException e) {
-                return e.getStatus();
-            }
-            
-            return Status.OK_STATUS;
-        }        
-    }
-    
     private ISelection selection;
     private MoSyncProject project;
 
@@ -77,7 +43,7 @@ public class FinalizeForProfileAction extends Action {
                 IProfile profile = (IProfile) selected;
                 IBuildConfiguration cfg = project.getActiveBuildConfiguration();
                 BuildVariant variant = new BuildVariant(profile, cfg == null ? null : cfg.getId(), true);
-                BuildJob job = new BuildJob(project, variant);
+                FinalizerBuildJob job = new FinalizerBuildJob(project, variant);
                 job.schedule();
             }
         }
