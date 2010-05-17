@@ -270,7 +270,6 @@ public class PipeTool {
 	}
 
 	public static IPath getResourcesDependencyFile(IProject project) {
-	    // TODO TODO TODO!
     	return MoSyncBuilder.getOutputPath(project, MoSyncBuilder.getActiveVariant(MoSyncProject.create(project), false)).append(RESOURCE_DEPENDENCY_FILE_NAME);
     }
 

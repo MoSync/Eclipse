@@ -23,7 +23,7 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 
-
+// TODO: This class currently only supports 'finalizing' one variant.
 public class FinalizerBuildJob extends Job {
     private IBuildVariant variant;
     private MoSyncProject project;

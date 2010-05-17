@@ -137,6 +137,10 @@ public class MoSyncBuilder extends ACBuilder {
     
     public static final String APP_NAME = BUILD_PREFS_PREFIX + "app.name";
 
+    private static final String APP_CODE = "app.code";
+   
+    private static final String CONSOLE_PREPARED = "console.prepared";
+    
     public static final int GCC_WALL = 1 << 1;
 
     public static final int GCC_WEXTRA = 1 << 2;
@@ -357,7 +361,7 @@ public class MoSyncBuilder extends ACBuilder {
         File outputFile = output.toFile();
 
         IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(CONSOLE_ID);
-        prepareConsole(console);
+        prepareConsole(null, console);
 
         console.addMessage(createBuildMessage("Cleaning", MoSyncProject.create(project), variant));
         Util.deleteFiles(getPackageOutputPath(project, variant).toFile(), null, 512, monitor);
@@ -467,7 +471,7 @@ public class MoSyncBuilder extends ACBuilder {
             GCCLineHandler linehandler = new GCCLineHandler(epm);
 
             IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(CONSOLE_ID);
-            prepareConsole(console);
+            prepareConsole(session, console);
 
             if (!MoSyncTool.getDefault().isValid()) {
                 String error = MoSyncTool.getDefault().validate();
@@ -489,7 +493,7 @@ public class MoSyncBuilder extends ACBuilder {
             MoSyncBuilderVisitor compilerVisitor = new MoSyncBuilderVisitor();
 
             PipeTool pipeTool = new PipeTool();
-            pipeTool.setAppCode(PipeTool.generateAppCode());
+            pipeTool.setAppCode(getCurrentAppCode(session));
             pipeTool.setProject(project);
             pipeTool.setConsole(console);
             pipeTool.setLineHandler(linehandler);
@@ -635,14 +639,15 @@ public class MoSyncBuilder extends ACBuilder {
                     packager.createPackage(mosyncProject, variant, buildResult);
 
                     if (buildResult.getBuildResult() == null || !buildResult.getBuildResult().exists()) {
-                        throw new IOException(MessageFormat.format("Failed to create package for {0}", targetProfile));
+                        throw new IOException(MessageFormat.format("Failed to create package for {0} (platform: {1})", targetProfile, getAbbreviatedPlatform(targetProfile)));
+                    } else {
+                        console.addMessage(MessageFormat.format("Created package: {0} (platform: {1})", buildResult.getBuildResult(), getAbbreviatedPlatform(targetProfile)));
                     }
                 }
             }
 
             monitor.worked(1);
 
-            console.addMessage(MessageFormat.format("Created package: {0}", buildResult.getBuildResult()));
             console.addMessage("Build finished at "
                     + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG).format(Calendar.getInstance().getTime()));
 
@@ -669,6 +674,19 @@ public class MoSyncBuilder extends ACBuilder {
             
             saveBuildState(buildState, mosyncProject, buildResult);
         }
+    }
+
+    private String getCurrentAppCode(IBuildSession session) {
+        // TODO: This will result in *most* equivalent apps to share
+        // app code across devices; in particular finalization will always
+        // share app code.
+        String appCode = session.getProperties().get(APP_CODE);
+        if (Util.isEmpty(appCode)) {
+            appCode = PipeTool.generateAppCode();
+            session.getProperties().put(APP_CODE, appCode);
+        }
+        
+        return appCode;
     }
 
     private String createBuildMessage(String buildType, MoSyncProject project, IBuildVariant variant) {
@@ -773,13 +791,16 @@ public class MoSyncBuilder extends ACBuilder {
      * 
      * @param console
      */
-    private void prepareConsole(IProcessConsole console) {
-        if (CoreMoSyncPlugin.isHeadless()) {
-            // No need to prepare anything.
-            return;
-        }
+    private void prepareConsole(IBuildSession session, IProcessConsole console) {
+        boolean needsPreparing = !CoreMoSyncPlugin.isHeadless();
+        needsPreparing &= (session != null && session.getProperties().get(CONSOLE_PREPARED) == null);
 
-        console.prepare();
+        if (needsPreparing) {
+            console.prepare();
+            if (session != null) {
+                session.getProperties().put(CONSOLE_PREPARED, Boolean.TRUE.toString());
+            }
+        }
     }
 
     private Set<IProject> computeProjectDependencies(IProgressMonitor monitor, MoSyncProject mosyncProject, IBuildState buildState, IResource[] allAffectedResources) {
