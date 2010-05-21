@@ -29,8 +29,9 @@ import org.eclipse.ui.dialogs.PropertyPage;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IProfile;
+import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
 
-public class MoSyncProjectPropertyPage extends PropertyPage {
+public class MoSyncProjectPropertyPage extends MoSyncPropertyPage {
 
     protected Control createContents(Composite parent) {
         Composite main = new Composite(parent, SWT.NONE);
@@ -65,13 +66,6 @@ public class MoSyncProjectPropertyPage extends PropertyPage {
         }
 
         return main;
-    }
-
-    private MoSyncProject getProject() {
-        IProject wrappedProject = (IProject) getElement();
-        MoSyncProject project = MoSyncProject.create(wrappedProject);
-
-        return project;
     }
 
 }

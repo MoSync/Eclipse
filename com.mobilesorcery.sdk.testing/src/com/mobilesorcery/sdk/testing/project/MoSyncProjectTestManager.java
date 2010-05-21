@@ -157,8 +157,8 @@ public class MoSyncProjectTestManager {
 	}
 
     private String[] getTypes(boolean isDebug) {
-        String baseCfgId = isDebug ? IBuildConfiguration.DEBUG_ID : IBuildConfiguration.RELEASE_ID;
-        String[] types = new String[] { baseCfgId , TestPlugin.TEST_BUILD_CONFIGURATION_TYPE };
+        String baseCfgType = isDebug ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE;
+        String[] types = new String[] { baseCfgType , TestPlugin.TEST_BUILD_CONFIGURATION_TYPE };
         return types; 
 	}
 	

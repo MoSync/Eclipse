@@ -115,6 +115,19 @@ icon="icons/launchshortcut.png">
                    </test>
                 </enabledWhen>
           </page>
+                    <!-- Enable once we've settled how to handle permissions <page
+                class="com.mobilesorcery.sdk.ui.internal.properties.PermissionsPropertyPage"
+                id="com.mobilesorcery.sdk.ui.properties.permissions"
+                name="Application Permissions"
+                objectClass="org.eclipse.core.resources.IProject"
+                category="com.mobilesorcery.sdk.ui.properties.project">
+                <enabledWhen>
+                   <test
+                         forcePluginActivation="true"
+                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                   </test>
+                </enabledWhen>
+          </page> -->
        </extension>
       
          <extension point = "org.eclipse.ui.actionSets">

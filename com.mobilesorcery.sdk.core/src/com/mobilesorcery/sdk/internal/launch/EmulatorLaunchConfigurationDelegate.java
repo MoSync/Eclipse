@@ -20,6 +20,8 @@ import java.io.PipedOutputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.SortedSet;
 
 import org.eclipse.cdt.core.CCorePlugin;
 import org.eclipse.cdt.core.ICDescriptor;
@@ -109,8 +111,14 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
      * @param mode
      * @return
      */
-    public static String getDefaultBuildConfiguration(String mode) {
-    	return "debug".equals(mode) ? IBuildConfiguration.DEBUG_ID : IBuildConfiguration.RELEASE_ID;
+    public static String getDefaultBuildConfiguration(MoSyncProject project, String mode) {
+        String type = "debug".equals(mode) ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE;
+        SortedSet<String> candidateCfgs = project.getBuildConfigurationsOfType(type);
+        if (candidateCfgs.isEmpty()) {
+            return "debug".equals(mode) ? IBuildConfiguration.DEBUG_ID : IBuildConfiguration.RELEASE_ID;
+        } else {
+            return candidateCfgs.first();
+        }
     }
     
     public void launchAsync(final ILaunchConfiguration launchConfig, final String mode, final ILaunch launch, final int emulatorId, final IProgressMonitor monitor) {
@@ -419,10 +427,10 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
             String buildConfigKey = isDebugMode ? ILaunchConstants.BUILD_CONFIG_DEBUG : ILaunchConstants.BUILD_CONFIG;
 
             if (configuration.getAttribute(autoChangeConfigKey, true)) {
-                String buildConfig = configuration.getAttribute(buildConfigKey, getDefaultBuildConfiguration(mode));
+                String buildConfig = configuration.getAttribute(buildConfigKey, getDefaultBuildConfiguration(mosyncProject, mode));
                 IBuildConfiguration activeBuildConfig = mosyncProject.getActiveBuildConfiguration();
                 String activeBuildConfigId = activeBuildConfig == null ? null : activeBuildConfig.getId();
-                if (buildConfig != null && !buildConfig.equals(activeBuildConfigId)) {
+                if (buildConfig != null && !buildConfig.equals(activeBuildConfigId) && mosyncProject.getBuildConfiguration(buildConfig) != null) {
                     mosyncProject.setActiveBuildConfiguration(buildConfig);
                 }
             }

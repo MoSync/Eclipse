@@ -43,6 +43,7 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
@@ -424,12 +425,6 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 
 	public IProcessConsole get(String name) {
 		return new IDEProcessConsole(name);
-	}
-	
-	public Font getFont(String key) {
-	    // TDB.
-	    FontRegistry f = new FontRegistry();
-	    return null;
 	}
 
 	public void initializeImageRegistry(ImageRegistry reg) {

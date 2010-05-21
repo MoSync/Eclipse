@@ -27,6 +27,7 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.ui.ide;bundle-version="3.5.0"
 Bundle-ActivationPolicy: lazy
 Export-Package: com.mobilesorcery.sdk.core,
+ com.mobilesorcery.sdk.core.security,
  com.mobilesorcery.sdk.internal.builder,
  com.mobilesorcery.sdk.internal.dependencies,
  com.mobilesorcery.sdk.internal.launch,

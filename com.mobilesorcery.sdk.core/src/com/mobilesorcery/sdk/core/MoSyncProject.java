@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Map.Entry;
@@ -42,10 +43,12 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.XMLMemento;
 
+import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.ParseException;
 import com.mobilesorcery.sdk.internal.SLD;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
+import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -219,6 +222,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     private HashMap<IBuildVariant, IBuildState> cachedBuildStates = new HashMap<IBuildVariant, IBuildState>();
 
     private HashMap<IPropertyOwner, PathExclusionFilter> excludes = new HashMap<IPropertyOwner, PathExclusionFilter>();
+
+    private IApplicationPermissions permissions;
     
     private MoSyncProject(IProject project) {
         Assert.isNotNull(project);
@@ -226,6 +231,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         this.deviceFilterListener = new DeviceFilterListener();
         initFromProjectMetaData(null, SHARED_PROPERTY);
         initFromProjectMetaData(null, LOCAL_PROPERTY);
+        permissions = new ApplicationPermissions(this);
         addDeviceFilterListener();
     }
 
@@ -930,10 +936,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 * Returns the ids of all build configurations that has
 	 * a set of types
 	 * @param types The types to match against
-	 * @return The build configurations that have <b>all</b> the specified types 
+	 * @return The build configurations that have <b>all</b> the specified types,
+	 * sorted in case-insensitive alphabetical order.
 	 */
-    public Set<String> getBuildConfigurationsOfType(String... types) {
-        HashSet<String> result = new HashSet<String>();
+    public SortedSet<String> getBuildConfigurationsOfType(String... types) {
+        TreeSet<String> result = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
         for (IBuildConfiguration cfg : configurations.values()) {
             boolean doAdd = true;
             for (int i = 0; i < types.length; i++) {
@@ -1029,5 +1036,9 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		// TODO: cache?
 		return new LibraryLookup(MoSyncBuilder.getLibraryPaths(getWrappedProject(), buildProperties), MoSyncBuilder.getLibraries(buildProperties));
 	}
+
+    public IApplicationPermissions getPermissions() {
+        return permissions;
+    }
 
 }

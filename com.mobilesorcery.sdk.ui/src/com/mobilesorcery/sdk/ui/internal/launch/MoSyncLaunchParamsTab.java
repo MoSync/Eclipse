@@ -236,7 +236,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 
 	public void initializeBuildConfigurationOptions(ILaunchConfiguration config)
 			throws CoreException {
-		String defaultBuildConfig = EmulatorLaunchConfigurationDelegate.getDefaultBuildConfiguration(mode);
+		String defaultBuildConfig = EmulatorLaunchConfigurationDelegate.getDefaultBuildConfiguration(MoSyncProject.create(getProject()), mode);
 		changeConfiguration.setSelection(config.getAttribute(getAutoChangeConfigKey(), true));
 		String buildConfiguration = config.getAttribute(getBuildConfigKey(), defaultBuildConfig);
 		configurations.setSelection(new StructuredSelection(buildConfiguration));
