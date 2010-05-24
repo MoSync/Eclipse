@@ -26,7 +26,7 @@ public class ChangeBuildConfigWidget extends WorkbenchWindowControlContribution 
     private ComboViewer combo;
 
     protected Control createControl(Composite parent) {
-        combo = new ComboViewer(parent, SWT.NONE);
+        combo = new ComboViewer(parent, SWT.READ_ONLY);
         combo.addSelectionChangedListener(this);
         MosyncUIPlugin.getDefault().addListener(this);
         MoSyncProject.addGlobalPropertyChangeListener(this);
