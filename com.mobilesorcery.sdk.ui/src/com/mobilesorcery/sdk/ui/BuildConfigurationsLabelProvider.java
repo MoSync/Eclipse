@@ -25,15 +25,21 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 public class BuildConfigurationsLabelProvider extends LabelProvider implements ITableLabelProvider {
 
 	private MoSyncProject project;
+    private boolean markActive;
 
-	public BuildConfigurationsLabelProvider(MoSyncProject project) {
+    public BuildConfigurationsLabelProvider(MoSyncProject project) {
+        this(project, true);
+    }
+    
+    public BuildConfigurationsLabelProvider(MoSyncProject project, boolean markActive) {
 		this.project = project;
+		this.markActive = markActive;
 	}
 
 	public String getText(Object element) {
 		IBuildConfiguration cfg = project.getActiveBuildConfiguration();
 		boolean isActive = cfg != null && element.equals(cfg.getId());
-		return MessageFormat.format("{0} {1}", element.toString(), isActive ? " [Active]" : "");
+		return markActive ? MessageFormat.format("{0} {1}", element.toString(), isActive ? " [Active]" : "") : element.toString();
 	}
 
 	public Image getColumnImage(Object element, int columnIndex) {

@@ -394,5 +394,15 @@ icon="icons/launchshortcut.png">
                </visibleWhen>
             </command>
          </menuContribution>
+    <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+    <toolbar id="com.mobilesorcery.sdk.ui.changeActiveConfigToolbar">
+        <control id="com.mobilesorcery.sdk.ui.changeActiveConfig"
+                class="com.mobilesorcery.sdk.ui.internal.actions.ChangeBuildConfigWidget">
+            <visibleWhen 
+            		checkEnabled="true">
+            </visibleWhen>
+        </control>
+    </toolbar>
+    </menuContribution>
       </extension>
 </plugin>
