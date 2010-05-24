@@ -46,7 +46,8 @@ public class PathExclusionFilter implements IFilter<IResource> {
 		}
 
 		public int accept(IResource resource) {
-			boolean isDirectoryFilter = resource.getProject().getLocation().append(new Path(filespec)).toFile().isDirectory();
+		    IResource directoryLocation = resource.getProject().findMember(new Path(filespec));
+			boolean isDirectoryFilter = directoryLocation != null && directoryLocation.getLocation().toFile().isDirectory();
 			boolean match = matcher.match(resource.getProjectRelativePath().toPortableString());
 			if (match) {
 				return exclude ? EXCLUDE : INCLUDE;
