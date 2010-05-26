@@ -23,6 +23,7 @@
 #include <direct.h>
 #define pipe _pipe
 #else	// GNU libc
+#include <signal.h>
 #include <unistd.h>
 #include <spawn.h>
 #include <sys/wait.h>
