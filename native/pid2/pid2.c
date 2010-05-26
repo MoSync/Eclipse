@@ -4,6 +4,7 @@
 #include <process.h>
 #endif
 
+int getpid2 ( void );
 
 /**
  * Returns the pid of the proccess
