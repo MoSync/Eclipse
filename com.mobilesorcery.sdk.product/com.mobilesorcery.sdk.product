@@ -157,6 +157,7 @@ Creative Commons 3.0 Attribution License covers the Android Icon, a &quot;modifi
       <plugin id="com.mobilesorcery.sdk.builder.headless"/>
       <plugin id="com.mobilesorcery.sdk.builder.java"/>
       <plugin id="com.mobilesorcery.sdk.builder.moblin"/>
+	  <plugin id="com.mobilesorcery.sdk.builder.iphoneos"/>
       <plugin id="com.mobilesorcery.sdk.builder.s60"/>
       <plugin id="com.mobilesorcery.sdk.builder.winmobile"/>
       <plugin id="com.mobilesorcery.sdk.core"/>
@@ -308,6 +309,7 @@ Creative Commons 3.0 Attribution License covers the Android Icon, a &quot;modifi
       <feature id="com.mobilesorcery.sdk.builder.android.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.builder.java.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.builder.moblin.feature" version="1.0.0.qualifier"/>
+	  <feature id="com.mobilesorcery.sdk.builder.iphoneos.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.builder.s60.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.builder.winmobile.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.cdt.feature" version="1.0.0.qualifier"/>
