@@ -92,6 +92,6 @@ public class Profile implements IProfile, Comparable<IProfile> {
     }
 
     public boolean isEmulator() {
-    	return "MobileSorcery/Emulator".equals(toString()); 
+    	return "MoSync/Emulator".equals(toString()); 
     }
 }

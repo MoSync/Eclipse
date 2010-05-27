@@ -589,7 +589,7 @@ public class MoSyncTool {
 	 */
 	public IProfile getDefaultEmulatorProfile() {
 		init();
-		IVendor defaultVendor = getVendor("MobileSorcery");
+		IVendor defaultVendor = getVendor("MoSync");
 		if (defaultVendor != null) {
 			return defaultVendor.getProfile("Emulator");
 		}
