@@ -22,8 +22,8 @@
 #define PIPELIB_EXPORT __declspec(dllexport)
 #define PIPELIB_IMPORT __declspec(dllimport)
 #else
-#define PIPELIB_EXPORT
-#define PIPELIB_IMPORT
+#define PIPELIB_EXPORT __attribute__((visibility("default")))
+#define PIPELIB_IMPORT __attribute__((visibility("default")))
 #endif
 
 #ifdef PIPELIB_EXPORTS
