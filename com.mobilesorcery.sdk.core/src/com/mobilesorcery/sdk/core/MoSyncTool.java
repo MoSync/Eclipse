@@ -43,7 +43,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.IVendor;
@@ -654,6 +653,25 @@ public class MoSyncTool {
 	public boolean isValid() {
 		return validate() == null;
 	}
+	
+	/**
+	 * Returns a path to the binary with the given name. If no such
+	 * binary can be found, null will be returned.
+	 * 
+	 * @param name Name of the binary, it should not contain the platform
+	 * specific extension, e.g. ".exe".
+	 * @return Path to the binary
+	 */
+	public IPath getBinary(String name) {
+		String extension = "";
+		
+		if(System.getProperty("os.name").toLowerCase().indexOf("win") >= 0) {
+			extension = ".exe";
+		}
+		
+		return getMoSyncBin().append(name + extension);
+	}
+	
 
 	/**
 	 * The 'inverse' of getProfile(fullName).
