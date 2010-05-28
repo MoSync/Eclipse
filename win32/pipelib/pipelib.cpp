@@ -34,6 +34,17 @@
 
 #include "pipelib.h"
 
+/* In OS X and Linux we need to explicitly pass the environment
+ * to the spawned process. Usually it is linked in with ld, but
+ * not in the case of shared libraries, and in OS X you have to use 
+ * the trick below to find the address of the environment array. On
+ * Linux it can however be accessed through unistd.h.
+ */
+#ifdef DARWIN
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+#endif
+
 PIPELIB_API int pipe_create(int* fds)
 {
 #ifdef WIN32
@@ -71,7 +82,7 @@ PIPELIB_API int proc_spawn(char* cmd, char* args, char* dir) {
 #else
 	pid_t pid;
 	char* argv[2] = {args, NULL};
-	int res = posix_spawn(&pid, cmd, NULL, NULL, argv, NULL);
+	int res = posix_spawn(&pid, cmd, NULL, NULL, argv, environ);
 	if(res < 0)
 		return res;
 	return pid;
