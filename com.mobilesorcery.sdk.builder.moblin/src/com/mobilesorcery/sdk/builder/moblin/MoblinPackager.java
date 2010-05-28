@@ -69,8 +69,10 @@ extends AbstractPackager
                                 IBuildResult buildResult )
     throws CoreException
     {    	
-        String  runtime;
-        String  appName;
+        String runtime;
+        String appName;
+        String version;
+        String vendor;
         IconManager icon;
         PackageBuilder pack;
         DefaultPackager intern;
@@ -82,8 +84,10 @@ extends AbstractPackager
 
         try
         {
-            appName = intern.resolve( "%app-name%" );
-
+        	appName = intern.getParameters( ).get( DefaultPackager.APP_NAME );
+            version = intern.getParameters( ).get( DefaultPackager.APP_VERSION );
+            vendor  = intern.getParameters( ).get( DefaultPackager.APP_VENDOR_NAME );
+            
             if ( shouldUseDebugRuntimes( ) == true )
                 runtime = "runtime.dbg.tar.gz";
             else
@@ -94,8 +98,9 @@ extends AbstractPackager
             //
             pack = new PackageBuilder( new File( intern.resolve( "%runtime-dir%" ), runtime ) );
 
-            pack.setVersion( new Version( intern.getParameters().get(DefaultPackager.APP_VERSION) ) );
-            pack.setAppName( appName );
+            pack.setVersion( new Version( version ).asCanonicalString( Version.MICRO ) );
+            pack.setAppName( appName );            
+            pack.setVendor( vendor );
             pack.setProgramFile( intern.resolve( "%program-output%" ) );
             if ( new File( intern.resolve( "%resource-output%" ) ).exists( ) )
                 pack.setResorceFile( intern.resolve( "%resource-output%" ) );

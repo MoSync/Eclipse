@@ -90,8 +90,7 @@ public class PackageBuilder
 	private PrivateKey      m_privKey;
     private File            m_tempDir;
     private File            m_template;
-    private PackageParser   m_templateParser;
-    private Version         m_version;
+    private PackageParser   m_templateParser;    
     private Map<String,String> m_resourceMap;
     
 
@@ -105,14 +104,22 @@ public class PackageBuilder
     {
         m_template      = t;
         m_templateParser = new PackageParser( );
-        m_resourceMap   = new HashMap<String, String>( );
+        m_resourceMap   = new HashMap<String, String>( );        
         m_tempDir = File.createTempFile( "pkgbld", System.currentTimeMillis( ) + "" );
+        
+        m_resourceMap.put( "version", "1.0" );
+        m_resourceMap.put( "vendor", "notset" );
     }
 
-    public void setVersion ( Version v )
+    public void setVersion ( String v )
     {
-        m_version = v;
+    	m_resourceMap.put( "version", v );
     }
+    
+    public void setVendor ( String v )
+    {
+    	m_resourceMap.put( "vendor", v );
+    }    
 
     /**
      * Set the application name.
@@ -307,22 +314,25 @@ public class PackageBuilder
         Builder rpmBuilder;
         String  appName = m_resourceMap.get( "appname" )
         							   .toLowerCase( )
-        							   .replace( " ", "_" );
-
+        							   .replace( " ", "_" );        
+        String	version    = m_resourceMap.get( "version" );
+        String	vendorName = m_resourceMap.get( "vendor" );
+        
         //
         // Set package parameters
         //
         rpmBuilder = new Builder( );
 
         //rpmBuilder.addSignature( m_privKey );
-        rpmBuilder.setPackage(  appName, m_version.asCanonicalString(Version.MICRO), "0" );
+        rpmBuilder.setPackage( appName, version, "0" );
+        rpmBuilder.setVendor( vendorName );
         rpmBuilder.setType( RpmType.BINARY );
         // FIXME: Doesn't have to be i386
         rpmBuilder.setPlatform( Architecture.I386, Os.LINUX );
         rpmBuilder.setSummary( m_resourceMap.get( "appname" ) );
         rpmBuilder.setDescription( m_resourceMap.get( "appname" ) );
         rpmBuilder.setPackager( "MoSync" );
-        rpmBuilder.setProvides( m_resourceMap.get( "appname" ) );
+        rpmBuilder.setProvides( m_resourceMap.get( "appname" ) );        
         addFilesToRpm( rpmBuilder, "/", new File( m_tempDir, "." ) );
 
         // Package dependencies
@@ -364,20 +374,22 @@ public class PackageBuilder
     {
         DebBuilder  debBuilder;
         String      appName = m_resourceMap.get( "appname" );
+        String		version    = m_resourceMap.get( "version" );
+        String		vendorName = m_resourceMap.get( "vendor" );        
         String      appSummary = appName;
         String      appDescription = appName;
         
         //
         // Set package parameters
         //
-        debBuilder = new DebBuilder( appName, m_version.asCanonicalString(Version.MICRO), "0" );
+        debBuilder = new DebBuilder( appName, version, "0" );
 
         // FIXME: Doesn't have to be i386
         debBuilder.addHeader( new ArchitectureHeader( ArchitectureHeader.CpuArch.I386 ) );
-        debBuilder.addHeader( new MaintainerHeader( "", "" ) );
+        debBuilder.addHeader( new MaintainerHeader( vendorName, "" ) );
         debBuilder.addHeader( new SectionHeader( SectionHeader.DebianSections.Utils ) );
         debBuilder.addHeader( new PriorityHeader( PriorityHeader.Priorities.Optional ) );
-        debBuilder.addHeader( new DescriptionHeader( appSummary, appDescription ) );
+        debBuilder.addHeader( new DescriptionHeader( appSummary, appDescription ) );        
 
         // Package dependencies
         for ( String r : m_templateParser.getDependsList( ) )            

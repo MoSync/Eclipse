@@ -26,6 +26,7 @@ import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
+import com.mobilesorcery.sdk.core.Version;
 
 
 
@@ -56,15 +57,37 @@ extends AbstractPackager
                                 IBuildResult buildResult )
     throws CoreException
     {
+    	String appName;
+    	String version;
+    	String company;
         DefaultPackager intern;
 
         // Was used for printing to console
         intern = new DefaultPackager( project,
                                       variant );
+
+        //
+        // Custom paramters
+        //
+        appName = intern.getParameters( ).get( DefaultPackager.APP_NAME );
+        version = intern.getParameters( ).get( DefaultPackager.APP_VERSION );
+        company = intern.getParameters( ).get( DefaultPackager.APP_VENDOR_NAME );
+        
         
         try
         {
-
+        	// Create XCode template
+			intern.runCommandLine( "%mosync-bin%\\iphone-builder",
+                                   "-project-name",
+                                   appName,
+                                   "-version",
+                                   new Version( version ).asCanonicalString( Version.MICRO ),
+                                   "-company-name",
+                                   company,
+					                "-input", 
+					                "%runtime-dir%\\template",
+					                "-output",
+					                "%package-output-dir%\\xcode-project" );    	
         }
         catch ( Exception e )
         {
