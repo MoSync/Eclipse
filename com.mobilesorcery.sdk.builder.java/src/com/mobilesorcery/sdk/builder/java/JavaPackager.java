@@ -20,6 +20,8 @@ import java.io.IOException;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.AbstractPackager;
@@ -27,17 +29,32 @@ import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
-public class JavaPackager extends AbstractPackager {
-
-	public JavaPackager() {
+public class JavaPackager 
+extends AbstractPackager 
+{
+	private String m_zipLoc;
+	private String m_iconInjectorLoc;
+	
+	public JavaPackager() 
+	{
+		MoSyncTool tool = MoSyncTool.getDefault( );
+		m_zipLoc = tool.getBinary( "zip" ).toOSString( );
+		m_iconInjectorLoc = tool.getBinary( "icon-injector" ).toOSString( );
+		
 	}
 
-	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+	public void createPackage ( MoSyncProject project, IBuildVariant variant, IBuildResult buildResult ) 
+	throws CoreException 
+	{		
 		DefaultPackager internal = new DefaultPackager(project, variant);
 		IProfile targetProfile = variant.getProfile();
+		File runtimeDir = new File( internal.resolve( "%runtime-dir%" ) );
+		File compileOut = new File( internal.resolve( "%compile-output-dir%" ) );
 		
 		internal.setParameters(getParameters());
 		internal.setParameter("D", shouldUseDebugRuntimes() ? "D" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -48,28 +65,50 @@ public class JavaPackager extends AbstractPackager {
 
 			Version appVersion = new Version(internal.getParameters().get(DefaultPackager.APP_VERSION));
 			
-			File projectJar = new File(internal.resolve("%package-output-dir%\\%app-name%.jar")); //$NON-NLS-1$
-			File projectJad = new File(internal.resolve("%package-output-dir%\\%app-name%.jad")); //$NON-NLS-1$
+			File projectJar = new File(internal.resolve("%package-output-dir%/%app-name%.jar")); //$NON-NLS-1$
+			File projectJad = new File(internal.resolve("%package-output-dir%/%app-name%.jad")); //$NON-NLS-1$
 
 			projectJar.delete();
 			projectJad.delete();
 
 			String appVendorName = internal.getParameters().get(DefaultPackager.APP_VENDOR_NAME);
-			File manifest = new File(internal.resolve("%compile-output-dir%\\META-INF\\manifest.mf")); //$NON-NLS-1$
+			File manifest = new File(internal.resolve("%compile-output-dir%/META-INF/manifest.mf")); //$NON-NLS-1$
 			createManifest(project.getName(), appVendorName, appVersion, manifest);
 
 			// Need to set execution dir, o/w zip will not understand what we
 			// really want.
 			internal.getExecutor().setExecutionDirectory(manifest.getParentFile().getParent());
-			internal.runCommandLine("cmd", "/c", "copy", "%runtime-dir%\\MoSyncRuntime%D%.jar", projectJar.getAbsolutePath(), "/y"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
-			internal.runCommandLine("cmd", "/c", "copy", "%runtime-dir%\\config.h", packageOutputDir.getAbsolutePath(), "/y"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+			
+			{
+				String runtime = internal.resolve( "MoSyncRuntime%D%.jar" );
+				Util.copyFile( new NullProgressMonitor( ), 
+						       new File( runtimeDir, runtime ), 
+						       projectJar );
+			}			
+			Util.copyFile( new NullProgressMonitor( ), 
+					       new File( runtimeDir, "config.h" ), 
+					       new File( packageOutputDir, "config.h" ) );
+			
+			
+			internal.runCommandLine( m_zipLoc, 
+					                 "-j", 
+					                 "-9", 
+					                 projectJar.getAbsolutePath( ), 
+					                 new File( compileOut, "program" ).getAbsolutePath( ) );
+			internal.runCommandLine( m_zipLoc, 
+					                 "-r", 
+					                 "-9", 
+					                 projectJar.getAbsolutePath( ), 
+					                 "META-INF" );
 
-			internal.runCommandLine("%mosync-bin%\\zip", "-j", "-9", projectJar.getAbsolutePath(), "%compile-output-dir%\\program"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-			internal.runCommandLine("%mosync-bin%\\zip", "-r", "-9", projectJar.getAbsolutePath(), "META-INF"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-
-			File resources = new File(internal.resolve("%compile-output-dir%\\resources")); //$NON-NLS-1$
-			if (resources.exists()) { // TODO: Old resources?
-				internal.runCommandLine("%mosync-bin%\\zip", "-j", "-9", projectJar.getAbsolutePath(), "%compile-output-dir%\\resources"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			File resources = new File( compileOut, "resources" ); //$NON-NLS-1$
+			if (resources.exists()) 
+			{
+				internal.runCommandLine( m_zipLoc, 
+						                 "-j", 
+						                 "-9", 
+						                 projectJar.getAbsolutePath( ), 
+						                 resources.getAbsolutePath( ) );
 			}
 
 			createJAD(project.getWrappedProject().getName(), appVendorName, appVersion, projectJad, projectJar);
@@ -82,8 +121,15 @@ public class JavaPackager extends AbstractPackager {
 				Object yObj = targetProfile.getProperties().get("MA_PROF_CONST_ICONSIZE_Y"); //$NON-NLS-1$
 				if (xObj != null && yObj != null) {
 					String sizeStr = ((Long) xObj) + "x" + ((Long) yObj); //$NON-NLS-1$
-					internal.runCommandLine("%mosync-bin%\\icon-injector", "-src", iconFiles[0].getLocation().toOSString(), "-size", sizeStr, "-platform", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-						"j2me", "-dst", projectJar.getAbsolutePath()); //$NON-NLS-1$ //$NON-NLS-2$
+					internal.runCommandLine( m_iconInjectorLoc, 
+							                 "-src", 
+							                 iconFiles[0].getLocation().toOSString( ), 
+							                 "-size", 
+							                 sizeStr, 
+							                 "-platform",
+						                     "j2me", 
+						                     "-dst", 
+						                     projectJar.getAbsolutePath( ) );
 				}
 			}
 

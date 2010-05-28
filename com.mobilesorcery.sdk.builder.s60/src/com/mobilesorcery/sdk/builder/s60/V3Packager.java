@@ -25,19 +25,36 @@ import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.templates.Template;
 import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
-public class V3Packager extends S60Packager {
-
+public class V3Packager 
+extends S60Packager 
+{
 	static final int V3_EXE_HEADER_SIZE = 0x9c;
+	
+	String m_e32hackLoc;
+	String m_makesis4Loc;
+	String m_signsis4Loc;
+	String m_iconInjecLoc;
 
-	public V3Packager() {
+	public V3Packager ( ) 
+	{
+		MoSyncTool tool = MoSyncTool.getDefault( );
+		m_e32hackLoc    = tool.getBinary( "e32hack" ).toOSString( );
+		m_makesis4Loc   = tool.getBinary( "makesis-4" ).toOSString( );
+		m_signsis4Loc   = tool.getBinary( "signsis-4" ).toOSString( );
+		m_iconInjecLoc  = tool.getBinary( "icon-injector" ).toOSString( );
 	}
 
-	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+	public void createPackage ( MoSyncProject project, 
+			                    IBuildVariant variant, 
+			                    IBuildResult buildResult ) 
+	throws CoreException 
+	{
 		DefaultPackager internal = new DefaultPackager(project, variant);
 		IProfile targetProfile = variant.getProfile();
 		internal.setParameter("D", shouldUseDebugRuntimes() ? "D" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -55,7 +72,7 @@ public class V3Packager extends S60Packager {
 			String appname = project.getName();
 
 			File runtimeDir = new File(internal.resolve("%runtime-dir%")); //$NON-NLS-1$
-			String runtimePath = internal.resolve("%runtime-dir%\\MoSync%D%.exe"); //$NON-NLS-1$
+			String runtimePath = internal.resolve("%runtime-dir%/MoSync%D%.exe"); //$NON-NLS-1$
 
 			// bin-hack
 			try {
@@ -81,10 +98,15 @@ public class V3Packager extends S60Packager {
 				} else {
 					sizeStr = "default"; //$NON-NLS-1$
 				}
-				internal.runCommandLine("%mosync-bin%\\icon-injector", "-src", //$NON-NLS-1$ //$NON-NLS-2$
-					iconFile.getLocation().toOSString(),
-					"-size", sizeStr, "-platform", "symbian9", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-					"-dst", packageOutputDir + "/" + uid + "_icon.mif"); //$NON-NLS-1$
+				internal.runCommandLine( m_iconInjecLoc, 
+						                 "-src",
+					                     iconFile.getLocation( ).toOSString( ),
+					                     "-size", 
+					                     sizeStr, 
+					                     "-platform", 
+					                     "symbian9", 
+					                     "-dst", 
+					                     packageOutputDir + "/" + uid + "_icon.mif" );
 				hasIcon = true;
 			}
 			
@@ -98,17 +120,20 @@ public class V3Packager extends S60Packager {
 			Util.writeToFile(pkgFile, resolvedTemplate);
 			
 			// compile sis file
-			internal.runCommandLine("%mosync-bin%\\makesis-4.exe", pkgFile.getAbsolutePath()); //$NON-NLS-1$
+			internal.runCommandLine( m_makesis4Loc, pkgFile.getAbsolutePath() );
 
 			File unsignedSis = new File(packageOutputDir, uid + ".sis"); //$NON-NLS-1$
             File renamedAppSis = new File(packageOutputDir, internal.resolve("%app-name%.sis")); //$NON-NLS-1$
-			internal.runCommandLine(new String[] {"%mosync-bin%\\signsis-4.exe", //$NON-NLS-1$
-							unsignedSis.getAbsolutePath(),
-							renamedAppSis.getAbsolutePath(),
-							project.getProperty(PropertyInitializer.S60_CERT_FILE),
-							project.getProperty(PropertyInitializer.S60_KEY_FILE),
-							project.getProperty(PropertyInitializer.S60_PASS_KEY) }, 
-							"*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***");
+			internal.runCommandLine( new String[] 
+			                         {
+										m_signsis4Loc,
+										unsignedSis.getAbsolutePath(),
+										renamedAppSis.getAbsolutePath(),
+										project.getProperty(PropertyInitializer.S60_CERT_FILE),
+										project.getProperty(PropertyInitializer.S60_KEY_FILE),
+										project.getProperty(PropertyInitializer.S60_PASS_KEY) 
+									 }, 
+                                     "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***" );
 
 			buildResult.setBuildResult(renamedAppSis);
 		} catch (Exception e) {
@@ -135,10 +160,17 @@ public class V3Packager extends S60Packager {
 		writeFile(new File(packageOutputDir, uidStr + "_reg.rsc"), buffer); //$NON-NLS-1$
 	}
 
-	private void createExe(File exeTemplateFile, File packageOutputDir, String uidStr, DefaultPackager internal) throws IOException {
-		File outputFile = new File(packageOutputDir, uidStr + ".exe");	//$NON-NLS-1$
-		internal.runCommandLine("%mosync-bin%\\e32hack.exe", exeTemplateFile.getAbsolutePath(),	//$NON-NLS-1$
-			outputFile.getAbsolutePath(), uidStr);
+	private void createExe ( File exeTemplateFile, 
+			                 File packageOutputDir, 
+			                 String uidStr, 
+			                 DefaultPackager internal ) 
+	throws IOException 
+	{
+		File outputFile = new File(packageOutputDir, uidStr + ".exe");
+		internal.runCommandLine( m_e32hackLoc, 
+				                 exeTemplateFile.getAbsolutePath(),
+			                     outputFile.getAbsolutePath(), 
+			                     uidStr );
 	}
 
 	private void createResourceFile(File resourceTemplateFile, File packageOutputDir, String uidStr, String appName) throws IOException {

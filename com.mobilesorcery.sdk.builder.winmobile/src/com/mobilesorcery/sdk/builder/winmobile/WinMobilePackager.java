@@ -25,16 +25,25 @@ import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.templates.Template;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
-public class WinMobilePackager extends AbstractPackager {
+public class WinMobilePackager 
+extends AbstractPackager 
+{
+	private String m_cabWizLoc;
 
-	public WinMobilePackager() {
+	public WinMobilePackager() 
+	{
+		MoSyncTool tool = MoSyncTool.getDefault( );
+		m_cabWizLoc = tool.getBinary( "cabwiz" ).toOSString( );		
 	}
 
-    public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+    public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) 
+    throws CoreException 
+    {
         DefaultPackager internal = new DefaultPackager(project, variant);
 
 		internal.setParameter("D", shouldUseDebugRuntimes() ? "D" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -43,12 +52,13 @@ public class WinMobilePackager extends AbstractPackager {
             internal.setParameter("HAS_RESOURCES", Boolean.toString(true)); //$NON-NLS-1$
         }
         
-        try {
+        try 
+        {
             internal.mkdirs("%package-output-dir%"); //$NON-NLS-1$
             
-            File infFile = new File(internal.resolve("%package-output-dir%\\cabwiz.inf")); //$NON-NLS-1$
-            File cabFile = new File(internal.resolve("%package-output-dir%\\cabwiz.cab")); //$NON-NLS-1$
-            File renamedCabFile = new File(internal.resolve("%package-output-dir%\\%app-name%.cab")); //$NON-NLS-1$
+            File infFile = new File(internal.resolve("%package-output-dir%/cabwiz.inf")); //$NON-NLS-1$
+            File cabFile = new File(internal.resolve("%package-output-dir%/cabwiz.cab")); //$NON-NLS-1$
+            File renamedCabFile = new File(internal.resolve("%package-output-dir%/%app-name%.cab")); //$NON-NLS-1$
             
             Template template = new Template(getClass().getResource("/templates/cabwiz.inf.template")); //$NON-NLS-1$
             String resolvedTemplate = template.resolve(internal.getParameters().toMap());
@@ -59,12 +69,20 @@ public class WinMobilePackager extends AbstractPackager {
             
             preprocessTemplate(defines, infFile);*/
             
-            internal.runCommandLine("%mosync-bin%\\cabwiz.exe", infFile.getAbsolutePath(), "/dest", internal.resolve("%package-output-dir%"), "/compress"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-            Util.copyFile(new NullProgressMonitor(), cabFile, renamedCabFile);
-            
+            internal.runCommandLine( m_cabWizLoc, 
+                                     infFile.getAbsolutePath( ), 
+                                     "/dest", 
+                                     internal.resolve( "%package-output-dir%" ), 
+                                     "/compress" );
+            Util.copyFile(new NullProgressMonitor(), cabFile, renamedCabFile);            
             buildResult.setBuildResult(renamedCabFile);
-        } catch (Exception e) {
-            throw new CoreException(new Status(IStatus.ERROR, "com.mobilesorcery.builder.s60", Messages.WinMobilePackager_PackageError, e)); //$NON-NLS-1$
+        } 
+        catch (Exception e) 
+        {
+            throw new CoreException( new Status( IStatus.ERROR, 
+            		                             "com.mobilesorcery.builder.winmobile", 
+            		                             Messages.WinMobilePackager_PackageError, 
+            		                             e ) ); //$NON-NLS-1$
         }
     }
 

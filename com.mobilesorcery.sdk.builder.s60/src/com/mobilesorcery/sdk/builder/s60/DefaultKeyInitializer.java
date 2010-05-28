@@ -99,7 +99,7 @@ public class DefaultKeyInitializer implements PropertyChangeListener {
 						return Status.OK_STATUS;						
 					}
 
-					IPath openssl = MoSyncTool.getDefault().getMoSyncBin().append("openssl"); //$NON-NLS-1$
+					IPath openssl = MoSyncTool.getDefault().getBinary( "openssl" ); //$NON-NLS-1$
 					File keyFile = MoSyncTool.getDefault().getMoSyncHome().append(DEFAULT_KEY_PATH).toFile();
 					File certFile = MoSyncTool.getDefault().getMoSyncHome().append(DEFAULT_CERT_PATH).toFile();
 

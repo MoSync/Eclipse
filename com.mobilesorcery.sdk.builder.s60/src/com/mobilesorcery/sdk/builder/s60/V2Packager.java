@@ -26,20 +26,30 @@ import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.templates.Template;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
-public class V2Packager extends S60Packager {
+public class V2Packager 
+extends S60Packager 
+{
 
 	private static final int V2_MAGIC2 = 0x1f - 4;
 	private static final int V2_SIZE1 = 4;
 	private static final int V2_MAGIC1 = 4;
+	
+	private String m_makesis200Loc;
 
-	public V2Packager() {
+	public V2Packager ( ) 
+	{
+		MoSyncTool tool = MoSyncTool.getDefault( );
+		m_makesis200Loc = tool.getBinary( "makesis-200" ).toOSString( );		
 	}
 
-	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+	public void createPackage ( MoSyncProject project, IBuildVariant variant, IBuildResult buildResult ) 
+	throws CoreException 
+	{
 		DefaultPackager internal = new DefaultPackager(project, variant);
 		internal.setParameter("D", shouldUseDebugRuntimes() ? "D" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
@@ -57,7 +67,7 @@ public class V2Packager extends S60Packager {
 			String appname = project.getName();
 
 			File runtimeDir = new File(internal.resolve("%runtime-dir%")); //$NON-NLS-1$
-			String runtimePath = internal.resolve("%runtime-dir%\\Mosync%D%.app"); //$NON-NLS-1$
+			String runtimePath = internal.resolve("%runtime-dir%/Mosync%D%.app"); //$NON-NLS-1$
 
 			// Hack away...
 			try {
@@ -78,7 +88,7 @@ public class V2Packager extends S60Packager {
 			Util.writeToFile(pkgFile, resolvedTemplate);
 
 			//internal.getExecutor().setExecutionDirectory(packageOutputDir.getAbsolutePath());
-			internal.runCommandLine("%mosync-bin%\\makesis-200.exe", pkgFile.getAbsolutePath()); //$NON-NLS-1$
+			internal.runCommandLine( m_makesis200Loc, pkgFile.getAbsolutePath() ); //$NON-NLS-1$
 
 			// Rename
 			File unsignedSis = new File(packageOutputDir, uid + ".sis"); //$NON-NLS-1$
