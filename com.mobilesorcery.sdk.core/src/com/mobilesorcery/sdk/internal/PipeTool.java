@@ -121,7 +121,7 @@ public class PipeTool {
     }
     
     public void run() throws CoreException {
-        IPath pipeTool = MoSyncTool.getDefault().getMoSyncBin().append("pipe-tool.exe");
+    	IPath pipeTool = MoSyncTool.getDefault().getBinary("pipe-tool");
 
         ArrayList<String> args = new ArrayList<String>();
 

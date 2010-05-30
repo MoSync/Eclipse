@@ -348,7 +348,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     }
     
     private String getMoREExe() {
-        return MoSyncTool.getDefault().getMoSyncBin().append("MoRE.exe").toOSString();
+    	return MoSyncTool.getDefault().getBinary("MoRE").toOSString();
     }
 
     private int getNextId() {
