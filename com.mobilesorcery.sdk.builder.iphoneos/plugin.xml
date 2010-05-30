@@ -5,7 +5,7 @@
          point="com.mobilesorcery.core.packagers">
       <packager
             implementation="com.mobilesorcery.sdk.builder.iphoneos.IPhoneOSPackager"
-            pattern="^profiles\\runtimes\\iphoneos.*">
+            pattern="^profiles[/|\\]runtimes[/|\\]iphoneos.*">
       </packager>
    </extension>
 </plugin>

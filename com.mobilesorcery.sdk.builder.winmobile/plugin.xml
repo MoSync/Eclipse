@@ -5,7 +5,7 @@
          point="com.mobilesorcery.core.packagers">
       <packager
             implementation="com.mobilesorcery.sdk.builder.winmobile.WinMobilePackager"
-            pattern="^profiles\\runtimes\\wm.*|^profiles\\runtimes\\sp2003\\.*">
+            pattern="^profiles[/|\\]runtimes[/|\\]wm.*|^profiles[/|\\]runtimes[/|\\]sp2003[/|\\].*">
       </packager>
    </extension>
 

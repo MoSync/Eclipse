@@ -5,7 +5,7 @@
          point="com.mobilesorcery.core.packagers">
                <packager
             implementation="com.mobilesorcery.sdk.builder.android.AndroidPackager"
-            pattern="^profiles\\runtimes\\android.*">
+            pattern="^profiles[/|\\]runtimes[/|\\]android.*">
       </packager>
    </extension>
           <extension

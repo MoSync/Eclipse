@@ -5,15 +5,15 @@
          point="com.mobilesorcery.core.packagers">
       <packager
             implementation="com.mobilesorcery.sdk.builder.s60.V2Packager"
-            pattern="^profiles\\runtimes\\s60v2\\.*">
+            pattern="^profiles[/|\\]runtimes[/|\\]s60v2[/|\\].*">
       </packager>
       <packager
             implementation="com.mobilesorcery.sdk.builder.s60.V3Packager"
-            pattern="^profiles\\runtimes\\s60v3\\.*">
+            pattern="^profiles[/|\\]runtimes[/|\\]s60v3[/|\\].*">
       </packager>
       <packager
             implementation="com.mobilesorcery.sdk.builder.s60.V3Packager"
-            pattern="^profiles\\runtimes\\s60v5\\.*">
+            pattern="^profiles[/|\\]runtimes[/|\\]s60v5[/|\\].*">
       </packager>
    </extension>
 
