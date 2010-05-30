@@ -390,7 +390,7 @@ public class MoSyncBuilder extends ACBuilder {
      * @param monitor
      * @return
      * @throws CoreException
-     * @throws {@link OperationCanceledException} If the operation was cancelled
+     * @throws {@link OperationCanceledException} If the operation was canceled
      */
     public IBuildResult fullBuild(IProject project, IBuildSession session, IBuildVariant variant, 
             IFilter<IResource> resourceFilter, IProgressMonitor monitor) throws CoreException,
@@ -571,8 +571,31 @@ public class MoSyncBuilder extends ACBuilder {
             requiresLinking &= session.doLink();
 
             if (ec == 0 && requiresLinking) {
-                boolean elim = !isLib && PropertyUtil.getBoolean(buildProperties, DEAD_CODE_ELIMINATION);
-                pipeTool.setMode(isLib ? PipeTool.BUILD_LIB_MODE : PipeTool.BUILD_C_MODE);
+                boolean elim = !isLib && PropertyUtil.getBoolean(buildProperties, DEAD_CODE_ELIMINATION);                
+                
+                //
+                // HACK: Apple devices will always use the cpp back-end, this
+                //       is not the ideal way of checking this. A better way 
+                //       would be to have a define in maprofile.h
+                //
+                //                 	mosyncProject.getTargetProfile( )
+	            //                               .getProperties( )
+	            //                               .containsKey(  "MA_PROF_OUTPUT_CPP" )
+                //
+                //
+                if ( mosyncProject.getTargetProfile( )
+                		          .getVendor( )
+                		          .getName( )
+                		          .toLowerCase( )
+                		          .equals( "apple" ) == true )
+                {
+                	pipeTool.setMode( isLib ? PipeTool.BUILD_LIB_MODE : PipeTool.BUILD_GEN_CPP_MODE );
+                }
+                else
+                {
+                	pipeTool.setMode( isLib ? PipeTool.BUILD_LIB_MODE : PipeTool.BUILD_C_MODE );
+                }
+                
                 pipeTool.setInputFiles(objectFiles);
                 IPath libraryOutput = computeLibraryOutput(mosyncProject, buildProperties);
                 pipeTool.setOutputFile(isLib ? libraryOutput : program);

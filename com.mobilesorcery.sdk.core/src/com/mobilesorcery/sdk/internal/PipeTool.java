@@ -42,6 +42,7 @@ public class PipeTool {
     public static final String BUILD_RESOURCES_MODE = "-R";
     public static final String BUILD_C_MODE = "-B";
     public static final String BUILD_LIB_MODE = "-L";
+    public static final String BUILD_GEN_CPP_MODE = "-B -cpp";
     
     /**
      * The default heap size; if no <code>-heapsize</code> argument is provided
@@ -139,7 +140,9 @@ public class PipeTool {
         	args.add("-stabs=stabs.tab");
         }
         
-        boolean programMode = BUILD_C_MODE == mode || BUILD_LIB_MODE == mode;
+        boolean programMode = BUILD_C_MODE == mode ||
+                              BUILD_GEN_CPP_MODE == mode ||
+                              BUILD_LIB_MODE == mode;
 
         
         if (programMode) {
@@ -166,7 +169,9 @@ public class PipeTool {
             args.add("-no-verify");
         }
 
-        args.add(mode);
+        // Split up multiple arguments
+        for ( String a : mode.split( " " ) )
+        	args.add( a );
 
         if (BUILD_RESOURCES_MODE == mode) {
         	IPath depsFile = getResourcesDependencyFile(project);
@@ -179,7 +184,10 @@ public class PipeTool {
 
         args.addAll(Arrays.asList(Util.ensureQuoted(inputFiles)));
 
-        if (BUILD_C_MODE == mode || BUILD_LIB_MODE == mode) {
+        if ( BUILD_C_MODE == mode || 
+             BUILD_LIB_MODE == mode || 
+             BUILD_GEN_CPP_MODE == mode ) 
+        {
             for (int i = 0; libraries != null && i < libraries.length; i++) {
                 args.add(libraries[i].toOSString());
             }
