@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.cdt.core.ErrorParserManager;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -45,7 +44,6 @@ import com.mobilesorcery.sdk.internal.dependencies.GCCDependencyProvider;
 import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
 import com.mobilesorcery.sdk.internal.dependencies.ProjectResourceDependencyProvider;
 import com.mobilesorcery.sdk.internal.dependencies.ResourceFileDependencyProvider;
-import com.mobilesorcery.sdk.profiles.IProfile;
 
 // TODO: The main responsibility of this class is no longer to
 // visit projects - split into 2 classes!
@@ -124,7 +122,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 		return project.equals(recompileThis.getProject());
 	}
 
-	private void deleteBuildResult(IResource resource, DependencyManager dependencies) {
+	private void deleteBuildResult(IResource resource, DependencyManager<IResource> dependencies) {
         IFile cFile = getCFile(resource, false);
         if (cFile != null) {
             IPath output = mapFileToOutput(cFile);
@@ -195,7 +193,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             // Assume unique filenames.
             IPath output = mapFileToOutput(cFile);
 
-            IPath xgcc = MoSyncTool.getDefault().getMoSyncBin().append("xgcc.exe");
+            IPath xgcc = MoSyncTool.getDefault().getBinary("xgcc");
 
             MoSyncProject project = MoSyncProject.create(resource.getProject());
             List<IPath> includePaths = new ArrayList<IPath>(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, getVariant())));
@@ -229,11 +227,16 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             // Create output if it does not exist
             output.toFile().getParentFile().mkdirs();
 
-            String cmdLine = Util.join(args.toArray(), " ");
+            String argsAsArray[] = new String[args.size()];
+            args.toArray(argsAsArray);
+            
+            // Display invocation in console
+            String cmdLine = Util.join(argsAsArray, " ");
             console.addMessage(cmdLine);
 
             try {
-                Process process = Runtime.getRuntime().exec(cmdLine, null, resource.getProject().getLocation().toFile());
+                // Java automatically escapes the arguments when we call exec with an array instead of a string
+                Process process = Runtime.getRuntime().exec(argsAsArray, null, resource.getProject().getLocation().toFile());
 
                 console.attachProcess(process, linehandler);
 
@@ -288,7 +291,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
     private static String assembleIncludeString(IPath includePath) {
     	// Remove trailing separator, otherwise the \ will be considered an escape char.
-        return "-I\"" + includePath.removeTrailingSeparator().toOSString() + "\"";
+        return "-I" + includePath.removeTrailingSeparator().toOSString();
     }
 
     public IPath mapFileToOutput(IResource file) {
@@ -331,8 +334,8 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     	if (dependencyProvider == null) {
     		//dependencyProvider = new CompoundDependencyProvider<IResource>(new CResourceDependencyProvider(), new ProjectResourceDependencyProvider());
     		dependencyProvider = new CompoundDependencyProvider<IResource>(new GCCDependencyProvider(this),
-    				new ProjectResourceDependencyProvider(),
-    				new ResourceFileDependencyProvider());
+    																	   new ProjectResourceDependencyProvider(),
+    																	   new ResourceFileDependencyProvider());
     	}
     	
     	return dependencyProvider;
