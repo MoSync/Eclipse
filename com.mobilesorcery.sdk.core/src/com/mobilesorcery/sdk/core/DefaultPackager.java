@@ -166,7 +166,7 @@ public class DefaultPackager {
 	}
 
 	public String resolve(String path) {
-		return CommandLineExecutor.replace(path, parameters);
+		return CommandLineExecutor.replace(path, parameters).replaceAll("[\\\\/]", File.separator);
 	}
 
 	public static void writeFile(File file, String contents) throws IOException {
