@@ -914,9 +914,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		if (newConfiguration == null) {
 			throw new IllegalArgumentException(MessageFormat.format("No configuration with id {0}", id));
 		}
-		currentBuildConfig = newConfiguration;
-		updateProjectSpec();
-		firePropertyChange(new PropertyChangeEvent(this, BUILD_CONFIGURATION_CHANGED, oldId, id));
+		if (!id.equals(oldId)) {
+		    currentBuildConfig = newConfiguration;
+		    updateProjectSpec();
+		    firePropertyChange(new PropertyChangeEvent(this, BUILD_CONFIGURATION_CHANGED, oldId, id));
+		}
 	}
 	
 	public Set<String> getBuildConfigurations() {

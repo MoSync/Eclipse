@@ -66,7 +66,9 @@ public class ChangeBuildConfigWidget extends WorkbenchWindowControlContribution 
     public void selectionChanged(SelectionChangedEvent event) {
         IStructuredSelection selection = (IStructuredSelection) event.getSelection();
         String cfgId = (String) selection.getFirstElement();
-        project.setActiveBuildConfiguration(cfgId);
+        if (cfgId != null) {
+            project.setActiveBuildConfiguration(cfgId);
+        }
     }
 
 }
