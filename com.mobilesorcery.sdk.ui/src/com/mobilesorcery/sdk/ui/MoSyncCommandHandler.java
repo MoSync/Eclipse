@@ -18,28 +18,27 @@ public abstract class MoSyncCommandHandler extends AbstractHandler {
     }
 
     protected IResource extractFirstResource(ISelection selection, int type) {
-        	List<IResource> resources = extractResources(selection);
-		for (IResource resource : resources) {
-			if (type == ANY || resource.getType() == type) {
-				return resource;
-			}
-		}
-		
-		return null;
+        List<IResource> resources = extractResources(selection, type);
+        return resources.isEmpty() ? null : resources.get(0);
 	}
 	
-	protected List<IResource> extractResources(ISelection selection) {
-		List elements = ((IStructuredSelection) selection).toList();
-		return extractResources(elements);
-	}
+    protected List<IResource> extractResources(ISelection selection) {
+        List elements = ((IStructuredSelection) selection).toList();
+        return extractResources(elements, ANY);
+    }
+    
+    protected List<IResource> extractResources(ISelection selection, int type) {
+        List elements = ((IStructuredSelection) selection).toList();
+        return extractResources(elements, type);
+    }
 
-	private List<IResource> extractResources(List elements) {
+	private List<IResource> extractResources(List elements, int type) {
 		List<IResource> resources = new ArrayList<IResource>();
 		for (Object element : elements) {
 			if (element instanceof IAdaptable) {
 				IResource resource = (IResource) ((IAdaptable) element)
 						.getAdapter(IResource.class);
-				if (resource != null) {
+				if (resource != null && (type == ANY || resource.getType() == type)) {
 					resources.add(resource);
 				}
 			}

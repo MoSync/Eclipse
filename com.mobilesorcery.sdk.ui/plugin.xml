@@ -232,17 +232,6 @@ icon="icons/launchshortcut.png">
                </visibility>
                          
       </objectContribution>
-      <!--      <objectContribution
-            adaptable="true"
-            id="com.mobilesorcery.sdk.exclude"
-            objectClass="org.eclipse.core.resources.IResource">
-         <action
-               class="com.mobilesorcery.ui.internal.actions.ExcludeFromBuild"
-               id="com.mobilesorcery.sdk.exclude"
-               label="Exclude from build"
-               menubarPath="additions">
-         </action>
-      </objectContribution>-->
   </extension>
       <extension
          point="org.eclipse.ui.ide.projectNatureImages">
@@ -309,7 +298,13 @@ icon="icons/launchshortcut.png">
                id="com.mobilesorcery.sdk.ui.compilefiles"
                name="Quick Compile">
          </command>
-      </extension>
+         <command
+               categoryId="com.mobilesorcery.sdk.ui.category.main"
+               description="Rebuild Project"
+               id="com.mobilesorcery.sdk.ui.build"
+               name="Rebuild Project">
+         </command>
+         </extension>
       <extension
             point="org.eclipse.ui.handlers">
          <handler
@@ -356,6 +351,10 @@ icon="icons/launchshortcut.png">
       </and>
                      </activeWhen>
          </handler>
+                  <handler
+               class="com.mobilesorcery.sdk.ui.internal.handlers.BuildProjectHandler"
+               commandId="com.mobilesorcery.sdk.ui.build">
+               </handler>
       </extension>
       <extension
             point="org.eclipse.ui.menus">
@@ -394,6 +393,29 @@ icon="icons/launchshortcut.png">
                </visibleWhen>
             </command>
          </menuContribution>
+                  <menuContribution
+               locationURI="popup:org.eclipse.ui.popup.any?after=org.eclipse.ui.BuildAction">
+            <command
+                  commandId="com.mobilesorcery.sdk.ui.build"
+                  label="Rebuild Project"
+                  style="push">
+            </command>
+            <visibleWhen
+                     checkEnabled="true">
+            </visibleWhen>
+         </menuContribution>  
+         <!-- TODO: Activate this when enablement is properly handled             
+            <menuContribution
+               locationURI="menu:project?after=buildProject">
+            <command
+                  commandId="com.mobilesorcery.sdk.ui.build"
+                  label="Rebuild Project"
+                  style="push">
+            </command>
+            <visibleWhen
+                     checkEnabled="true">
+            </visibleWhen>
+         </menuContribution> -->
     <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
     <toolbar id="com.mobilesorcery.sdk.ui.changeActiveConfigToolbar">
         <control id="com.mobilesorcery.sdk.ui.changeActiveConfig"
