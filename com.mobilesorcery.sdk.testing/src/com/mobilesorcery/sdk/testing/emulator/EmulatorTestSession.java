@@ -56,7 +56,7 @@ public class EmulatorTestSession extends TestSession implements IEmulatorProcess
 	
 	public void finish() {
 		CoreMoSyncPlugin.getDefault().getEmulatorProcessManager().removeEmulatorProcessListener(this);
-		notifyListeners(new TestSessionEvent(TestSessionEvent.SESSION_STARTED, this, this));
+		notifyListeners(new TestSessionEvent(TestSessionEvent.SESSION_FINISHED, this, this));
 	}
 	
 	public void dataStreamed(int id, byte[] data, int offset, int length) {
@@ -74,7 +74,7 @@ public class EmulatorTestSession extends TestSession implements IEmulatorProcess
 			feedIntoParser(data, offset + TEST_MARKUP_PREFIX_LEN, length - TEST_MARKUP_PREFIX_LEN);
 		} catch (IOException e) {
 			// We don't report this to the UI, since it will for sure be reported by the other thread;
-			// if we would report it, a potentially large number of spurious error messages will show up.
+			// if we would report it, a potentially large number of spurious error messages could show up.
 			e.printStackTrace();
 		}
 	}
@@ -86,6 +86,8 @@ public class EmulatorTestSession extends TestSession implements IEmulatorProcess
 			PipedInputStream input = new PipedInputStream();
 			buffer = new PipedOutputStream();
 			buffer.connect(input);
+            // A small fix; we always need a root element, but the test framework will not give that to us.
+            buffer.write("<root>\n".getBytes());
 			parser.parse(input);
 		}
 		
@@ -97,6 +99,8 @@ public class EmulatorTestSession extends TestSession implements IEmulatorProcess
 
 	public void processStopped(int id) {
 		try {
+            // A small fix; we always need a root element, but the test framework will not give that to us.
+            buffer.write("</root>\n".getBytes());
 			buffer.close();
 		} catch (IOException e) {
 			reportSessionError(e);

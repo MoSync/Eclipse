@@ -27,6 +27,7 @@ public class CreateTestWizard extends Wizard implements INewWizard {
 			return true;
 		} catch (CoreException e) {
 			Policy.getStatusHandler().show(e.getStatus(), "Could not create test suite");
+			CoreMoSyncPlugin.getDefault().log(e);
 			return false;
 		}
 	}

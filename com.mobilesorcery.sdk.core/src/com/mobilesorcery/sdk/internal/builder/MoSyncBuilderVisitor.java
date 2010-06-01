@@ -55,9 +55,19 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     
     private static final String GCC_WERROR_STR = "-Werror";
 
+    /**
+     * The standard extensions for C/C++ files
+     */
     public static final String[] C_SOURCE_FILE_EXTS = new String[] { "cpp", "c++", "c" };
     
+    /**
+     * The standard extensions for C++ files (no C file extensions)
+     */
+    public static final String[] CPP_SOURCE_FILE_EXTS = new String[] { "cpp", "c++" };
+
     public static final String[] C_HEADER_FILE_EXTS = new String[] { "hpp", "h++", "h" };
+
+    public static final String[] CPP_HEADER_FILE_EXTS = new String[] { "hpp", "h++" };
     
     public static final String[] RESOURCE_FILE_EXTS = new String[] { "lst" };
 

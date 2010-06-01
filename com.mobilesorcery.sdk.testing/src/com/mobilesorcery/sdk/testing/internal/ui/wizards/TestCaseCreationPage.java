@@ -103,8 +103,8 @@ public class TestCaseCreationPage extends WizardPage {
 			IPath testCasePath = sourceFolderFile.getLocation().append(testCaseName);
 			if (testCasePath.segmentCount() > 1) {
 				IFile testCaseResource = ResourcesPlugin.getWorkspace().getRoot().getFile(testCasePath);
-				if (MoSyncBuilderVisitor.getCFile(testCaseResource, false) == null) {
-					message = "Test case name must be a c or c++ file";
+				if (!MoSyncBuilderVisitor.hasExtension(testCaseResource, MoSyncBuilderVisitor.CPP_SOURCE_FILE_EXTS)) {
+					message = "Test case name must be a c++ file";
 					severity = IMessageProvider.ERROR;
 				}
 			}
@@ -236,10 +236,11 @@ public class TestCaseCreationPage extends WizardPage {
     	            releaseBuildCfgs.setSelection(new StructuredSelection(releaseCfgs.toArray()[0]));
     	        }
 		    }
-		    buildConfigs.setVisible(showDebugCfgs || showReleaseCfgs);
-		    debugBuildCfgs.getCombo().setEnabled(showDebugCfgs);
-		    releaseBuildCfgs.getCombo().setEnabled(showReleaseCfgs);
 		}
+
+        buildConfigs.setVisible(showDebugCfgs || showReleaseCfgs);
+        debugBuildCfgs.getCombo().setEnabled(showDebugCfgs);
+        releaseBuildCfgs.getCombo().setEnabled(showReleaseCfgs);
 	}
 
 	private IContainer selectContainer() {
