@@ -49,8 +49,8 @@ public class ReindexListener implements PropertyChangeListener {
 			
 			// TODO: A bit crude, but unless we do this the include paths & compiler symbols will
 			// not be updated in UI. (Should be enough with workspace op)
-			cProject.getProject().close(monitor);
-			cProject.getProject().open(monitor);
+			//cProject.getProject().close(monitor);
+			//cProject.getProject().open(monitor);
 		}
 
 	}
