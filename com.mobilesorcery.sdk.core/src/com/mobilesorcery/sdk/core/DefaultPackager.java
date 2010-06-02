@@ -157,7 +157,7 @@ public class DefaultPackager {
 	}	
 
 	public void mkdirs(String path) {
-		String resolvedPath = CommandLineExecutor.replace(path, parameters);
+		String resolvedPath = this.resolve(path);
 		new File(resolvedPath).mkdirs();
 	}
 
