@@ -11,16 +11,16 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
+#include "btDialog.h"
 
+#ifdef WIN32
 #include <string.h>
 
 #include <windows.h>
 #include <Bthsdpdef.h>
 #include <BluetoothAPIs.h>
 
-#include "btDialog.h"
-
-int btDialog(BT_DEVICE* device) {
+BTDIALOG_API int btDialog(BT_DEVICE* device) {
 	int i;
 	BLUETOOTH_SELECT_DEVICE_PARAMS bsdp;
 	memset(&bsdp, 0, sizeof(bsdp));
@@ -69,3 +69,10 @@ int btDialog(BT_DEVICE* device) {
 
 	return BTD_OK;
 }
+#else
+BTDIALOG_API int btDialog(BT_DEVICE* device)
+{
+	return BTD_ERROR;
+}
+
+#endif

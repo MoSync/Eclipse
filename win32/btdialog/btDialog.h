@@ -15,6 +15,20 @@
 #ifndef BTDIALOG_H
 #define BTDIALOG_H
 
+#ifdef WIN32
+#define BTDIALOG_EXPORT __declspec(dllexport)
+#define BTDIALOG_IMPORT __declspec(dllimport)
+#else
+#define BTDIALOG_EXPORT __attribute__((visibility("default")))
+#define BTDIALOG_IMPORT __attribute__((visibility("default")))
+#endif
+
+#ifdef BTDIALOG_EXPORTS
+#define BTDIALOG_API BTDIALOG_EXPORT
+#else
+#define BTDIALOG_API BTDIALOG_IMPORT
+#endif
+
 enum BtdResult {
 	BTD_ERROR,
 	BTD_OK,
@@ -31,6 +45,6 @@ typedef struct BT_DEVICE {
 
 //returns one of BtdResult.
 //fills device if BTD_OK is returned.
-int btDialog(BT_DEVICE* device);
+BTDIALOG_API int btDialog(BT_DEVICE* device);
 
 #endif	//BTDIALOG_H
