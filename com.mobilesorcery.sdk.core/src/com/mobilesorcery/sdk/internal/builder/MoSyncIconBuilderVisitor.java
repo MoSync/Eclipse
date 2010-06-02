@@ -16,6 +16,7 @@
  */
 package com.mobilesorcery.sdk.internal.builder;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -30,6 +31,8 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.WineHelper;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
 public class MoSyncIconBuilderVisitor extends IncrementalBuilderVisitor {
@@ -61,7 +64,18 @@ public class MoSyncIconBuilderVisitor extends IncrementalBuilderVisitor {
         	MoSyncProject mosyncProject = MoSyncProject.create(project);
             DefaultPackager internal = new DefaultPackager(mosyncProject, MoSyncBuilder.getActiveVariant(mosyncProject, false));
         	try {
-            	internal.runCommandLine("%mosync-bin%\\icon-injector.exe", "-src", iconFile.getLocation().toOSString(), "-size", "16x16", "-platform", "more", "-dst", "%compile-output-dir%\\more.png");                                            		
+        		String iconInjectorLoc = MoSyncTool.getDefault().getBinary("icon-injector").toOSString();
+        		File morePng = internal.resolveFile("%compile-output-dir%/more.png");
+        		
+            	internal.runCommandLine(iconInjectorLoc, 
+            							"-src", 
+            							WineHelper.convPath( iconFile.getLocation().toOSString() ), 
+            							"-size", 
+            							"16x16", 
+            							"-platform",
+            							"more",
+            							"-dst", 
+            							WineHelper.convPath( morePng.getAbsolutePath() ) );                                            		
         	} catch(IOException e) {
        	       throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage()));
         	}    	

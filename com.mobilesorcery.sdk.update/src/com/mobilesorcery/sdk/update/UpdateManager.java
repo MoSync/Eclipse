@@ -254,16 +254,20 @@ public class UpdateManager {
         monitor.setTaskName(Messages.UpdateManager_RestartingProgress);
         
         // QUASI-HARD-CODED LOCATION!
-        String relativeMosyncExe = "./eclipse/mosync.exe"; //$NON-NLS-1$
-        String absoluteMosyncExe = MoSyncTool.getMoSyncHomeFromEnv().append(relativeMosyncExe).toOSString();
+        String absoluteMosyncExe = MoSyncTool.getDefault().getBinary("eclipse/mosync").toOSString();
         String pid = CoreMoSyncPlugin.getPid();
-        String updaterExe = MoSyncTool.getMoSyncHomeFromEnv().append("bin/updater.exe").toOSString(); //$NON-NLS-1$
+        String updaterExe = MoSyncTool.getDefault().getBinary("bin/updater").toOSString(); //$NON-NLS-1$
         
         if (!new File(absoluteMosyncExe).exists() || !new File(updaterExe).exists()) {
             throw new IOException(Messages.UpdateManager_UpdaterNotFoundError);
         }
         
-        Process p = Runtime.getRuntime().exec(new String[] { Util.ensureQuoted(updaterExe), pid, relativeMosyncExe }, null, MoSyncTool.getMoSyncHomeFromEnv().toFile());
+        String args[] = new String[] { 
+        							Util.ensureQuoted(updaterExe), 
+        							pid, 
+        							absoluteMosyncExe 
+        						   };
+        Process p = Runtime.getRuntime().exec(args, null, MoSyncTool.getMoSyncHomeFromEnv().toFile());
         //SpawnedProcess p = new SpawnedProcess(, pid + " " + relativeMosyncExe, );
         //System.err.println(p);
         //p.start();

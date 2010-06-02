@@ -44,13 +44,9 @@ import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 
 public class MoSyncDebugger extends GDBCDIDebugger2 {
-
-	private final static String MDB_EXECUTABLE_WIN32 = "mdb.exe";
 	
 	protected IPath getGDBPath(ILaunch launch) throws CoreException {
-		IPath binPath = MoSyncTool.getDefault().getMoSyncBin();
-		IPath mdbPath = binPath.append(MDB_EXECUTABLE_WIN32);
-		return mdbPath;
+		return MoSyncTool.getDefault().getBinary("mdb");
 		/*ILaunchConfiguration config = launch.getLaunchConfiguration();
 		return new Path( config.getAttribute( IMILaunchConfigurationConstants.ATTR_DEBUG_NAME, IMILaunchConfigurationConstants.DEBUGGER_DEBUG_NAME_DEFAULT ) );*/
 	}
@@ -95,7 +91,7 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 		}
 		
 		if (gdb == null || gdb.length() == 0) {
-			gdb = MDB_EXECUTABLE_WIN32;
+			gdb = MoSyncTool.getDefault().getBinary("mdb").toOSString();
 		}
 
 		IMITTY pty = null;
@@ -109,7 +105,7 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 			}
 		}*/
 
-		ArrayList argList = new ArrayList(extraArgs.length + 8);
+		ArrayList<String> argList = new ArrayList<String>(extraArgs.length + 8);
 		argList.add(gdb);
 		
 		if (project != null) {
