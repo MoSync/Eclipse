@@ -11,7 +11,7 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
-package com.mobilesorcery.sdk.builder.moblin;
+package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 import java.util.Map;
@@ -21,7 +21,6 @@ import java.util.LinkedList;
 import java.util.Stack;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Map.Entry;
-import java.io.FileNotFoundException;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -30,11 +29,7 @@ import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
 import org.eclipse.core.runtime.CoreException;
-
-import com.mobilesorcery.sdk.core.DefaultPackager;
-import com.mobilesorcery.sdk.core.MoSyncTool;
-import com.mobilesorcery.sdk.builder.linux.deb.BuilderUtil;
-
+import org.eclipse.core.runtime.NullProgressMonitor;
 
 /**
  * A simple class for handling icon and their injection for Linux 
@@ -211,7 +206,7 @@ public class IconManager
 
 			 if ( ico.getFile( ).exists( ) == false )
 				 return false;
-			 BuilderUtil.getInstance( ).copyFile( o, ico.getFile( ) );			
+			 Util.copyFile( new NullProgressMonitor( ), ico.getFile( ), o );			
 		}
 		else
 		{
@@ -219,7 +214,7 @@ public class IconManager
 			
 			// Check if size is the same
 			if ( ico.getScore( w, h ) == Integer.MAX_VALUE )				
-				BuilderUtil.getInstance( ).copyFile( o, ico.getFile( ) );
+				Util.copyFile( new NullProgressMonitor( ), ico.getFile( ), o );
 			else
 			{	
 				// Convert

@@ -578,20 +578,11 @@ public class MoSyncBuilder extends ACBuilder {
                 boolean elim = !isLib && PropertyUtil.getBoolean(buildProperties, DEAD_CODE_ELIMINATION);                
                 
                 //
-                // HACK: Apple devices will always use the cpp back-end, this
-                //       is not the ideal way of checking this. A better way 
-                //       would be to have a define in maprofile.h
-                //
-                //                 	mosyncProject.getTargetProfile( )
-	            //                               .getProperties( )
-	            //                               .containsKey(  "MA_PROF_OUTPUT_CPP" )
-                //
+                // Check if we need to tell pipe-tool to output C
                 //
                 if ( mosyncProject.getTargetProfile( )
-                		          .getVendor( )
-                		          .getName( )
-                		          .toLowerCase( )
-                		          .equals( "apple" ) == true )
+                		          .getProperties( )
+                		          .containsKey( "MA_PROF_OUTPUT_CPP" ) == true )
                 {
                 	pipeTool.setMode( isLib ? PipeTool.BUILD_LIB_MODE : PipeTool.BUILD_GEN_CPP_MODE );
                 }

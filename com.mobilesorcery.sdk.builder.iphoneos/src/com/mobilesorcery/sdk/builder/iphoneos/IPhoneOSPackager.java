@@ -25,6 +25,7 @@ import org.eclipse.core.runtime.CoreException;
 
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IconManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
@@ -71,7 +72,9 @@ extends AbstractPackager
     	String appName;
     	String version;
     	String company;
+    	IconManager     icon;
         DefaultPackager intern;
+        
 
         // Was used for printing to console
         intern = new DefaultPackager( project,
@@ -131,18 +134,52 @@ extends AbstractPackager
 				Util.writeToFile( new File( out, "resources" ), "" );
 			}
 			
+            //
+            // Set icons here
+            // Note: Always set a 48x48 png at the very least!
+            //
+            try
+            {
+                File f;            	
+	            icon = new IconManager( intern,
+	            						project.getWrappedProject( )
+	            						.getLocation( ).toFile( ) );            
+	            
+	            
+	            // Set PNG icons
+	            if ( icon.hasIcon( "png" ) == true )
+	            {
+		            int[] sizes = {57, 72};
+		            for ( int s : sizes )
+		            {
+			            try 
+			            {	            	
+			                f = new File( out, "icon_"+s+"x"+s+".png" );
+			                if ( f.exists( ) == true )
+			                	f.delete( );
+			                
+			                icon.inject( f, s, s, "png" );
+			            }
+			            catch ( Exception e ) 
+			            {
+			            	buildResult.addError( e.getMessage( ) );
+			            }
+		            }
+	            }
+            }
+            catch ( Exception e ) 
+            {
+            	buildResult.addError( e.getMessage( ) );
+            }			
+			
 			buildResult.setBuildResult( out );
         }
         catch ( Exception e )
         {
-            StringWriter s = new StringWriter( );
-            PrintWriter  pr= new PrintWriter( s );
-            e.printStackTrace( pr );
-
             // Return stack trace in case of error
             throw new CoreException( new Status( IStatus.ERROR,
                                                  "com.mobilesorcery.builder.iphoneos",
-                                                 s.toString( ) ));
+                                                 "Failed to build the xcode template" ));
         }
     }
 }

@@ -32,6 +32,7 @@ import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IconManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -113,7 +114,7 @@ extends AbstractPackager
             try
             {
                 File f;
-                File outDir = new File( intern.resolve( "%output-dir%" ) );            	
+                File outDir = new File( intern.resolve( "%compile-output-dir%" ) );            	
 	            icon = new IconManager( intern,
 	            						project.getWrappedProject( )
 	            						.getLocation( ).toFile( ) );            
@@ -179,14 +180,10 @@ extends AbstractPackager
         }
         catch ( Exception e )
         {
-            StringWriter s = new StringWriter( );
-            PrintWriter  pr= new PrintWriter( s );
-            e.printStackTrace( pr );
-
             // Return stack trace in case of error
             throw new CoreException( new Status( IStatus.ERROR,
                                                  "com.mobilesorcery.builder.moblin",
-                                                 s.toString( ) ));
+                                                 "Failed to build the moblin package" ));
         }
     }
 }
