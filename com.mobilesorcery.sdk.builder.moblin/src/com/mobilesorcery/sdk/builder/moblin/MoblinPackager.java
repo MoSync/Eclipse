@@ -17,7 +17,6 @@ package com.mobilesorcery.sdk.builder.moblin;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -35,7 +34,6 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Version;
-import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 import com.mobilesorcery.sdk.builder.linux.PackageBuilder;

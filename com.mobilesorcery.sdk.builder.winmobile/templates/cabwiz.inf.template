@@ -20,8 +20,8 @@ CEShortcuts=Shortcuts
 CopyFiles=Files.Common1
 
 [SourceDisksNames]
-1=,"MoRE",,"%runtime-dir%"
-2=,"program",,"%compile-output-dir%"
+1=,"MoRE",,"%cab-runtime-dir%"
+2=,"program",,"%cab-compile-output-dir%"
 
 [SourceDisksFiles]
 "MoRE-winmobile%D%.exe"=1

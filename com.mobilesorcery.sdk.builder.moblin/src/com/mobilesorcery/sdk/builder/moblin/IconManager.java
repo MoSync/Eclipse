@@ -32,6 +32,7 @@ import org.xml.sax.helpers.DefaultHandler;
 import org.eclipse.core.runtime.CoreException;
 
 import com.mobilesorcery.sdk.core.DefaultPackager;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.builder.linux.deb.BuilderUtil;
 
 
@@ -222,8 +223,8 @@ public class IconManager
 			else
 			{	
 				// Convert
-				String bin = m_internal.resolve( "%mosync-bin%" ) + sep + "ImageMagick";
-				if ( m_internal.runCommandLineWithRes( bin + sep + "convert.exe",
+				String bin = MoSyncTool.getDefault( ).getBinary( "ImageMagick/convert" ).toOSString( );
+				if ( m_internal.runCommandLineWithRes( bin,
 										   			   ico.getFile( ).getAbsolutePath( ), 
 										   			   "-resize", w + "x" + h,
 										   			   o.getAbsolutePath( ) ) != 0 )

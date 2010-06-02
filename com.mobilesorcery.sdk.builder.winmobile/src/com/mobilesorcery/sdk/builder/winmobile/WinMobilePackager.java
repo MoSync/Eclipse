@@ -27,8 +27,8 @@ import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.WineHelper;
 import com.mobilesorcery.sdk.core.templates.Template;
-import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class WinMobilePackager 
 extends AbstractPackager 
@@ -60,19 +60,18 @@ extends AbstractPackager
             File cabFile = new File(internal.resolve("%package-output-dir%/cabwiz.cab")); //$NON-NLS-1$
             File renamedCabFile = new File(internal.resolve("%package-output-dir%/%app-name%.cab")); //$NON-NLS-1$
             
+            internal.setParameter( "cab-runtime-dir", WineHelper.convPath( internal.resolve("%runtime-dir%") ) );
+            internal.setParameter( "cab-compile-output-dir", WineHelper.convPath( internal.resolve("%compile-output-dir%") ) );
+            
+            
             Template template = new Template(getClass().getResource("/templates/cabwiz.inf.template")); //$NON-NLS-1$
             String resolvedTemplate = template.resolve(internal.getParameters().toMap());
             Util.writeToFile(infFile, resolvedTemplate);
             
-            /*if(hasResources)
-                defines.push_back("HAVE_RESOURCES");
-            
-            preprocessTemplate(defines, infFile);*/
-            
             internal.runCommandLine( m_cabWizLoc, 
-                                     infFile.getAbsolutePath( ), 
+                                     WineHelper.convPath( infFile.getAbsolutePath( ) ), 
                                      "/dest", 
-                                     internal.resolve( "%package-output-dir%" ), 
+                                     WineHelper.convPath( internal.resolve( "%package-output-dir%" ) ), 
                                      "/compress" );
             Util.copyFile(new NullProgressMonitor(), cabFile, renamedCabFile);            
             buildResult.setBuildResult(renamedCabFile);

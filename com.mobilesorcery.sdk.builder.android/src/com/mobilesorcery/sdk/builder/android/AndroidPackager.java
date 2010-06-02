@@ -167,7 +167,7 @@ extends AbstractPackager
 			
 			internal.runCommandLine( m_unzipLoc, 
 					                 "-q", 
-					                 internal.resolveFile( "%runtime-dir%/MoSyncRuntime%D%.zip" ).getAbsolutePath( ),
+					                 internal.resolveFile( "%runtime-dir%/MoSyncRuntime%D%.zip" ).getCanonicalPath(),
 					                 "-d",
 					                 new File ( packageOutDir, "classes" ).getAbsolutePath( ) );
 			
