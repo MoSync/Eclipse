@@ -27,7 +27,7 @@ public class BTSelectTargetPhoneAction extends Action {
 	
 	public void run() {
 		try {
-			ITargetPhone phone = BTTargetPhoneTransport.selectPhone();
+			ITargetPhone phone = BTTargetPhoneTransport.selectPhone( window.getShell() );
 			if (phone == null) {
 				return; // Cancelled.
 			}

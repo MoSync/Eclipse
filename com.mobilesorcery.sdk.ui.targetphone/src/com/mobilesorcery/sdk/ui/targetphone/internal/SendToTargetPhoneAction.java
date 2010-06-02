@@ -160,8 +160,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 		if (phone != null) {
 			Job job = new Job("Send to target") {
 				public IStatus run(IProgressMonitor monitor) {
-					IPath mobex = MoSyncTool.getDefault().getMoSyncBin()
-							.append("mobex.exe");
+					IPath mobex = MoSyncTool.getDefault().getBinary("mobex");
 					MoSyncProject project = MosyncUIPlugin.getDefault()
 							.getCurrentlySelectedProject(window);
 

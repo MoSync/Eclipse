@@ -5,7 +5,7 @@
       version="1.0.0"
       provider-name="MOBILESORCERY"
       plugin="com.mobilesorcery.sdk.product"
-      os="win32">
+      os="linux,macosx,win32">
 
    <description>
       The MoBuild SDK for developing and deploying 

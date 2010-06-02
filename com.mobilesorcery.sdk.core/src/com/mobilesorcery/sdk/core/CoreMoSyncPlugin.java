@@ -329,12 +329,12 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     }
 
     public void initNativeLibs(BundleContext context) {
-        try {
-            JNALibInitializer.init(this.getBundle(), new Path("pipelib.dll"));
+        try {	
+            JNALibInitializer.init(this.getBundle(), "libpipe");
             @SuppressWarnings("unused")
 			PROCESS dummy = PROCESS.INSTANCE; // Just to execute the .clinit.
 
-            JNALibInitializer.init(this.getBundle(), new Path("pid2.dll"));
+            JNALibInitializer.init(this.getBundle(), "libpid2");
 
             if (isDebugging()) {
             	trace("Process id: " + getPid());

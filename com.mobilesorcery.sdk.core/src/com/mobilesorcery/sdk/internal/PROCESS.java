@@ -15,12 +15,11 @@ package com.mobilesorcery.sdk.internal;
 
 import com.mobilesorcery.sdk.core.IProcessUtil;
 import com.sun.jna.Native;
-import com.sun.jna.win32.StdCallLibrary;
+import com.sun.jna.Library;
 
-public interface PROCESS extends StdCallLibrary, IProcessUtil {
+public interface PROCESS extends Library, IProcessUtil {
 
-    public final static String WIN32_LIB = "pipelib";       
-
-    final static PROCESS INSTANCE = (PROCESS) Native.loadLibrary(WIN32_LIB, PROCESS.class);
-
+    public final static String PIPE_LIB = "pipe";       
+    
+    final static PROCESS INSTANCE = (PROCESS) Native.loadLibrary(PIPE_LIB, PROCESS.class);
 }

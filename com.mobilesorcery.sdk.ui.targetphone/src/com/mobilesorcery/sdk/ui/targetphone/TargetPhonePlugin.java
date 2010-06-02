@@ -223,8 +223,13 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 	}
 
 	private void initNativeLibs(BundleContext context) {
+		if(System.getProperty("os.name").toLowerCase().indexOf("win") == -1)
+		{
+			return;
+		}
+		
 		try {
-			JNALibInitializer.init(getBundle(), new Path("btDialog.dll"));
+			JNALibInitializer.init(getBundle(), "libbtdialog");
 			BTDIALOG dummy = BTDIALOG.INSTANCE; // Just to execute the .clinit.
 		} catch (Throwable t) {
 			t.printStackTrace();

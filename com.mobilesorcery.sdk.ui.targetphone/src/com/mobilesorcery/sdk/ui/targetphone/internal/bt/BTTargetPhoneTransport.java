@@ -3,14 +3,22 @@ package com.mobilesorcery.sdk.ui.targetphone.internal.bt;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.window.IShellProvider;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
+import org.eclipse.ui.dialogs.ListDialog;
 
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -81,10 +89,57 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 	 * @return
 	 * @throws IOException
 	 */
-	public static BTTargetPhone selectPhone() throws IOException {
-		SearchBTDeviceDialog dialog = new SearchBTDeviceDialog();
-		BTTargetPhone info = dialog.open();
-		return info;
+	public static BTTargetPhone selectPhone( final Shell shell ) throws IOException 
+	{
+		// Use a native dialog on windows
+		if( System.getProperty("os.name").toLowerCase().indexOf("win") != -1)
+		{
+			SearchBTDeviceDialog dialog = new SearchBTDeviceDialog( );
+			BTTargetPhone info = dialog.open();
+			return info;
+		}
+		
+		final ArrayList<BTTargetPhone> result = new ArrayList<BTTargetPhone>( );
+
+    	shell.getDisplay().syncExec(new Runnable() {
+			public void run() {
+				// TODO Auto-generated method stub
+				try {			
+					ArrayContentProvider contentProvider = new ArrayContentProvider( );
+					BluetoothLabelProvider labelProvider = new BluetoothLabelProvider( shell.getDisplay( ) );
+					
+					BluetoothDialog ld = new BluetoothDialog( shell );
+					ld.setAddCancelButton( true );
+					ld.setContentProvider( contentProvider );
+					ld.setLabelProvider( labelProvider );
+					ld.setMessage( "Scanning for devices..." );
+					ld.discoverDevices( );
+					ld.open( );
+					
+					if( ld.getReturnCode( ) == ListDialog.OK )
+					{
+						Object selections[] = ld.getResult( );
+						if( selections != null )
+						{
+							BluetoothDevice selectedDevice = (BluetoothDevice) selections[ 0 ];
+							result.add( selectedDevice.getTargetPhone() );
+						}
+					}
+				}
+				catch (Exception e) {
+					e.printStackTrace( );
+				}
+			}
+		});
+		
+    	if( result.size( ) > 0)
+    	{
+    		return result.get( 0 );
+    	}
+    	else 
+    	{
+    		return null;
+    	}
 	}
 
 	public void send(IShellProvider shell, MoSyncProject project,
@@ -98,7 +153,7 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 	public ITargetPhone scan(IShellProvider shell, IProgressMonitor monitor)
 			throws CoreException {
 		try {
-			BTTargetPhone phone = selectPhone();
+			BTTargetPhone phone = selectPhone( shell.getShell( ) );
 			if (phone != null) {
 				IStatus status = assignPort(shell, monitor, phone);
 				if (status.getSeverity() == IStatus.ERROR) {

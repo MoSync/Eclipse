@@ -16,7 +16,6 @@ package com.mobilesorcery.sdk.ui.targetphone.internal.bt;
 import java.io.IOException;
 
 import com.sun.jna.Memory;
-import com.sun.jna.NativeLibrary;
 
 public class SearchBTDeviceDialog {
 
@@ -35,7 +34,6 @@ public class SearchBTDeviceDialog {
         int result = BTDIALOG.BTD_ERROR;
         
         try {
-            NativeLibrary.getInstance(BTDIALOG.WIN32_LIB).getFunction("btDialog");
             result = BTDIALOG.INSTANCE.btDialog(deviceInfo);
         } catch (Throwable e) {
             throw new IOException(e);

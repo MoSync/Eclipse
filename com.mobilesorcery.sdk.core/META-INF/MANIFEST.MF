@@ -34,5 +34,4 @@ Export-Package: com.mobilesorcery.sdk.core,
  com.mobilesorcery.sdk.profiles,
  com.mobilesorcery.sdk.profiles.filter
 Bundle-ClassPath: .
-Bundle-NativeCode: pipelib.dll
 Eclipse-ExtensibleAPI: true

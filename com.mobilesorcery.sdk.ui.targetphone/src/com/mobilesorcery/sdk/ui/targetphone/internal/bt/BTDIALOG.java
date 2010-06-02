@@ -19,9 +19,9 @@ import com.sun.jna.Pointer;
 
 public interface BTDIALOG extends Library {
     
-    public final static String WIN32_LIB = "btDialog";
+    public final static String BTDIALOG_LIB = "btdialog";
 
-    public final static BTDIALOG INSTANCE = (BTDIALOG) Native.loadLibrary(WIN32_LIB, BTDIALOG.class);
+    public final static BTDIALOG INSTANCE = (BTDIALOG) Native.loadLibrary(BTDIALOG_LIB, BTDIALOG.class);
 
     public final static int BTD_ERROR = 0;
     public final static int BTD_OK = 1;
