@@ -5,8 +5,8 @@ Bundle-SymbolicName: com.mobilesorcery.sdk.lib
 Bundle-Version: 1.0.0
 Bundle-Vendor: MOBILESORCERY
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
-Bundle-ClassPath: jna.jar,
- .
+Bundle-ClassPath: .,
+ lib/jna.jar
 Export-Package: com.mobilesorcery.sdk.lib,
  com.sun.jna,
  com.sun.jna.ptr,

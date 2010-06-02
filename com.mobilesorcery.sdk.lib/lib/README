@@ -1,0 +1,8 @@
+The jna.jar currently contains a modified version of NativeLibrary.java, since
+the latest released version did not read jna.library.path after the first library
+was loaded. This is fixed in the trunk of JNA, but there is currently no release
+that contains the fix, and the latest trunk version does not build. When the 
+next version is released it should replace the current jna.jar.
+
+Current version: 3.2.5
+JNA SVN revision that fixes the bug: 1088
