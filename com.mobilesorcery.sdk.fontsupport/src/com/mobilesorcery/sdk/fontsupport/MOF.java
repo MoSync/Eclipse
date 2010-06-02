@@ -29,7 +29,7 @@ import com.mobilesorcery.sdk.fontsupport.internal.wizard.BMFontInfoBlock;
 import com.mobilesorcery.sdk.fontsupport.internal.wizard.BinaryBMFontParser;
 
 /**
- * A Java representation of the mof.exe tool
+ * A Java representation of the mof tool
  * @author Mattias Bybro
  *
  */
@@ -61,7 +61,7 @@ public class MOF {
 			throw new IOException(Messages.MOF_InvalidImageFormat);
 		}
 		
-		IPath mofExe = MoSyncTool.getDefault().getMoSyncBin().append("mof.exe"); //$NON-NLS-1$
+		IPath mofExe = MoSyncTool.getDefault().getBinary("mof"); //$NON-NLS-1$
 		CommandLineExecutor executor = new CommandLineExecutor("MOF"); //$NON-NLS-1$
 		executor.addCommandLine(new String[] {
 			mofExe.toFile().getAbsolutePath(),
