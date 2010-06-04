@@ -66,12 +66,10 @@ public class SelectTargetPhoneAction implements
 				ITargetPhone phone = transport.scan(window, monitor);
 				if (phone != null) {
 					TargetPhonePlugin.getDefault().addToHistory(phone);
-					if (phone.getPreferredProfile() == null) {
-						monitor.setTaskName(MessageFormat.format(
-								"Assigning profile to {0}", phone.getName()));
-						SelectTargetPhoneAction.selectProfileForPhone(phone,
-								window, true);
-					}
+					monitor.setTaskName(MessageFormat.format(
+							"Assigning profile to {0}", phone.getName()));
+					SelectTargetPhoneAction.selectProfileForPhone(phone,
+							window, false);
 				}
 				return Status.OK_STATUS;
 			} catch (CoreException e) {
@@ -160,9 +158,13 @@ public class SelectTargetPhoneAction implements
 	}
 
 	protected void openTargetPhoneListDialog(Display display) {
-		EditDeviceListDialog dialog = new EditDeviceListDialog(new Shell(
-				display));
-		dialog.open();
+	    Shell shell = new Shell(display);
+	    try {
+    		EditDeviceListDialog dialog = new EditDeviceListDialog(shell);
+    		dialog.open();
+	    } finally {
+	        shell.dispose();
+	    }
 	}
 
 	public void dispose() {
@@ -177,6 +179,16 @@ public class SelectTargetPhoneAction implements
 		this.selection = selection;
 	}
 
+	/**
+	 * A utility method for querying the user for which profile to assign
+	 * to a specific device. If applicable, a device list dialog pops up (with the
+	 * device fixed to the device passed in to this method)
+	 * @param phone The target device, must not be <code>null</code>
+	 * @param shellProvider
+	 * @param askOnlyIfNotAssigned If <code>true</code>, will only ask the user
+	 * if no profile is already assigned.
+	 * @return
+	 */
 	public static IProfile selectProfileForPhone(final ITargetPhone phone,
 			final IShellProvider shellProvider, boolean askOnlyIfNotAssigned) {
 		if (!askOnlyIfNotAssigned || phone.getPreferredProfile() == null) {
@@ -188,6 +200,7 @@ public class SelectTargetPhoneAction implements
 							.getDefault()) : shellProvider.getShell();
 					EditDeviceListDialog dialog = new EditDeviceListDialog(
 							shell);
+					dialog.setFixedDevice(true);
 					dialog.setInitialTargetPhone(phone);
 					dialog.open();
 				}
@@ -210,13 +223,15 @@ public class SelectTargetPhoneAction implements
 		ITargetPhoneTransport selectedTransport = selectTransport(shellProvider);
 		if (selectedTransport != null) {
 			result = selectedTransport.scan(shellProvider, monitor);
-            TargetPhonePlugin.getDefault().addToHistory(result);
-            if (result.getPreferredProfile() == null) {
-                monitor.setTaskName(MessageFormat.format(
-                        "Assigning profile to {0}", result.getName()));
-                SelectTargetPhoneAction.selectProfileForPhone(result,
-                        shellProvider, true);
-            }
+			if (result != null) {
+			    TargetPhonePlugin.getDefault().addToHistory(result);
+			    if (result.getPreferredProfile() == null) {
+                    monitor.setTaskName(MessageFormat.format(
+                            "Assigning profile to {0}", result.getName()));
+                    SelectTargetPhoneAction.selectProfileForPhone(result,
+                            shellProvider, true);
+                }
+			}
 		}
 
 		return result;

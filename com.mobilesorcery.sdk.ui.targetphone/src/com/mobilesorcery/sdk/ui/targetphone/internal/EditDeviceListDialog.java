@@ -10,10 +10,11 @@
 
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
-*/
+ */
 package com.mobilesorcery.sdk.ui.targetphone.internal;
 
 import java.text.MessageFormat;
+import java.util.HashMap;
 
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -22,16 +23,24 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
+import org.eclipse.jface.viewers.IOpenListener;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.ITreeViewerListener;
 import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.TreeExpansionEvent;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
@@ -39,6 +48,8 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.ISelectionListener;
+import org.eclipse.ui.IWorkbenchPart;
 
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
@@ -57,143 +68,211 @@ import com.mobilesorcery.sdk.ui.targetphone.internal.bt.BTTargetPhone;
 
 public class EditDeviceListDialog extends Dialog {
 
-	public class TargetDeviceLabelProvider extends LabelProvider {
-		public String getText(Object o) {
-			ITargetPhone t = (ITargetPhone) o; 
-			ITargetPhoneTransport tt = t.getTransport();
-			return MessageFormat.format("{0} [{1}]", t.getName(), tt.getDescription(""));
-		}
-	}
+    public class TargetDeviceLabelProvider extends LabelProvider {
+        public String getText(Object o) {
+            ITargetPhone t = (ITargetPhone) o;
+            ITargetPhoneTransport tt = t.getTransport();
+            return MessageFormat.format("{0} [{1}]", t.getName(), tt.getDescription(""));
+        }
+    }
 
-	private ComboViewer deviceList;
-	private TreeViewer preferredProfile;
-	private ITargetPhone initialTargetPhone;
+    private ComboViewer deviceList;
+    private TreeViewer preferredProfile;
+    private ITargetPhone initialTargetPhone;
+    private boolean fixedDevice;
+    private HashMap<ITargetPhone, IProfile> pendingChanges = new HashMap<ITargetPhone, IProfile>();
 
-	protected EditDeviceListDialog(Shell parentShell) {
-		super(parentShell);
-	}
+    public EditDeviceListDialog(Shell parentShell) {
+        super(parentShell);
+    }
 
-	public void setInitialTargetPhone(ITargetPhone initialTargetPhone) {
-		this.initialTargetPhone = initialTargetPhone;
-	}
-	
+    public void setInitialTargetPhone(ITargetPhone initialTargetPhone) {
+        this.initialTargetPhone = initialTargetPhone;
+    }
+
     public Control createDialogArea(Composite parent) {
         getShell().setText("Select Preferred Profile");
-        
-        ITargetPhone initialTargetPhone = this.initialTargetPhone == null ? TargetPhonePlugin.getDefault().getCurrentlySelectedPhone() : this.initialTargetPhone;
-        
+
+        ITargetPhone initialTargetPhone = this.initialTargetPhone == null ? TargetPhonePlugin.getDefault().getCurrentlySelectedPhone()
+                : this.initialTargetPhone;
+
         Composite main = (Composite) super.createDialogArea(parent);
-        
+
         Composite contents = new Composite(main, SWT.NONE);
         contents.setLayout(new GridLayout(1, false));
-        
-        deviceList = new ComboViewer(contents, SWT.BORDER | SWT.READ_ONLY);
-        deviceList.setContentProvider(new ArrayContentProvider());
-        deviceList.setLabelProvider(new TargetDeviceLabelProvider());
-        deviceList.addSelectionChangedListener(new ISelectionChangedListener() {
-			public void selectionChanged(SelectionChangedEvent event) {
-				updateFilter();
-				updateUI(null, false);
-			}
-		});
-        
-        deviceList.getCombo().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        
-        Link clear = new Link(contents, SWT.NONE);
-        clear.setText("<a>Clear History</a>");
-        clear.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false));
-        clear.addListener(SWT.Selection, new Listener() {
-			public void handleEvent(Event event) {
-				clearDeviceList(getShell());
-				updateUI(null, true);
-			}        	
-        });
-        
+
+        if (!fixedDevice) {
+            deviceList = new ComboViewer(contents, SWT.BORDER | SWT.READ_ONLY);
+            deviceList.setContentProvider(new ArrayContentProvider());
+            deviceList.setLabelProvider(new TargetDeviceLabelProvider());
+            deviceList.addSelectionChangedListener(new ISelectionChangedListener() {
+                public void selectionChanged(SelectionChangedEvent event) {
+                    updateFilter();
+                    updateUI(null, false);
+                }
+            });
+
+            deviceList.getCombo().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+            Link clear = new Link(contents, SWT.NONE);
+            clear.setText("<a>Clear History</a>");
+            clear.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false));
+            clear.addListener(SWT.Selection, new Listener() {
+                public void handleEvent(Event event) {
+                    clearDeviceList(getShell());
+                    updateUI(null, true);
+                }
+            });
+        }
+
         Label instructions = new Label(contents, SWT.NONE | SWT.WRAP);
-        instructions.setText("Double-click to select new target device");
-        
+        instructions.setText("Click to select new target device");
+
         preferredProfile = new TreeViewer(contents, SWT.SINGLE | SWT.BORDER);
         ProfileLabelProvider labelProvider = new ProfileLabelProvider(SWT.NONE);
         labelProvider.setTargetProfileProvider(new ITargetProfileProvider() {
-			public IProfile getTargetProfile() {
-				return getCurrentPreferredProfile(deviceList);
-			}
-		});
-        
+            public IProfile getTargetProfile() {
+                return getCurrentPreferredProfile();
+            }
+        });
+
         preferredProfile.setLabelProvider(labelProvider);
         final ProfileContentProvider contentProvider = new ProfileContentProvider();
         preferredProfile.setContentProvider(contentProvider);
         preferredProfile.getControl().setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), UIUtils.getDefaultListHeight()));
+
+        preferredProfile.addDoubleClickListener(new IDoubleClickListener() { 
+            public void doubleClick(DoubleClickEvent event) {
+                selectNewProfile(event.getSelection());
+                okPressed();
+            }
+        });
         
-        preferredProfile.addDoubleClickListener(new IDoubleClickListener() {
-			public void doubleClick(DoubleClickEvent event) {
-				Object element = ((IStructuredSelection) event.getSelection()).getFirstElement();
-				if (element instanceof IProfile) {
-					IProfile profile = (IProfile) element;
-					ITargetPhone currentTargetPhone = getSelectedTargetPhone();
+        preferredProfile.addSelectionChangedListener(new ISelectionChangedListener() {
+            public void selectionChanged(SelectionChangedEvent event) {
+                selectNewProfile(event.getSelection());
+            }
+        });
 
-					if (currentTargetPhone!= null) {
-						currentTargetPhone.setPreferredProfile(profile);
-					}
-					preferredProfile.refresh();
-				}
-			}
-		});
-
+        updateFilter();
         updateUI(initialTargetPhone, true);
-        
+
         return contents;
+    }
+    
+    private void selectNewProfile(ISelection selection) {
+        Object element = ((IStructuredSelection) selection).getFirstElement();
+        if (element instanceof IProfile) {
+            IProfile profile = (IProfile) element;
+            ITargetPhone currentTargetPhone = getSelectedTargetPhone();
+
+            if (currentTargetPhone != null) {
+                pendingChanges.put(currentTargetPhone, profile);
+            }
+            
+            updateButtons();
+            preferredProfile.refresh();
+        }                
+    }
+
+
+    /**
+     * Sets a fixed device for this dialog (resulting in no visible device
+     * selector).
+     * 
+     * @param b
+     */
+    public void setFixedDevice(boolean fixedDevice) {
+        this.fixedDevice = fixedDevice;
     }
 
     protected ITargetPhone getSelectedTargetPhone() {
-		IStructuredSelection selection = (IStructuredSelection) deviceList.getSelection();
-		ITargetPhone selectedTargetPhone = (ITargetPhone) selection.getFirstElement();
-		return selectedTargetPhone;
-	}
+        if (fixedDevice) {
+            return initialTargetPhone;
+        } else {
+            ITargetPhone selectedPhone = (ITargetPhone) ((IStructuredSelection) deviceList.getSelection()).getFirstElement();
+            return selectedPhone;
+        } 
+    }
 
-	protected void updateFilter() {
+    protected void updateFilter() {
         IDeviceFilter emulatorFilter = new EmulatorDeviceFilter(EmulatorDeviceFilter.EXCLUDE_EMULATORS);
         ITargetPhone phone = getSelectedTargetPhone();
         IDeviceFilter targetPhoneAcceptedProfiles = phone == null ? null : phone.getTransport().getAcceptedProfiles();
-        IDeviceFilter filter = targetPhoneAcceptedProfiles == null ? emulatorFilter : new CompositeDeviceFilter(new IDeviceFilter[] { emulatorFilter, targetPhoneAcceptedProfiles });
+        IDeviceFilter filter = targetPhoneAcceptedProfiles == null ? emulatorFilter : new CompositeDeviceFilter(new IDeviceFilter[] { emulatorFilter,
+                targetPhoneAcceptedProfiles });
         preferredProfile.setInput(MoSyncTool.getDefault().getVendors(filter));
         preferredProfile.setFilters(new ViewerFilter[] { new DeviceViewerFilter(filter) });
-	}
-
-	public void createButtonsForButtonBar(Composite parent) {
-        createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL, true);
     }
 
-	protected IProfile getCurrentPreferredProfile(ComboViewer deviceList) {
-		ITargetPhone selectedPhone = (ITargetPhone) ((IStructuredSelection) deviceList.getSelection()).getFirstElement();
-		IProfile profile = null;
-		if (selectedPhone != null) {
-			profile = selectedPhone.getPreferredProfile();
-		}
+    public void createButtonsForButtonBar(Composite parent) {
+        Button okButton = createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL, true);
+        createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);
+        updateButtons();
+    }
 
-		return profile;
-	}
+    protected IProfile getCurrentPreferredProfile() {
+        IProfile profile = null;
+        ITargetPhone selectedPhone = getSelectedTargetPhone();
+        if (selectedPhone != null) {
+            profile = pendingChanges.get(selectedPhone);
+            if (profile == null) {
+                profile = selectedPhone.getPreferredProfile();
+            }
+        }
 
-	protected void updateUI(ITargetPhone changeToTargetPhone, boolean reloadPhones) {
-		if (reloadPhones) {
-			deviceList.setInput(TargetPhonePlugin.getDefault().getSelectedTargetPhoneHistory().toArray());
-		}
-		
-        if (changeToTargetPhone != null) {
-        	deviceList.setSelection(new StructuredSelection(changeToTargetPhone), true);
-        	
+        return profile;
+    }
+
+    protected void updateUI(ITargetPhone changeToTargetPhone, boolean reloadPhones) {
+        if (!fixedDevice) {
+            if (reloadPhones) {
+                deviceList.setInput(TargetPhonePlugin.getDefault().getSelectedTargetPhoneHistory().toArray());
+            }
+
+            if (changeToTargetPhone != null) {
+                deviceList.setSelection(new StructuredSelection(changeToTargetPhone), true);
+
+            }
+        }
+        IProfile profile = getCurrentPreferredProfile();
+        preferredProfile.refresh();
+        preferredProfile.setSelection(profile == null ? new StructuredSelection() : new StructuredSelection(profile), true);
+        updateButtons();
+    }
+    
+    private void updateButtons() {
+        Button okButton = getButton(IDialogConstants.OK_ID);
+        if (okButton != null) {
+            okButton.setEnabled(okButtonEnabled());
         }    
-		IProfile profile = getCurrentPreferredProfile(deviceList);
-		preferredProfile.refresh();
-		preferredProfile.setSelection(profile == null ? new StructuredSelection() : new StructuredSelection(profile), true);
-	}
+    }
+    
+    private boolean okButtonEnabled() {
+        IProfile profile = getCurrentPreferredProfile();
+        return profile != null;
+    }
+    
+    public void okPressed() {
+        if (okButtonEnabled()) {
+            commitPendingChanges();
+            super.okPressed();
+        }
+    }
 
-	protected void clearDeviceList(Shell parent) {
-		if (MessageDialog.openConfirm(parent, "Are you sure?", "This will clear the list of target devices -- are you sure?")) {
-			TargetPhonePlugin.getDefault().clearHistory();
-			close();
-		}
-		
-	}
+    private void commitPendingChanges() {
+        for (ITargetPhone phone : pendingChanges.keySet()) {
+            IProfile newProfile = pendingChanges.get(phone);
+            phone.setPreferredProfile(newProfile);
+        }
+    }
+
+    protected void clearDeviceList(Shell parent) {
+        if (MessageDialog.openConfirm(parent, "Are you sure?", "This will clear the list of target devices -- are you sure?")) {
+            TargetPhonePlugin.getDefault().clearHistory();
+            close();
+        }
+
+    }
 
 }

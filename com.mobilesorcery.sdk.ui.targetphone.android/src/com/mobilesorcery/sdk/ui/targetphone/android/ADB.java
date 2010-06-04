@@ -67,7 +67,6 @@ public class ADB {
 
 	private ADB() {
 		this(MoSyncTool.getDefault().getBinary("android/adb"));
-		//this(new Path("C:/development/tools/android-sdk-windows/tools/adb.exe"));
 	}
 
 	public ADB(IPath pathToADB) {
