@@ -43,8 +43,14 @@ public class EmulatorLaunchConfigurationTabGroup extends AbstractLaunchConfigura
         setTabs(tabs);
     }
 
+    /**
+     * Returns the build configuration types to show in the "Switch automatically to this"
+     * combo box. Clients may override.
+     * @param isDebug
+     * @return The build configuration types to show, or <code>null</code> for all.
+     */
     protected String[] getBuildConfigurationTypes(boolean isDebug) {
-        return new String[] { isDebug ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE };
+        return null;
     }
 
 }

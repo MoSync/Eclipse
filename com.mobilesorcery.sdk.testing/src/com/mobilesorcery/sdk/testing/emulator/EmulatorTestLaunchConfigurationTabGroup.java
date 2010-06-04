@@ -21,7 +21,7 @@ public class EmulatorTestLaunchConfigurationTabGroup extends
 		EmulatorLaunchConfigurationTabGroup {
 
     protected String[] getBuildConfigurationTypes(boolean isDebug) {
-        return new String[] { isDebug ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE, TestPlugin.TEST_BUILD_CONFIGURATION_TYPE };
+        return new String[] { TestPlugin.TEST_BUILD_CONFIGURATION_TYPE };
     }
     
 }

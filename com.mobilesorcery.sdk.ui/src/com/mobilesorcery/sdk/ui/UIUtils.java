@@ -14,6 +14,7 @@
 package com.mobilesorcery.sdk.ui;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
