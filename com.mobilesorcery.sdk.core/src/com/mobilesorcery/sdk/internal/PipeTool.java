@@ -43,6 +43,7 @@ public class PipeTool {
     public static final String BUILD_C_MODE = "-B";
     public static final String BUILD_LIB_MODE = "-L";
     public static final String BUILD_GEN_CPP_MODE = "-B -cpp";
+    public static final String BUILD_GEN_JAVA_MODE = "-B -java";
     
     /**
      * The default heap size; if no <code>-heapsize</code> argument is provided
@@ -142,6 +143,7 @@ public class PipeTool {
         
         boolean programMode = BUILD_C_MODE == mode ||
                               BUILD_GEN_CPP_MODE == mode ||
+                              BUILD_GEN_JAVA_MODE == mode ||
                               BUILD_LIB_MODE == mode;
 
         
@@ -186,7 +188,8 @@ public class PipeTool {
 
         if ( BUILD_C_MODE == mode || 
              BUILD_LIB_MODE == mode || 
-             BUILD_GEN_CPP_MODE == mode ) 
+             BUILD_GEN_CPP_MODE == mode ||
+             BUILD_GEN_JAVA_MODE == mode ) 
         {
             for (int i = 0; libraries != null && i < libraries.length; i++) {
                 args.add(libraries[i].toOSString());

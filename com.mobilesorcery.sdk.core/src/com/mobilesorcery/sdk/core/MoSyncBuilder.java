@@ -428,6 +428,9 @@ public class MoSyncBuilder extends ACBuilder {
     IBuildResult incrementalBuild(IProject project, IBuildSession session, IBuildVariant variant, 
             IFilter<IResource> resourceFilter, IProgressMonitor monitor) throws CoreException {
 
+    	String pipeOutput = "il";
+    	
+    	
         if (CoreMoSyncPlugin.getDefault().isDebugging()) {
             CoreMoSyncPlugin.trace("Building project {0}", project);
         }
@@ -450,6 +453,22 @@ public class MoSyncBuilder extends ACBuilder {
         IFileTreeDiff diff = createDiff(buildState, session);
         
         ensureOutputIsMarkedDerived(project, variant);
+        
+    	// Check what sort of output we're producing.
+    	if ( mosyncProject.getTargetProfile( )
+                          .getProperties( )
+                          .containsKey( "MA_PROF_OUTPUT_CPP" ) == true )
+    	{
+    		pipeOutput = "cpp";
+    	} 
+    	else if ( mosyncProject.getTargetProfile( )
+                               .getProperties( )
+                               .containsKey( "MA_PROF_OUTPUT_JAVA" ) == true )
+    	{
+    		pipeOutput = "java";
+    	}    		
+    	
+        
         
         try {
             monitor.beginTask(MessageFormat.format("Building {0}", project), 4);
@@ -578,17 +597,19 @@ public class MoSyncBuilder extends ACBuilder {
                 boolean elim = !isLib && PropertyUtil.getBoolean(buildProperties, DEAD_CODE_ELIMINATION);                
                 
                 //
-                // Check if we need to tell pipe-tool to output C
+                // Check if we need to tell pipe-tool to output 
+                // something other then IL.
                 //
-                if ( mosyncProject.getTargetProfile( )
-                		          .getProperties( )
-                		          .containsKey( "MA_PROF_OUTPUT_CPP" ) == true )
+                if ( isLib == true)
+                	pipeTool.setMode( PipeTool.BUILD_LIB_MODE );
+                else 
                 {
-                	pipeTool.setMode( isLib ? PipeTool.BUILD_LIB_MODE : PipeTool.BUILD_GEN_CPP_MODE );
-                }
-                else
-                {
-                	pipeTool.setMode( isLib ? PipeTool.BUILD_LIB_MODE : PipeTool.BUILD_C_MODE );
+	                if ( pipeOutput.equals( "cpp" ) == true )
+	                	pipeTool.setMode( PipeTool.BUILD_GEN_CPP_MODE );
+	                else if ( pipeOutput.equals( "java" ) == true )
+	                	pipeTool.setMode( PipeTool.BUILD_GEN_JAVA_MODE );
+	                else
+	                	pipeTool.setMode( PipeTool.BUILD_C_MODE );
                 }
                 
                 pipeTool.setInputFiles(objectFiles);
@@ -602,8 +623,15 @@ public class MoSyncBuilder extends ACBuilder {
                 String[] extraLinkerSwitches = PropertyUtil.getStrings(buildProperties, EXTRA_LINK_SWITCHES);
                 pipeTool.setExtraSwitches(extraLinkerSwitches);
 
-                if (objectFiles.length > 0) {
+                if (objectFiles.length > 0) {                	
                     pipeTool.run();
+                    
+                    // If needed, run a second time to generate IL
+                    if ( isLib == false && pipeOutput.equals( "il" ) == false )
+                    {
+                    	pipeTool.setMode( PipeTool.BUILD_C_MODE );
+                		pipeTool.run( );
+                    }
                 }
 
                 if (elim) {
