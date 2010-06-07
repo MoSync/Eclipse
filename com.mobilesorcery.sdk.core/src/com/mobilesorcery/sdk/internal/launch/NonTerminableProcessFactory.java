@@ -42,9 +42,8 @@ public class NonTerminableProcessFactory implements IProcessFactory {
         }
 
         public boolean canTerminate() {
-            return false;
+            return super.canTerminate();
         }
-        
     }
     
 

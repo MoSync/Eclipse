@@ -17,10 +17,12 @@
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
+#define _WIN32_WINNT 0x0501
 #include <windows.h>
 #include <io.h>
 #include <process.h>
 #include <direct.h>
+
 #define pipe _pipe
 #else	// GNU libc
 #include <signal.h>
@@ -45,10 +47,36 @@
 #define environ (*_NSGetEnviron())
 #endif
 
+#ifdef WIN32
+/**
+ * Function used to destroy all windows of the specified process.
+ *
+ * @param hwnd handle to top-level window.
+ * @param pid Pid of process to stop.
+ */
+static BOOL CALLBACK
+terminateWindows(HWND hwnd, LPARAM pid);
+
+static BOOL CALLBACK
+terminateWindows(HWND hwnd, LPARAM pid)
+{
+	DWORD id;
+
+	GetWindowThreadProcessId(hwnd, &id);
+
+	if(id == (DWORD) pid)
+	{
+		PostMessage(hwnd, WM_CLOSE, 0, 0);
+	}
+
+	return TRUE;
+}
+#endif
+
 PIPELIB_API int pipe_create(int* fds)
 {
 #ifdef WIN32
-	return _pipe(fds, 512, O_BINARY/* | O_NOINHERIT*/);
+	return _pipe(fds, 512, O_BINARY | O_NOINHERIT);
 #else
 	return pipe(fds);
 #endif
@@ -74,11 +102,16 @@ PIPELIB_API int pipe_close(int fd) {
 	return close(fd);
 }
 
-PIPELIB_API int proc_spawn(char* cmd, char* args, char* dir) {
+PIPELIB_API int proc_spawn(char* cmd, char* args, char* dir) 
+{
 	if(chdir(dir) != 0)
+	{
 		return -1;
+	}
 #ifdef WIN32
-	return (int)spawnl(P_NOWAIT, cmd, args, NULL);
+	char *argv[2] = {args, NULL};
+	HANDLE handle = (HANDLE) _spawnvp(_P_NOWAIT, cmd, argv);
+	return GetProcessId(handle);
 #else
 	pid_t pid;
 	char* argv[2] = {args, NULL};
@@ -90,44 +123,49 @@ PIPELIB_API int proc_spawn(char* cmd, char* args, char* dir) {
 }
 
 PIPELIB_API int proc_wait_for(int handle) {
-	int err_code;
 #ifdef WIN32
-	_cwait(&err_code, handle, NULL);
+	HANDLE procHandle = OpenProcess(SYNCHRONIZE, FALSE, handle);
+	if(procHandle == NULL) {
+		return -1;
+	}
+	WaitForSingleObject(procHandle, INFINITE);
+	CloseHandle(procHandle);
 #else
 	int res = waitpid(handle, &err_code, 0);
 	if(res < 0)
 		return res;
 #endif
-	return err_code;
+	return 0;
 }
 
 PIPELIB_API int proc_kill(int pid, int exit_code) {
 #ifdef WIN32
-	HANDLE handle = OpenProcess(PROCESS_QUERY_INFORMATION |
-           PROCESS_VM_READ | PROCESS_TERMINATE, FALSE, pid);
-	
-	int gotHandle = 0;
+	int killStatus = 0;
+	HANDLE procHandle = OpenProcess(PROCESS_TERMINATE | SYNCHRONIZE, FALSE, pid);
+	if(procHandle == NULL)
+	{
+		return -1;
+	}
 
-	if (handle != NULL) {
-		gotHandle = 0xf0000;
-		int result = TerminateProcess(handle, exit_code);
-		CloseHandle(handle);
-		if (result) {
-			return 0;
+	/* Post WM_CLOSE to all windows owned by the process */
+	EnumWindows((WNDENUMPROC) terminateWindows, (LPARAM) pid);
+
+	/* Wait for process to respond and kill it */
+	if(WaitForSingleObject(procHandle, 500) != WAIT_OBJECT_0)
+	{
+		int res = TerminateProcess(procHandle, exit_code);
+		if(res == 0)
+		{
+			killStatus = -2;
 		}
 	}
 
-	int lastError = GetLastError();
-	if (lastError = ERROR_NOACCESS) {
-		lastError = -1;
-	}
+	/* Close handle */
+	CloseHandle(procHandle);
 
-	return lastError | gotHandle;
+	return killStatus;
 #else
 	// exit_code is ignored.
-	int res = kill(pid, SIGTERM);
-	if(res < 0)
-		return res;
-	return 0xf0000;	// magic number?
+	return kill(pid, SIGTERM);
 #endif
 }
