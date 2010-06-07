@@ -92,12 +92,12 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 	public static BTTargetPhone selectPhone( final Shell shell ) throws IOException 
 	{
 		// Use a native dialog on windows
-		if( System.getProperty("os.name").toLowerCase().indexOf("win") != -1)
+		/*if( System.getProperty("os.name").toLowerCase().indexOf("win") != -1)
 		{
 			SearchBTDeviceDialog dialog = new SearchBTDeviceDialog( );
 			BTTargetPhone info = dialog.open();
 			return info;
-		}
+		}*/
 		
 		final ArrayList<BTTargetPhone> result = new ArrayList<BTTargetPhone>( );
 
@@ -105,25 +105,16 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 			public void run() {
 				// TODO Auto-generated method stub
 				try {			
-					ArrayContentProvider contentProvider = new ArrayContentProvider( );
-					BluetoothLabelProvider labelProvider = new BluetoothLabelProvider( shell.getDisplay( ) );
-					
 					BluetoothDialog ld = new BluetoothDialog( shell );
-					ld.setAddCancelButton( true );
-					ld.setContentProvider( contentProvider );
-					ld.setLabelProvider( labelProvider );
-					ld.setMessage( "Scanning for devices..." );
-					ld.discoverDevices( );
 					ld.open( );
 					
 					if( ld.getReturnCode( ) == ListDialog.OK )
 					{
-						Object selections[] = ld.getResult( );
-						if( selections != null )
-						{
-							BluetoothDevice selectedDevice = (BluetoothDevice) selections[ 0 ];
-							result.add( selectedDevice.getTargetPhone() );
-						}
+						BluetoothDevice selectedDevice = ld.getSelectedDevice();
+						BTTargetPhone targetDevice = selectedDevice.getTargetPhone();
+						ITargetPhone correspondingDevice = findInHistory(targetDevice);
+						targetDevice.setPreferredProfile(correspondingDevice == null ? null : correspondingDevice.getPreferredProfile());
+					    result.add(targetDevice);  
 					}
 				}
 				catch (Exception e) {
@@ -141,7 +132,25 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
     		return null;
     	}
 	}
-
+	
+	/**
+	 * Returns the corresponding target phone from history - can be
+	 * used to find out if there is already a preferred profile for a device
+	 * @param btTargetPhone
+	 * @return
+	 */
+	public static ITargetPhone findInHistory(BTTargetPhone btTargetPhone) {
+        List<ITargetPhone> history = TargetPhonePlugin.getDefault().getSelectedTargetPhoneHistory();
+        for (ITargetPhone targetPhone : history) {
+            if (targetPhone instanceof BTTargetPhone) {
+                if (btTargetPhone.getAddress().equals(((BTTargetPhone) targetPhone).getAddress())) {
+                    return targetPhone;
+                }
+            }
+        }
+        
+        return null;
+    }
 	public void send(IShellProvider shell, MoSyncProject project,
 			ITargetPhone phone, File packageToSend, IProgressMonitor monitor)
 			throws CoreException {

@@ -1,17 +1,23 @@
 package com.mobilesorcery.sdk.ui.targetphone.internal.bt;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.HashMap;
 
 import javax.bluetooth.DeviceClass;
 import javax.bluetooth.RemoteDevice;
+
+import com.mobilesorcery.sdk.core.SimpleQueue;
+import com.mobilesorcery.sdk.ui.targetphone.internal.bt.BluetoothDialog.DeviceUpdate;
 
 /**
  * Represents a single bluetooth device that has been discovered.
  * 
  * @author fmattias
  */
-public class BluetoothDevice
+public class BluetoothDevice 
 {
 	/**
 	 * Returns the type of this bluetooth device, i.e. whether
@@ -20,9 +26,9 @@ public class BluetoothDevice
 	 *
 	 */
 	public enum Type {
-		COMPUTER, /* Computer */
+        PHONE,    /* Mobile phone */
 		LAPTOP,   /* Laptop */
-		PHONE,    /* Mobile phone */
+        COMPUTER, /* Computer */
 		UNKNOWN
 	};
 	
@@ -35,9 +41,26 @@ public class BluetoothDevice
 	 * The type of the device, i.e. laptop, phone or computer.
 	 */
 	private Type m_deviceType;
+
+    private RemoteDevice m_device;
+
+    protected long m_getDiscoveryTimestamp;
 	
 	private static final int ADDRESS_LENGTH = 6;
-	
+
+    public static final Comparator<BluetoothDevice> COMPARATOR = new Comparator<BluetoothDevice>() {
+        public int compare(BluetoothDevice device1, BluetoothDevice device2) {
+            int result = device1.m_deviceType.compareTo(device2.m_deviceType);
+            if (result == 0) {
+                result = new Long(device1.m_getDiscoveryTimestamp).compareTo(device2.m_getDiscoveryTimestamp);
+                if (result == 0) {
+                    return new Integer(System.identityHashCode(device1)).compareTo(System.identityHashCode(device2));
+                }
+            }
+            
+            return result;
+        }
+    };
 	
 	/**
 	 * Creates a device with the given properties.
@@ -61,24 +84,16 @@ public class BluetoothDevice
 	 * @param deviceClass The type of the device, i.e. the major and minor
 	 *                    device class of the bluetooth protocol.
 	 */
-	public BluetoothDevice(RemoteDevice device, DeviceClass deviceClass)
+	public BluetoothDevice(final RemoteDevice device, DeviceClass deviceClass)
 	{
-		String name = "";
-		
-		try
-		{
-			name = device.getFriendlyName( true );
-		}
-		catch( IOException  e )
-		{
-			name = "Unknown";
-		}
-		
-		m_properties.put( "name", name );
+	    // Ok, let's just for now assume creation time = discovery time...
+	    m_getDiscoveryTimestamp = System.currentTimeMillis();
+	    m_properties.put( "name", "");
 		m_properties.put( "address", device.getBluetoothAddress( ) );
+		m_device = device;
 		m_deviceType = getType( deviceClass.getMajorDeviceClass( ), deviceClass.getMinorDeviceClass( ) );
 	}
-	
+
 	/**
 	 * Converts the given minor and major device
 	 * class to the Type enum.
@@ -163,4 +178,19 @@ public class BluetoothDevice
 		// Set the port to unassigned and let it be discovered when scanning for OBEX.
 		return new BTTargetPhone( name, addr, BTTargetPhone.PORT_UNASSIGNED );
 	}
+
+    public void resolveFriendlyName(DeviceUpdate updater) {
+        // Just set the name temporarily
+        String name = "Querying device for name..."; 
+        m_properties.put( "name" , name);
+        updater.deviceUpdated(this);
+        try {
+            name = m_device.getFriendlyName(false);
+        } catch (IOException e) {
+            name = "Could not resolve device name";
+        }
+        
+        m_properties.put( "name", name);
+        updater.deviceUpdated(this);
+    }
 }
