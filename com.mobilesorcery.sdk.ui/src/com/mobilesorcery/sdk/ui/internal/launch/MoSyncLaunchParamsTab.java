@@ -76,7 +76,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 
 	private class UpdateConfigurationListener implements ModifyListener {
 		public void modifyText(ModifyEvent e) {
-			updateConfigurations();
+			//updateConfigurations();
 		}
 	}
 
@@ -88,9 +88,9 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 	private Text heightText;
 	private Button useTargetProfile;
 	private String mode;
-	private Button changeConfiguration;
+	/*private Button changeConfiguration;
 	private ComboViewer configurations;
-	private Group configurationGroup;
+	private Group configurationGroup;*/
     private String[] debugBuildConfigurationTypes = new String[] { IBuildConfiguration.DEBUG_TYPE };
     private String[] buildConfigurationTypes = new String[] { IBuildConfiguration.RELEASE_TYPE };
 
@@ -139,6 +139,8 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 	}
 
 	private void createConfigurationEditor(Composite control) {
+	    // TODO: Remove this completely once all 'auto-switch' functionality has been disabled
+	    /*
 		configurationGroup = new Group(control, SWT.NONE);
 		configurationGroup
 				.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -154,10 +156,10 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 
 		configurations = new ComboViewer(configurationGroup, SWT.READ_ONLY
 				| SWT.BORDER);
-		configurations.getCombo().addSelectionListener(listener);
+		configurations.getCombo().addSelectionListener(listener);*/
 	}
 
-	private void updateConfigurations() {
+	/*private void updateConfigurations() {
 		MoSyncProject project = selectedProject();
 		if (project != null) {
 			configurations
@@ -168,7 +170,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 							project));
 			configurations.setInput(project);
 		}
-	}
+	}*/
 
 	public void setBuildConfigurationTypes(boolean isDebug, String... types) {
 	    if (isDebug) {
@@ -226,7 +228,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 					ILaunchConstants.SCREEN_SIZE_WIDTH, "176"));
 			heightText.setText(config.getAttribute(
 					ILaunchConstants.SCREEN_SIZE_HEIGHT, "220"));
-			initializeBuildConfigurationOptions(config);
+			//initializeBuildConfigurationOptions(config);
 			updateLaunchConfigurationDialog();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -234,13 +236,13 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 		}
 	}
 
-	public void initializeBuildConfigurationOptions(ILaunchConfiguration config)
+	/*public void initializeBuildConfigurationOptions(ILaunchConfiguration config)
 			throws CoreException {
 		String defaultBuildConfig = EmulatorLaunchConfigurationDelegate.getDefaultBuildConfiguration(MoSyncProject.create(getProject()), mode);
 		changeConfiguration.setSelection(config.getAttribute(getAutoChangeConfigKey(), true));
 		String buildConfiguration = config.getAttribute(getBuildConfigKey(), defaultBuildConfig);
 		configurations.setSelection(new StructuredSelection(buildConfiguration));
-	}
+	}*/
 
 	private boolean isDebugMode() {
 		return "debug".equals(mode);
@@ -263,17 +265,17 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 				.getText().trim());
 		copy.setAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, heightText
 				.getText().trim());
-		copy.setAttribute(getAutoChangeConfigKey(),
+		/*copy.setAttribute(getAutoChangeConfigKey(),
 				changeConfiguration.getSelection());
 		copy.setAttribute(getBuildConfigKey(),
-				getSelectedBuildConfiguration());
+				getSelectedBuildConfiguration());*/
 	}
 
-	public String getSelectedBuildConfiguration() {
+	/*public String getSelectedBuildConfiguration() {
 		String result = (String) ((IStructuredSelection) configurations
 				.getSelection()).getFirstElement();
 		return result == null ? "" : result;
-	}
+	}*/
 
 	public void setDefaults(ILaunchConfigurationWorkingCopy arg0) {
 	}
@@ -286,7 +288,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 		this.mode = mode;
 	}
 
-	public void updateLaunchConfigurationDialog() {
+	/*public void updateLaunchConfigurationDialog() {
 		MoSyncProject project = selectedProject();
 		boolean configurationsVisible = project != null
 				&& project.areBuildConfigurationsSupported();
@@ -296,9 +298,9 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 		configurationGroup.setVisible(configurationsVisible);
 
 		super.updateLaunchConfigurationDialog();
-	}
+	}*/
 
-	private MoSyncProject selectedProject() {
+	/*private MoSyncProject selectedProject() {
 		try {
 			IProject project = getWorkspaceRoot().getProject(
 					projectText.getText().trim());
@@ -311,5 +313,5 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 		}
 
 		return null;
-	}
+	}*/
 }

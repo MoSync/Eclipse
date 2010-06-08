@@ -417,7 +417,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     }
     
     private void autoSwitchBuildConfiguration(ILaunchConfiguration configuration, String mode) throws CoreException {
-        IProject project = getProject(configuration);
+        /*IProject project = getProject(configuration);
         MoSyncProject mosyncProject = MoSyncProject.create(project);
         // We'll let non-mosync projects slip through; they'll be handled in launchSync
         if (mosyncProject != null && mosyncProject.areBuildConfigurationsSupported()) {
@@ -434,7 +434,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
                     mosyncProject.setActiveBuildConfiguration(buildConfig);
                 }
             }
-        }
+        }*/
     }
 
 }

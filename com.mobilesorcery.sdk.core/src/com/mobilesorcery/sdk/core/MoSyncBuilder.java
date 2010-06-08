@@ -1084,7 +1084,7 @@ public class MoSyncBuilder extends ACBuilder {
     }
 
     public static IBuildSession createCleanBuildSession(IBuildVariant variant) {
-        return new BuildSession(Arrays.asList(variant), BuildSession.ALL - BuildSession.DO_CLEAN);
+        return new BuildSession(Arrays.asList(variant), BuildSession.ALL);
     }
     
     /**

@@ -39,7 +39,7 @@ public class FinalizeForProfileAction extends Action {
         if (selection instanceof IStructuredSelection) {
             Object selected = ((IStructuredSelection)selection).getFirstElement();
             if (selected instanceof IProfile && project != null) {
-                FinalizerParser.autoSwitchConfiguration(project);
+                //FinalizerParser.autoSwitchConfiguration(project);
                 IProfile profile = (IProfile) selected;
                 IBuildConfiguration cfg = project.getActiveBuildConfiguration();
                 BuildVariant variant = new BuildVariant(profile, cfg == null ? null : cfg.getId(), true);

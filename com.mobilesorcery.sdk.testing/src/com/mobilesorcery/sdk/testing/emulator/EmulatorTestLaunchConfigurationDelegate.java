@@ -49,4 +49,9 @@ public class EmulatorTestLaunchConfigurationDelegate extends
 	    
 	    return result;
 	}
+	
+	// Ensures there is an IDE listener built with the project.
+	/*private boolean ensureIDEListenerAdded() {
+	    
+	}*/
 }

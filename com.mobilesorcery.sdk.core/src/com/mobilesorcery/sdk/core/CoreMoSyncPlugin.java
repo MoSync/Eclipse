@@ -119,7 +119,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         plugin = this;
         isHeadless = Boolean.TRUE.equals(System.getProperty("com.mobilesorcery.headless"));
         initReIndexerListener();
-        initRebuildOnProfileChangeListener();
+        initRebuildListener();
         initNativeLibs(context);
         initPackagers();
         initDeviceFilterFactories();
@@ -194,7 +194,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         this.projectDependencyManager = new DependencyManager<IProject>();
 	}
 
-	private void initRebuildOnProfileChangeListener() {
+	private void initRebuildListener() {
         MoSyncProject.addGlobalPropertyChangeListener(new RebuildListener());
     }
 
