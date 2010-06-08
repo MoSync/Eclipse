@@ -31,6 +31,10 @@ public class ChangeBuildConfigWidget extends WorkbenchWindowControlContribution 
         MosyncUIPlugin.getDefault().addListener(this);
         MoSyncProject.addGlobalPropertyChangeListener(this);
         updateProject();
+        
+        combo.getCombo().setItems( new String[] {"No project selected"} );
+        combo.getCombo().select(0);
+        
         return combo.getControl();
     }
     
