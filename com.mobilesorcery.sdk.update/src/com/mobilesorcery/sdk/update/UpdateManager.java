@@ -45,8 +45,6 @@ public class UpdateManager {
     
     private static final UpdateManager INSTANCE = new UpdateManager();
 
-	private static final int UNVERSIONED = -1;
-
     class Response {
         private InputStream input;
         private int length;
@@ -75,42 +73,6 @@ public class UpdateManager {
 
     public static UpdateManager getDefault() {
         return INSTANCE;
-    }
-
-    public int getCurrentBinaryVersion() throws IOException {
-        return getCurrentVersionFromFile(MoSyncTool.getDefault().getMoSyncBin().append("version.dat").toFile()); //$NON-NLS-1$
-    }
-
-    public int getCurrentProfileVersion() throws IOException {
-        return getCurrentVersionFromFile(MoSyncTool.getDefault().getProfilesPath().append("version.dat").toFile()); //$NON-NLS-1$
-    }
-
-    public int getCurrentVersionFromFile(File versionFile) throws IOException {
-        if (versionFile.exists()) {
-            return readVersion(versionFile);
-        }
-
-        return 0;
-    }
-
-    private int readVersion(File versionFile) throws IOException {
-        FileReader input = new FileReader(versionFile);
-        try {
-            LineNumberReader lineInput = new LineNumberReader(input);
-            String version = lineInput.readLine();
-            if (version != null) {
-                version = version.trim();
-                return Integer.parseInt(version);
-            }
-
-            return 0;
-        } catch (Exception e) {
-        	return UNVERSIONED;
-        } finally {
-            if (input != null) {
-                input.close();
-            }
-        }
     }
 
     public boolean isUpdateAvailable() throws IOException {
@@ -351,7 +313,7 @@ public class UpdateManager {
 
 
     private void addProfileVersion(Map<String, String> request) throws IOException {
-        request.put("version", Integer.toString(getCurrentProfileVersion())); //$NON-NLS-1$
+        request.put("version", Integer.toString(MoSyncTool.getDefault().getCurrentProfileVersion())); //$NON-NLS-1$
         request.put("type", "3"); // 'Magic string' //$NON-NLS-1$ //$NON-NLS-2$
     }
 

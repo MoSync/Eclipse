@@ -18,7 +18,9 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -55,6 +57,8 @@ public class MoSyncTool {
 
 	public final static String CONSTANT_PREFIX = "MA_PROF_CONST_";
 
+    public static final int UNVERSIONED = -1;
+    
 	/**
 	 * A filter for excluding constants from the constants.
 	 */
@@ -672,7 +676,52 @@ public class MoSyncTool {
 		return getMoSyncBin().append(name + extension);
 	}
 	
+	/**
+     * Returns the version (build number) of the current set of MoSync binaries.
+     * @return
+     * @throws IOException
+     */
+    public int getCurrentBinaryVersion() throws IOException {
+        return getCurrentVersionFromFile(MoSyncTool.getDefault().getMoSyncBin().append("version.dat").toFile()); //$NON-NLS-1$
+    }
 
+    /**
+     * Returns the version of the current set of installed device profiles.
+     * @return
+     * @throws IOException
+     */
+    public int getCurrentProfileVersion() throws IOException {
+        return getCurrentVersionFromFile(MoSyncTool.getDefault().getProfilesPath().append("version.dat").toFile()); //$NON-NLS-1$
+    }
+
+    private int getCurrentVersionFromFile(File versionFile) throws IOException {
+        if (versionFile.exists()) {
+            return readVersion(versionFile);
+        }
+
+        return 0;
+    }
+
+    private int readVersion(File versionFile) throws IOException {
+        FileReader input = new FileReader(versionFile);
+        try {
+            LineNumberReader lineInput = new LineNumberReader(input);
+            String version = lineInput.readLine();
+            if (version != null) {
+                version = version.trim();
+                return Integer.parseInt(version);
+            }
+
+            return 0;
+        } catch (Exception e) {
+            return UNVERSIONED;
+        } finally {
+            if (input != null) {
+                input.close();
+            }
+        }
+    }
+    
 	/**
 	 * The 'inverse' of getProfile(fullName).
 	 * 
