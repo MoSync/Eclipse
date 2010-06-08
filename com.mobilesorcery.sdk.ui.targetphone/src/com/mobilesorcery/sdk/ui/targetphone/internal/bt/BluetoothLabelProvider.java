@@ -2,28 +2,23 @@ package com.mobilesorcery.sdk.ui.targetphone.internal.bt;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jface.preference.JFacePreferences;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.OwnerDrawLabelProvider;
+import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.internal.win32.BLENDFUNCTION;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
-import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 
 /**
  * Provides the UI with icons and a name of bluetooth devices.
@@ -40,6 +35,7 @@ public class BluetoothLabelProvider extends OwnerDrawLabelProvider
 	 */
 	HashMap< BluetoothDevice.Type, Image> m_icons = new HashMap<BluetoothDevice.Type, Image>( );
     private Display display;
+    private TableViewer viewer;
 	
 	/**
 	 * Initializes the icons shown for each device type. Will fail if the icons
@@ -47,9 +43,10 @@ public class BluetoothLabelProvider extends OwnerDrawLabelProvider
 	 * 
 	 * @param display The display that handles the UI.
 	 */
-	public BluetoothLabelProvider(Display display)
+	public BluetoothLabelProvider(TableViewer viewer)
 	{
-		this.display = display;
+	    this.viewer = viewer;
+		this.display = viewer.getControl().getDisplay();
 		/* Find icons and map them to different device types. */
 		try {
 			m_icons.put( BluetoothDevice.Type.COMPUTER, new Image( display, getClass( ).getResource( "/icons/desktop.png" ).openStream( ) ) );
@@ -86,10 +83,11 @@ public class BluetoothLabelProvider extends OwnerDrawLabelProvider
 
     protected void measure(Event event, Object element) {
         Image image = getImage(element);
-        
         Point te = computeTextExtent(event.gc, getLines(element));
         int height = Math.max(computeImageExtent(image).y, te.y) + 2 * PADDING_Y;
-        int width = computeImageExtent(image).x + te.x + 2 * PADDING_X;
+        int width = viewer.getTable().getColumn(event.index).getWidth();
+        //int width = viewer.getTable().getColumn(event.index).getWidth();
+        //int width = computeImageExtent(image).x + te.x + 2 * PADDING_X;
         event.setBounds(new Rectangle(event.x, event.y, width, height));
     }
 

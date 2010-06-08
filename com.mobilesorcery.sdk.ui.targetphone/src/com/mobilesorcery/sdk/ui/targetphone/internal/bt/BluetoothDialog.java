@@ -1,12 +1,7 @@
 package com.mobilesorcery.sdk.ui.targetphone.internal.bt;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -22,20 +17,17 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.layout.TableColumnLayout;
 import org.eclipse.jface.util.Policy;
 import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
+import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.OwnerDrawLabelProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
-import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -45,6 +37,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
 
 import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
@@ -98,8 +91,15 @@ public class BluetoothDialog extends Dialog {
         scanProgressData.horizontalAlignment = SWT.RIGHT;
         scanProgress.setLayoutData(scanProgressData);
 
-        deviceList = new TableViewer(parent, SWT.BORDER | SWT.SINGLE);
-        deviceList.setLabelProvider(new BluetoothLabelProvider(parent.getDisplay()));
+        Composite deviceComposite = new Composite(parent, SWT.NONE);
+        deviceList = new TableViewer(deviceComposite, SWT.BORDER | SWT.SINGLE);
+        TableColumnLayout deviceListTableLayout = new TableColumnLayout();
+        deviceComposite.setLayout(deviceListTableLayout);
+
+        TableColumn column1 = new TableColumn(deviceList.getTable(), SWT.NONE);
+        deviceListTableLayout.setColumnData(column1, new ColumnWeightData(70));
+        
+        deviceList.setLabelProvider(new BluetoothLabelProvider(deviceList));
         deviceList.setContentProvider(new ArrayContentProvider());
         deviceList.addSelectionChangedListener(new ISelectionChangedListener() {
             public void selectionChanged(SelectionChangedEvent event) {
@@ -121,8 +121,9 @@ public class BluetoothDialog extends Dialog {
         GridData gd = new GridData(GridData.FILL_BOTH);
         gd.heightHint = convertHeightInCharsToPixels(15);
         gd.widthHint = convertWidthInCharsToPixels(55);
+        deviceComposite.setLayoutData(gd);
+        
         Table table = deviceList.getTable();
-        table.setLayoutData(gd);
         table.setFont(container.getFont());
         updateUI();
         return parent;
@@ -209,6 +210,7 @@ public class BluetoothDialog extends Dialog {
         Button refreshButton = getButton(REFRESH_ID);
         if (refreshButton != null) {
             deviceList.setInput(discoverer.m_devices.toArray());
+            deviceList.getControl().getParent().layout();
             refreshButton.setEnabled(!refreshInProgress);
             scanProgress.setVisible(refreshInProgress);
             updateScanResults();

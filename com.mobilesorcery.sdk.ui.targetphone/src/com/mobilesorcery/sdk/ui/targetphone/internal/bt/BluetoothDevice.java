@@ -10,6 +10,7 @@ import javax.bluetooth.DeviceClass;
 import javax.bluetooth.RemoteDevice;
 
 import com.mobilesorcery.sdk.core.SimpleQueue;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.ui.targetphone.internal.bt.BluetoothDialog.DeviceUpdate;
 
 /**
@@ -186,6 +187,11 @@ public class BluetoothDevice
         updater.deviceUpdated(this);
         try {
             name = m_device.getFriendlyName(false);
+            // There seems to be a bug here: the first time
+            // empty strings are returned from getFriendlyName(false)!?
+            if (Util.isEmpty(name)) { 
+                name = m_device.getFriendlyName(true);
+            }
         } catch (IOException e) {
             name = "Could not resolve device name";
         }
