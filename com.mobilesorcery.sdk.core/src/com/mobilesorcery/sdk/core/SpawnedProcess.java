@@ -128,10 +128,6 @@ public class SpawnedProcess extends Process {
     		return;
     	}
 
-    	// TODO: There is no properly implemented process destroy
-        // Will need to use CreateProcess, TerminateProcess, etc instead
-        // of _spawn, _cwait, etc.
-        // OR - if a debug interface is implemented for the emulator...?
     	int result = CoreMoSyncPlugin.getDefault().getProcessUtil().proc_kill(handle, 0);
         if (result != 0) {
             throw new IllegalStateException("Could not terminate application");
