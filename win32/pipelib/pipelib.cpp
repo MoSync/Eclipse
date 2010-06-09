@@ -25,10 +25,12 @@
 
 #define pipe _pipe
 #else	// GNU libc
+#include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
 #include <spawn.h>
 #include <sys/wait.h>
+#include <string.h>
 #endif
 
 #include <stdio.h>
@@ -73,6 +75,107 @@ terminateWindows(HWND hwnd, LPARAM pid)
 }
 #endif
 
+#ifndef WIN32
+
+#define BUFFER_SIZE 4096
+#define MAX_ARGV_SIZE 4096
+
+/**
+ * Frees the allocated argument strings, should
+ * be called after a call to parseCmdLine to 
+ * release the memory.
+ *
+ * @param a An array of pointers previously allocated
+ *          parseCmdLine.
+ */
+static void 
+parseFreeMem ( char * a[] )
+{
+	while ( *a != NULL ) 
+	{
+		free( *a++ );
+	}
+}
+
+/**
+ * Copies the given string to a string that is allocted by
+ * this function and the returned.
+ * 
+ * Note: The user is reponsible for freeing the memory
+ *       allocated by this function.
+ *
+ * @param s The string that should be copied.
+ * @return Returns a copy of the given string, or NULL
+ *         if no memory was availible.
+ */
+static char *
+parseStrCopyN ( char *s )
+{
+	size_t len = strlen( s );
+	char * res = (char *) malloc( len+1 );
+	
+	if (res == NULL)
+	{
+		return NULL;
+	}
+	
+	strcpy( res, s );
+	return res;
+}
+
+/**
+ * Parses a command string and converts it to an argv-style
+ * array. Memory for the argv-array is allocated within this
+ * function and should be relased by a call to parseFreeMem.
+ *
+ * @param cmd Command string.
+ * @return The command string converted to an argv array.
+ */
+char **
+parseCmdLineN ( const char *cmd )
+{
+	int i = 0;
+	char *tok;
+	static char tmpStr[BUFFER_SIZE];
+	static char tmpCmd[BUFFER_SIZE];
+	static char *tmpArr[MAX_ARGV_SIZE];
+	
+	strcpy( tmpCmd, cmd );
+	tok = strtok( tmpCmd, " \t\f\n" );
+	while ( tok != NULL && i < MAX_ARGV_SIZE )
+	{
+		/* Copy first token */
+		strcpy( tmpStr, tok );
+		
+		/* Is there a quotation mark? */
+		if ( tok[0] == '\"' )
+		{
+			tok = strtok( NULL, "\"" );
+			strcat( tmpStr, " " );
+			if ( tok != NULL )
+			{
+				strcat( tmpStr, tok );
+			}
+			strcat( tmpStr, "\"" );
+		}
+		
+		/* Copy argument */
+		char *copiedString = parseStrCopyN( tmpStr );
+		if(copiedString == NULL)
+		{
+			return NULL;
+		}
+		
+		tmpArr[i++] = copiedString;
+		tok = strtok( NULL, " \t\f\n" );
+	}
+	
+	tmpArr[i] = NULL;
+	return tmpArr;
+}
+
+#endif
+
 PIPELIB_API int pipe_create(int* fds)
 {
 #ifdef WIN32
@@ -113,11 +216,14 @@ PIPELIB_API int proc_spawn(char* cmd, char* args, char* dir)
 	HANDLE handle = (HANDLE) _spawnvp(_P_NOWAIT, cmd, argv);
 	return GetProcessId(handle);
 #else
-	pid_t pid;
-	char* argv[2] = {args, NULL};
-	int res = posix_spawn(&pid, cmd, NULL, NULL, argv, environ);
-	if(res < 0)
+	pid_t pid = 0;
+	char **argv = parseCmdLineN( args );
+	int res = posix_spawnp(&pid, cmd, NULL, NULL, argv, environ);
+	parseFreeMem( argv );
+	
+	if(res < 0) {
 		return res;
+	}
 	return pid;
 #endif
 }
@@ -131,9 +237,11 @@ PIPELIB_API int proc_wait_for(int handle) {
 	WaitForSingleObject(procHandle, INFINITE);
 	CloseHandle(procHandle);
 #else
-	int res = waitpid(handle, &err_code, 0);
-	if(res < 0)
-		return res;
+	int status;
+	int res = waitpid(handle, &status, 0);
+	if(res < 0 || (!WIFEXITED(status) && !WIFSIGNALED(status))) {
+		return -1;
+	}
 #endif
 	return 0;
 }
