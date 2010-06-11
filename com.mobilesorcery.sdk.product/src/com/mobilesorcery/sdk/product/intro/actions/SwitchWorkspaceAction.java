@@ -4,6 +4,8 @@ import java.util.Properties;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.internal.ide.IDEWorkbenchMessages;
 import org.eclipse.ui.intro.IIntroSite;
@@ -15,7 +17,10 @@ public class SwitchWorkspaceAction implements IIntroAction {
 
 	public void run(IIntroSite site, Properties params) {
 		String ws = params.getProperty("href");
-		restart(ws);
+		Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+		if (MessageDialog.openConfirm(shell, "Switch workspace", "This will restart the MoSync IDE (please note that it will take a few moments).")) {
+		    restart(ws);    
+		}
 	}
 	
 	// Some ridiculous copy-n-paste from eclipse.

@@ -24,8 +24,10 @@ public class RecentProjectsContentProvider extends LinkContentProvider {
 
 		addBreak(parent);
 		
+		createWorkspaceLink(ResourcesPlugin.getWorkspace().getRoot().getLocation().toOSString(), parent);
+		
 		for (int i = 0; i < recentWS.length; i++) {
-			if (recentWS[i] != null && wsCount < MAX_WS_COUNT && !isExampleWorkspace(recentWS[i])) {
+			if (recentWS[i] != null && wsCount < MAX_WS_COUNT && !isExampleWorkspace(recentWS[i]) && !isCurrent(recentWS[i])) {
 				createWorkspaceLink(recentWS[i], parent);
 				wsCount++;
 			}
@@ -63,7 +65,15 @@ public class RecentProjectsContentProvider extends LinkContentProvider {
 		if (isExampleWorkspace(ws)) {
 			return "Example Workspace";
 		} else {
-			return new Path(ws).lastSegment() + (isCurrent(ws) ? " (Current)" : "");
+		    Path wsPath = new Path(ws);
+		    String name = wsPath.lastSegment();
+		    if ("workspace".equals(name)) {
+		        // A very common name, then we'll try to use the
+		        // second to last segment instead.
+		        name = wsPath.segment(Math.max(0, wsPath.segmentCount() - 2));
+		    }
+		    
+			return name + (isCurrent(ws) ? " (Current)" : "");
 		}
 	}
 
