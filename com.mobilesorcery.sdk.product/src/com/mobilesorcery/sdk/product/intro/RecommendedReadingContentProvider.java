@@ -23,7 +23,7 @@ public class RecommendedReadingContentProvider extends LinkListContentProvider {
 	}
 
 	protected void createActionLink(IntroLink link, Element parent) {
-		createHelpLink(link.getDesc(), link.getHref(), parent);
+		createLink(link.getHref(), link.getDesc(), parent);
 		createBR(parent, 1);
 	}
 }

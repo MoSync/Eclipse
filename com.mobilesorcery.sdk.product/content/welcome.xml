@@ -2,13 +2,27 @@
 <link type="example" href="3dLines|main.cpp" desc="3D Lines Example" scope="short" />
 <link type="example" href="AdvGraphics|main.cpp" desc="Advanced Graphics Example" scope="short" />
 <link type="example" href="MoTris|main.cpp" desc="MoTris Example" scope="short" />
-<link type="guide" href="help://com.mobilesorcery.sdk.help/docs/UserGuide.html" desc="Quickstart Guide" />
+<link type="guide" href="http://www.mosync.com/content/documentation" desc="Quickstart Guide" />
 <link type="screencast" href="http://www.mosync.com/content/mosync-23-screencast-importing-example-project" desc="Quickstart Screencast" />
-<link type="reading" href="/com.mobilesorcery.sdk.help/docs/MoRE.html" desc="MoRE - the emulator" scope="short" />
-<link type="reading" href="/com.mobilesorcery.sdk.help/docs/Rescomp.html" desc="The resource compiler!" scope="short" />
-<link type="reading" href="/com.mobilesorcery.sdk.help/docs/Fonts.html" desc="Font tools" scope="short" />
-<link type="reading" href="/com.mobilesorcery.sdk.help/docs/xml.html" desc="Working with XML in C++" scope="short" />
+<link type="reading" href="http://www.mosync.com/content/mosync-cross-platform-mobile-development-made-easy?cc={0}&amp;r={1}" desc="What is MoSync" scope="short" />
+<link type="reading" href="http://www.mosync.com/content/documentation?cc={0}&amp;r={1}" desc="User and Programmer Guides" scope="short" />
+<link type="reading" href="http://www.mosync.com/content/tutorials?cc={0}&amp;r={1}" desc="Tutorials" scope="short" />
+<link type="reading" href="http://www.mosync.com/content/code-examples?cc={0}&amp;r={1}" desc="Code Tutorials" scope="short" />
+<link type="reading" href="help://com.mobilesorcery.sdk.help/docs/html/api_areas.html" desc="API Reference" scope="short" />
+<link type="reading" href="http://www.mosync.com/documentation/manualpages/resource-compiler-reference?cc={0}&amp;r={1}" desc="Resource Compiler Reference" scope="short" />
+<link type="reading" href="help://com.mobilesorcery.sdk.help/docs/panics.html" desc="Panics Reference" scope="short" />
 <!--  These will just cause the 'for more examples...' message to appear -->
-<link type="reading" href="dummy" desc="?" scope="full" />
 <link type="example" href="dummy" desc="?" scope="full" />
 </intro>
+
+<!-- 
+Quick start
+Quickstart Screencast - opens the screencast
+Quickstart Guides - Clicking this link opens  in the Eclipse browser. The URL should include ?cc=<hhashconfirmationcode>&amp;r=<buildnumber>.
+Developer Forum - Clicking this link opens http://www.mosync.com/forum in the Eclipse browser. The URL should include ?cc=<hhashconfirmationcode>&amp;r=<buildnumber>.
+
+Recommended reading
+ - Clicking this link opens the Doxygen API guide in the package.
+ - Clicking this link opens http://www.mosync.com/documentation/man ... -reference in the Eclipse browser. The URL should include ?cc=<hhashconfirmationcode>&amp;r=<buildnumber>.
+ - Clicking this link panics.html in the package.
+ -->
