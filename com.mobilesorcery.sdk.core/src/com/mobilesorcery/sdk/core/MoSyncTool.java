@@ -679,24 +679,26 @@ public class MoSyncTool {
 	/**
      * Returns the version (build number) of the current set of MoSync binaries.
      * @return
-     * @throws IOException
      */
-    public int getCurrentBinaryVersion() throws IOException {
+    public int getCurrentBinaryVersion() {
         return getCurrentVersionFromFile(MoSyncTool.getDefault().getMoSyncBin().append("version.dat").toFile()); //$NON-NLS-1$
     }
 
     /**
      * Returns the version of the current set of installed device profiles.
      * @return
-     * @throws IOException
      */
-    public int getCurrentProfileVersion() throws IOException {
+    public int getCurrentProfileVersion() {
         return getCurrentVersionFromFile(MoSyncTool.getDefault().getProfilesPath().append("version.dat").toFile()); //$NON-NLS-1$
     }
 
-    private int getCurrentVersionFromFile(File versionFile) throws IOException {
+    private int getCurrentVersionFromFile(File versionFile) {
         if (versionFile.exists()) {
-            return readVersion(versionFile);
+            try {
+                return readVersion(versionFile);
+            } catch (IOException e) {
+                return UNVERSIONED;
+            }
         }
 
         return 0;
@@ -722,6 +724,20 @@ public class MoSyncTool {
         }
     }
     
+    /**
+     * Returns the registration key for this MoSync tool installation.
+     * @return
+     */
+    public String getRegistrationKey() {
+        // TODO Should be fetched from mosync web site
+        String hash = getProperty(USER_HASH_PROP);
+        if (hash != null) {
+            return hash.substring(0, hash.length() / 2);
+        }
+
+        return "unregistered";
+    }
+    
 	/**
 	 * The 'inverse' of getProfile(fullName).
 	 * 
@@ -736,5 +752,6 @@ public class MoSyncTool {
 					+ preferredProfile.getName();
 		}
 	}
+
 
 }

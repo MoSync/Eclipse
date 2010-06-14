@@ -142,7 +142,7 @@ icon="icons/launchshortcut.png">
            </action> -->
            <action id="com.mobilesorcery.sdk.htmlhelp"
                menubarPath="help/helpStart"
-               label="MoSync HTML Help"
+               label="MoSync Online User Guide"
                class="com.mobilesorcery.ui.internal.actions.ShowHTMLAction">
            </action>           ...
            <action id="com.mobilesorcery.sdk.panic"

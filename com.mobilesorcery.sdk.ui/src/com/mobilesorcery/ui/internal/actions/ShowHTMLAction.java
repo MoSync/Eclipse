@@ -13,8 +13,8 @@
 */
 package com.mobilesorcery.ui.internal.actions;
 
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
+import java.text.MessageFormat;
+
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
@@ -36,8 +36,14 @@ public class ShowHTMLAction extends Action implements IWorkbenchWindowActionDele
     public void run(IAction action) {
         // Quasi-hard-coded html help file location
         Program program = Program.findProgram("html");
-        IPath helpFile = MoSyncTool.getDefault().getMoSyncHome().append(new Path("docs/index.html"));
-        program.execute(helpFile.toFile().getAbsolutePath());
+        String registrationKey = MoSyncTool.getDefault().getRegistrationKey();
+        int buildNumber = MoSyncTool.getDefault().getCurrentBinaryVersion();
+        //IPath helpFile = MoSyncTool.getDefault().getMoSyncHome().append(new Path("docs/index.html"));
+        //program.execute(helpFile.toFile().getAbsolutePath());
+        program.execute(MessageFormat.format(
+                "http://www.mosync.com/content/documentation?cc={0}&r={1}",
+                registrationKey,
+                Integer.toString(buildNumber)));
     }
 
     public void selectionChanged(IAction action, ISelection selection) {
