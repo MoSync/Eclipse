@@ -140,6 +140,13 @@ icon="icons/launchshortcut.png">
                  label="Switch To Example Workspace"
                  menubarPath="help/helpStart">
            </action> -->
+           <action id="com.mobilesorcery.sdk.help.doxygen"
+               menubarPath="help/helpStart"
+               label="MoSync API Reference">
+               <class class="com.mobilesorcery.ui.internal.actions.ShowHelpAction">
+                   <parameter name="resource" value="/com.mobilesorcery.sdk.help/docs/html/api_areas.html"/>
+               </class>
+           </action>
            <action id="com.mobilesorcery.sdk.htmlhelp"
                menubarPath="help/helpStart"
                label="MoSync Online User Guide"
