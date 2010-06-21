@@ -246,11 +246,11 @@ public class MoSyncBuilder extends ACBuilder {
      */
     public static IPath toAbsolute(IPath root, String pathStr) {
         Path path = new Path(pathStr);
-        if (path.isAbsolute()) {
+        /*if (path.isAbsolute()) {
+         * DO NOT ACTIVATE THIS; / is considered an absolute path - what will happen if you do a clean on that?
             return path;
-        } else {
-            return root.append(path);
-        }
+        } else {*/
+        return root.append(path);
     }
 
     public static IPath getFinalOutputPath(IProject project, IBuildVariant variant) {

@@ -277,7 +277,8 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 		return result == null ? "" : result;
 	}*/
 
-	public void setDefaults(ILaunchConfigurationWorkingCopy arg0) {
+	public void setDefaults(ILaunchConfigurationWorkingCopy wc) {
+	    EmulatorLaunchConfigurationDelegate.configureLaunchConfigForSourceLookup(wc);
 	}
 
 	private IProject getProject() {
