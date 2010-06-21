@@ -241,8 +241,7 @@ public class MoSyncBuilder extends ACBuilder {
      * Converts a project-relative path to an absolute path.
      * 
      * @param path
-     * @return An absolute path; if <code>path</code> already is an absolute
-     *         path, then that path is used.
+     * @return An absolute path
      */
     public static IPath toAbsolute(IPath root, String pathStr) {
         Path path = new Path(pathStr);
