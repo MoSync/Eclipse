@@ -24,6 +24,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.junit.Test;
 
+import com.mobilesorcery.sdk.ui.ImportProjectsRunnable;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
 public class UniqueProjectTest {

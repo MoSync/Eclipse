@@ -24,6 +24,8 @@ import org.eclipse.ui.INewWizard;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.statushandlers.StatusManager;
 
+import com.mobilesorcery.sdk.ui.ImportProjectsRunnable;
+
 /**
  * 
  * @author Mattias Bybro

@@ -50,12 +50,13 @@ public class SectionedPropertiesFile {
 
 			public static Entry parse(String entry) {
 				boolean inEscape = false;				
+				boolean commentStarted = false;
 				StringBuffer currentBuffer = new StringBuffer();
 				String key = null;
 				String value = null;
 				
 				char[] chars = entry.toCharArray();
-				for (int i = 0; i < chars.length; i++) {
+				for (int i = 0; i < chars.length && !commentStarted; i++) {
 					char ch = chars[i];
 					if (ch == '\\' && !inEscape) {
 						// Escape
@@ -63,6 +64,8 @@ public class SectionedPropertiesFile {
 					} else if (ch == '=' && !inEscape) {
 						key = currentBuffer.toString().trim();
 						currentBuffer = new StringBuffer();
+					} else if (ch == '#' && !inEscape) {
+					    commentStarted = true;
 					} else {
 						inEscape = false;
 						currentBuffer.append(ch);
@@ -70,7 +73,16 @@ public class SectionedPropertiesFile {
 				}
 				
 				value = currentBuffer.toString().trim();
-				return new Entry(key, value);
+				if (key == null) {
+				    // If no = sign, this key = value
+				    key = value;
+				}
+				
+				if (!Util.isEmpty(value) && !Util.isEmpty(key)) {
+				    return new Entry(key, value);
+				} else {
+				    return null;
+				}
 			}
 			
 			public Entry(String key, String value) {
@@ -189,8 +201,11 @@ public class SectionedPropertiesFile {
 					result.sections.add(currentSection);
 					currentSection = new Section(currentSectionName);
 				}
-			} else if (trimmed.length() > 0) {
-				currentSection.addEntry(Entry.parse(line));
+			} else {
+			    Entry entry = Entry.parse(line);
+			    if (entry != null) {
+			        currentSection.addEntry(entry);
+			    }
 			}
 		}
 	

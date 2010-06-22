@@ -1,10 +1,10 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Ui
+Bundle-Name: %Bundle-Name
 Bundle-SymbolicName: com.mobilesorcery.sdk.ui;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: com.mobilesorcery.sdk.ui.MosyncUIPlugin
-Bundle-Vendor: MOBILESORCERY
+Bundle-Vendor: %Bundle-Vendor
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  com.mobilesorcery.sdk.core;bundle-version="1.0.0",

@@ -187,11 +187,22 @@ public class MoSyncTool {
 		return new Path("C:\\MoSync");
 	}
 
+	/**
+	 * Determines whether a specified home directory constitutes
+	 * a proper mosync home directory 
+	 * @param home
+	 * @return
+	 */
 	public static boolean isValidHome(IPath home) {
 		MoSyncTool guess = createMoSyncTool(home);
 		return guess.isValid();
 	}
 
+	/**
+	 * Returns the default home directory as described in
+	 * the system environment variable <code>MOSYNCDIR</code>.
+	 * @return <code>null</code> if no <code>MOSYNCDIR</code> environment variable is set.
+	 */
 	public static IPath getMoSyncHomeFromEnv() {
 		String env = System.getenv(MOSYNC_ENV_VAR);
 		if (env != null) {
@@ -201,14 +212,38 @@ public class MoSyncTool {
 		return null;
 	}
 
+    /**
+     * Returns the <code>bin</code> directory, where all binaries are located.
+     * @return
+     */
 	public IPath getMoSyncBin() {
 		return getMoSyncHome().append("bin");
 	}
 
+    /**
+     * Returns the <code>lib</code> directory, where all binary libs are located.
+     * @return
+     */
 	public IPath getMoSyncLib() {
 		return getMoSyncHome().append("lib");
 	}
 
+    /**
+     * Returns the <code>examples</code> directory, where all MoSync example projects are stored.
+     * @return
+     */
+    public IPath getMoSyncExamplesDirectory() {
+        return getMoSyncHome().append("examples");
+    }
+    
+    /**
+     * Returns the directory of the example workspace.
+     * @return
+     */
+    public IPath getMoSyncExamplesWorkspace() {
+        return getMoSyncExamplesDirectory().append("workspace");
+    }
+    
 	public IPath[] getMoSyncDefaultIncludes() {
 		return new IPath[] { getMoSyncHome().append("include") };
 	}

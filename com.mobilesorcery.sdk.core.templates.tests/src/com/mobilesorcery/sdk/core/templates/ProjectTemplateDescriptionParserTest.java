@@ -26,10 +26,10 @@ public class ProjectTemplateDescriptionParserTest {
 
 	@Test
 	public void testEntryParser() {
-		testEntry("a", null, "a");
+		testEntry("a", "a", "a");
 		testEntry("a=b", "a", "b");
-		testEntry("a\\=b", null, "a=b");
-		testEntry("a\\\\=b", "a\\", "b");
+		testEntry("a\\=b", "a=b", "a=b");
+		testEntry("a\\\\=b # comment", "a\\", "b");
 	}
 	
 	private void testEntry(String line, String key, String value) {

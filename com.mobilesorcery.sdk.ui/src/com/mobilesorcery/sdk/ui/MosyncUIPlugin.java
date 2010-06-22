@@ -16,10 +16,16 @@ package com.mobilesorcery.sdk.ui;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.File;
 import java.net.URI;
+import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.core.commands.ExecutionException;
@@ -28,22 +34,26 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.ISafeRunnable;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.IJobChangeListener;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.debug.core.ILaunchConfiguration;
-import org.eclipse.jface.resource.FontRegistry;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
-import org.eclipse.swt.graphics.Font;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
@@ -53,9 +63,12 @@ import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWindowListener;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.undo.CreateProjectOperation;
+import org.eclipse.ui.intro.IIntroManager;
+import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -63,9 +76,12 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IProvider;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
-import com.mobilesorcery.sdk.core.MoSyncNature;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
+import com.mobilesorcery.sdk.core.SectionedPropertiesFile;
+import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
+import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section.Entry;
 import com.mobilesorcery.sdk.ui.internal.console.IDEProcessConsole;
 import com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator;
 
@@ -123,9 +139,72 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		listeners = new PropertyChangeSupport(this);
 		CoreMoSyncPlugin.getDefault().setIDEProcessConsoleProvider(this);
 		registerGlobalProjectListener();
+		importExampleProjects();
 	}
 
-	/*
+	// If this is the example workspace, then if applicable; import projects
+	private void importExampleProjects() {
+	    IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
+	    File wsFile = wsRoot.getLocation().toFile();
+        File exampleWSFile = MoSyncTool.getDefault().getMoSyncExamplesWorkspace().toFile();  
+        File examplesDir = MoSyncTool.getDefault().getMoSyncExamplesDirectory().toFile();
+        boolean isExampleWorkspace = wsFile.equals(exampleWSFile);
+        if (isExampleWorkspace) {
+            File exampleManifestFile = new File(examplesDir, "examples.list");
+            if (exampleManifestFile.exists()) {
+                try {
+                    SectionedPropertiesFile exampleManifest = SectionedPropertiesFile.parse(exampleManifestFile);
+                    Section exampleSection = exampleManifest.getFirstSection("examples");
+                    Map<String, String> newExamples = exampleSection.getEntriesAsMap();
+                    IProject[] alreadyImportedProjects = wsRoot.getProjects();
+
+                    for (int i = 0; i < alreadyImportedProjects.length; i++) {
+                        IProject project = alreadyImportedProjects[i];
+                        newExamples.remove(project.getName());
+                    }
+                    
+                    if (!newExamples.isEmpty()) {
+                        ArrayList<File> projectFiles = new ArrayList<File>();
+                        ArrayList<String> preferredProjectNames = new ArrayList<String>();
+                        for (String newExample : newExamples.keySet()) {
+                            String newExampleDir = newExamples.get(newExample);
+                            IPath newExampleFullDir = MoSyncTool.getDefault().getMoSyncExamplesDirectory().append(newExampleDir);
+                            projectFiles.add(newExampleFullDir.append(MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME).toFile());
+                            preferredProjectNames.add(newExample);
+                        }
+                        
+                        ImportProjectsRunnable importer = new ImportProjectsRunnable(projectFiles.toArray(new File[0]), preferredProjectNames.toArray(new String[0]), ImportProjectsRunnable.DO_NOT_COPY | ImportProjectsRunnable.USE_NEW_PROJECT_IF_AVAILABLE);
+                        //importer.setShowDialogOnSuccess(true);
+                        Job job = importer.createJob(true);
+                        
+                        final IIntroManager im = PlatformUI.getWorkbench().getIntroManager();
+                        job.addJobChangeListener(new JobChangeAdapter() {
+                            public void done(IJobChangeEvent event) {
+                                im.getIntro().getIntroSite().getShell().getDisplay().asyncExec(new Runnable() {
+                                    public void run() {
+                                        closeIntro(im);
+                                    }
+                                });
+                            } 
+                        });
+                    }
+                } catch (Exception e) {
+                    log(e);
+                }
+            }
+        }
+    }
+
+    private void closeIntro(IIntroManager im) {
+        IIntroPart part = im.getIntro();
+        im.closeIntro(part);
+    }
+
+    public void closeIntro(IWorkbenchSite site) {
+        closeIntro(site.getWorkbenchWindow().getWorkbench().getIntroManager());
+	}
+	
+    /*
 	 * (non-Javadoc)
 	 * 
 	 * @see

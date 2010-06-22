@@ -78,7 +78,7 @@ public class RecentProjectsContentProvider extends LinkContentProvider {
 	}
 
 	private File getExampleWorkspace() {
-		return MoSyncTool.getDefault().getMoSyncHome().append("examples").toFile();	
+		return MoSyncTool.getDefault().getMoSyncExamplesWorkspace().toFile();	
 	}
 	
 	private boolean isExampleWorkspace(String ws) {

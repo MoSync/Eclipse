@@ -33,7 +33,7 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.importproject.Activator;
-import com.mobilesorcery.sdk.importproject.ImportProjectsRunnable;
+import com.mobilesorcery.sdk.ui.ImportProjectsRunnable;
 
 
 public class ImportExampleProject {
@@ -56,9 +56,9 @@ public class ImportExampleProject {
 		boolean success = false;
 		if (MoSyncTool.getDefault().isValid()) {
 			if (projectExtraDir.equalsIgnoreCase("")) { //$NON-NLS-1$
-				projectString = MoSyncTool.getDefault().getMoSyncHome().append("examples").append(projectName).append(projectName + "." + projectExtension).toOSString(); //$NON-NLS-1$ //$NON-NLS-2$
+				projectString = MoSyncTool.getDefault().getMoSyncExamplesDirectory().append(projectName).append(projectName + "." + projectExtension).toOSString(); //$NON-NLS-1$ //$NON-NLS-2$
 			} else {
-				projectString = MoSyncTool.getDefault().getMoSyncHome().append("examples").append(projectExtraDir).append(projectName).append(projectName + "." + projectExtension).toOSString(); //$NON-NLS-1$ //$NON-NLS-2$
+				projectString = MoSyncTool.getDefault().getMoSyncExamplesDirectory().append(projectExtraDir).append(projectName).append(projectName + "." + projectExtension).toOSString(); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 			File[] fileChildren = new File[1];
 			fileChildren[0] = new File(projectString);

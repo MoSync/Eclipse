@@ -12,7 +12,7 @@
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package com.mobilesorcery.sdk.importproject;
+package com.mobilesorcery.sdk.ui;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -42,6 +42,12 @@ import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.WorkspaceModifyOperation;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -60,7 +66,6 @@ import com.mobilesorcery.sdk.profiles.filter.ConstantFilter;
 import com.mobilesorcery.sdk.profiles.filter.FeatureFilter;
 import com.mobilesorcery.sdk.profiles.filter.ProfileFilter;
 import com.mobilesorcery.sdk.profiles.filter.ConstantFilter.RelationalOp;
-import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
 /**
  * 
@@ -73,6 +78,10 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 	public final static int COPY_ONLY_FILES_IN_PROJECT_DESC = 1;
 	public final static int DO_NOT_COPY = 2;
 	
+	/**
+	 * A constant indicating we should use the .mosyncproject file (if it exists)
+	 * rather than the legacy .msp/.mopro file format.
+	 */
 	public final static int USE_NEW_PROJECT_IF_AVAILABLE = 1 << 12;
 
 	static FileFilter COPY_FILE_FILTER = new FileFilter() {
@@ -83,24 +92,72 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 	};
 
 	private File[] projectDescriptions;
+    private String[] preferredProjectNames;
 	private Map<String, String> keyMap;
 	private int copyStrategy;
 	private boolean useNewProjectIfAvailable;
 	private List<IProject> result;
+    private boolean showDialogOnSuccess = false;
 
-	public ImportProjectsRunnable(File[] projectDescriptions, int strategy) {
-		this(projectDescriptions, strategy, null);
-	}
-	
-	public ImportProjectsRunnable(File[] projectDescriptions, int strategy, List<IProject> result) {
-		this.projectDescriptions = projectDescriptions;
+    public ImportProjectsRunnable(File[] projectDescriptions, int strategy) {
+        this(projectDescriptions, null, strategy, null);
+    }
+    
+    public ImportProjectsRunnable(File[] projectDescriptions, String[] preferredProjectNames, int strategy) {
+        this(projectDescriptions, preferredProjectNames, strategy, null);
+    }
+    
+    public ImportProjectsRunnable(File[] projectDescriptions, int strategy, List<IProject> result) {
+        this(projectDescriptions, null, strategy, result);
+    }
+        
+    public ImportProjectsRunnable(File[] projectDescriptions, String[] preferredProjectNames, int strategy, List<IProject> result) {
+    	this.projectDescriptions = projectDescriptions;
+    	this.preferredProjectNames = preferredProjectNames;
 		this.copyStrategy = strategy & 0x3; // Max value of copy strategies.
 		this.useNewProjectIfAvailable = (strategy & USE_NEW_PROJECT_IF_AVAILABLE) == USE_NEW_PROJECT_IF_AVAILABLE;
-		this.result = result;
+		this.result = result == null ? new ArrayList<IProject>() : result;
 	}
 
-	protected void execute(IProgressMonitor monitor) throws CoreException,
-			InvocationTargetException, InterruptedException {
+	public Job createJob(boolean schedule) {
+	    Job importJob = new Job("Import projects") {
+            protected IStatus run(IProgressMonitor monitor) {
+                try {
+                    execute(monitor);
+                    if (showDialogOnSuccess) {
+                       showImportSuccessDialog(result.size()); 
+                    }
+                    return Status.OK_STATUS;
+                } catch (CoreException e) {
+                    return e.getStatus();
+                } 
+            }	        
+	    };
+	    
+	    importJob.setUser(true);
+	    importJob.setRule(ResourcesPlugin.getWorkspace().getRoot());
+	    if (schedule) {
+	        importJob.schedule();
+	    }
+	    return importJob;
+	}
+
+    private void showImportSuccessDialog(final int newProjectCount) {
+        if (newProjectCount > 0) {
+            final Display d = PlatformUI.getWorkbench().getDisplay();
+            d.syncExec(new Runnable() {
+                public void run() {
+                    Shell shell = new Shell(d);
+                    MessageDialog.openInformation(new Shell(d),
+                            "Imported Example Projects",
+                            MessageFormat.format("Imported {0} example projects", newProjectCount));
+                    shell.dispose();
+                }
+            });
+        }
+    }
+    
+	protected void execute(IProgressMonitor monitor) throws CoreException {
 		monitor.beginTask(Messages.ImportProjectsRunnable_ImportProgress,
 				projectDescriptions.length);
 
@@ -111,15 +168,15 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 				return;
 			}
 			try {
-				importProject(monitor, projectDescriptions[i]);
+				importProject(monitor, getPreferredProjectName(i), projectDescriptions[i]);
 			} catch (Exception e) {
-				errorStatus.add(new Status(IStatus.ERROR, Activator.PLUGIN_ID,
+				errorStatus.add(new Status(IStatus.ERROR, MosyncUIPlugin.PLUGIN_ID,
 						projectDescriptions[i] + "; " + e.getMessage(), e));
 			}
 		}
 
 		if (!errorStatus.isEmpty()) {
-			MultiStatus compoundError = new MultiStatus(Activator.PLUGIN_ID,
+			MultiStatus compoundError = new MultiStatus(MosyncUIPlugin.PLUGIN_ID,
 					IStatus.ERROR, errorStatus.toArray(new IStatus[0]),
 					Messages.ImportProjectsRunnable_SomeProjectsFailed, null);
 			CoreException ex = new CoreException(compoundError);
@@ -128,18 +185,26 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		}
 	}
 
-	private void importProject(IProgressMonitor monitor, File projectDescription)
+	private String getPreferredProjectName(int ix) {
+	    if (preferredProjectNames == null || ix < 0 || ix >= preferredProjectNames.length) {
+	        return null;
+	    } else {
+	        return preferredProjectNames[ix];
+	    }
+    }
+
+    private void importProject(IProgressMonitor monitor, String preferredProjectName, File projectDescription)
 			throws CoreException {
 		if (projectDescription.isDirectory()) {
-			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Project description must not be a directory"));
+			throw new CoreException(new Status(IStatus.ERROR, MosyncUIPlugin.PLUGIN_ID, "Project description must not be a directory"));
 		}
 		
-		if (shouldUseNewFormatIfAvailable() && copyStrategy != COPY_ALL_FILES) {
-			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "\'Use new format if available\' can only be used with copy all files"));
-		}
+		/*if (shouldUseNewFormatIfAvailable() && copyStrategy != COPY_ALL_FILES) {
+			throw new CoreException(new Status(IStatus.ERROR, MosyncUIPlugin.PLUGIN_ID, "\'Use new format if available\' can only be used with copy all files"));
+		}*/
 		
 		monitor = new SubProgressMonitor(monitor, 4);
-		String projectName = Util.getNameWithoutExtension(projectDescription);
+		String projectName = preferredProjectName == null ? Util.getNameWithoutExtension(projectDescription) : preferredProjectName;
 
 		IPath projectMetaDataLocation = getProjectMetaDataLocation(projectDescription);
 
@@ -184,7 +249,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		return useNewProjectIfAvailable;
 	}
 
-	IProject createProjectWithUniqueName(String projectName, URI location,
+	public IProject createProjectWithUniqueName(String projectName, URI location,
 			IProgressMonitor monitor) throws CoreException {
 		String newProjectName = projectName;
 		IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace().getRoot();
@@ -200,7 +265,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 				throw new CoreException(
 						new Status(
 								IStatus.ERROR,
-								Activator.PLUGIN_ID,
+								MosyncUIPlugin.PLUGIN_ID,
 								Messages.ImportProjectsRunnable_UniqueNameCreationFailed));
 			}
 
@@ -273,7 +338,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 
 		} catch (Exception e) {
 			throw new CoreException(new Status(IStatus.ERROR,
-					Activator.PLUGIN_ID, e.getMessage(), e));
+					MosyncUIPlugin.PLUGIN_ID, e.getMessage(), e));
 		}
 	}
 
@@ -590,5 +655,9 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		}
 
 	}
+
+    public void setShowDialogOnSuccess(boolean showDialogOnSuccess) {
+        this.showDialogOnSuccess = showDialogOnSuccess;
+    }
 
 }

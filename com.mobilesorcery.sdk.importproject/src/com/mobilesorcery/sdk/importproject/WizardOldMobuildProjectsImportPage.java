@@ -38,6 +38,7 @@ import org.eclipse.ui.statushandlers.StatusManager;
 
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.ui.ImportProjectsRunnable;
 
 /**
  * 
