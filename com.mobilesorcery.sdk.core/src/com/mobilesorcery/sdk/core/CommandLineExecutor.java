@@ -17,6 +17,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Stack;
+import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
@@ -111,6 +113,48 @@ public class CommandLineExecutor {
 		this.dir = dir;
 	}
 
+	/**
+	 * Splits a command line string into an array of string, splitting on
+	 * space and other whitespace. But unlike the way exec does this, it
+	 * actually takes quotation into consideration, treating it as a single 
+	 * argument independently from any whitespace it might contain. This is
+	 * necessary on Mac OS X, and perhaps even Linux.
+	 * 
+	 * @param cmd Command line to split
+	 * @return Array that contains the result
+	 */
+	public String[] parseCommandLine ( String cmd )
+	{
+		ArrayList<String> cmdarray = new ArrayList<String>();
+		StringTokenizer tok = new StringTokenizer( cmd, " \t\n\r\f", true );
+		
+		while ( tok.hasMoreTokens() == true )
+		{
+			// Is token whitespace ?
+			String t = tok.nextToken( );
+			if ( t.matches( "[ \t\n\r\f]" )  == true )
+				continue;
+			
+			// Does it start with a quotation mark?, if
+			// so, go into merge state
+			if ( t.startsWith( "\"" ) == true )
+			{
+				while ( tok.hasMoreTokens( ) == true )
+				{
+					String s = tok.nextToken( );
+					t += s;
+					if ( s.endsWith( "\"" ) == true )
+						break;
+				}
+			}
+			
+			// Add new token to result
+			cmdarray.add( t );
+		}
+		
+		return cmdarray.toArray( new String[0] );
+	}
+	
 	public int execute() throws IOException {
 		IProcessConsole console = createConsole();
 
@@ -134,7 +178,7 @@ public class CommandLineExecutor {
 			if (dir == null) {
 			    currentProcess = Runtime.getRuntime().exec(mergedCommandLine);
 			} else {
-			    currentProcess = Runtime.getRuntime().exec(mergedCommandLine, null, new File(dir));
+			    currentProcess = Runtime.getRuntime().exec(parseCommandLine( mergedCommandLine ), null, new File(dir));
 			}
 			
 			console.attachProcess(currentProcess, stdoutHandler, stderrHandler);

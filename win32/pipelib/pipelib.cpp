@@ -17,16 +17,20 @@
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
+#define _WIN32_WINNT 0x0501
 #include <windows.h>
 #include <io.h>
 #include <process.h>
 #include <direct.h>
+
 #define pipe _pipe
 #else	// GNU libc
+#include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
 #include <spawn.h>
 #include <sys/wait.h>
+#include <string.h>
 #endif
 
 #include <stdio.h>
@@ -45,10 +49,137 @@
 #define environ (*_NSGetEnviron())
 #endif
 
+#ifdef WIN32
+/**
+ * Function used to destroy all windows of the specified process.
+ *
+ * @param hwnd handle to top-level window.
+ * @param pid Pid of process to stop.
+ */
+static BOOL CALLBACK
+terminateWindows(HWND hwnd, LPARAM pid);
+
+static BOOL CALLBACK
+terminateWindows(HWND hwnd, LPARAM pid)
+{
+	DWORD id;
+
+	GetWindowThreadProcessId(hwnd, &id);
+
+	if(id == (DWORD) pid)
+	{
+		PostMessage(hwnd, WM_CLOSE, 0, 0);
+	}
+
+	return TRUE;
+}
+#endif
+
+#ifndef WIN32
+
+#define BUFFER_SIZE 4096
+#define MAX_ARGV_SIZE 4096
+
+/**
+ * Frees the allocated argument strings, should
+ * be called after a call to parseCmdLine to 
+ * release the memory.
+ *
+ * @param a An array of pointers previously allocated
+ *          parseCmdLine.
+ */
+static void 
+parseFreeMem ( char * a[] )
+{
+	while ( *a != NULL ) 
+	{
+		free( *a++ );
+	}
+}
+
+/**
+ * Copies the given string to a string that is allocted by
+ * this function and the returned.
+ * 
+ * Note: The user is reponsible for freeing the memory
+ *       allocated by this function.
+ *
+ * @param s The string that should be copied.
+ * @return Returns a copy of the given string, or NULL
+ *         if no memory was availible.
+ */
+static char *
+parseStrCopyN ( char *s )
+{
+	size_t len = strlen( s );
+	char * res = (char *) malloc( len+1 );
+	
+	if (res == NULL)
+	{
+		return NULL;
+	}
+	
+	strcpy( res, s );
+	return res;
+}
+
+/**
+ * Parses a command string and converts it to an argv-style
+ * array. Memory for the argv-array is allocated within this
+ * function and should be relased by a call to parseFreeMem.
+ *
+ * @param cmd Command string.
+ * @return The command string converted to an argv array.
+ */
+char **
+parseCmdLineN ( const char *cmd )
+{
+	int i = 0;
+	char *tok;
+	static char tmpStr[BUFFER_SIZE];
+	static char tmpCmd[BUFFER_SIZE];
+	static char *tmpArr[MAX_ARGV_SIZE];
+	
+	strcpy( tmpCmd, cmd );
+	tok = strtok( tmpCmd, " \t\f\n" );
+	while ( tok != NULL && i < MAX_ARGV_SIZE )
+	{
+		/* Copy first token */
+		strcpy( tmpStr, tok );
+		
+		/* Is there a quotation mark? */
+		if ( tok[0] == '\"' )
+		{
+			tok = strtok( NULL, "\"" );
+			strcat( tmpStr, " " );
+			if ( tok != NULL )
+			{
+				strcat( tmpStr, tok );
+			}
+			strcat( tmpStr, "\"" );
+		}
+		
+		/* Copy argument */
+		char *copiedString = parseStrCopyN( tmpStr );
+		if(copiedString == NULL)
+		{
+			return NULL;
+		}
+		
+		tmpArr[i++] = copiedString;
+		tok = strtok( NULL, " \t\f\n" );
+	}
+	
+	tmpArr[i] = NULL;
+	return tmpArr;
+}
+
+#endif
+
 PIPELIB_API int pipe_create(int* fds)
 {
 #ifdef WIN32
-	return _pipe(fds, 512, O_BINARY/* | O_NOINHERIT*/);
+	return _pipe(fds, 512, O_BINARY | O_NOINHERIT);
 #else
 	return pipe(fds);
 #endif
@@ -74,60 +205,75 @@ PIPELIB_API int pipe_close(int fd) {
 	return close(fd);
 }
 
-PIPELIB_API int proc_spawn(char* cmd, char* args, char* dir) {
+PIPELIB_API int proc_spawn(char* cmd, char* args, char* dir) 
+{
 	if(chdir(dir) != 0)
+	{
 		return -1;
+	}
 #ifdef WIN32
-	return (int)spawnl(P_NOWAIT, cmd, args, NULL);
+	char *argv[2] = {args, NULL};
+	HANDLE handle = (HANDLE) _spawnvp(_P_NOWAIT, cmd, argv);
+	return GetProcessId(handle);
 #else
-	pid_t pid;
-	char* argv[2] = {args, NULL};
-	int res = posix_spawn(&pid, cmd, NULL, NULL, argv, environ);
-	if(res < 0)
+	pid_t pid = 0;
+	char **argv = parseCmdLineN( args );
+	int res = posix_spawnp(&pid, cmd, NULL, NULL, argv, environ);
+	parseFreeMem( argv );
+	
+	if(res < 0) {
 		return res;
+	}
 	return pid;
 #endif
 }
 
 PIPELIB_API int proc_wait_for(int handle) {
-	int err_code;
 #ifdef WIN32
-	_cwait(&err_code, handle, NULL);
+	HANDLE procHandle = OpenProcess(SYNCHRONIZE, FALSE, handle);
+	if(procHandle == NULL) {
+		return -1;
+	}
+	WaitForSingleObject(procHandle, INFINITE);
+	CloseHandle(procHandle);
 #else
-	int res = waitpid(handle, &err_code, 0);
-	if(res < 0)
-		return res;
+	int status;
+	int res = waitpid(handle, &status, 0);
+	if(res < 0 || (!WIFEXITED(status) && !WIFSIGNALED(status))) {
+		return -1;
+	}
 #endif
-	return err_code;
+	return 0;
 }
 
 PIPELIB_API int proc_kill(int pid, int exit_code) {
 #ifdef WIN32
-	HANDLE handle = OpenProcess(PROCESS_QUERY_INFORMATION |
-           PROCESS_VM_READ | PROCESS_TERMINATE, FALSE, pid);
-	
-	int gotHandle = 0;
+	int killStatus = 0;
+	HANDLE procHandle = OpenProcess(PROCESS_TERMINATE | SYNCHRONIZE, FALSE, pid);
+	if(procHandle == NULL)
+	{
+		return -1;
+	}
 
-	if (handle != NULL) {
-		gotHandle = 0xf0000;
-		int result = TerminateProcess(handle, exit_code);
-		CloseHandle(handle);
-		if (result) {
-			return 0;
+	/* Post WM_CLOSE to all windows owned by the process */
+	EnumWindows((WNDENUMPROC) terminateWindows, (LPARAM) pid);
+
+	/* Wait for process to respond and kill it */
+	if(WaitForSingleObject(procHandle, 500) != WAIT_OBJECT_0)
+	{
+		int res = TerminateProcess(procHandle, exit_code);
+		if(res == 0)
+		{
+			killStatus = -2;
 		}
 	}
 
-	int lastError = GetLastError();
-	if (lastError = ERROR_NOACCESS) {
-		lastError = -1;
-	}
+	/* Close handle */
+	CloseHandle(procHandle);
 
-	return lastError | gotHandle;
+	return killStatus;
 #else
 	// exit_code is ignored.
-	int res = kill(pid, SIGTERM);
-	if(res < 0)
-		return res;
-	return 0xf0000;	// magic number?
+	return kill(pid, SIGTERM);
 #endif
 }

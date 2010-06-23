@@ -35,6 +35,7 @@ import javax.obex.ResponseCodes;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
+import com.intel.bluetooth.obex.OBEXConnectionParams;
 import com.mobilesorcery.sdk.core.Util;
 
 /**
@@ -99,6 +100,23 @@ class ServiceSearch {
 }
 
 public class Bcobex {
+	
+	/**
+	 * This specifies the size of the chunks in which a file 
+	 * sent to a device.
+	 */
+	private static final int TRANSPORT_CHUNK_SIZE = 1024;
+	
+	static {
+		/* OS X is slow when sending packages to a device, the below 
+		 * line increases the MTU (Maximum Transferable Unit), so
+		 * that transfers is a bit faster (about 2 times compared to
+		 * the default value). */
+		if( System.getProperty("os.name").toLowerCase().contains("mac") )
+		{
+			System.setProperty("bluecove.obex.mtu", "4096");
+		}
+	};
 
     public static void main(String[] args) throws Exception {
         if (args == null || args.length != 2) {
@@ -157,7 +175,7 @@ public class Bcobex {
 
             // Send data to server
             os = putOperation.openOutputStream();
-            byte[] buffer = new byte[788]; // Just an unusual number...
+            byte[] buffer = new byte[TRANSPORT_CHUNK_SIZE]; // Just an unusual number...
             int totalRead = 0;
             boolean firstChunk = true;
             for (int read = fileInput.read(buffer); !monitor.isCanceled() && read != -1; read = fileInput.read(buffer)) {

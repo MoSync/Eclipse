@@ -112,7 +112,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 				IProgressMonitor monitor) throws CoreException {
 			IBuildResult buildResult = null;
             IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, targetProfile);
-            IBuildSession session = MoSyncBuilder.createCleanBuildSession(variant);
+            IBuildSession session = MoSyncBuilder.createDefaultBuildSession(variant);
 			buildResult = new MoSyncBuilder().fullBuild(project
 					.getWrappedProject(), session, variant, null,
 					new NullProgressMonitor());

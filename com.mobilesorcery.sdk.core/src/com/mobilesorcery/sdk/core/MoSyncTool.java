@@ -18,7 +18,9 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -55,6 +57,8 @@ public class MoSyncTool {
 
 	public final static String CONSTANT_PREFIX = "MA_PROF_CONST_";
 
+    public static final int UNVERSIONED = -1;
+    
 	/**
 	 * A filter for excluding constants from the constants.
 	 */
@@ -183,11 +187,22 @@ public class MoSyncTool {
 		return new Path("C:\\MoSync");
 	}
 
+	/**
+	 * Determines whether a specified home directory constitutes
+	 * a proper mosync home directory 
+	 * @param home
+	 * @return
+	 */
 	public static boolean isValidHome(IPath home) {
 		MoSyncTool guess = createMoSyncTool(home);
 		return guess.isValid();
 	}
 
+	/**
+	 * Returns the default home directory as described in
+	 * the system environment variable <code>MOSYNCDIR</code>.
+	 * @return <code>null</code> if no <code>MOSYNCDIR</code> environment variable is set.
+	 */
 	public static IPath getMoSyncHomeFromEnv() {
 		String env = System.getenv(MOSYNC_ENV_VAR);
 		if (env != null) {
@@ -197,14 +212,38 @@ public class MoSyncTool {
 		return null;
 	}
 
+    /**
+     * Returns the <code>bin</code> directory, where all binaries are located.
+     * @return
+     */
 	public IPath getMoSyncBin() {
 		return getMoSyncHome().append("bin");
 	}
 
+    /**
+     * Returns the <code>lib</code> directory, where all binary libs are located.
+     * @return
+     */
 	public IPath getMoSyncLib() {
 		return getMoSyncHome().append("lib");
 	}
 
+    /**
+     * Returns the <code>examples</code> directory, where all MoSync example projects are stored.
+     * @return
+     */
+    public IPath getMoSyncExamplesDirectory() {
+        return getMoSyncHome().append("examples");
+    }
+    
+    /**
+     * Returns the directory of the example workspace.
+     * @return
+     */
+    public IPath getMoSyncExamplesWorkspace() {
+        return getMoSyncExamplesDirectory().append("workspace");
+    }
+    
 	public IPath[] getMoSyncDefaultIncludes() {
 		return new IPath[] { getMoSyncHome().append("include") };
 	}
@@ -672,7 +711,68 @@ public class MoSyncTool {
 		return getMoSyncBin().append(name + extension);
 	}
 	
+	/**
+     * Returns the version (build number) of the current set of MoSync binaries.
+     * @return
+     */
+    public int getCurrentBinaryVersion() {
+        return getCurrentVersionFromFile(MoSyncTool.getDefault().getMoSyncBin().append("version.dat").toFile()); //$NON-NLS-1$
+    }
 
+    /**
+     * Returns the version of the current set of installed device profiles.
+     * @return
+     */
+    public int getCurrentProfileVersion() {
+        return getCurrentVersionFromFile(MoSyncTool.getDefault().getProfilesPath().append("version.dat").toFile()); //$NON-NLS-1$
+    }
+
+    private int getCurrentVersionFromFile(File versionFile) {
+        if (versionFile.exists()) {
+            try {
+                return readVersion(versionFile);
+            } catch (IOException e) {
+                return UNVERSIONED;
+            }
+        }
+
+        return 0;
+    }
+
+    private int readVersion(File versionFile) throws IOException {
+        FileReader input = new FileReader(versionFile);
+        try {
+            LineNumberReader lineInput = new LineNumberReader(input);
+            String version = lineInput.readLine();
+            if (version != null) {
+                version = version.trim();
+                return Integer.parseInt(version);
+            }
+
+            return 0;
+        } catch (Exception e) {
+            return UNVERSIONED;
+        } finally {
+            if (input != null) {
+                input.close();
+            }
+        }
+    }
+    
+    /**
+     * Returns the registration key for this MoSync tool installation.
+     * @return
+     */
+    public String getRegistrationKey() {
+        // TODO Should be fetched from mosync web site
+        String hash = getProperty(USER_HASH_PROP);
+        if (hash != null) {
+            return hash.substring(0, hash.length() / 2);
+        }
+
+        return "unregistered";
+    }
+    
 	/**
 	 * The 'inverse' of getProfile(fullName).
 	 * 
@@ -687,5 +787,6 @@ public class MoSyncTool {
 					+ preferredProfile.getName();
 		}
 	}
+
 
 }

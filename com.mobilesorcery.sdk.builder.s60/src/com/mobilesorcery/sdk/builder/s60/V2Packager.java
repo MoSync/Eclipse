@@ -28,9 +28,7 @@ import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
-import com.mobilesorcery.sdk.core.WineHelper;
 import com.mobilesorcery.sdk.core.templates.Template;
-import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class V2Packager 
 extends S60Packager 
@@ -81,8 +79,8 @@ extends S60Packager
 			Util.copyFile(new NullProgressMonitor(), new File(runtimeDir, "MoSync.rsc"), new File(packageOutputDir, uid + ".rsc")); //$NON-NLS-1$ //$NON-NLS-2$
 			
 			// Create the launcherapp.pkg
-			internal.setParameter( "pkg-package-output-dir", WineHelper.convPath( internal.resolve( "%package-output-dir%" )));
-			internal.setParameter( "pkg-programcomb-output", WineHelper.convPath( internal.resolve( "%programcomb-output%" )));
+			internal.setParameter( "pkg-package-output-dir", internal.resolve( "%package-output-dir%" ));
+			internal.setParameter( "pkg-programcomb-output", internal.resolve( "%programcomb-output%" ));
 			
 			String template = Util.readFile(runtimeDir.getAbsolutePath() + "/MoSync-template.pkg"); //$NON-NLS-1$
 			internal.setParameter("uid", uid); //$NON-NLS-1$
@@ -92,7 +90,7 @@ extends S60Packager
 			Util.writeToFile(pkgFile, resolvedTemplate);
 
 			//internal.getExecutor().setExecutionDirectory(packageOutputDir.getAbsolutePath());
-			internal.runCommandLine( m_makesis200Loc, WineHelper.convPath( pkgFile.getAbsolutePath() ) ); //$NON-NLS-1$
+			internal.runCommandLine( m_makesis200Loc, pkgFile.getAbsolutePath() ); //$NON-NLS-1$
 
 			// Rename
 			File unsignedSis = new File(packageOutputDir, uid + ".sis"); //$NON-NLS-1$

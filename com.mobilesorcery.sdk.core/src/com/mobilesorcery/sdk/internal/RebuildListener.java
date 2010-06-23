@@ -36,6 +36,11 @@ import com.mobilesorcery.sdk.internal.cdt.MoSyncIncludePathContainer;
 import com.mobilesorcery.sdk.internal.cdt.MoSyncPathInitializer;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
+/**
+ * A listener that makes sure to rebuild a project if certain events occur.
+ * @author Mattias Bybro, mattias.bybro@purplescout.se
+ *
+ */
 public class RebuildListener implements PropertyChangeListener {
 	
     public void propertyChange(PropertyChangeEvent event) {
@@ -57,6 +62,16 @@ public class RebuildListener implements PropertyChangeListener {
                 IProfile profile = project.getTargetProfile();
                 if (profile != null) {
                     runBuildJob(project, profile);
+                }
+            }
+        } else if (MoSyncProject.BUILD_CONFIGURATION_CHANGED == event.getPropertyName()) {
+            // Make sure we rebuild when necessary
+            Object source = event.getSource();
+            if (source instanceof MoSyncProject) {
+                try {
+                    ((MoSyncProject) source).getWrappedProject().touch(null);
+                } catch (CoreException e) {
+                    CoreMoSyncPlugin.getDefault().log(e);
                 }
             }
         }

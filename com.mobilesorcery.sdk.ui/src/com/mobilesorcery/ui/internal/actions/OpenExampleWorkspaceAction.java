@@ -68,7 +68,7 @@ public class OpenExampleWorkspaceAction extends Action implements IWorkbenchWind
 
     public OpenExampleWorkspaceAction() {
         super();
-        String exampleWorkspacePath = MoSyncTool.getDefault().getMoSyncHome().append(new Path("examples")).toOSString(); 
+        String exampleWorkspacePath = MoSyncTool.getDefault().getMoSyncExamplesDirectory().toOSString(); 
         setWorkspacePath(exampleWorkspacePath);
     }
 

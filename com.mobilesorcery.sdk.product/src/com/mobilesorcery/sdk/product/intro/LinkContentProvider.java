@@ -9,6 +9,8 @@ import org.eclipse.ui.intro.config.IIntroContentProviderSite;
 import org.eclipse.ui.intro.config.IIntroXHTMLContentProvider;
 import org.w3c.dom.Element;
 
+import com.mobilesorcery.sdk.core.MoSyncTool;
+
 public abstract class LinkContentProvider implements IIntroXHTMLContentProvider {
 
 	private static final String HELP_PREFIX = "help:/";
@@ -54,8 +56,10 @@ public abstract class LinkContentProvider implements IIntroXHTMLContentProvider 
 			createHelpLink(linkText, href.substring(HELP_PREFIX.length()), parent);
 		} else {
 			Element link = parent.getOwnerDocument().createElement("a");
-			link.setAttribute("class", "content-link");
-			link.setAttribute("href", href);
+			if (!href.startsWith("http:")) {
+			    link.setAttribute("class", "content-link");
+			}
+			link.setAttribute("href", MessageFormat.format(href, MoSyncTool.getDefault().getRegistrationKey(), MoSyncTool.getDefault().getCurrentBinaryVersion()));
 			link.appendChild(parent.getOwnerDocument().createTextNode(linkText));
 			parent.appendChild(link);
 		}

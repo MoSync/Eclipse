@@ -6,11 +6,12 @@ import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.intro.IIntroSite;
 import org.eclipse.ui.intro.config.IIntroAction;
 
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
+
 public class CloseIntroAction implements IIntroAction {
 
     public void run(IIntroSite site, Properties params) {
-        IIntroPart part = site.getWorkbenchWindow().getWorkbench().getIntroManager().getIntro();
-        site.getWorkbenchWindow().getWorkbench().getIntroManager().closeIntro(part);
+        MosyncUIPlugin.getDefault().closeIntro(site);
     }
 
 }

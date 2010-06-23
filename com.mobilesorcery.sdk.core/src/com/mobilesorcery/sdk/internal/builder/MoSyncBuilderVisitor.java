@@ -47,6 +47,7 @@ import com.mobilesorcery.sdk.internal.dependencies.ResourceFileDependencyProvide
 
 // TODO: The main responsibility of this class is no longer to
 // visit projects - split into 2 classes!
+// TODO: Replace all IResource references in build classes with IPath. (Huge refactoring)
 public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
     private static final String GCC_WALL_STR = "-Wall";

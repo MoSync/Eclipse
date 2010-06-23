@@ -12,7 +12,7 @@
             name="Finalizer">
       </view>
    </extension>
-              <extension
+              <!-- <extension
              point="org.eclipse.ui.propertyPages">
           <page
                 category="com.mobilesorcery.sdk.ui.properties.project"
@@ -33,5 +33,5 @@
                 </and>
                 </enabledWhen>
           </page>          
-   </extension>
+   </extension>-->
 </plugin>

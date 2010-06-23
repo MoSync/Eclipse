@@ -27,7 +27,6 @@ import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
-import com.mobilesorcery.sdk.core.WineHelper;
 import com.mobilesorcery.sdk.core.templates.Template;
 import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -101,20 +100,20 @@ extends S60Packager
 				}
 				internal.runCommandLine( m_iconInjecLoc, 
 						                 "-src",
-						                 WineHelper.convPath( iconFile.getLocation( ).toOSString( ) ),
+						                 iconFile.getLocation( ).toOSString( ),
 					                     "-size", 
 					                     sizeStr, 
 					                     "-platform", 
 					                     "symbian9", 
 					                     "-dst", 
-					                     WineHelper.convPath( packageOutputDir + "/" + uid + "_icon.mif" ) );
+					                     packageOutputDir + "/" + uid + "_icon.mif" );
 				hasIcon = true;
 			}
 			
 			// write package file
-			internal.setParameter( "pkg-runtime-dir", WineHelper.convPath( internal.resolve( "%runtime-dir%" )));
-			internal.setParameter( "pkg-package-output-dir", WineHelper.convPath( internal.resolve( "%package-output-dir%" )));
-			internal.setParameter( "pkg-programcomb-output", WineHelper.convPath( internal.resolve( "%programcomb-output%" )));
+			internal.setParameter( "pkg-runtime-dir", internal.resolve( "%runtime-dir%" ));
+			internal.setParameter( "pkg-package-output-dir", internal.resolve( "%package-output-dir%" ));
+			internal.setParameter( "pkg-programcomb-output", internal.resolve( "%programcomb-output%" ));
 			
 			String template = Util.readFile(runtimeDir.getAbsolutePath() + "/MoSync-template.pkg"); //$NON-NLS-1$
 			internal.setParameter("uid", uid); //$NON-NLS-1$
@@ -125,20 +124,20 @@ extends S60Packager
 			Util.writeToFile(pkgFile, resolvedTemplate);
 			
 			// compile sis file
-			internal.runCommandLine( m_makesis4Loc, WineHelper.convPath( pkgFile.getAbsolutePath() ) );
+			internal.runCommandLine( m_makesis4Loc, pkgFile.getAbsolutePath() );
 
 			File unsignedSis = new File(packageOutputDir, uid + ".sis"); //$NON-NLS-1$
             File renamedAppSis = new File(packageOutputDir, internal.resolve("%app-name%.sis")); //$NON-NLS-1$
-			internal.runCommandLine( /*new String[] 
-			                         {*/
+			internal.runCommandLine( new String[] 
+			                         {
 										m_signsis4Loc,
-										WineHelper.convPath( unsignedSis.getAbsolutePath() ),
-										WineHelper.convPath( renamedAppSis.getAbsolutePath() ),
-										WineHelper.convPath( project.getProperty(PropertyInitializer.S60_CERT_FILE) ),
-										WineHelper.convPath( project.getProperty(PropertyInitializer.S60_KEY_FILE) ),
+										unsignedSis.getAbsolutePath(),
+										renamedAppSis.getAbsolutePath(),
+										project.getProperty(PropertyInitializer.S60_CERT_FILE),
+										project.getProperty(PropertyInitializer.S60_KEY_FILE),
 										project.getProperty(PropertyInitializer.S60_PASS_KEY) 
-									 /*}, 
-                                     "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***"*/ );
+									 }, 
+                                     "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***" );
 
 			buildResult.setBuildResult(renamedAppSis);
 		} catch (Exception e) {

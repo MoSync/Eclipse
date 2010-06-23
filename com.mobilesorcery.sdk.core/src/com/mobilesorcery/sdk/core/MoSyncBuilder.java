@@ -241,16 +241,15 @@ public class MoSyncBuilder extends ACBuilder {
      * Converts a project-relative path to an absolute path.
      * 
      * @param path
-     * @return An absolute path; if <code>path</code> already is an absolute
-     *         path, then that path is used.
+     * @return An absolute path
      */
     public static IPath toAbsolute(IPath root, String pathStr) {
         Path path = new Path(pathStr);
-        if (path.isAbsolute()) {
+        /*if (path.isAbsolute()) {
+         * DO NOT ACTIVATE THIS; / is considered an absolute path - what will happen if you do a clean on that?
             return path;
-        } else {
-            return root.append(path);
-        }
+        } else {*/
+        return root.append(path);
     }
 
     public static IPath getFinalOutputPath(IProject project, IBuildVariant variant) {
@@ -937,8 +936,9 @@ public class MoSyncBuilder extends ACBuilder {
             result.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
             // result.add(getOutputPath(project.getWrappedProject(),
             // buildProperties).removeTrailingSeparator());
-            result.addAll(Arrays.asList(MoSyncBuilder.getProfileIncludes(variant.getProfile())));
         }
+        
+        result.addAll(Arrays.asList(MoSyncBuilder.getProfileIncludes(variant.getProfile())));
 
         IPath[] additionalIncludePaths = PropertyUtil.getPaths(buildProperties, ADDITIONAL_INCLUDE_PATHS);
         for (int i = 0; i < additionalIncludePaths.length; i++) {
@@ -1084,7 +1084,7 @@ public class MoSyncBuilder extends ACBuilder {
     }
 
     public static IBuildSession createCleanBuildSession(IBuildVariant variant) {
-        return new BuildSession(Arrays.asList(variant), BuildSession.ALL - BuildSession.DO_CLEAN);
+        return new BuildSession(Arrays.asList(variant), BuildSession.ALL);
     }
     
     /**

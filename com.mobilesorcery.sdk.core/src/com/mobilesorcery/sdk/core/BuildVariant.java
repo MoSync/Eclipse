@@ -7,6 +7,8 @@ public class BuildVariant implements IBuildVariant {
     private IProfile profile;
     private String cfgId;
     private boolean isFinalizerBuild;
+    
+    private final static String NULL_CFG = "@null";
 
     public BuildVariant(IProfile profile, String cfgId, boolean isFinalizerBuild) {
         this.profile = profile;
@@ -61,6 +63,9 @@ public class BuildVariant implements IBuildVariant {
             String profileStr = variantComponents[0];
             IProfile profile = MoSyncTool.getDefault().getProfile(profileStr);
             String cfgId = variantComponents[1];
+            if (NULL_CFG.equals(cfgId)) {
+                cfgId = null;
+            }
             boolean isFinalizerBuild = variantComponents.length == 3 && "Finalizer".equals(variantComponents[2]);
             if (profile != null) {
                 return new BuildVariant(profile, cfgId, isFinalizerBuild);
@@ -72,7 +77,11 @@ public class BuildVariant implements IBuildVariant {
     
     public static String toString(IBuildVariant variant) {
         String profileStr = MoSyncTool.toString(variant.getProfile());
-        return PropertyUtil.fromStrings(new String[] { profileStr, variant.getConfigurationId(), variant.isFinalizerBuild() ? "Finalizer" : "Non-finalizer" });
+        String cfgId = variant.getConfigurationId();
+        if (cfgId == null) {
+            cfgId = NULL_CFG;
+        }
+        return PropertyUtil.fromStrings(new String[] { profileStr, cfgId, variant.isFinalizerBuild() ? "Finalizer" : "Non-finalizer" });
     }
     
     public String toString() {

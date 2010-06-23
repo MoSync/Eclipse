@@ -14,16 +14,18 @@
    </configIni>
 
    <launcherArgs>
-      <vmArgsMac>-XstartOnFirstThread -Dorg.eclipse.swt.internal.carbon.smallFonts</vmArgsMac>
+      <vmArgsMac>-XstartOnFirstThread -Dorg.eclipse.swt.internal.carbon.smallFonts -Xdock:icon=../Resources/mosync.icns</vmArgsMac>
    </launcherArgs>
 
-   <windowImages i16="/com.mobilesorcery.sdk.product/icons/mosync_16x16.png" i32="/com.mobilesorcery.sdk.product/icons/mosync_32x32.png"/>
+   <windowImages i16="/com.mobilesorcery.sdk.product/icons/mosync_16x16.png" i32="/com.mobilesorcery.sdk.product/icons/mosync_32x32.png" i48="/com.mobilesorcery.sdk.product/icons/mosync_48x48.png" i64="/com.mobilesorcery.sdk.product/icons/mosync_64x64.png" i128="/com.mobilesorcery.sdk.product/icons/mosync_128x128.png"/>
 
    <splash
+      location="com.mobilesorcery.sdk.product"
       startupProgressRect="80,290,280,10"
       startupMessageRect="80,265,280,20"
       startupForegroundColor="FF8000" />
    <launcher name="mosync">
+      <macosx icon="/com.mobilesorcery.sdk.product/icons/mosync.icns"/>
       <solaris/>
       <win useIco="false">
          <ico path="/com.mobilesorcery.sdk.product/MoSync.ico"/>
@@ -155,9 +157,9 @@ Creative Commons 3.0 Attribution License covers the Android Icon, a &quot;modifi
       <plugin id="com.mobilesorcery.sdk.builder"/>
       <plugin id="com.mobilesorcery.sdk.builder.android"/>
       <plugin id="com.mobilesorcery.sdk.builder.headless"/>
+      <plugin id="com.mobilesorcery.sdk.builder.iphoneos"/>
       <plugin id="com.mobilesorcery.sdk.builder.java"/>
       <plugin id="com.mobilesorcery.sdk.builder.moblin"/>
-	  <plugin id="com.mobilesorcery.sdk.builder.iphoneos"/>
       <plugin id="com.mobilesorcery.sdk.builder.s60"/>
       <plugin id="com.mobilesorcery.sdk.builder.winmobile"/>
       <plugin id="com.mobilesorcery.sdk.core"/>
@@ -309,7 +311,7 @@ Creative Commons 3.0 Attribution License covers the Android Icon, a &quot;modifi
       <feature id="com.mobilesorcery.sdk.builder.android.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.builder.java.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.builder.moblin.feature" version="1.0.0.qualifier"/>
-	  <feature id="com.mobilesorcery.sdk.builder.iphoneos.feature" version="1.0.0.qualifier"/>
+      <feature id="com.mobilesorcery.sdk.builder.iphoneos.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.builder.s60.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.builder.winmobile.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.cdt.feature" version="1.0.0.qualifier"/>

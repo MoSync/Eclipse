@@ -23,6 +23,7 @@ import com.mobilesorcery.sdk.finalizer.core.FinalizerParser;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
 
+// TODO: Auto-switch is not used; we'll keep this for a while as a placeholder
 public class FinalizerPropertyPage extends PropertyPage implements
 		IWorkbenchPropertyPage, PropertyChangeListener {
 

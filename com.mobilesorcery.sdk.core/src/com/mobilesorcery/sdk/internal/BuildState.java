@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -95,6 +96,10 @@ public class BuildState implements IBuildState {
                 } else if (otherTimestamp.compareTo(timestampMap.get(path)) != 0) {
                     diff.changed.add(path);
                 }
+                
+                if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+                    CoreMoSyncPlugin.trace("{0} previous timestamp: {1}, current timestamp: {2}", path, new Date(otherTimestamp), timestampMap.get(path));
+                }
             }
             
             for (IPath path : other.timestampMap.keySet()) {
@@ -118,7 +123,8 @@ public class BuildState implements IBuildState {
         }
 
         private void internalUpdateState(IPath path) {
-            long newTimestamp = project.getWrappedProject().findMember(path).getLocalTimeStamp();
+            IPath fullpath = project.getWrappedProject().findMember(path).getLocation();//getModificationStamp();
+            long newTimestamp = fullpath.toFile().lastModified();
             timestampMap.put(path, newTimestamp);
         }
 

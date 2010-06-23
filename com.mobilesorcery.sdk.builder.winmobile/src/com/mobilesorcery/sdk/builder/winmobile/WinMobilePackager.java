@@ -38,7 +38,12 @@ extends AbstractPackager
 	public WinMobilePackager() 
 	{
 		MoSyncTool tool = MoSyncTool.getDefault( );
-		m_cabWizLoc = tool.getBinary( "cabwiz" ).toOSString( );		
+		if(System.getProperty("os.name").toLowerCase().indexOf("win") >= 0) {
+			m_cabWizLoc = tool.getBinary( "cabwiz" ).toOSString( );		
+		}
+		else {
+			m_cabWizLoc = tool.getBinary( "pcab.pl" ).toOSString( );
+		}
 	}
 
     public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) 
@@ -54,27 +59,63 @@ extends AbstractPackager
         
         try 
         {
+        	
             internal.mkdirs("%package-output-dir%"); //$NON-NLS-1$
             
-            File infFile = new File(internal.resolve("%package-output-dir%/cabwiz.inf")); //$NON-NLS-1$
-            File cabFile = new File(internal.resolve("%package-output-dir%/cabwiz.cab")); //$NON-NLS-1$
-            File renamedCabFile = new File(internal.resolve("%package-output-dir%/%app-name%.cab")); //$NON-NLS-1$
-            
-            internal.setParameter( "cab-runtime-dir", WineHelper.convPath( internal.resolve("%runtime-dir%") ) );
-            internal.setParameter( "cab-compile-output-dir", WineHelper.convPath( internal.resolve("%compile-output-dir%") ) );
-            
-            
-            Template template = new Template(getClass().getResource("/templates/cabwiz.inf.template")); //$NON-NLS-1$
-            String resolvedTemplate = template.resolve(internal.getParameters().toMap());
-            Util.writeToFile(infFile, resolvedTemplate);
-            
-            internal.runCommandLine( m_cabWizLoc, 
-                                     WineHelper.convPath( infFile.getAbsolutePath( ) ), 
-                                     "/dest", 
-                                     WineHelper.convPath( internal.resolve( "%package-output-dir%" ) ), 
-                                     "/compress" );
-            Util.copyFile(new NullProgressMonitor(), cabFile, renamedCabFile);            
-            buildResult.setBuildResult(renamedCabFile);
+            if(System.getProperty("os.name").toLowerCase().indexOf("win") >= 0) {
+	            File infFile = new File(internal.resolve("%package-output-dir%/cabwiz.inf")); //$NON-NLS-1$
+	            File cabFile = new File(internal.resolve("%package-output-dir%/cabwiz.cab")); //$NON-NLS-1$
+	            File renamedCabFile = new File(internal.resolve("%package-output-dir%/%app-name%.cab")); //$NON-NLS-1$
+	            
+	            internal.setParameter( "cab-runtime-dir", WineHelper.convPath( internal.resolve("%runtime-dir%") ) );
+	            internal.setParameter( "cab-compile-output-dir", WineHelper.convPath( internal.resolve("%compile-output-dir%") ) );
+	            
+	            
+	            Template template = new Template(getClass().getResource("/templates/cabwiz.inf.template")); //$NON-NLS-1$
+	            String resolvedTemplate = template.resolve(internal.getParameters().toMap());
+	            Util.writeToFile(infFile, resolvedTemplate);
+	            
+	            internal.runCommandLine( m_cabWizLoc, 
+	                                     WineHelper.convPath( infFile.getAbsolutePath( ) ), 
+	                                     "/dest", 
+	                                     WineHelper.convPath( internal.resolve( "%package-output-dir%" ) ), 
+	                                     "/compress" );
+	            Util.copyFile(new NullProgressMonitor(), cabFile, renamedCabFile);            
+	            buildResult.setBuildResult(renamedCabFile);
+            }
+            else {
+            	File confFile = new File(internal.resolve("%package-output-dir%/pcab.conf"));
+            	File programFile = new File(internal.resolve("%program-output%"));
+            	File copyProgramFile = new File(internal.resolve("%package-output-dir%/program"));
+            	File resourceFile = new File(internal.resolve("%resource-output%"));
+            	File copyResourceFile = new File(internal.resolve("%package-output-dir%/resources"));
+            	File runtimeFile = new File(internal.resolve("%runtime-dir%/MoRE-winmobile%D%.exe"));
+            	File copyRuntimeFile = new File(internal.resolve("%package-output-dir%/MoRE-winmobile%D%.exe"));
+            	File cabFile = new File(internal.resolve("%package-output-dir%/%app-name%.cab"));
+            	
+            	internal.setParameter( "win-package-output-dir", internal.resolve("%package-output-dir%"));
+            	
+            	Template confTemplate = new Template(getClass().getResource("/templates/pcab.conf.template"));
+            	String resolvedConfTemplate = confTemplate.resolve(internal.getParameters().toMap());
+
+            	Util.copyFile(new NullProgressMonitor(), programFile, copyProgramFile);
+            	Util.copyFile(new NullProgressMonitor(), resourceFile, copyResourceFile);
+            	Util.copyFile(new NullProgressMonitor(), runtimeFile, copyRuntimeFile);
+            	Util.writeToFile(confFile, resolvedConfTemplate);
+            	
+            	internal.runCommandLine( m_cabWizLoc, 
+            			"-s",
+            			"%win-package-output-dir%",
+            			confFile.getAbsolutePath( ) ,
+                        cabFile.getAbsolutePath( )
+                );
+            	
+            	confFile.delete();
+            	copyRuntimeFile.delete();
+            	copyResourceFile.delete();
+            	copyProgramFile.delete();
+            	buildResult.setBuildResult(cabFile);
+            }
         } 
         catch (Exception e) 
         {

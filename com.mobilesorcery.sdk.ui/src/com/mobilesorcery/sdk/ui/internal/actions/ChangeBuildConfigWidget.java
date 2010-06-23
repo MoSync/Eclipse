@@ -34,6 +34,11 @@ public class ChangeBuildConfigWidget extends WorkbenchWindowControlContribution 
         return combo.getControl();
     }
     
+    private void noProjectSelected() {
+        combo.getCombo().setItems( new String[] {"No project selected"} );
+        combo.getCombo().select(0);   
+    }
+    
     public void dispose() {
         MosyncUIPlugin.getDefault().removeListener(this);
         MoSyncProject.removeGlobalPropertyChangeListener(this);
@@ -59,7 +64,9 @@ public class ChangeBuildConfigWidget extends WorkbenchWindowControlContribution 
             IBuildConfiguration cfg = project.getActiveBuildConfiguration();
             combo.setSelection(cfg == null ? new StructuredSelection() : new StructuredSelection(cfg.getId()));
             combo.getControl().setToolTipText(MessageFormat.format("Set configuration for project {0}", project.getName()));
-        } 
+        } else {
+            noProjectSelected();
+        }
         combo.getControl().setEnabled(activeCombo);
     }
 
