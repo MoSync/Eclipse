@@ -196,6 +196,8 @@ public class IconManager
 		Icon ico;
 		char sep = File.separatorChar;
 		
+		
+		
 		// Can't do SVG output without source SVG
 		if ( type.equals( "svg" ) == true )
 		{

@@ -69,13 +69,13 @@ public class MoSyncIconBuilderVisitor extends IncrementalBuilderVisitor {
         		
             	internal.runCommandLine(iconInjectorLoc, 
             							"-src", 
-            							WineHelper.convPath( iconFile.getLocation().toOSString() ), 
+            							iconFile.getLocation().toOSString(), 
             							"-size", 
             							"16x16", 
             							"-platform",
             							"more",
             							"-dst", 
-            							WineHelper.convPath( morePng.getAbsolutePath() ) );                                            		
+            							morePng.getAbsolutePath()  );                                            		
         	} catch(IOException e) {
        	       throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage()));
         	}    	
