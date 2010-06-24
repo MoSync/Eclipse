@@ -980,7 +980,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		String id = newConfig.getId();
 		this.configurations.put(id, newConfig);
 		updateProjectSpec();
-		listeners.firePropertyChange(BUILD_CONFIGURATION_CHANGED, null, newConfig);
+		firePropertyChange(new PropertyChangeEvent(this, BUILD_CONFIGURATION_CHANGED, null, newConfig));
 	}
 	
 	public void deinstallBuildConfiguration(String id) {
