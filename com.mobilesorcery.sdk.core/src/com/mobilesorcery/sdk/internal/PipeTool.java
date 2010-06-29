@@ -273,11 +273,11 @@ public class PipeTool {
     }
 
 	private void assertArgLength(ArrayList<String> args) throws IOException {
-    	for (String arg : args) {
+    	/*for (String arg : args) {
     		if (arg.length() > MAX_PIPE_TOOL_ARG_LENGTH) {
     			throw new IOException(MessageFormat.format("Argument/file name too long: {0} (max length {1} characters, was {2} characters)", arg, MAX_PIPE_TOOL_ARG_LENGTH, arg.length()));
     		}
-    	}
+    	}*/
 	}
 
 	public static IPath getResourcesDependencyFile(IProject project) {

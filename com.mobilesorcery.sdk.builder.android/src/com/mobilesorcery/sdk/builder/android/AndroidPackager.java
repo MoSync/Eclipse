@@ -18,12 +18,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.text.MessageFormat;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -37,6 +39,7 @@ import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.profiles.IProfile;
+import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 import com.mobilesorcery.sdk.ui.PasswordDialog;
 
 /*
@@ -79,11 +82,11 @@ extends AbstractPackager
 			File projectAPK = new File( packageOutDir, appName + ".apk");
 			projectAPK.delete();
 			
-			String fixedName = project.getName().replace(' ', '_');
+			//String fixedName = project.getName().replace(' ', '_');
 			
 			// Create manifest file
 			File manifest = new File( packageOutDir, "AndroidManifest.xml" );
-			createManifest(fixedName, new Version(internal.getParameters().get(DefaultPackager.APP_VERSION)), manifest);
+			createManifest(project, new Version(internal.getParameters().get(DefaultPackager.APP_VERSION)), manifest);
 
 			// Create layout (main.xml) file
 			File main_xml = new File( packageOutDir, "res/layout/main.xml" );
@@ -178,7 +181,7 @@ extends AbstractPackager
 					                 "--dex",
 					                 "--patch-string",
 					                 "com/mosync/java/android",
-					                 "com/mosync/app_"+fixedName,
+					                 toByteCodePackageName(project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME)),
 					                 "--output=" + new File( packageOutDir, "classes.dex" ).getAbsolutePath( ),
 					                 new File( packageOutDir, "classes" ).getAbsolutePath( ) );
 			
@@ -240,7 +243,12 @@ extends AbstractPackager
 
 	}
 	
-	private void recursiveDel ( File p )
+	private String toByteCodePackageName(String name) {
+        return name.replace('.', '/');
+    }
+
+
+    private void recursiveDel ( File p )
 	{
 		if ( p.isFile( ) == false )
 		{
@@ -274,13 +282,14 @@ extends AbstractPackager
         }
     }
 
-    private void createManifest(String projectName, Version version, File manifest) throws IOException {
+    private void createManifest(MoSyncProject project, Version version, File manifest) throws IOException {
 		manifest.getParentFile().mkdirs();
-
+		String projectName = project.getName();
+		
 		String manifest_string = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 		+"<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\n"
 			+"\tpackage=\"com.mosync.app_"+projectName+"\"\n"
-			+"\tandroid:versionCode=\"1\"\n"
+			+"\tandroid:versionCode=\"" + project.getProperty(PropertyInitializer.ANDROID_VERSION_CODE) + "\"\n"
 			+"\tandroid:versionName=\"" + version.toString() + "\">\n"
 			+"\t<application android:icon=\"@drawable/icon\" android:label=\"@string/app_name\">\n"
 				+"\t\t<activity android:name=\".MoSync\"\n"
@@ -320,5 +329,45 @@ extends AbstractPackager
 		+"</resources>\n";
 		DefaultPackager.writeFile(strings_xml, strings_xml_string);
 	}
+	
+	/**
+	 * Validates a package name (is it a proper android package name?)
+	 * @param packageName
+	 * @return
+	 */
+	public static IMessageProvider validatePackageName(String packageName) {
+        String[] packageParts = packageName.split("\\.");
+        if (packageParts.length < 2) {
+            return new DefaultMessageProvider("Android packages must have at least two parts (eg com.test)", IMessageProvider.ERROR);
+        }
+        
+        for (int i = 0; i < packageParts.length; i++) {
+            String error = validatePackagePart(packageParts[i]);
+            if (error != null) {
+                return new DefaultMessageProvider(error, IMessageProvider.ERROR);
+            }
+        }
+        
+        return DefaultMessageProvider.EMPTY;
+	}
+
+    private static String validatePackagePart(String packagePart) {
+        char[] packagePartCh = packagePart.toCharArray();
+        if (packagePart.length() == 0) {
+            return "Package segment cannot be empty";
+        }
+
+        char invalidChar = Character.isJavaIdentifierStart(packagePartCh[0]) ? '\0' : packagePartCh[0];
+        
+        for (int i = 1; i < packagePartCh.length; i++) {
+            invalidChar = Character.isJavaIdentifierPart(packagePartCh[i]) ? '\0' : packagePartCh[i];
+        }
+        
+        if (invalidChar != '\0') {
+            return MessageFormat.format("Invalid package character: {0}", invalidChar);
+        }
+        
+        return null;
+    }
 	
 }

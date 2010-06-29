@@ -1,4 +1,4 @@
-// This file sets up listeners to integrate with the IDE.
+// This file sets up listeners that integrate with the IDE.
 #include "testify/testify.hpp"
 using namespace Testify;
 #ifndef TESTIFY_IDE_SETUP

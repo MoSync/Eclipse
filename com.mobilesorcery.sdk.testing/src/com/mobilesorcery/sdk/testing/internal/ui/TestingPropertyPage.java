@@ -62,7 +62,7 @@ public class TestingPropertyPage extends MoSyncPropertyPage {
         return main;
     }
 
-    private void validate() {
+    protected void validate() {
         setMessage(validatePathsField(null, "Folders containing tests", testFolders, new IPath[] { getProject().getWrappedProject().getLocation() }));
     }
 

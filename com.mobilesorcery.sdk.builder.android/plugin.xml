@@ -12,10 +12,23 @@
              point="org.eclipse.ui.propertyPages">
           <page
                 category="com.mobilesorcery.sdk.ui.properties.project"
+                class="com.mobilesorcery.sdk.builder.android.ui.properties.AndroidPropertyPage"
+                id="com.mobilesorcery.sdk.ui.properties.android"
+                objectClass="org.eclipse.core.resources.IProject"
+                name="Android">
+                                <enabledWhen>
+                                   <test
+                                         forcePluginActivation="true"
+                                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                                   </test>
+                                </enabledWhen>                
+          </page>          
+          <page
+                category="com.mobilesorcery.sdk.ui.properties.android"
                 class="com.mobilesorcery.sdk.builder.android.ui.properties.AndroidSigningPropertyPage"
                 id="com.mobilesorcery.sdk.builder.android.selfsigning"
                 objectClass="org.eclipse.core.resources.IProject"
-                name="Android Signing">
+                name="Signing">
                                 <enabledWhen>
                                    <test
                                          forcePluginActivation="true"
