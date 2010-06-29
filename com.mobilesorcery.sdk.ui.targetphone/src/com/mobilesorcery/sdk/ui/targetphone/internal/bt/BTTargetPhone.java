@@ -27,6 +27,7 @@ import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 public class BTTargetPhone extends AbstractTargetPhone {
     
     public static final int PORT_UNASSIGNED = -1;
+    public static final char[] NAME_UNASSIGNED = "<Unresolved name>".toCharArray();
     
     private final byte[] addr;
     private int port;
@@ -43,6 +44,10 @@ public class BTTargetPhone extends AbstractTargetPhone {
         return length == -1 ? result : result.substring(0, length);
     }
 
+    public void setName(String name) {
+        super.setName(name);
+    }
+    
     public void assignPort(int port) {
         this.port = port;
     }
@@ -86,6 +91,8 @@ public class BTTargetPhone extends AbstractTargetPhone {
     public String toString() {
         return getName() + " " + getAddress() + ":" + getPort();
     }
+
+   
 
 
 
