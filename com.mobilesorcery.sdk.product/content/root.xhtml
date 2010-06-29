@@ -3,170 +3,39 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
 	  	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	  	<title>root.xhtml</title>
+	  	<title>Welcome to MoSync!</title>
 	  	<link rel="stylesheet" href="css/shared.css" type="text/css" />
   	</head>
-
 	<body> 
-
-		<div id="page-content">
-
-			<div id="page-main">
-			<div id="intro-header"><img src="images/header.png" alt="MoSync IDE"/></div>
-				<table id = "main-box-table" border="0">				
-				<tr><td>
-				<div class="main-box">
-				<div class="roundtopleft">
-	 		   		</div>
-					<div class="roundtopright">
-	 		   		</div>
-
-					<div class="clear"></div>
-					
-					<div class="inner-box">
-						<div class="title">
-							<img src="images/quickstart.png" alt="Quick start"/>
-							<h1>Quick start</h1>
-							<div class="clear"></div>
-						</div>
-						<div class="content">
-
-							<p>Jumpstart mobile development within minutes by watching<br/> or reading the quickstart guide!</p>
-							<div class="sub-box">
-								<p><img src="images/screencast_small.png" alt="Screencast"/>
-								</p>
-							</div>
-							<div class="sub-box">
-								<p><img src="images/guide_small.png" alt="Quickstart guide"/></p>
-							</div>
-
-							<div class="clear"></div>
-							<div class="sub-box2">
-								<p><contentProvider id="screencast" class="com.mobilesorcery.sdk.product.intro.QuickstartContentProvider">
-			               <text>Screencast</text>
-            		    </contentProvider></p>
-							</div>
-							<div class="sub-box2">
-								<p><contentProvider id="guide" class="com.mobilesorcery.sdk.product.intro.QuickstartContentProvider">
-			               <text>Guide</text>
-            		    </contentProvider></p>
-							</div>
-						</div> <!-- end of content -->
-
-					</div>	<!-- end of inner box -->				
-					<div class="clear"></div>
-					<div class="roundbottomleft">
-	 		   		</div>
-					<div class="roundbottomright">
-	 		   		</div>
-				</div> <!-- end mainbox -->
-				</td>
-
-				<td>
-				<div class="main-box">	
-					<div class="roundtopleft">
-	 		   		</div>
-					<div class="roundtopright">
-	 		   		</div>
-					<div class="clear"></div>				
-					<div class="inner-box">
-					<div class="title">
-						<img src="images/examples.png" alt="Examples"/>
-
-						<h1>Examples</h1>
-						<div class="clear"></div>
+		<div id="wrapper">
+			<div class="content">
+				<div class="left-content">
+					<p class="text">Learn what you can do with the MoSync® SDK...</p>
+					<div class="link">
+						<a href="http://www.mosync.com/content/documentation" class="button" id="book">Online user guides</a>
+						<a href="http://org.eclipse.ui.intro/showHelpTopic?id=/com.mobilesorcery.sdk.help/docs/html/api_areas.html">API reference manual</a>
 					</div>
-					<div class="content">
-<p><contentProvider id="exampes/short" class="com.mobilesorcery.sdk.product.intro.ExamplesContentProvider">
-               <text>Examples</text>
-               </contentProvider> </p>
+					<div class="link">
+						<a href="http://org.eclipse.ui.intro/runAction?pluginId=com.mobilesorcery.sdk.product&#38;class=com.mobilesorcery.sdk.product.intro.actions.SwitchWorkspaceAction" class="button" id="gear">Example applications</a>
+						<a href="http://www.mosync.com/forum">Developer center</a>
 					</div>
-					
-					</div>	<!-- end of inner box -->		
-					<div class="clear"></div>
-					<div class="roundbottomleft">
-	 		   		</div>
-
-					<div class="roundbottomright">
-	 		   		</div>
-				</div> <!-- end mainbox -->
-				</td></tr>
-				<tr><td>
-				<div class="main-box">
-				<div class="roundtopleft">
-	 		   		</div>
-
-					<div class="roundtopright">
-	 		   		</div>
-					<div class="clear"></div>
-					
-					<div class="inner-box">
-					<div class="title">
-						<img src="images/reading.png" alt="Recommended reading"/>
-						<h1>Recommended reading</h1>
-						<div class="clear"></div>
-
+					<div class="link">
+						<a href="http://www.mosync.com/content/code-examples" class="button" id="lamp">Online tutorials</a>
+						<a href="http://www.mosync.com/screencasts">Screencasts</a>
 					</div>
-					<div class="content">
-					<p><contentProvider id="docs/short" class="com.mobilesorcery.sdk.product.intro.RecommendedReadingContentProvider">
-			               <text>Reading</text>
-            		    </contentProvider>
-            		   </p>
-					</div>
-
-					
-					<div class="clear"></div>
-					</div>	<!-- end of inner box -->			
-					<div class="clear"></div>
-					<div class="roundbottomleft">
-	 		   		</div>
-					<div class="roundbottomright">
-	 		   		</div>
 				</div>
-				</td>
-
-				<td>
-				<div class="main-box">
-				<div class="roundtopleft">
-	 		   		</div>
-					<div class="roundtopright">
-	 		   		</div>
-					<div class="clear"></div>
-					
-					<div class="inner-box">
-					<div class="title">
-
-						<img src="images/projects.png" alt="Recent projects"/>
-						<h1>Recent projects</h1>
-						<div class="clear"></div>
+				<div class="right-content">
+					<p class="text">Or get started now...</p>
+					<div class="link">
+						<a href="http://org.eclipse.ui.intro/runAction?pluginId=com.mobilesorcery.sdk.product&#38;class=com.mobilesorcery.sdk.product.intro.actions.CloseIntroAction" class="button" id="arrow"><span>Close this welcome screen and start using MoSync</span></a>
 					</div>
-					<div class="content">
-						<p>Load up a workspace you've recently been working on.</p>
-<contentProvider id="e" class="com.mobilesorcery.sdk.product.intro.RecentProjectsContentProvider">
-                <text>Dynamic Content</text>
-                </contentProvider> 
-					</div>
-					
-					<div class="clear"></div>
-					</div>	<!-- end of inner box -->			
-					<div class="clear"></div>
-
-					<div class="roundbottomleft">
-	 		   		</div>
-					<div class="roundbottomright">
-	 		   		</div>
-				</div>	
-				</td>
-				</tr>
-				</table>
-				<div class="clear"></div>
-
-				<div id="footer">
-        			<p>MobileSorcery | &#169; 2004-2009 All Rights Reserved</p>
 				</div>
-			</div>	<!-- end page-main -->
-			<div class="clear"></div>
-		</div> <!-- end page-content -->
-
+			</div>
+		</div>
+		<div id="bottom-panel">
+			<form id="foo">
+				<input type="checkbox" id="showOrHide" /><label for="showOrHide">Show this screen at startup</label>
+			</form>
+		</div>
 	</body>
 </html>

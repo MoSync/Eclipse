@@ -144,12 +144,12 @@ icon="icons/launchshortcut.png">
                menubarPath="help/helpStart"
                label="MoSync API Reference">
                <class class="com.mobilesorcery.ui.internal.actions.ShowHelpAction">
-                   <parameter name="resource" value="/com.mobilesorcery.sdk.help/docs/html/api_areas.html"/>
+                   <parameter name="resource" value="/com.mobilesorcery.sdk.help/docs/html/index.html"/>
                </class>
            </action>
            <action id="com.mobilesorcery.sdk.htmlhelp"
                menubarPath="help/helpStart"
-               label="MoSync Online User Guide"
+               label="MoSync Online User Guides"
                class="com.mobilesorcery.ui.internal.actions.ShowHTMLAction">
            </action>           ...
            <action id="com.mobilesorcery.sdk.panic"
