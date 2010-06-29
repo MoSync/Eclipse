@@ -67,6 +67,10 @@ public class BluetoothDialog extends Dialog {
         super(parent);
         discoverer = new BluetoothDeviceDiscoverer(new UIUpdater(this));
     }
+    
+    public boolean isResizable() {
+        return true;
+    }
 
     public void configureShell(Shell newShell) {
         super.configureShell(newShell);
