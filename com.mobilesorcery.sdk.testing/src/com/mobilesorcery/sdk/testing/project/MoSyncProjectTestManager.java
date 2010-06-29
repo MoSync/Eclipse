@@ -2,6 +2,7 @@ package com.mobilesorcery.sdk.testing.project;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -172,6 +173,10 @@ public class MoSyncProjectTestManager {
 	
 	public boolean isTestResource(IResource resource) {
 		return testResources.contains(resource.getProjectRelativePath());
+	}
+	
+	public Set<IPath> getTestResources() {
+	    return Collections.unmodifiableSet(testResources);
 	}
 	
 	/**

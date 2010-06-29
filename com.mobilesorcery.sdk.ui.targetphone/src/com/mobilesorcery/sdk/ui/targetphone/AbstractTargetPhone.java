@@ -17,7 +17,7 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 
 public abstract class AbstractTargetPhone implements ITargetPhone {
 
-    private final String name;
+    private String name;
 
 	private IProfile preferredProfile;
 	
@@ -32,6 +32,10 @@ public abstract class AbstractTargetPhone implements ITargetPhone {
 		return name;
 	}
 
+	protected void setName(String name) {
+	    this.name = name;
+	}
+	
 	public IProfile getPreferredProfile() {
 		return preferredProfile;
 	}

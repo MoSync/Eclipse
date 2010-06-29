@@ -176,8 +176,18 @@ public class BluetoothDevice
 			addr[ byteIndex ] = (byte) Integer.parseInt(byteStr, 16);
 		}
 		
+		final BTTargetPhone result = new BTTargetPhone(Util.isEmpty(new String(name)) ? BTTargetPhone.NAME_UNASSIGNED : name, addr, BTTargetPhone.PORT_UNASSIGNED );
+		/*if (Util.isEmpty(new String(name))) {
+		    new SimpleQueue(false).execute(new Runnable() {
+                public void run() {
+                    resolveFriendlyName(DeviceUpdate.NULL);
+                    result.setName(m_properties.get("name"));
+                }       
+		    });
+		}*/
+		
 		// Set the port to unassigned and let it be discovered when scanning for OBEX.
-		return new BTTargetPhone( name, addr, BTTargetPhone.PORT_UNASSIGNED );
+		return result; 
 	}
 
     public void resolveFriendlyName(DeviceUpdate updater) {

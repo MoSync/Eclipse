@@ -120,7 +120,7 @@ public class BluetoothDialog extends Dialog {
 
         GridData gd = new GridData(GridData.FILL_BOTH);
         gd.heightHint = convertHeightInCharsToPixels(15);
-        gd.widthHint = convertWidthInCharsToPixels(55);
+        gd.widthHint = convertWidthInCharsToPixels(80);
         deviceComposite.setLayoutData(gd);
         
         Table table = deviceList.getTable();
@@ -325,6 +325,14 @@ public class BluetoothDialog extends Dialog {
      * Interface used when a device is discovered.
      */
     public interface DeviceUpdate {
+        DeviceUpdate NULL = new DeviceUpdate() {            
+            public void deviceUpdated(BluetoothDevice device) {
+            }
+            
+            public void deviceFound(BluetoothDevice device) {
+            }
+        };
+
         /**
          * Is called once a device is discovered.
          * 

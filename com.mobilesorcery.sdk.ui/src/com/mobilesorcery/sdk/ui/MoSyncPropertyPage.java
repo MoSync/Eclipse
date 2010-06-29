@@ -27,6 +27,7 @@ import org.eclipse.ui.dialogs.PropertyPage;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 
 /**
  * A default property page with convenience methods that many
@@ -34,7 +35,7 @@ import com.mobilesorcery.sdk.core.PropertyUtil;
  * @author Mattias Bybro, mattias.bybro@purplescout.se
  *
  */
-public abstract class MoSyncPropertyPage extends PropertyPage implements IWorkbenchPropertyPage {
+public abstract class MoSyncPropertyPage extends PropertyPage implements IWorkbenchPropertyPage, IUpdatableControl {
 
     /**
      * Returns the project currently being edited
@@ -93,5 +94,17 @@ public abstract class MoSyncPropertyPage extends PropertyPage implements IWorkbe
         String messageStr = message == null ? null : message.getMessage();
         int messageType = message == null ? IMessageProvider.NONE : message.getMessageType();
         setMessage(messageStr, messageType);
+        setValid(DefaultMessageProvider.isEmpty(message) || message.getMessageType() != IMessageProvider.ERROR);
+    }
+    
+    public void updateUI() {
+        validate();
+    }
+    
+    /**
+     * Validation code - clients may override.
+     */
+    protected void validate() {
+        
     }
 }

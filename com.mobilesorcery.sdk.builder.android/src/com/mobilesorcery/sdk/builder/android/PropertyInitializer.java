@@ -20,6 +20,7 @@ import org.eclipse.jface.preference.IPreferenceStore;
 
 import com.mobilesorcery.sdk.core.IPropertyInitializerDelegate;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
@@ -37,6 +38,16 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
     public static final String ANDROID_PROJECT_SPECIFIC_KEYS = PREFIX + "proj.spec.keys"; //$NON-NLS-1$
 
     public static final String ANDROID_ALIAS = PREFIX + "key.alias";
+    
+    /**
+     * The package name, as it's used in the android manifest
+     */
+    public static final String ANDROID_PACKAGE_NAME = PREFIX + "package.name";
+   
+    /**
+     * The version code, as it's used in the android manifest
+     */
+    public static final String ANDROID_VERSION_CODE = PREFIX + "version.number";
 
     private static Random rnd = new Random(System.currentTimeMillis());
     
@@ -46,6 +57,16 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
     public String getDefaultValue(IPropertyOwner p, String key) {
         if (key.equals(ANDROID_PROJECT_SPECIFIC_KEYS)) {
             return PropertyUtil.fromBoolean(false);
+        } else if (key.equals(ANDROID_PACKAGE_NAME)) {
+            String name = "default_package";
+            if (p instanceof MoSyncProject) {
+                name = ((MoSyncProject) p).getName();
+            }
+            
+            name = name.replace(' ', '_');
+            return "com.mosync.app_" + name;
+        } else if (key.equals(ANDROID_VERSION_CODE)) {
+            return "1";
         } else {
             return Activator.getDefault().getPreferenceStore().getString(key);
         }

@@ -58,6 +58,7 @@ import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
 import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
 import com.mobilesorcery.sdk.ui.UIUtils;
+import com.mobilesorcery.sdk.ui.UpdateListener;
 
 public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements PropertyChangeListener {
 
@@ -82,22 +83,6 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     }
 
     private final static String[] INCREMENTAL_BUILD_STRATEGY_OPTIONS = new String[] { "Use GCC -MF Option", "Always perform FULL build" };
-
-    private class UpdateListener implements Listener {
-        private boolean active;
-
-        public void handleEvent(Event event) {
-            if (!active) {
-                return;
-            }
-
-            updateUI(event);
-        }
-
-        public void setActive(boolean active) {
-            this.active = active;
-        }
-    }
 
     private Text additionalIncludePathsText;
     private Button ignoreDefaultIncludePaths;
@@ -202,7 +187,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         createTabs(tabs);
 
-        listener = new UpdateListener();
+        listener = new UpdateListener(this);
 
         applicationProjectType.addListener(SWT.Selection, listener);
         libraryProjectType.addListener(SWT.Selection, listener);
@@ -458,7 +443,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         setText(version, configProperties.getProperty(MoSyncBuilder.PROJECT_VERSION));
         setText(vendor, configProperties.getProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP));
         setText(appName, configProperties.getProperty(MoSyncBuilder.APP_NAME));
-        updateUI(null);
+        updateUI();
     }
 
     public void changeConfiguration(IBuildConfiguration cfg) {
@@ -502,7 +487,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         return result;
     }
 
-    private void updateUI(Event event) {
+    public void updateUI() {
         listener.setActive(false);
         boolean isLibraryProject = libraryProjectType.getSelection();
         deadCodeElim.setEnabled(!isLibraryProject);
@@ -513,7 +498,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         listener.setActive(true);
     }
 
-    private void validate() {
+    protected void validate() {
         IMessageProvider message = DefaultMessageProvider.EMPTY;
 
         if (appName.getText().indexOf('.') != -1) {
@@ -536,8 +521,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
             }
         }
 
-        setMessage(message.getMessage(), message.getMessageType());
-        setValid(DefaultMessageProvider.isEmpty(message) || message.getMessageType() != IMessageProvider.ERROR);
+        setMessage(message);
     }
 
     private IMessageProvider validateMemorySettings(IMessageProvider shortcurcuit) {
