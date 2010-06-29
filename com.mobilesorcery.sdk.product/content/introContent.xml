@@ -8,7 +8,7 @@
     <page id="standby" content="root.xhtml" />
     
     <!--  Example page -->
-    <page id="examples" content="examples.xhtml" />
-    <page id="reading" content="reading.xhtml" />
+    <!-- <page id="examples" content="examples.xhtml" />
+    <page id="reading" content="reading.xhtml" /> -->
     
 </introContent>
