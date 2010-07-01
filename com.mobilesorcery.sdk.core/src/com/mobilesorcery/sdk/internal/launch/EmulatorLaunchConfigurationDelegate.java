@@ -380,13 +380,11 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
                     ((AbstractSourceLookupDirector)sourceLocator).setId(CDebugUIPlugin.getDefaultSourceLocatorID());
                 }
                 sourceLocator.initializeDefaults(configuration);
-                ((AbstractSourceLookupDirector)sourceLocator).setSourceContainers(new ISourceContainer[] { new AbsolutePathSourceContainer() });
-            } else {
+           } else {
                 sourceLocator = DebugPlugin.getDefault().getLaunchManager().newSourceLocator(id);
                 String memento = configuration.getAttribute(ILaunchConfiguration.ATTR_SOURCE_LOCATOR_MEMENTO, (String)null);
                 if (memento == null) {
                     sourceLocator.initializeDefaults(configuration);
-                    ((AbstractSourceLookupDirector)sourceLocator).setSourceContainers(new ISourceContainer[] { new AbsolutePathSourceContainer() });
                 } else {
                     sourceLocator.initializeFromMemento(memento);
                 }
