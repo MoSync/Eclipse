@@ -47,7 +47,7 @@
     	    replacement-folder="${replacement-root}/org.eclipse.cdt.debug.ui" />
 
     	<replace-plugin-xml-of-jar
-    	    plugin-jar="${built-rcp-plugin-dir}/org.eclipse.cdt.debug.core_6.0.0.200906161748.jar"
+    	    plugin-jar="${built-rcp-plugin-dir}/org.eclipse.cdt.debug.core_6.0.0.201002161416.jar"
     	    replacement-folder="${replacement-root}/org.eclipse.cdt.debug.core" />
     	
 		<!-- Another hack before rezipping: let's put the console version of eclipse in there -->
