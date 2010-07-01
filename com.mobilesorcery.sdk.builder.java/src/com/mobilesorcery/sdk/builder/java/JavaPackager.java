@@ -73,7 +73,7 @@ extends AbstractPackager
 
 			String appVendorName = internal.getParameters().get(DefaultPackager.APP_VENDOR_NAME);
 			File manifest = new File(internal.resolve("%compile-output-dir%/META-INF/manifest.mf")); //$NON-NLS-1$
-			createManifest(project.getName(), appVendorName, appVersion, manifest);
+			createManifest(variant, project.getName(), appVendorName, appVersion, manifest);
 
 			// Need to set execution dir, o/w zip will not understand what we
 			// really want.
@@ -111,7 +111,7 @@ extends AbstractPackager
 						                 resources.getAbsolutePath( ) );
 			}
 
-			createJAD(project.getWrappedProject().getName(), appVendorName, appVersion, projectJad, projectJar);
+			createJAD(variant, project.getWrappedProject().getName(), appVendorName, appVersion, projectJad, projectJar);
 
 			MoSyncIconBuilderVisitor visitor = new MoSyncIconBuilderVisitor();
 			visitor.setProject(project.getWrappedProject());
@@ -139,23 +139,25 @@ extends AbstractPackager
 		}
 	}
 
-	private void createManifest(String projectName, String vendorName, Version version, File manifest) throws IOException {
+	private void createManifest(IBuildVariant variant, String projectName, String vendorName, Version version, File manifest) throws IOException {
 		manifest.getParentFile().mkdirs();
 
-		DefaultPackager.writeFile(manifest, getManifest(projectName, vendorName, version));
+		DefaultPackager.writeFile(manifest, getManifest(variant, projectName, vendorName, version));
 	}
 
-	private void createJAD(String projectName, String vendorName, Version version, File jad, File jar) throws IOException {
+	private void createJAD(IBuildVariant variant, String projectName, String vendorName, Version version, File jad, File jar) throws IOException {
 		long jarSize = jar.length();
 		String jarName = jar.getName();
-		String jadString = getManifest(projectName, vendorName, version) + "MIDlet-Jar-Size: " + Long.toString(jarSize) + "\n" + "MIDlet-Jar-URL: " + jarName + "\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		String jadString = getManifest(variant, projectName, vendorName, version) + "MIDlet-Jar-Size: " + Long.toString(jarSize) + "\n" + "MIDlet-Jar-URL: " + jarName + "\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 
 		DefaultPackager.writeFile(jad, jadString);
 	}
 
-	private String getManifest(String projectName, String vendorName, Version version) {
+	private String getManifest(IBuildVariant variant, String projectName, String vendorName, Version version) {
+	    IProfile profile = variant.getProfile();
+	    boolean isCLDC_10 = profile != null && Boolean.TRUE.equals(profile.getProperties().get("MA_PROF_SUPPORT_CLDC_10"));
 		return "Manifest-Version: 1.0\n" + "MIDlet-Vendor: " + vendorName + "\n" + "MIDlet-Name: " + projectName + "\n" + "MIDlet-1: " + projectName + ", " //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
-				+ projectName + ".png, MAMidlet\n" + "MIDlet-Version: " + version.asCanonicalString(Version.MICRO) + "\n" + "MicroEdition-Configuration: CLDC-1.1\n" + "MicroEdition-Profile: MIDP-2.0\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				+ projectName + ".png, MAMidlet\n" + "MIDlet-Version: " + version.asCanonicalString(Version.MICRO) + "\n" + "MicroEdition-Configuration: " + (isCLDC_10 ? "CLDC-1.0" : "CLDC-1.1") + "\nMicroEdition-Profile: MIDP-2.0\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	}
 
 }
