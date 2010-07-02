@@ -96,8 +96,11 @@ extends AbstractPackager
 			File strings_xml = new File( packageOutDir, "res/values/strings.xml" );
 			createStrings(project.getName(), strings_xml);
 			
-			File res = new File( packageOutDir, "res/raw/resources" );
-			res.getParentFile().mkdirs();
+			//File res = new File( packageOutDir, "res/raw/resources" );
+			//res.getParentFile().mkdirs();
+			
+			File assets = new File( packageOutDir, "add/assets" );
+			assets.getParentFile().mkdirs();
 			
 			File icon = new File(packageOutDir, "res/drawable/icon.png" );
 			icon.getParentFile().mkdirs();
@@ -108,17 +111,17 @@ extends AbstractPackager
 			// Copy and rename the program and resource file to package/res/raw/
 			Util.copyFile( new NullProgressMonitor( ), 
 					       new File( compileOutDir, "program" ), 
-					       new File( packageOutDir, "res/raw/program" ) );
+					       new File( packageOutDir, "add/assets/program.mp3" ) );
 			
 			File resources = new File( compileOutDir, "resources" );
 			if ( resources.exists( ) == true ) 
 			{
-				Util.copyFile( new NullProgressMonitor( ), resources, res );
+				Util.copyFile( new NullProgressMonitor( ), resources, new File( packageOutDir, "add/assets/resources.mp3" ) );
 			}
 			else
 			{
 				String dummyResource = "dummy";
-				DefaultPackager.writeFile(res, dummyResource);
+				DefaultPackager.writeFile(assets, dummyResource);
 			}
 			
 			// If there was an icon provided, add it, else use the default icon
@@ -162,7 +165,10 @@ extends AbstractPackager
 				                    "-I", 
 				                    new File( mosyncBinDir, "android/android-1.5.jar" ).getAbsolutePath( ),
 				                    "-S", 
-									new File ( packageOutDir, "res" ).getAbsolutePath( ) );
+									new File ( packageOutDir, "res" ).getAbsolutePath( ),
+									"-0",
+									"-A",
+									new File ( packageOutDir, "add" ).getAbsolutePath( ) );
 						
 			// unzip the correct class zip
 			File classes = new File( packageOutDir, "classes/class" );
@@ -173,6 +179,19 @@ extends AbstractPackager
 					                 internal.resolveFile( "%runtime-dir%/MoSyncRuntime%D%.zip" ).getCanonicalPath(),
 					                 "-d",
 					                 new File ( packageOutDir, "classes" ).getAbsolutePath( ) );
+									 
+		
+			// move the library file away from the classes directory where it was 
+			File library = new File( packageOutDir, "addlib/armeabi" );
+			library.getParentFile().mkdirs();
+		
+			Util.copyFile( new NullProgressMonitor( ), 
+						       new File( packageOutDir, "classes/libmosync.so" ), 
+						       new File( packageOutDir, "addlib/armeabi/libmosync.so" ) );
+
+			new File( packageOutDir, "classes/libmosync.so" ).delete( );
+		
+			
 			
 			// run dx on class file, generating a dex file
 			internal.runCommandLine( "java",
@@ -194,7 +213,9 @@ extends AbstractPackager
 					                 "-z",
 					                 new File( packageOutDir, "resources.ap_" ).getAbsolutePath( ),
 					                 "-f",
-					                 new File( packageOutDir, "classes.dex" ).getAbsolutePath( ) );
+					                 new File( packageOutDir, "classes.dex" ).getAbsolutePath( ),
+									 "-nf",
+									 new File( packageOutDir, "addlib" ).getAbsolutePath( ) );
 			
 			// sign apk file using jarSigner
             String keystore = project.getProperty(PropertyInitializer.ANDROID_KEYSTORE);
@@ -231,6 +252,8 @@ extends AbstractPackager
 			// Clean up!
 			recursiveDel( new File( packageOutDir, "classes" ) );
 			recursiveDel( new File( packageOutDir, "res" ) );
+			recursiveDel( new File( packageOutDir, "add" ) );
+			recursiveDel( new File( packageOutDir, "addlib" ) );
 			new File( packageOutDir, "classes.dex" ).delete( );
 			new File( packageOutDir, "resources.ap_" ).delete( );
 			new File( packageOutDir, "AndroidManifest.xml" ).delete( );
@@ -299,6 +322,9 @@ extends AbstractPackager
 						+"\t\t\t\t<category android:name=\"android.intent.category.LAUNCHER\" />\n"
 					+"\t\t\t</intent-filter>\n"
 				+"\t\t</activity>\n"
+				+"<activity android:name=\".MoSyncPanicDialog\"\n"
+                  +"android:label=\"@string/app_name\">\n"
+				+"</activity>\n"
 			+"\t</application>\n"
 			+"\t<uses-sdk android:minSdkVersion=\"3\" />\n"
 			+"\t<uses-permission android:name=\"android.permission.VIBRATE\" />\n"
