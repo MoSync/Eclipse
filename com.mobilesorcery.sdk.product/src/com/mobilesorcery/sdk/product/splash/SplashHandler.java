@@ -29,6 +29,7 @@ public class SplashHandler extends AbstractSplashHandler {
 
     class LoadProgressMonitor extends NullProgressMonitor {
         
+        private static final int NUM_PROGRESS_STEPS = 60;
         private int totalWork;
         private int worked = 1;
         private GC gc;
@@ -54,6 +55,10 @@ public class SplashHandler extends AbstractSplashHandler {
         }
         
         public void worked(int work) {
+            internalWorked(work);
+        }
+        
+        public void internalWorked(double work) {
             this.worked += work;
             updateUI();
         }
@@ -83,6 +88,13 @@ public class SplashHandler extends AbstractSplashHandler {
             int progressWidth = (bounds.width * percentage) / 100;
             int progressHeight = textExtent.y;
             gc.fillGradientRectangle(0, 0, progressWidth, progressHeight, false);
+            for (int i = 1; i < NUM_PROGRESS_STEPS; i++) {
+                gc.setForeground(progressGradientColor1);
+                int lineX = i * bounds.width / NUM_PROGRESS_STEPS;
+                if (progressWidth >= lineX) {
+                    gc.drawLine(lineX, 0, lineX, progressHeight);
+                }
+            }
             gc.setForeground(progressTextColor);
             gc.drawText(percentageStr, bounds.width - textExtent.x, progressHeight, true);
         }
