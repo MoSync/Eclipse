@@ -119,6 +119,24 @@ public class UIUtils {
     	}    	    	
     }
     
+    public static void safeDispose(GC gc) {
+        if (gc != null && !gc.isDisposed()) {
+            gc.dispose();
+        }
+    }
+    
+    public static void safeDispose(Image image) {
+        if (image != null && !image.isDisposed()) {
+            image.dispose();
+        }
+    }
+
+    public static void safeDispose(Shell shell) {
+        if (shell != null && !shell.isDisposed()) {
+            shell.dispose();
+        }
+    }
+    
     public static void main(String[] args) {
     	Image i = new Image(Display.getCurrent(), "C:\\development\\projects\\mobilesorcery-4\\com.mobilesorcery.sdk.ui\\icons\\mosyncproject.png");
     	ImageData d = i.getImageData(); 
@@ -128,4 +146,5 @@ public class UIUtils {
     	il.save("C:\\development\\projects\\mobilesorcery-4\\com.mobilesorcery.sdk.ui\\icons\\deprecated-mosyncproject.png", SWT.IMAGE_PNG);
     	i.dispose();
     }
+
 }
