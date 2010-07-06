@@ -13,6 +13,8 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
@@ -33,7 +35,7 @@ import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class SplashHandler extends AbstractSplashHandler {
 
-    class LoadProgressMonitor extends NullProgressMonitor {
+    class LoadProgressMonitor extends NullProgressMonitor implements PaintListener {
 
         private static final int NUM_PROGRESS_STEPS = 60;
         private int totalWork;
@@ -75,17 +77,12 @@ public class SplashHandler extends AbstractSplashHandler {
         }
 
         private void updateUI() {
-            if (display != null && gc != null) {
-                display.asyncExec(new Runnable() {
-                    public void run() {
-                        paintProgress(gc);
-                    }
-                });
-            }
+            // TEMPORARILY REMOVED
         }
 
         protected void paintProgress(GC gc) {
-            int percentage = Math.min(100, totalWork == 0 ? 0 : (100 * worked) / totalWork);
+            // TEMPORARILY DUE TO THREADING PROBLEMS
+            /*int percentage = Math.min(100, totalWork == 0 ? 0 : (100 * worked) / totalWork);
             String percentageStr = totalWork == 0 ? "" : MessageFormat.format("{0} -- {1}%", name, percentage);
             Rectangle bounds = gc.getClipping();
             Point textExtent = gc.textExtent(percentageStr);
@@ -102,7 +99,7 @@ public class SplashHandler extends AbstractSplashHandler {
                 }
             }
             gc.setForeground(progressTextColor);
-            gc.drawText(percentageStr, bounds.width - textExtent.x, progressHeight, true);
+            gc.drawText(percentageStr, bounds.width - textExtent.x, progressHeight, true);*/
         }
 
         public void setGC(GC gc) {
@@ -123,6 +120,10 @@ public class SplashHandler extends AbstractSplashHandler {
             if (progressGradientColor1 != null) {
                 progressGradientColor1.dispose();
             }
+        }
+
+        public void paintControl(PaintEvent event) {
+            paintProgress(event.gc);
         }
     }
 
@@ -194,7 +195,6 @@ public class SplashHandler extends AbstractSplashHandler {
                             progressMonitor.dispose();
                         }
                         UIUtils.safeDispose(internalShell);
-                        getSplash().close();
                     } finally {
                         updateLock.unlock();
                     }
@@ -290,12 +290,13 @@ public class SplashHandler extends AbstractSplashHandler {
                                 image = new Image(display, imageData);
                                 offScreenImageGC.drawImage(image, 0, 0, imageData.width, imageData.height, imageData.x, imageData.y, imageData.width,
                                         imageData.height);
+
+                                monitor.paintProgress(offScreenImageGC);
                                 /* Draw the off-screen image to the shell. */
                                 updateLock.lock();
                                 try {
                                     if (!cancelled && !shellGC.isDisposed()) {
                                         shellGC.drawImage(offScreenImage, 0, 0);
-                                        monitor.paintProgress(shellGC);
                                     }
                                 } finally {
                                     updateLock.unlock();
@@ -311,7 +312,7 @@ public class SplashHandler extends AbstractSplashHandler {
                                         ms += 30;
                                     if (ms < 30)
                                         ms += 10;
-                                    Thread.sleep(cancelled ? 0 : ms);
+                                    Thread.sleep(cancelled ? 0 : ms/100);
                                 } catch (InterruptedException e) {
                                 }
 
@@ -340,7 +341,7 @@ public class SplashHandler extends AbstractSplashHandler {
             Util.safeClose(animatedGIF);
         }
     }
-
+    
     protected void cancelAnimation() {
         this.cancelled = true;
     }
