@@ -24,6 +24,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,44 +36,21 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 
-public class UpdateManager {
-
-    public static class UpdateException extends IOException {
-        public UpdateException(String msg) {
-            super(msg);
-        }
-    }
+/**
+ * Handles downloading of new device profiles (and other stuff as well)
+ * @author Mattias Bybro
+ *
+ */
+public class UpdateManager extends UpdateManagerBase {
     
     private static final UpdateManager INSTANCE = new UpdateManager();
 
-    class Response {
-        private InputStream input;
-        private int length;
-
-        Response(InputStream input, int length) {
-            this.input = input;
-            this.length = length;
-        }
-
-        public InputStream getContent() {
-            return input;
-        }
-
-        public int getContentLength() {
-            return length;
-        }
-
-        public void close() {
-            UpdateManager.this.close(input);
-        }
-    }
-
-    private UpdateManager() {
+    protected UpdateManager() {
 
     }
 
     public static UpdateManager getDefault() {
-        return INSTANCE;
+        return INSTANCE;    
     }
 
     public boolean isUpdateAvailable() throws IOException {
@@ -83,63 +61,6 @@ public class UpdateManager {
         Response response = sendRequest(getRequestURL("currentProfile", params)); //$NON-NLS-1$
         try {
             return getBooleanResponse(response, Messages.UpdateManager_ServerBouncedResendReq);
-        } finally {
-            response.close();
-        }
-    }
-    
-    public boolean isRegistered() throws IOException {
-        if (MoSyncTool.getDefault().getProperty("email") == null) { //$NON-NLS-1$
-            return false;
-        }
-        
-        return isRegistered(MoSyncTool.getDefault().getProperty("email"));  //$NON-NLS-1$
-    }
-
-    public boolean isRegistered(String email) throws IOException {        
-        Map<String, String> params = new HashMap<String, String>();
-        params.put("email", email); //$NON-NLS-1$
-        addProfileVersion(params);
-     
-        Response response = sendRequest(getRequestURL("registered", params)); //$NON-NLS-1$
-        
-        try {
-            return getBooleanResponse(response, Messages.UpdateManager_ServerBouncedRegReq);
-        } finally {
-            response.close();
-        }
-    }
-    
-    public boolean isConfirmed() throws IOException {
-        if (MoSyncTool.getDefault().getProperty("email") == null) { //$NON-NLS-1$
-            return false;
-        }
-
-        Map<String, String> params = new HashMap<String, String>();
-        params.put("email", MoSyncTool.getDefault().getProperty("email")); //$NON-NLS-1$ //$NON-NLS-2$
-     
-        Response response = sendRequest(getRequestURL("confirmed", params)); //$NON-NLS-1$
-        
-        try {
-            return getBooleanResponse(response, Messages.UpdateManager_ServerBouncedRegReq);
-        } finally {
-            response.close();
-        }
-    }
-    
-    public boolean isValid() throws IOException {
-        if (MoSyncTool.getDefault().getProperty("email") == null) { //$NON-NLS-1$
-            return false;
-        }
-
-        Map<String, String> params = new HashMap<String, String>();
-        params.put("email", MoSyncTool.getDefault().getProperty("email")); //$NON-NLS-1$ //$NON-NLS-2$
-        params.put("hash", getUserHash()); //$NON-NLS-1$
-     
-        Response response = sendRequest(getRequestURL("valid", params)); //$NON-NLS-1$
-        
-        try {
-            return getBooleanResponse(response, Messages.UpdateManager_ServerBouncedRegReq);
         } finally {
             response.close();
         }
@@ -164,32 +85,22 @@ public class UpdateManager {
         }
     }
     
-    public boolean resend() throws MalformedURLException, IOException {
-        Map<String, String> params = new HashMap<String, String>();
-        params.put("email", MoSyncTool.getDefault().getProperty("email")); //$NON-NLS-1$ //$NON-NLS-2$
-        addProfileVersion(params);
-     
-        Response response = sendRequest(getRequestURL("requestCode", params)); //$NON-NLS-1$
-        
-        try {
-            return getBooleanResponse(response, Messages.UpdateManager_ServerBouncedResendReq);
-        } finally {
-            response.close();
-        }
+    public File getUpdateZip() {
+        return MoSyncTool.getDefault().getMoSyncHome().append("update.zip").toFile(); //$NON-NLS-1$
     }
-
+    
     public void downloadProfileUpdate(IProgressMonitor monitor) throws IOException {
         Map<String, String> params = new HashMap<String, String>();
         addProfileVersion(params);
         addHalfHash(params);
 
-        File updateZipFile = MoSyncTool.getDefault().getMoSyncHome().append("update.zip").toFile(); //$NON-NLS-1$
+        File updateZipFile = getUpdateZip();
         OutputStream updateZip = null;
 
         try {
             Response response = sendRequest(getRequestURL("update", params)); //$NON-NLS-1$
 
-            monitor.beginTask(Messages.UpdateManager_DownloadProgress, response.length);
+            monitor.beginTask(Messages.UpdateManager_DownloadProgress, response.getContentLength());
 
             byte[] buffer = new byte[2048];
             updateZip = new FileOutputStream(updateZipFile);
@@ -241,74 +152,20 @@ public class UpdateManager {
             }            
         });
     }
-    
-    public boolean registerMe(String email, String name, boolean addToMailingList) throws MalformedURLException, IOException {
-        Map<String, String> params = new HashMap<String, String>();
-        params.put("email", email); //$NON-NLS-1$
-        params.put("name", name); //$NON-NLS-1$
-        params.put("mailinglist", addToMailingList ? "1" : "0"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-        addProfileVersion(params);
-
-        Response response = sendRequest(getRequestURL("register", params)); //$NON-NLS-1$
-        try {
-            return getBooleanResponse(response, Messages.UpdateManager_ServerBouncedRegReq1);
-        } finally {
-            response.close();
+  
+    protected String getServiceURL(String serviceName) {
+        // TODO: REMOVE THIS -- AWAITING NEW UPDATE MECHANISM
+        String baseURL = null; //MoSyncTool.getDefault().getProperty("update-baseurl"); //$NON-NLS-1$ 
+        if (baseURL == null) {
+            baseURL = "http://api.mosync.com/index.php/{0}"; //$NON-NLS-1$ 
         }
-    }
-    
-    private boolean getBooleanResponse(Response response, String errmsg) throws IOException {
-        int result = response.getContent().read();
-        if (result == '0') {
-            return false;
-        } else if (result == '1') {
-            return true;
-        } else {
-            throw new UpdateException(errmsg);
-        }        
-    }
-
-    void close(OutputStream output) {
-        if (output != null) {
-            try {
-                output.close();
-            } catch (IOException e) {
-                // Ignore.
-            }
-        }
-    }
-
-    void close(InputStream input) {
-        if (input != null) {
-            try {
-                input.close();
-            } catch (IOException e) {
-                // Ignore.
-            }
-        }
-    }
-
-    public String getUserHash() {
-        return MoSyncTool.getDefault().getProperty(MoSyncTool.USER_HASH_PROP);
-    }
-
-    public void setUserHash(String hash) {
-        hash = hash == null ? null : hash.trim();
-        MoSyncTool.getDefault().setProperty(MoSyncTool.USER_HASH_PROP, hash);
-    }
-
-    public String getUserHalfHash() {
-        String hash = getUserHash();
-        if (hash != null) {
-            return hash.substring(0, hash.length() / 2);
-        }
-
-        return null;
+        return MessageFormat.format(baseURL, serviceName);
     }
     
 	public void clearRegistrationInfo() {
 		MoSyncTool.getDefault().setProperty(MoSyncTool.EMAIL_PROP, null);
-		MoSyncTool.getDefault().setProperty(MoSyncTool.USER_HASH_PROP, null);
+        MoSyncTool.getDefault().setProperty(MoSyncTool.USER_HASH_PROP, null);
+        MoSyncTool.getDefault().setProperty(MoSyncTool.USER_HASH_PROP_2, null);
 	}
 
 
@@ -321,40 +178,7 @@ public class UpdateManager {
         request.put("hhash", getUserHalfHash()); //$NON-NLS-1$
     }
 
-    private Response sendRequest(URL url) throws IOException {
-        if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-        	CoreMoSyncPlugin.trace(url);
-        }
 
-        URLConnection connection = url.openConnection();
-        int length = connection.getContentLength();
-        InputStream input = connection.getInputStream();
-        return new Response(input, length);
-    }
-
-    private String getServiceURL(String serviceName) {
-        return "http://api.mosync.com/" + serviceName + "/index.php"; //$NON-NLS-1$ //$NON-NLS-2$
-    }
-
-    private URL getRequestURL(String serviceName, Map<String, String> params) throws MalformedURLException {
-        String service = getServiceURL(serviceName);
-
-        StringBuffer paramsStr = new StringBuffer();
-        if (params != null && !params.isEmpty()) {
-            paramsStr.append("?"); //$NON-NLS-1$
-            int paramCnt = 0;
-            for (Map.Entry<String, String> param : params.entrySet()) {
-                paramCnt++;
-                if (paramCnt > 1) {
-                    paramsStr.append("&"); //$NON-NLS-1$
-                }
-
-                paramsStr.append(URLEncoder.encode(param.getKey()) + "=" + URLEncoder.encode(param.getValue())); //$NON-NLS-1$
-            }
-        }
-
-        return new URL(service + paramsStr);
-    }
 
     public static void main(String[] args) throws Exception {
         /*System.err.println(UpdateManager.getDefault().getCurrentBinaryVersion());

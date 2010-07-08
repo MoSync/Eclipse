@@ -2,8 +2,13 @@ package com.mobilesorcery.sdk.ui.internal.properties;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeSet;
 
+import org.eclipse.core.runtime.Path;
+import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTreeViewer;
+import org.eclipse.jface.viewers.ICheckStateListener;
+import org.eclipse.jface.viewers.ICheckStateProvider;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.Viewer;
@@ -26,20 +31,20 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
             this.permissions = permissions;
         }
         
-        public Object[] getChildren(Object obj) {
-            return new Object[0];
+        public Object[] getChildren(Object element) {
+            return permissions.getAvailablePermissions(element == null ? null : element.toString()).toArray();
         }
 
-        public Object getParent(Object obj) {
+        public Object getParent(Object element) {
             return null;
         }
 
-        public boolean hasChildren(Object obj) {
-            return false;
+        public boolean hasChildren(Object element) {
+            return getChildren(element).length > 0;
         }
 
         public Object[] getElements(Object input) {
-            return permissions.getAvailablePermissions().toArray();
+            return getChildren(null);
         }
 
         public void dispose() {
@@ -51,6 +56,7 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
     }
 
     private CheckboxTreeViewer permissionsList;
+    private IApplicationPermissions permissionsWorkingCopy;
     private IApplicationPermissions permissions;
 
     protected Control createContents(Composite parent) {
@@ -61,33 +67,58 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
         permissionsLabel.setText("&Select permissions for this project");
         
         permissionsList = new CheckboxTreeViewer(main);
-        permissionsList.setLabelProvider(new LabelProvider());
+        permissionsList.setLabelProvider(new LabelProvider() {
+            public String getText(Object element) {
+                String permission = (String) element;
+                Path permissionPath = new Path(permission);
+                return permissionPath.lastSegment();
+            }
+        });
         permissions = getProject().getPermissions();
-        permissionsList.setContentProvider(new PermissionsContentProvider(permissions));
-        permissionsList.setInput(permissions);
-        initUI();
-        permissionsList.getControl().setLayoutData(new GridData(GridData.FILL_BOTH));
+        permissionsWorkingCopy = permissions.createWorkingCopy();
+        permissionsList.setContentProvider(new PermissionsContentProvider(permissionsWorkingCopy));
+        permissionsList.setCheckStateProvider(new ICheckStateProvider() {
+            public boolean isGrayed(Object element) {
+                String permission = (String) element;
+                TreeSet<String> available = new TreeSet<String>(permissionsWorkingCopy.getAvailablePermissions(permission));
+                if (available.isEmpty()) {
+                    return false;
+                }
+                int availablePermissionCount = available.size();
+                available.removeAll(permissionsWorkingCopy.getRequiredPermissions());
+                int notRequiredPermissionCount = available.size();
+                boolean shouldBeGrayed = availablePermissionCount != notRequiredPermissionCount && notRequiredPermissionCount > 0;
+
+                return shouldBeGrayed;
+            }
+            
+            public boolean isChecked(Object element) {
+                String permission = (String) element;
+                return isGrayed(element) || permissionsWorkingCopy.isPermissionRequired(permission);
+            }
+        });
         
+        permissionsList.setInput(permissionsWorkingCopy);
+        permissionsList.getTree().setLayoutData(new GridData(GridData.FILL_BOTH));
+        permissionsList.expandAll();
+        
+        permissionsList.addCheckStateListener(new ICheckStateListener() {
+            public void checkStateChanged(CheckStateChangedEvent event) {
+                String permission = (String) event.getElement();
+                permissionsWorkingCopy.setRequiredPermission(permission, event.getChecked());
+                permissionsList.refresh(true);
+            }
+        });
         return main;
     }
 
-    private void initUI() {
-        permissionsList.setCheckedElements(permissions.getRequiredPermissions().toArray());
-    }
 
     public void performDefaults() {
-        initUI();
+        
     }
     
     public boolean performOk() {
-        Object[] newPermissions = permissionsList.getCheckedElements();
-        List<String> required = new ArrayList<String>();
-        for (int i = 0; i < newPermissions.length; i++) {
-            String permission = (String) newPermissions[i];
-            required.add(permission);
-        }
-        
-        permissions.setRequiredPermissions(required);
+        permissions.apply(permissionsWorkingCopy);
         return true;
     }
 }

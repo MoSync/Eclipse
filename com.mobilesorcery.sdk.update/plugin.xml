@@ -29,7 +29,7 @@
                point="com.mobilesorcery.sdk.updater">
             <updater
                   id="com.mobilesorcery.sdk.update.default"
-                  implementation="com.mobilesorcery.sdk.update.internal.DefaultUpdater">
+                  implementation="com.mobilesorcery.sdk.update.internal.DefaultUpdater2">
             </updater>
          </extension>
       
