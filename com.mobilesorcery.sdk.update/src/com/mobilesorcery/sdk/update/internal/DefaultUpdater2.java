@@ -40,6 +40,31 @@ import com.mobilesorcery.sdk.update.UpdateManagerBase;
  */
 public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
+    public class OpenBrowserRunnable implements Runnable {
+
+        private URL whereToGo;
+        private String name;
+
+        public OpenBrowserRunnable(URL whereToGo, String name) {
+            this.whereToGo = whereToGo;
+            this.name = name;
+        }
+
+        public void run() {
+            try {
+                IWorkbenchBrowserSupport browserSupport = PlatformUI.getWorkbench().getBrowserSupport();
+
+                IWebBrowser browser = browserSupport.createBrowser(IWorkbenchBrowserSupport.AS_EDITOR | IWorkbenchBrowserSupport.STATUS,
+                        MosyncUpdatePlugin.PLUGIN_ID + ".browser", name, name);
+                browser.openURL(whereToGo);
+            } catch (PartInitException e) {
+                e.printStackTrace();
+                openFallbackDialog(whereToGo, name);
+            }
+        }
+
+    }
+
     class UpdateJob extends Job {
 
         public UpdateJob() {
@@ -73,7 +98,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
             return result[0];
         }
     }
-    
+
     class UpdateRunnable implements Runnable {
         private boolean isStartedByUser;
 
@@ -150,15 +175,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
     }
 
     private void launchInternalBrowser(URL whereToGo, String name) {
-        IWorkbenchBrowserSupport browserSupport = PlatformUI.getWorkbench().getBrowserSupport();
-        try {
-            IWebBrowser browser = browserSupport.createBrowser(IWorkbenchBrowserSupport.AS_EDITOR | IWorkbenchBrowserSupport.STATUS,
-                    MosyncUpdatePlugin.PLUGIN_ID + ".browser", name, name);
-            browser.openURL(whereToGo);
-        } catch (PartInitException e) {
-            e.printStackTrace();
-            openFallbackDialog(whereToGo, name);
-        }
+        PlatformUI.getWorkbench().getDisplay().syncExec(new OpenBrowserRunnable(whereToGo, name));
     }
 
     private void openFallbackDialog(URL whereToGo, String name) {
