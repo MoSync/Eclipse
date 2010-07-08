@@ -21,7 +21,13 @@ public interface IApplicationPermissions {
     
     public void setRequiredPermissions(List<String> required);
     
-    public boolean isPermissionGranted(String key);
+    public void setRequiredPermission(String required, boolean set);
     
-    public List<String> getAvailablePermissions();
+    public boolean isPermissionRequired(String key);
+    
+    public List<String> getAvailablePermissions(String parentPermission);
+
+    public IApplicationPermissions createWorkingCopy();
+    
+    public void apply(IApplicationPermissions workingCopy);
 }

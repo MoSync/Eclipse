@@ -79,7 +79,16 @@ public class MoSyncTool {
 
 	private static final String MOSYNC_ENV_VAR = "MOSYNCDIR";
 
+	/**
+	 * @deprecated This property is obsolete since the 'new' update/registration process
+	 */
 	public static final String USER_HASH_PROP = "hash";
+
+	/**
+	 * The key used by the 'new' update process. (We really must find a better name than 'new'...)
+	 * Also, we do not reuse the old key.
+	 */
+	public static final String USER_HASH_PROP_2 = "user.key";
 
 	public static final String EMAIL_PROP = "email";
 

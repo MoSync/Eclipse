@@ -22,9 +22,9 @@
 	</macrodef>
 	
 	<!-- We'll just derive this knowledge from the main [RCP] build scripts -->
-	<property name="built-rcp-zip" location="${buildDirectory}\I.MoSync\MoSync-win32.win32.x86.zip" />
-	<property name="built-rcp-unzipped" location="${buildDirectory}\I.MoSync\MoSync-win32.win32.x86-unzipped" />	
-	<property name="built-rcp-rezipped" location="${buildDirectory}\I.MoSync\MoSync-win32.win32.x86-trimmed.zip" />
+	<property name="built-rcp-zip" location="${buildDirectory}\I.MoSync\MoSync-${platform}.zip" />
+	<property name="built-rcp-unzipped" location="${buildDirectory}\I.MoSync\MoSync-${platform}-unzipped" />	
+	<property name="built-rcp-rezipped" location="${buildDirectory}\I.MoSync\MoSync-${platform}-trimmed.zip" />
 	<property name="built-rcp-plugin-dir" location="${built-rcp-unzipped}\mosync\plugins" />
 	<property name="root" location="." />
 	<property name="replacement-root" location="${root}/replacements" />
@@ -47,7 +47,7 @@
     	    replacement-folder="${replacement-root}/org.eclipse.cdt.debug.ui" />
 
     	<replace-plugin-xml-of-jar
-    	    plugin-jar="${built-rcp-plugin-dir}/org.eclipse.cdt.debug.core_6.0.0.200906161748.jar"
+    	    plugin-jar="${built-rcp-plugin-dir}/org.eclipse.cdt.debug.core_6.0.0.201002161416.jar"
     	    replacement-folder="${replacement-root}/org.eclipse.cdt.debug.core" />
     	
 		<!-- Another hack before rezipping: let's put the console version of eclipse in there -->

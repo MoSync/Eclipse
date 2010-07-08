@@ -29,6 +29,7 @@ import org.eclipse.cdt.core.IBinaryParser.IBinaryObject;
 import org.eclipse.cdt.core.model.ICModelMarker;
 import org.eclipse.cdt.core.model.ICProject;
 import org.eclipse.cdt.debug.core.cdi.ICDISession;
+import org.eclipse.cdt.debug.core.sourcelookup.AbsolutePathSourceContainer;
 import org.eclipse.cdt.debug.ui.CDebugUIPlugin;
 import org.eclipse.cdt.internal.core.model.CModelManager;
 import org.eclipse.core.resources.IFile;
@@ -55,6 +56,7 @@ import org.eclipse.debug.core.model.IPersistableSourceLocator;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.LaunchConfigurationDelegate;
 import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupDirector;
+import org.eclipse.debug.core.sourcelookup.ISourceContainer;
 import org.eclipse.ui.actions.BuildAction;
 import org.eclipse.ui.statushandlers.StatusManager;
 
@@ -378,7 +380,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
                     ((AbstractSourceLookupDirector)sourceLocator).setId(CDebugUIPlugin.getDefaultSourceLocatorID());
                 }
                 sourceLocator.initializeDefaults(configuration);
-            } else {
+           } else {
                 sourceLocator = DebugPlugin.getDefault().getLaunchManager().newSourceLocator(id);
                 String memento = configuration.getAttribute(ILaunchConfiguration.ATTR_SOURCE_LOCATOR_MEMENTO, (String)null);
                 if (memento == null) {

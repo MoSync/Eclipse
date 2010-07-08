@@ -31,17 +31,19 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.update.MosyncUpdatePlugin;
 import com.mobilesorcery.sdk.update.UpdateManager;
 
 public class ProfileUpdatesPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
 
-    private Text emailText;
+    private Text hhashText;
 	private Button clearSettings;
 
 	public ProfileUpdatesPreferencePage() {
         super(Messages.ProfileUpdatesPreferencePage_Title, CoreMoSyncPlugin.getImageDescriptor("/icons/mosyncproject.png"), GRID); //$NON-NLS-2$
         
-        IPreferenceStore store = CoreMoSyncPlugin.getDefault().getPreferenceStore();
+        IPreferenceStore store = MosyncUpdatePlugin.getDefault().getPreferenceStore();
         setPreferenceStore(store);
     }
     
@@ -61,10 +63,10 @@ public class ProfileUpdatesPreferencePage extends FieldEditorPreferencePage impl
     	clearSettings.setText(Messages.ProfileUpdatesPreferencePage_ClearRegistrationInfo);
     	clearSettings.setLayoutData(new GridData(SWT.RIGHT, SWT.TOP, false, false));
 
-    	emailText = new Text(registration, SWT.READ_ONLY | SWT.SINGLE);
+    	hhashText = new Text(registration, SWT.READ_ONLY | SWT.SINGLE);
     	GridData emailData = new GridData(GridData.FILL_HORIZONTAL);
     	emailData.horizontalSpan = 2;
-    	emailText.setLayoutData(emailData);
+    	hhashText.setLayoutData(emailData);
     	
     	updateUI();
     	
@@ -82,15 +84,15 @@ public class ProfileUpdatesPreferencePage extends FieldEditorPreferencePage impl
 	}
 
 	private void updateUI() {
-		String email = MoSyncTool.getDefault().getProperty(MoSyncTool.EMAIL_PROP);
-		if (email == null || email.equals("")) { //$NON-NLS-1$
-			emailText.setText(Messages.ProfileUpdatesPreferencePage_NotRegistered);
+		String hhash = MoSyncTool.getDefault().getProperty(MoSyncTool.USER_HASH_PROP_2);
+		if (Util.isEmpty(hhash)) {
+			hhashText.setText(Messages.ProfileUpdatesPreferencePage_NotRegistered);
 		} else {
-			emailText.setText(email);
+			hhashText.setText(hhash);
 		}
 		
-		emailText.setEnabled(email != null && !email.equals("")); //$NON-NLS-1$
-    	clearSettings.setEnabled(email != null && !email.equals("")); //$NON-NLS-1$
+		hhashText.setEnabled(!Util.isEmpty(hhash));
+    	clearSettings.setEnabled(!Util.isEmpty(hhash));
 	}
 
 	public void init(IWorkbench window) {
