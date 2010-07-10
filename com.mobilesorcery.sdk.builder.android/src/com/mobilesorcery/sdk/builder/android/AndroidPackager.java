@@ -118,11 +118,6 @@ extends AbstractPackager
 			{
 				Util.copyFile( new NullProgressMonitor( ), resources, new File( packageOutDir, "add/assets/resources.mp3" ) );
 			}
-			else
-			{
-				String dummyResource = "dummy";
-				DefaultPackager.writeFile(assets, dummyResource);
-			}
 			
 			// If there was an icon provided, add it, else use the default icon
 			MoSyncIconBuilderVisitor visitor = new MoSyncIconBuilderVisitor();
@@ -328,7 +323,14 @@ extends AbstractPackager
 			+"\t</application>\n"
 			+"\t<uses-sdk android:minSdkVersion=\"3\" />\n"
 			+"\t<uses-permission android:name=\"android.permission.VIBRATE\" />\n"
-			+"\t<uses-permission android:name=\"android.permission.INTERNET\" />\n" 
+			+"\t<uses-permission android:name=\"android.permission.INTERNET\" />\n"
+/* UNSUPPORTED ON ANDROIND 1.5 Cupcake			
+			+"\t<supports-screens"
+				+"\t\tandroid:largeScreens=\"true\""
+				+"\t\tandroid:normalScreens=\"true\""
+				+"\t\tandroid:smallScreens=\"true\""
+				+"\t\tandroid:anyDensity=\"true\" />"
+*/				
 		+"</manifest>\n";
 		DefaultPackager.writeFile(manifest, manifest_string);
 	}
