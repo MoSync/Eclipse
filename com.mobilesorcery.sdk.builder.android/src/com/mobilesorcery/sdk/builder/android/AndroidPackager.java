@@ -324,6 +324,9 @@ extends AbstractPackager
 			+"\t<uses-sdk android:minSdkVersion=\"3\" />\n"
 			+"\t<uses-permission android:name=\"android.permission.VIBRATE\" />\n"
 			+"\t<uses-permission android:name=\"android.permission.INTERNET\" />\n"
+			+"\t<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\" />\n"
+			+"\t<uses-permission android:name=\"android.permission.READ_PHONE_STATE\" />\n"
+
 /* UNSUPPORTED ON ANDROIND 1.5 Cupcake			
 			+"\t<supports-screens"
 				+"\t\tandroid:largeScreens=\"true\""
