@@ -24,7 +24,9 @@ import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 import com.mobilesorcery.sdk.internal.PipeTool;
+import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 
 public class BuildPropertiesInitializerDelegate implements IPropertyInitializerDelegate {
 
@@ -81,6 +83,11 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
             return "1.0";
         } else if (MoSyncBuilder.APP_NAME.equals(namespacedKey)) {
             return projectName;
+        } else if (ApplicationPermissions.APPLICATION_PERMISSIONS_PROP.equals(namespacedKey)) {
+            return ApplicationPermissions.toPropertyString(
+                    ICommonPermissions.VIBRATE, 
+                    ICommonPermissions.INTERNET, 
+                    ICommonPermissions.FILE_STORAGE);
         }
         
         return null;

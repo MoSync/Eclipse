@@ -55,7 +55,7 @@ public class ApplicationPermissions implements IApplicationPermissions {
             addAvailablePermission(ICommonPermissions.ALL_PERMISSIONS[i]);
         }
         
-        setRequiredPermissions(PropertyUtil.getStrings(project, APPLICATION_PERMISSIONS_PROP));
+        requiredPermissions = new TreeSet<String>(Arrays.asList(PropertyUtil.getStrings(project, APPLICATION_PERMISSIONS_PROP)));
     }
     
     private void addAvailablePermission(String permission) {
@@ -117,8 +117,13 @@ public class ApplicationPermissions implements IApplicationPermissions {
 
     private void save() {
         if (!isWorkingCopy) {
-            PropertyUtil.setStrings(project, APPLICATION_PERMISSIONS_PROP, requiredPermissions.toArray(new String[0]));
+            String propertyString = toPropertyString(requiredPermissions.toArray(new String[0]));
+            project.setProperty(APPLICATION_PERMISSIONS_PROP, propertyString);
         }
+    }
+    
+    public final static String toPropertyString(String... permissions) {
+        return PropertyUtil.fromStrings(permissions);
     }
     
     private void setRequiredPermissions(String[] required) {

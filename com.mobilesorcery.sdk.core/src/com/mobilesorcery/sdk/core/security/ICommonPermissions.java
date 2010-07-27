@@ -18,6 +18,8 @@ public interface ICommonPermissions {
     final static String READ = "/Read";
     final static String WRITE = "/Write";
               
+    public final static String BLUETOOTH = "Bluetooth";
+    
     public final static String CALENDAR = "Calendar";
     public final static String CALENDAR_READ = CALENDAR + READ;
     public final static String CALENDAR_WRITE = CALENDAR + WRITE;
@@ -49,6 +51,7 @@ public interface ICommonPermissions {
     public final static String VIBRATE = "Vibrate";
     
     public final static String[] ALL_PERMISSIONS = new String[] { 
+        BLUETOOTH,
         CALENDAR, CALENDAR_READ, CALENDAR_WRITE,
         CAMERA,
         CONTACTS, CONTACTS_READ, CONTACTS_WRITE,

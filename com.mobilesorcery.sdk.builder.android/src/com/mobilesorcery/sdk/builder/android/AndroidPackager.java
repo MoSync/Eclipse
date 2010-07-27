@@ -38,6 +38,8 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
+import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
+import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 import com.mobilesorcery.sdk.ui.PasswordDialog;
@@ -322,11 +324,6 @@ extends AbstractPackager
 				+"</activity>\n"
 			+"\t</application>\n"
 			+"\t<uses-sdk android:minSdkVersion=\"3\" />\n"
-			+"\t<uses-permission android:name=\"android.permission.VIBRATE\" />\n"
-			+"\t<uses-permission android:name=\"android.permission.INTERNET\" />\n"
-			+"\t<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\" />\n"
-			+"\t<uses-permission android:name=\"android.permission.READ_PHONE_STATE\" />\n"
-
 /* UNSUPPORTED ON ANDROIND 1.5 Cupcake			
 			+"\t<supports-screens"
 				+"\t\tandroid:largeScreens=\"true\""
@@ -334,11 +331,58 @@ extends AbstractPackager
 				+"\t\tandroid:smallScreens=\"true\""
 				+"\t\tandroid:anyDensity=\"true\" />"
 */				
+			+ createPermissionXML(project)
 		+"</manifest>\n";
 		DefaultPackager.writeFile(manifest, manifest_string);
 	}
+    
+    private String createPermissionXML(MoSyncProject project) {
+        StringBuffer result = new StringBuffer();
+        IApplicationPermissions permissions = project.getPermissions();
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.VIBRATE), "android.permission.VIBRATE");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.INTERNET), "android.permission.INTERNET");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.LOCATION_COARSE), "android.permission.ACCESS_COARSE_LOCATION");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.LOCATION_FINE), "android.permission.ACCESS_FINE_LOCATION");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.POWER_MANAGEMENT), "android.permission.BATTERY_STATS");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.CALENDAR_READ), "android.permission.READ_CALENDAR");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.CALENDAR_WRITE), "android.permission.WRITE_CALENDAR");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.CONTACTS_READ), "android.permission.READ_CONTACTS");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.CONTACTS_WRITE), "android.permission.WRITE_CONTACTS");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.SMS_READ), "android.permission.READ_SMS");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.SMS_SEND), "android.permission.SEND_SMS");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.SMS_RECEIVE), "android.permission.RECEIVE_SMS");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.CAMERA), "android.permission.CAMERA");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH");
+        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.FILE_STORAGE_WRITE), "android.permission.WRITE_EXTERNAL_STORAGE");
+        // Always add this.
+        addPermission(result, true, "android.permission.READ_PHONE_STATE");
+        return result.toString();
+    }
 	
-	private void createMain(String projectName, File main_xml) throws IOException {
+    private boolean anyOf(IApplicationPermissions permissions, String... commonPermissions) {
+        for (int i = 0; i < commonPermissions.length; i++) {
+            if (permissions.isPermissionRequired(commonPermissions[i])) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private void addPermission(StringBuffer result, boolean condition, String... androidPermissions) {
+        if (condition) {
+            for (int i = 0; i < androidPermissions.length; i++) {
+                addAndroidPermission(result, androidPermissions[i]);
+            }
+        }
+    }
+    
+    private void addAndroidPermission(StringBuffer result, String androidPermission) {
+            result.append("<uses-permission android:name=\"" + androidPermission + "\" />\n");
+    }
+
+
+    private void createMain(String projectName, File main_xml) throws IOException {
 		main_xml.getParentFile().mkdirs();
 
 		String main_xml_string = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
