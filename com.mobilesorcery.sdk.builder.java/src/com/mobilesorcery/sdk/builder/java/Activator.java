@@ -11,7 +11,7 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
-package com.mobilesorcery.sdk.builder.android;
+package com.mobilesorcery.sdk.builder.java;
 
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
@@ -22,7 +22,7 @@ import org.osgi.framework.BundleContext;
 public class Activator extends AbstractUIPlugin {
 
     // The plug-in ID
-    public static final String PLUGIN_ID = "com.mobilesorcery.sdk.builder.android"; //$NON-NLS-1$
+    public static final String PLUGIN_ID = "com.mobilesorcery.sdk.builder.java"; //$NON-NLS-1$
 
     // The shared instance
     private static Activator plugin;

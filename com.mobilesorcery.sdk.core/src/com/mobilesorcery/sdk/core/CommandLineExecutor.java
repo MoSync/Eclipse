@@ -70,20 +70,24 @@ public class CommandLineExecutor {
 	 * @param commandLine
 	 * @throws IOException
 	 */
-    public void runCommandLine(String[] commandLine) throws IOException {
+    public int runCommandLine(String[] commandLine) throws IOException {
+        int res;
         lines.clear();
         consoleMsgs.clear();
         addCommandLine(commandLine, null);
-        execute();
+        res = execute();
         lines.clear();
         consoleMsgs.clear();
+        return res;
 	}
 	
-    public void runCommandLine(String[] commandLine, String consoleMsg) throws IOException {
+    public int runCommandLine(String[] commandLine, String consoleMsg) throws IOException {
+        int res;
         lines.clear();
         addCommandLine(commandLine, consoleMsg);
-        execute();
-        lines.clear();       
+        res = execute();
+        lines.clear(); 
+        return res;
     }
     
 	/**
@@ -96,13 +100,7 @@ public class CommandLineExecutor {
 	public int runCommandLineWithRes ( String[] commandLine ) 
 	throws IOException 
 	{
-		int res;
-		lines.clear();
-		addCommandLine(commandLine, null);
-		res = execute();
-		lines.clear();
-		
-		return res;
+	    return runCommandLine(commandLine);
 	}	
 
 	public void setParameters(CascadingProperties parameters) {

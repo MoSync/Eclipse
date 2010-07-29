@@ -31,7 +31,11 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
+
+import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.Util;
 
 public class UIUtils {
 
@@ -137,6 +141,37 @@ public class UIUtils {
         }
     }
     
+    /**
+     * Returns a password property; if no such property is defined (or empty),
+     * a password dialog is popped up.
+     * @param project
+     * @param propertyKey
+     * @return
+     */
+    public static String getPassword(final MoSyncProject project, final String propertyKey) {
+        String pwd = project.getProperty(propertyKey);
+        if (Util.isEmpty(pwd)) {
+            final String[] result = new String[1];
+            Display display = PlatformUI.getWorkbench().getDisplay();
+            display.syncExec(new Runnable() {
+                public void run() {
+                    Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+                    PasswordDialog dialog = new PasswordDialog(shell);
+                    if (dialog.open() == PasswordDialog.OK) {
+                        result[0] = dialog.getPassword();
+                        if (dialog.shouldRememberPassword()) {
+                            project.setProperty(propertyKey, result[0]);
+                        }
+                    }
+                }
+            });
+            return result[0];
+        } else {
+            return pwd;
+        }
+    }
+
+
     public static void main(String[] args) {
     	Image i = new Image(Display.getCurrent(), "C:\\development\\projects\\mobilesorcery-4\\com.mobilesorcery.sdk.ui\\icons\\mosyncproject.png");
     	ImageData d = i.getImageData(); 

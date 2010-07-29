@@ -32,6 +32,9 @@ Export-Package: com.mobilesorcery.sdk.core,
  com.mobilesorcery.sdk.internal.dependencies,
  com.mobilesorcery.sdk.internal.launch,
  com.mobilesorcery.sdk.profiles,
- com.mobilesorcery.sdk.profiles.filter
-Bundle-ClassPath: .
+ com.mobilesorcery.sdk.profiles.filter,
+ org.json.simple,
+ org.json.simple.parser
+Bundle-ClassPath: .,
+ json_simple-1.1.jar
 Eclipse-ExtensibleAPI: true

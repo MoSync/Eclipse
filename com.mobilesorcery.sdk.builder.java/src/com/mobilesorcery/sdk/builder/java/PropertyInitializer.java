@@ -11,38 +11,25 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
-package com.mobilesorcery.sdk.builder.android;
+package com.mobilesorcery.sdk.builder.java;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.jface.preference.IPreferenceStore;
 
-import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.IPropertyInitializerDelegate;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
-import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PropertyUtil;
-import com.mobilesorcery.sdk.core.Util;
 
 public class PropertyInitializer extends AbstractPreferenceInitializer implements IPropertyInitializerDelegate {
 
-    private static final String PREFIX = "android:"; //$NON-NLS-1$
+    private static final String PREFIX = "javame:"; //$NON-NLS-1$
     
-    public static final String ANDROID_KEYSTORE_CERT_INFO = PREFIX + "keystore.cert.info"; //$NON-NLS-1$
-
-    public static final String ANDROID_PROJECT_SPECIFIC_KEYS = PREFIX + "proj.spec.keys"; //$NON-NLS-1$
+    public static final String JAVAME_KEYSTORE_CERT_INFOS = PREFIX + "keystore.cert.infos"; //$NON-NLS-1$
     
-    /**
-     * The package name, as it's used in the android manifest
-     */
-    public static final String ANDROID_PACKAGE_NAME = PREFIX + "package.name";
-   
-    /**
-     * The version code, as it's used in the android manifest
-     */
-    public static final String ANDROID_VERSION_CODE = PREFIX + "version.number";
+    public static final String JAVAME_PROJECT_SPECIFIC_KEYS = PREFIX + "proj.spec.keys"; //$NON-NLS-1$
 
     private static Random rnd = new Random(System.currentTimeMillis());
     
@@ -50,18 +37,8 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
     }
 
     public String getDefaultValue(IPropertyOwner p, String key) {
-        if (key.equals(ANDROID_PROJECT_SPECIFIC_KEYS)) {
+        if (key.equals(JAVAME_PROJECT_SPECIFIC_KEYS)) {
             return PropertyUtil.fromBoolean(false);
-        } else if (key.equals(ANDROID_PACKAGE_NAME)) {
-            String name = "default_package";
-            if (p instanceof MoSyncProject) {
-                name = ((MoSyncProject) p).getName();
-            }
-            
-            name = name.replace(' ', '_');
-            return "com.mosync.app_" + name;
-        } else if (key.equals(ANDROID_VERSION_CODE)) {
-            return "1";
         } else {
             return Activator.getDefault().getPreferenceStore().getString(key);
         }
@@ -69,7 +46,8 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
 
     public void initializeDefaultPreferences() {
         IPreferenceStore store = Activator.getDefault().getPreferenceStore();
-        store.setDefault(ANDROID_KEYSTORE_CERT_INFO, KeystoreCertificateInfo.unparse(KeystoreCertificateInfo.createDefault()));
+        // By default, java me apps are NOT signed.
+        store.setDefault(JAVAME_KEYSTORE_CERT_INFOS, KeystoreCertificateInfo.unparse(new ArrayList<KeystoreCertificateInfo>()));
     }
 
 

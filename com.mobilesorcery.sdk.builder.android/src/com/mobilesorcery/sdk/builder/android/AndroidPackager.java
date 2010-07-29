@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.MessageFormat;
+import java.util.List;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
@@ -30,6 +31,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 
+import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
@@ -43,6 +45,7 @@ import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 import com.mobilesorcery.sdk.ui.PasswordDialog;
+import com.mobilesorcery.sdk.ui.UIUtils;
 
 /*
 	Built on the JavaMe packager code
@@ -215,37 +218,48 @@ extends AbstractPackager
 									 new File( packageOutDir, "addlib" ).getAbsolutePath( ) );
 			
 			// sign apk file using jarSigner
-            String keystore = project.getProperty(PropertyInitializer.ANDROID_KEYSTORE);
-            String alias = project.getProperty(PropertyInitializer.ANDROID_ALIAS);
-            String storepass = getPassword(project, PropertyInitializer.ANDROID_PASS_STORE);
-            if (Util.isEmpty(storepass)) {
-                throw new IllegalArgumentException("Keystore password missing");
+            String keystoreCertInfoStr = project.getProperty(PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO);
+            KeystoreCertificateInfo keystoreCertInfo = null;
+            
+            try {
+                keystoreCertInfo = KeystoreCertificateInfo.parseOne(keystoreCertInfoStr);
+
+            } catch (IllegalArgumentException e) {
+                throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Invalid or missing certificate", e));
             }
-            
-            String keypass = getPassword(project, PropertyInitializer.ANDROID_PASS_KEY);
-            if (Util.isEmpty(keypass)) {
-                throw new IllegalArgumentException("Keystore password missing");
+
+            if (keystoreCertInfo != null) {
+                String keystore = keystoreCertInfo.getKeystoreLocation();
+                String alias = keystoreCertInfo.getAlias();
+                String storepass = keystoreCertInfo.getKeystorePassword();
+                if (Util.isEmpty(storepass)) {
+                    throw new IllegalArgumentException("Keystore password missing");
+                }
+                
+                String keypass = keystoreCertInfo.getKeyPassword();
+                if (Util.isEmpty(keypass)) {
+                    throw new IllegalArgumentException("Keystore password missing");
+                }
+                
+                String[] jarSignerCommandLine = new String[] 
+                {
+                    "java", 
+                    "-jar", 
+                    new File( mosyncBinDir, "android/tools-stripped.jar" ).getAbsolutePath( ),
+                    "-keystore", 
+                    keystore, 
+                    "-storepass", 
+                    storepass, 
+                    "-keypass", 
+                    keypass,
+                    "-signedjar", 
+                    internal.resolveFile( "%package-output-dir%/%app-name%.apk" ).getAbsolutePath( ),
+                    internal.resolveFile( "%package-output-dir%/%app-name%_unsigned.apk" ).getAbsolutePath( ), 
+                    alias
+                };
+                
+    			internal.runCommandLine(jarSignerCommandLine, "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***");
             }
-            
-            String[] jarSignerCommandLine = new String[] 
-            {
-                "java", 
-                "-jar", 
-                new File( mosyncBinDir, "android/tools-stripped.jar" ).getAbsolutePath( ),
-                "-keystore", 
-                keystore, 
-                "-storepass", 
-                storepass, 
-                "-keypass", 
-                keypass,
-                "-signedjar", 
-                internal.resolveFile( "%package-output-dir%/%app-name%.apk" ).getAbsolutePath( ),
-                internal.resolveFile( "%package-output-dir%/%app-name%_unsigned.apk" ).getAbsolutePath( ), 
-                alias
-            };
-            
-			internal.runCommandLine(jarSignerCommandLine, "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***");
-			
 			// Clean up!
 			recursiveDel( new File( packageOutDir, "classes" ) );
 			recursiveDel( new File( packageOutDir, "res" ) );
@@ -256,14 +270,20 @@ extends AbstractPackager
 			new File( packageOutDir, "AndroidManifest.xml" ).delete( );
 			
 			buildResult.setBuildResult(projectAPK);
-		}
-		catch (Exception e) {
+		} catch (CoreException e) {
+		    throw e;
+		} catch (Exception e) {
             throw new CoreException(new Status(IStatus.ERROR, "com.mobilesorcery.builder.android", "Could not package for android platform", e));
         }
 
 	}
 	
-	private String toByteCodePackageName(String name) {
+	private String getPassword(MoSyncProject project, String propertyKey) {
+        return UIUtils.getPassword(project, propertyKey);
+    }
+
+
+    private String toByteCodePackageName(String name) {
         return name.replace('.', '/');
     }
 
@@ -278,29 +298,6 @@ extends AbstractPackager
 		
 		p.delete( );
 	}
-
-	private String getPassword(final MoSyncProject project, final String propertyKey) {
-        String pwd = project.getProperty(propertyKey);
-        if (Util.isEmpty(pwd)) {
-            final String[] result = new String[1];
-            Display display = PlatformUI.getWorkbench().getDisplay();
-            display.syncExec(new Runnable() {
-                public void run() {
-                    Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-                    PasswordDialog dialog = new PasswordDialog(shell);
-                    if (dialog.open() == PasswordDialog.OK) {
-                        result[0] = dialog.getPassword();
-                        if (dialog.shouldRememberPassword()) {
-                            project.setProperty(propertyKey, result[0]);
-                        }
-                    }
-                }
-            });
-            return result[0];
-        } else {
-            return pwd;
-        }
-    }
 
     private void createManifest(MoSyncProject project, Version version, File manifest) throws IOException {
 		manifest.getParentFile().mkdirs();
