@@ -19,6 +19,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
 
@@ -97,10 +98,9 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
                 return isGrayed(element) || permissionsWorkingCopy.isPermissionRequired(permission);
             }
         });
-        
-        permissionsList.setInput(permissionsWorkingCopy);
+
+        setPermissionsWorkingCopy(permissionsWorkingCopy);
         permissionsList.getTree().setLayoutData(new GridData(GridData.FILL_BOTH));
-        permissionsList.expandAll();
         
         permissionsList.addCheckStateListener(new ICheckStateListener() {
             public void checkStateChanged(CheckStateChangedEvent event) {
@@ -112,9 +112,14 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
         return main;
     }
 
+    private void setPermissionsWorkingCopy(IApplicationPermissions permissionsWorkingCopy) {
+        this.permissionsWorkingCopy = permissionsWorkingCopy;
+        permissionsList.setInput(permissionsWorkingCopy);
+        permissionsList.expandAll();
+    }
 
     public void performDefaults() {
-        
+        setPermissionsWorkingCopy(CoreMoSyncPlugin.getDefault().getDefaultPermissions(getProject()));
     }
     
     public boolean performOk() {

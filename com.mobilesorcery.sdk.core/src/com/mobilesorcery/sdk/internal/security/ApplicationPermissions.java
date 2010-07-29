@@ -55,7 +55,11 @@ public class ApplicationPermissions implements IApplicationPermissions {
             addAvailablePermission(ICommonPermissions.ALL_PERMISSIONS[i]);
         }
         
-        requiredPermissions = new TreeSet<String>(Arrays.asList(PropertyUtil.getStrings(project, APPLICATION_PERMISSIONS_PROP)));
+        init(project.getProperty(APPLICATION_PERMISSIONS_PROP));
+    }
+    
+    private void init(String applicationPermissionProperty) {
+        requiredPermissions = new TreeSet<String>(Arrays.asList(PropertyUtil.toStrings(applicationPermissionProperty)));
     }
     
     private void addAvailablePermission(String permission) {
@@ -164,6 +168,17 @@ public class ApplicationPermissions implements IApplicationPermissions {
 
     public void apply(IApplicationPermissions workingCopy) {
         setRequiredPermissions(workingCopy.getRequiredPermissions());
+    }
+    
+    public String toString() {
+        return requiredPermissions.toString();
+    }
+
+    public static IApplicationPermissions getDefaultPermissions(MoSyncProject project) {
+        ApplicationPermissions result = new ApplicationPermissions(project);
+        result.isWorkingCopy = true;
+        result.init(project.getDefaultProperty(APPLICATION_PERMISSIONS_PROP));
+        return result;
     }
     
 }

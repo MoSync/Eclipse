@@ -27,6 +27,7 @@ import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.core.templates.Template;
 import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -76,7 +77,7 @@ extends S60Packager
 
 			// bin-hack
 			try {
-				createExe(new File(runtimePath), packageOutputDir, uid, internal);
+				createExe(new File(runtimePath), packageOutputDir, uid, project.getPermissions(), internal);
 				createRegRsc(new File(runtimeDir, "MoSync_reg.RSC"), packageOutputDir, uid); //$NON-NLS-1$
 				createResourceFile(new File(runtimeDir, "MoSync.RSC"), packageOutputDir, uid, appname); //$NON-NLS-1$
 			} catch (RuntimeException e) {
@@ -166,7 +167,8 @@ extends S60Packager
 
 	private void createExe ( File exeTemplateFile, 
 			                 File packageOutputDir, 
-			                 String uidStr, 
+			                 String uidStr,
+			                 IApplicationPermissions permissions,
 			                 DefaultPackager internal ) 
 	throws IOException 
 	{
@@ -175,9 +177,21 @@ extends S60Packager
 				                 exeTemplateFile.getAbsolutePath(),
 				                 outputFile.getAbsolutePath(), 
 			                     uidStr );
+		
+		modifyCapabilities(outputFile, permissions);
+		//writeFile(outputFile, buffer);
 	}
 
-	private void createResourceFile(File resourceTemplateFile, File packageOutputDir, String uidStr, String appName) throws IOException {
+	private void modifyCapabilities(File exe, IApplicationPermissions permissions) throws IOException {
+	    byte[] buffer = readFile(exe);
+	    int capabilites = Capabilities.toCapability(permissions);
+        writeInt(capabilites, buffer, 0x88);
+        writeFile(exe, buffer);
+        
+        System.err.println(Util.toBase16(buffer, 0x88, 4));
+    }
+
+    private void createResourceFile(File resourceTemplateFile, File packageOutputDir, String uidStr, String appName) throws IOException {
 		if (appName.length() > 62) {
 			throw new IOException(Messages.S60Packager_ApplicationNameTooLong);
 		}

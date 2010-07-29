@@ -57,6 +57,12 @@ public abstract class S60Packager extends AbstractPackager {
         ((buffer[offset + 3] & 0xff) << 24);
     }
     
+    /**
+     * Writes a 32-bit integer to a Symbian EXE image (little-endian)
+     * @param value
+     * @param buffer
+     * @param offset
+     */
     static void writeInt(int value, byte[] buffer, int offset) {
         buffer[offset + 3] = (byte)((value >> 24) & 0xff);
         buffer[offset + 2] = (byte)((value >> 16) & 0xff);
