@@ -1,7 +1,9 @@
 package com.mobilesorcery.sdk.builder.s60;
 
+import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
+import com.mobilesorcery.sdk.profiles.IProfile;
 
 /**
  * A utility class for translating 
@@ -32,7 +34,9 @@ public class Capabilities {
     //public final static int ECapabilitySurroundingsDD = 18;
     public final static int ECapabilityUserEnvironment = 19;
     
-    public static int toCapability(IApplicationPermissions permissions) {
+    private final static Version S60_3RD_FP2 = new Version("9.3");
+    
+    public static int toCapability(IProfile profile, IApplicationPermissions permissions) {
         int capability = 0;
         /*
          * From the Symbian Wiki:
@@ -63,9 +67,11 @@ public class Capabilities {
          * early S60 3rd edition phones (pre FP2) don't allow installation of self-signed software 
          * with this capability."
          */
-        capability |= toCapability(permissions, ICommonPermissions.LOCATION_COARSE, ECapabilityLocation);
-        capability |= toCapability(permissions, ICommonPermissions.LOCATION_FINE, ECapabilityLocation);
-        capability |= toCapability(permissions, ICommonPermissions.LOCATION, ECapabilityLocation);
+        if (!S60_3RD_FP2.isNewer(S60Packager.getOSVersion(profile))) {
+            capability |= toCapability(permissions, ICommonPermissions.LOCATION_COARSE, ECapabilityLocation);
+            capability |= toCapability(permissions, ICommonPermissions.LOCATION_FINE, ECapabilityLocation);
+            capability |= toCapability(permissions, ICommonPermissions.LOCATION, ECapabilityLocation);
+        }
         
         /*
          * From the Symbian Wiki:
@@ -73,6 +79,7 @@ public class Capabilities {
          * the confidentiality of user data. Contacts, messages and calendar data are always seen 
          * as user confidential data. For other content types such as images or sounds, 
          * it may depend on context, and ultimately be up to the application owning the data to define.
+         * 
          */
         capability |= toCapability(permissions, ICommonPermissions.CALENDAR_READ, ECapabilityReadUserData);
         capability |= toCapability(permissions, ICommonPermissions.CONTACTS_READ, ECapabilityReadUserData);

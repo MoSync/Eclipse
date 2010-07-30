@@ -18,10 +18,20 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.mobilesorcery.sdk.core.AbstractPackager;
+import com.mobilesorcery.sdk.core.Version;
+import com.mobilesorcery.sdk.profiles.IProfile;
 
 public abstract class S60Packager extends AbstractPackager {
+
+    private static final String SYMBIAN_OS_VERSION_PREFIX = "MA_PROF_SUPPORT_OS_SYMBIAN_";
+    
+    private static final Pattern SYMBIAN_OS_PATTERN = Pattern.compile("\\D*(\\d*)\\D*(\\d*)");
 
     static byte[] readFile(File file) throws IOException {
         DataInputStream input = null;
@@ -69,4 +79,34 @@ public abstract class S60Packager extends AbstractPackager {
         buffer[offset + 1] = (byte)((value >> 8) & 0xff);
         buffer[offset] = (byte)(value & 0xff);
     }
+    
+    /**
+     * Tries to deduce the Symbian OS version of a profile,
+     * or <code>null</code> if none was found.
+     * @param profile
+     * @return
+     */
+    public static Version getOSVersion(IProfile profile) {
+        Map<String, Object> props = profile.getProperties();
+        for (Entry<String, Object> entry : props.entrySet()) {
+            if (entry.getKey().startsWith(SYMBIAN_OS_VERSION_PREFIX)) {
+                return getOSVersion(entry.getKey());
+            }
+        }
+        
+        return null;
+    }
+    
+    private static Version getOSVersion(String osVersionProperty) {
+        String suffix = osVersionProperty.substring(SYMBIAN_OS_VERSION_PREFIX.length());
+        Matcher matcher = SYMBIAN_OS_PATTERN.matcher(suffix);
+        if (matcher.matches()) {
+            String major = matcher.group(1);
+            String minor = matcher.group(2);
+            return new Version(major + "." + minor);
+        }
+        
+        return null;
+    }
+   
 }

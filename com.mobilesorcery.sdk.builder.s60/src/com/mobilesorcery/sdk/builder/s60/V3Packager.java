@@ -77,7 +77,7 @@ extends S60Packager
 
 			// bin-hack
 			try {
-				createExe(new File(runtimePath), packageOutputDir, uid, project.getPermissions(), internal);
+				createExe(new File(runtimePath), packageOutputDir, uid, targetProfile, project.getPermissions(), internal);
 				createRegRsc(new File(runtimeDir, "MoSync_reg.RSC"), packageOutputDir, uid); //$NON-NLS-1$
 				createResourceFile(new File(runtimeDir, "MoSync.RSC"), packageOutputDir, uid, appname); //$NON-NLS-1$
 			} catch (RuntimeException e) {
@@ -168,6 +168,7 @@ extends S60Packager
 	private void createExe ( File exeTemplateFile, 
 			                 File packageOutputDir, 
 			                 String uidStr,
+			                 IProfile profile,
 			                 IApplicationPermissions permissions,
 			                 DefaultPackager internal ) 
 	throws IOException 
@@ -178,13 +179,13 @@ extends S60Packager
 				                 outputFile.getAbsolutePath(), 
 			                     uidStr );
 		
-		modifyCapabilities(outputFile, permissions);
+		modifyCapabilities(outputFile, profile, permissions);
 		//writeFile(outputFile, buffer);
 	}
 
-	private void modifyCapabilities(File exe, IApplicationPermissions permissions) throws IOException {
+	private void modifyCapabilities(File exe, IProfile profile, IApplicationPermissions permissions) throws IOException {
 	    byte[] buffer = readFile(exe);
-	    int capabilites = Capabilities.toCapability(permissions);
+	    int capabilites = Capabilities.toCapability(profile, permissions);
         writeInt(capabilites, buffer, 0x88);
         writeFile(exe, buffer);
         
