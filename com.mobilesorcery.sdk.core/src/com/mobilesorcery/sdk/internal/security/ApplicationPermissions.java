@@ -44,7 +44,7 @@ public class ApplicationPermissions implements IApplicationPermissions {
     
     private TreeSet<String> availablePermissions = new TreeSet<String>();
     private TreeMap<String, Set<String>> availablePermissionLookup = new TreeMap<String, Set<String>>();
-    private TreeSet<String> requiredPermissions;
+    private TreeSet<String> requestedPermissions;
     private MoSyncProject project;
 
     private boolean isWorkingCopy = false;
@@ -59,7 +59,7 @@ public class ApplicationPermissions implements IApplicationPermissions {
     }
     
     private void init(String applicationPermissionProperty) {
-        requiredPermissions = new TreeSet<String>(Arrays.asList(PropertyUtil.toStrings(applicationPermissionProperty)));
+        requestedPermissions = new TreeSet<String>(Arrays.asList(PropertyUtil.toStrings(applicationPermissionProperty)));
     }
     
     private void addAvailablePermission(String permission) {
@@ -76,52 +76,52 @@ public class ApplicationPermissions implements IApplicationPermissions {
         lookupSet.add(permission);
     }
     
-    public List<String> getRequiredPermissions() {
-        return new ArrayList<String>(requiredPermissions);
+    public List<String> getRequestedPermissions() {
+        return new ArrayList<String>(requestedPermissions);
     }
 
-    public void setRequiredPermissions(List<String> required) {
-        this.requiredPermissions = new TreeSet<String>(required);
+    public void setRequestedPermissions(List<String> requested) {
+        this.requestedPermissions = new TreeSet<String>(requested);
         save();
     }
 
-    public void setRequiredPermission(String required, boolean set) {
-        setRequiredPermission(required, set, true);
+    public void setRequestedPermission(String requested, boolean set) {
+        setRequestedPermission(requested, set, true);
     }
     
-    private void setRequiredPermission(String required, boolean set, boolean setSubPermissions) {
-        if (required == null) {
+    private void setRequestedPermission(String requested, boolean set, boolean setSubPermissions) {
+        if (requested == null) {
             return;
         }
         
         if (set) {
-            requiredPermissions.add(required);
+            requestedPermissions.add(requested);
             if (setSubPermissions) {
-                List<String> subPermissions = getAvailablePermissions(required);
-                requiredPermissions.addAll(subPermissions);
+                List<String> subPermissions = getAvailablePermissions(requested);
+                requestedPermissions.addAll(subPermissions);
             }
         } else {
-            requiredPermissions.remove(required);
+            requestedPermissions.remove(requested);
             if (setSubPermissions) {
-                List<String> subPermissions = getAvailablePermissions(required);
-                requiredPermissions.removeAll(subPermissions);
+                List<String> subPermissions = getAvailablePermissions(requested);
+                requestedPermissions.removeAll(subPermissions);
             }
         }
         
-        String parentPermission = getParentPermission(required);
-        setRequiredPermission(parentPermission, allSubPermissionsSet(parentPermission), false);
+        String parentPermission = getParentPermission(requested);
+        setRequestedPermission(parentPermission, allSubPermissionsSet(parentPermission), false);
         save();
     }
     
     private boolean allSubPermissionsSet(String parentPermission) {
         TreeSet<String> available = new TreeSet<String>(getAvailablePermissions(parentPermission));
-        available.removeAll(requiredPermissions);
+        available.removeAll(requestedPermissions);
         return available.isEmpty();
     }
 
     private void save() {
         if (!isWorkingCopy) {
-            String propertyString = toPropertyString(requiredPermissions.toArray(new String[0]));
+            String propertyString = toPropertyString(requestedPermissions.toArray(new String[0]));
             project.setProperty(APPLICATION_PERMISSIONS_PROP, propertyString);
         }
     }
@@ -130,8 +130,8 @@ public class ApplicationPermissions implements IApplicationPermissions {
         return PropertyUtil.fromStrings(permissions);
     }
     
-    private void setRequiredPermissions(String[] required) {
-        setRequiredPermissions(Arrays.asList(required));
+    private void setRequestedPermissions(String[] requested) {
+        setRequestedPermissions(Arrays.asList(requested));
     }
 
     public List<String> getAvailablePermissions(String parentPermission) {
@@ -152,12 +152,12 @@ public class ApplicationPermissions implements IApplicationPermissions {
         return permissionPath.segmentCount() > 1 ? permissionPath.removeLastSegments(1).toPortableString() : null;
     }
     
-    public boolean isPermissionRequired(String key) {
+    public boolean isPermissionRequested(String key) {
         if (key == null) {
             return false;
         }
         
-        return requiredPermissions.contains(key) || isPermissionRequired(getParentPermission(key));
+        return requestedPermissions.contains(key) || isPermissionRequested(getParentPermission(key));
     }
 
     public IApplicationPermissions createWorkingCopy() {
@@ -167,11 +167,11 @@ public class ApplicationPermissions implements IApplicationPermissions {
     }
 
     public void apply(IApplicationPermissions workingCopy) {
-        setRequiredPermissions(workingCopy.getRequiredPermissions());
+        setRequestedPermissions(workingCopy.getRequestedPermissions());
     }
     
     public String toString() {
-        return requiredPermissions.toString();
+        return requestedPermissions.toString();
     }
 
     public static IApplicationPermissions getDefaultPermissions(MoSyncProject project) {

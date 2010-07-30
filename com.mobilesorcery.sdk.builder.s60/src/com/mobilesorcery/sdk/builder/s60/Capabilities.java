@@ -99,7 +99,7 @@ public class Capabilities {
     }
 
     private static int toCapability(IApplicationPermissions permissions, String requiredPermission, int capability) {
-        if (permissions.isPermissionRequired(requiredPermission)) {
+        if (permissions.isPermissionRequested(requiredPermission)) {
             return 1 << capability;
         }
         

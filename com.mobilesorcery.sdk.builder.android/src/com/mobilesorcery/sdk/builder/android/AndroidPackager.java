@@ -336,34 +336,24 @@ extends AbstractPackager
     private String createPermissionXML(MoSyncProject project) {
         StringBuffer result = new StringBuffer();
         IApplicationPermissions permissions = project.getPermissions();
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.VIBRATE), "android.permission.VIBRATE");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.INTERNET), "android.permission.INTERNET");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.LOCATION_COARSE), "android.permission.ACCESS_COARSE_LOCATION");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.LOCATION_FINE), "android.permission.ACCESS_FINE_LOCATION");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.POWER_MANAGEMENT), "android.permission.BATTERY_STATS");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.CALENDAR_READ), "android.permission.READ_CALENDAR");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.CALENDAR_WRITE), "android.permission.WRITE_CALENDAR");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.CONTACTS_READ), "android.permission.READ_CONTACTS");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.CONTACTS_WRITE), "android.permission.WRITE_CONTACTS");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.SMS_READ), "android.permission.READ_SMS");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.SMS_SEND), "android.permission.SEND_SMS");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.SMS_RECEIVE), "android.permission.RECEIVE_SMS");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.CAMERA), "android.permission.CAMERA");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH");
-        addPermission(result, permissions.isPermissionRequired(ICommonPermissions.FILE_STORAGE_WRITE), "android.permission.WRITE_EXTERNAL_STORAGE");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.VIBRATE), "android.permission.VIBRATE");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.INTERNET), "android.permission.INTERNET");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.LOCATION_COARSE), "android.permission.ACCESS_COARSE_LOCATION");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.LOCATION_FINE), "android.permission.ACCESS_FINE_LOCATION");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.POWER_MANAGEMENT), "android.permission.BATTERY_STATS");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.CALENDAR_READ), "android.permission.READ_CALENDAR");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.CALENDAR_WRITE), "android.permission.WRITE_CALENDAR");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.CONTACTS_READ), "android.permission.READ_CONTACTS");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.CONTACTS_WRITE), "android.permission.WRITE_CONTACTS");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.SMS_READ), "android.permission.READ_SMS");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.SMS_SEND), "android.permission.SEND_SMS");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.SMS_RECEIVE), "android.permission.RECEIVE_SMS");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.CAMERA), "android.permission.CAMERA");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.FILE_STORAGE_WRITE), "android.permission.WRITE_EXTERNAL_STORAGE");
         // Always add this.
         addPermission(result, true, "android.permission.READ_PHONE_STATE");
         return result.toString();
-    }
-	
-    private boolean anyOf(IApplicationPermissions permissions, String... commonPermissions) {
-        for (int i = 0; i < commonPermissions.length; i++) {
-            if (permissions.isPermissionRequired(commonPermissions[i])) {
-                return true;
-            }
-        }
-        
-        return false;
     }
     
     private void addPermission(StringBuffer result, boolean condition, String... androidPermissions) {

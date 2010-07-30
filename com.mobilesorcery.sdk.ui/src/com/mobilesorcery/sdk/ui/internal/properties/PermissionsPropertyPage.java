@@ -86,7 +86,7 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
                     return false;
                 }
                 int availablePermissionCount = available.size();
-                available.removeAll(permissionsWorkingCopy.getRequiredPermissions());
+                available.removeAll(permissionsWorkingCopy.getRequestedPermissions());
                 int notRequiredPermissionCount = available.size();
                 boolean shouldBeGrayed = availablePermissionCount != notRequiredPermissionCount && notRequiredPermissionCount > 0;
 
@@ -95,7 +95,7 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
             
             public boolean isChecked(Object element) {
                 String permission = (String) element;
-                return isGrayed(element) || permissionsWorkingCopy.isPermissionRequired(permission);
+                return isGrayed(element) || permissionsWorkingCopy.isPermissionRequested(permission);
             }
         });
 
@@ -105,7 +105,7 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
         permissionsList.addCheckStateListener(new ICheckStateListener() {
             public void checkStateChanged(CheckStateChangedEvent event) {
                 String permission = (String) event.getElement();
-                permissionsWorkingCopy.setRequiredPermission(permission, event.getChecked());
+                permissionsWorkingCopy.setRequestedPermission(permission, event.getChecked());
                 permissionsList.refresh(true);
             }
         });
