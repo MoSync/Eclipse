@@ -38,6 +38,10 @@ public class JavaMESigningPreferencePage extends PreferencePage implements IWork
         return true;
     }
     
+    public void performDefaults() {
+        
+    }
+    
     public void init(IWorkbench workbench) {
     }
 

@@ -225,9 +225,15 @@ public class JavaPackager extends AbstractPackager {
         }
         mainAttr.putValue("MIDlet-Vendor", vendorName);
         mainAttr.putValue("MIDlet-Name", appName);
-        mainAttr.putValue("MIDlet-1", appName + ", " + appName + ".png" + ", " + appName);
-        mainAttr.putValue("MIDlet-Permissions", Util.join(getMIDletPermissions(permissions, false), ", "));
-        mainAttr.putValue("MIDlet-Permissions-Opt", Util.join(getMIDletPermissions(permissions, true), ", "));
+        mainAttr.putValue("MIDlet-1", appName + ", " + appName + ".png" + ", MAMidlet");
+        String[] midletPermissions = getMIDletPermissions(permissions, false);
+        String[] midletOptPermissions = getMIDletPermissions(permissions, true);
+        if (midletPermissions.length > 0) {
+            mainAttr.putValue("MIDlet-Permissions", Util.join(midletPermissions, ", "));
+        }
+        if (midletOptPermissions.length > 0) {
+            mainAttr.putValue("MIDlet-Permissions-Opt", Util.join(midletOptPermissions, ", "));
+        }
         mainAttr.putValue("MIDlet-Version", version.asCanonicalString(Version.MICRO));
         mainAttr.putValue("MicroEdition-Configuration", isCLDC_10 ? "CLDC-1.0" : "CLDC-1.1");
         mainAttr.putValue("MicroEdition-Profile", "MIDP-2.0");
