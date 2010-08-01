@@ -19,6 +19,7 @@ import java.io.IOException;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.DefaultPackager;
@@ -173,23 +174,24 @@ extends S60Packager
 			                 DefaultPackager internal ) 
 	throws IOException 
 	{
-		File outputFile = new File(packageOutputDir, uidStr + ".exe");
-		internal.runCommandLine( m_e32hackLoc, 
-				                 exeTemplateFile.getAbsolutePath(),
+        File outputFile = new File(packageOutputDir, uidStr + ".exe");
+        File intermediateFile = new File(packageOutputDir, uidStr + ".tmp");
+        modifyCapabilities(exeTemplateFile, intermediateFile, profile, permissions);
+        internal.runCommandLine( m_e32hackLoc, 
+                                 intermediateFile.getAbsolutePath(),
 				                 outputFile.getAbsolutePath(), 
 			                     uidStr );
-		
-		modifyCapabilities(outputFile, profile, permissions);
-		//writeFile(outputFile, buffer);
+        Util.deleteFiles(intermediateFile, null, 1, new NullProgressMonitor());
 	}
 
-	private void modifyCapabilities(File exe, IProfile profile, IApplicationPermissions permissions) throws IOException {
-	    byte[] buffer = readFile(exe);
+	private void modifyCapabilities(File input, File output, IProfile profile, IApplicationPermissions permissions) throws IOException {
+	    Util.copyFile(new NullProgressMonitor(), input, output);
+	    byte[] buffer = readFile(output);
+        System.err.println("BEFORE:    " + Util.toBase16(buffer, 0x88, 4));
 	    int capabilites = Capabilities.toCapability(profile, permissions);
         writeInt(capabilites, buffer, 0x88);
-        writeFile(exe, buffer);
-        
-        System.err.println(Util.toBase16(buffer, 0x88, 4));
+        writeFile(output, buffer);
+        System.err.println("AFTER:     " + Util.toBase16(buffer, 0x88, 4));
     }
 
     private void createResourceFile(File resourceTemplateFile, File packageOutputDir, String uidStr, String appName) throws IOException {
