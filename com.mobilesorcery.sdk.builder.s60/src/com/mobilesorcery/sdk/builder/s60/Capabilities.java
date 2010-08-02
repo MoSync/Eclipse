@@ -67,7 +67,8 @@ public class Capabilities {
          * early S60 3rd edition phones (pre FP2) don't allow installation of self-signed software 
          * with this capability."
          */
-        if (!S60_3RD_FP2.isNewer(S60Packager.getOSVersion(profile))) {
+        Version osVersion = S60Packager.getOSVersion(profile);
+        if (osVersion != null && !S60_3RD_FP2.isNewer(osVersion)) {
             capability |= toCapability(permissions, ICommonPermissions.LOCATION_COARSE, ECapabilityLocation);
             capability |= toCapability(permissions, ICommonPermissions.LOCATION_FINE, ECapabilityLocation);
             capability |= toCapability(permissions, ICommonPermissions.LOCATION, ECapabilityLocation);

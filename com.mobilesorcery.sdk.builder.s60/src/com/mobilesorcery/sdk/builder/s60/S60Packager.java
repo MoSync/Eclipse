@@ -33,6 +33,8 @@ public abstract class S60Packager extends AbstractPackager {
     
     private static final Pattern SYMBIAN_OS_PATTERN = Pattern.compile("\\D*(\\d*)\\D*(\\d*)");
 
+    private static final Version SYMBIAN_S60V5_OS_VERSION = new Version("9.4");
+
     static byte[] readFile(File file) throws IOException {
         DataInputStream input = null;
         byte[] buffer = new byte[(int) file.length()];
@@ -88,6 +90,10 @@ public abstract class S60Packager extends AbstractPackager {
      */
     public static Version getOSVersion(IProfile profile) {
         Map<String, Object> props = profile.getProperties();
+        if ("true".equalsIgnoreCase("" + props.get("MA_PROF_STRING_PLATFORM_S60V5"))) {
+            return SYMBIAN_S60V5_OS_VERSION;
+        }
+        
         for (Entry<String, Object> entry : props.entrySet()) {
             if (entry.getKey().startsWith(SYMBIAN_OS_VERSION_PREFIX)) {
                 return getOSVersion(entry.getKey());
