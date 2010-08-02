@@ -79,11 +79,9 @@ public class Capabilities {
          * the confidentiality of user data. Contacts, messages and calendar data are always seen 
          * as user confidential data. For other content types such as images or sounds, 
          * it may depend on context, and ultimately be up to the application owning the data to define.
-         * 
+         * THIS CAPABILITY IS ALWAYS ENABLED
          */
-        capability |= toCapability(permissions, ICommonPermissions.CALENDAR_READ, ECapabilityReadUserData);
-        capability |= toCapability(permissions, ICommonPermissions.CONTACTS_READ, ECapabilityReadUserData);
-        capability |= toCapability(permissions, ICommonPermissions.SMS_READ, ECapabilityReadUserData);
+        capability |= toCapability(permissions, null, ECapabilityReadUserData);
         
         /*
          * From the Symbian Wiki:
@@ -91,9 +89,9 @@ public class Capabilities {
          * user, i.e. contacts, calendar entries and messages. It supports the integrity of the user 
          * data, so that the user can be sure that it is correct. The application of this capability
          * is not necessarily symmetrical with the 'ReadUserData' capability
+         * THIS CAPABILITY IS ALWAYS ENABLED
          */
-        capability |= toCapability(permissions, ICommonPermissions.CALENDAR_WRITE, ECapabilityWriteUserData);
-        capability |= toCapability(permissions, ICommonPermissions.CONTACTS_WRITE, ECapabilityWriteUserData);
+        capability |= toCapability(permissions, null, ECapabilityWriteUserData);
         
         /*
          * From the Symbian Wiki:
@@ -106,7 +104,7 @@ public class Capabilities {
     }
 
     private static int toCapability(IApplicationPermissions permissions, String requiredPermission, int capability) {
-        if (permissions.isPermissionRequested(requiredPermission)) {
+        if (requiredPermission == null || permissions.isPermissionRequested(requiredPermission)) {
             return 1 << capability;
         }
         
