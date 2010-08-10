@@ -79,7 +79,7 @@ public abstract class UpdateManagerBase {
         if (baseURL == null) {
             baseURL = "http://api.mosync.com/{0}"; //$NON-NLS-1$ 
         }
-        return MessageFormat.format(baseURL, serviceName);
+        return MessageFormat.format(baseURL, serviceName).trim();
     }
 
     protected URL getRequestURL(String serviceName, Map<String, String> params) throws MalformedURLException {

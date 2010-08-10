@@ -2,6 +2,7 @@ package com.mobilesorcery.sdk.update.internal;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -110,7 +111,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
             String userKey = MoSyncTool.getDefault().getProperty(MoSyncTool.USER_HASH_PROP_2);
 
             try {
-                if (userKey == null) {
+                if (userKey == null || !validateKey()) {
                     userKey = requestKeyFromServer();
                     MoSyncTool.getDefault().setProperty(MoSyncTool.USER_HASH_PROP_2, userKey);
                 }
@@ -214,6 +215,12 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         }
     }
 
+    public boolean validateKey() throws IOException {
+        Response validated = sendRequest(getRequestURL("registration/request/validate", assembleDefaultParams(false)));
+        boolean isValid = getBooleanResponse(validated, "Server failed to accept user key validation request");
+        return isValid;
+    }
+    
     public int getUserStatus() throws IOException {
         Response response = sendRequest(getRequestURL("registration/request/userstatus", assembleDefaultParams(false)));
         InputStream input = null;
