@@ -160,6 +160,9 @@ public class Version {
      * @return
      */
     public boolean isOlder(Version other) {
+        if (other == null) {
+            return false;
+        }
         if (getMajor() < other.getMajor()) {
             return true;
         } else if (getMajor() == other.getMajor()) {
@@ -182,6 +185,9 @@ public class Version {
      * @return
      */
     public boolean isNewer(Version other) {
+        if (other == null) {
+            return false;
+        }
         if (getMajor() > other.getMajor()) {
             return true;
         } else if (getMajor() == other.getMajor()) {

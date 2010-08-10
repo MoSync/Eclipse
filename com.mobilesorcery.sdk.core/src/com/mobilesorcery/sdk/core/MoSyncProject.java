@@ -167,7 +167,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	
 	private static final String VERSION_KEY = "version";
 
-	private static final String VERSION = "1";
+	/**
+	 * The format version currently used to store projects.
+	 * @see MoSyncProject#getFormatVersion()
+	 */
+	public static final Version CURRENT_VERSION = new Version("1.1");
 
 	/**
 	 * The name of the file where this project's <b>shared</b> meta data is located.
@@ -225,6 +229,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
     private IApplicationPermissions permissions;
     
+    private Version formatVersion = CURRENT_VERSION;
+    
     private MoSyncProject(IProject project) {
         Assert.isNotNull(project);
         this.project = project;
@@ -259,6 +265,9 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
             // from that first
             input = new FileReader(projectMetaDataPath.toFile());
             XMLMemento memento = XMLMemento.createReadRoot(input);
+            String formatVersionStr = memento.getString(VERSION_KEY);
+            formatVersion = formatVersionStr == null ? CURRENT_VERSION : new Version(formatVersionStr);
+            
             initTargetProfileFromProjectMetaData(memento);
             // Special case; device filters are always shared.
             if (store == SHARED_PROPERTY) {
@@ -379,7 +388,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
             IMemento propertiesMemento = root.createChild(PROPERTIES);
             saveProperties(propertiesMemento, getProperties(store));
     
-            root.putString(VERSION_KEY, VERSION);
+            root.putString(VERSION_KEY, formatVersion.asCanonicalString());
             root.save(output);
             output.close();
         } catch (IOException e) {
@@ -1033,7 +1042,6 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		return this;
 	}
 
-
 	public LibraryLookup getLibraryLookup(IPropertyOwner buildProperties) {
 		// TODO: cache?
 		return new LibraryLookup(MoSyncBuilder.getLibraryPaths(getWrappedProject(), buildProperties), MoSyncBuilder.getLibraries(buildProperties));
@@ -1041,6 +1049,15 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
     public IApplicationPermissions getPermissions() {
         return permissions;
+    }
+    
+    /**
+     * Returns the version of the format used to persist
+     * the project meta data.
+     * @return
+     */
+    public Version getFormatVersion() {
+        return formatVersion;
     }
 
 }
