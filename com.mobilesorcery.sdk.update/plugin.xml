@@ -32,5 +32,14 @@
                   implementation="com.mobilesorcery.sdk.update.internal.DefaultUpdater2">
             </updater>
          </extension>
+         <extension
+               point="org.eclipse.ui.perspectives">
+           <perspective
+            id="com.mobilesorcery.update.perspective"
+            name="MoSync Registration"
+            class="com.mobilesorcery.sdk.update.internal.RegistrationPerspectiveFactory"
+            icon="icons/registrationperspective.png">
+        </perspective>
+         </extension>
       
 </plugin>

@@ -20,11 +20,23 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IPageListener;
+import org.eclipse.ui.IPartListener;
+import org.eclipse.ui.IPerspectiveDescriptor;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.WorkbenchException;
 import org.eclipse.ui.browser.IWebBrowser;
 import org.eclipse.ui.browser.IWorkbenchBrowserSupport;
+import org.eclipse.ui.internal.browser.WebBrowserEditor;
+import org.eclipse.ui.internal.browser.WebBrowserEditorInput;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IUpdater;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.update.MosyncUpdatePlugin;
@@ -41,8 +53,10 @@ import com.mobilesorcery.sdk.update.UpdateManagerBase;
  */
 public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
-    public class OpenBrowserRunnable implements Runnable {
+    public class OpenBrowserRunnable implements Runnable, IPartListener {
 
+        final static String REGISTRATION_PERSPECTIVE_ID = "com.mobilesorcery.update.perspective";
+        
         private URL whereToGo;
         private String name;
 
@@ -53,16 +67,55 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
         public void run() {
             try {
+                IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+                try {
+                    PlatformUI.getWorkbench().showPerspective(REGISTRATION_PERSPECTIVE_ID, window);
+                } catch (WorkbenchException e) {
+                    // We can still do SOMETHING.
+                    CoreMoSyncPlugin.getDefault().log(e);
+                }
+                
                 IWorkbenchBrowserSupport browserSupport = PlatformUI.getWorkbench().getBrowserSupport();
-
                 IWebBrowser browser = browserSupport.createBrowser(IWorkbenchBrowserSupport.AS_EDITOR | IWorkbenchBrowserSupport.STATUS,
                         MosyncUpdatePlugin.PLUGIN_ID + ".browser", name, name);
                 browser.openURL(whereToGo);
+                
+                window.getActivePage().addPartListener(this);
             } catch (PartInitException e) {
                 e.printStackTrace();
                 openFallbackDialog(whereToGo, name);
             }
         }
+        
+        public void closeRegistrationPerspective() {
+            IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+            IPerspectiveDescriptor perspective = PlatformUI.getWorkbench().getPerspectiveRegistry().findPerspectiveWithId(REGISTRATION_PERSPECTIVE_ID);
+            if(perspective != null) {
+                page.closePerspective(perspective, false, false);
+            }
+        }
+
+        public void partActivated(IWorkbenchPart part) { }
+
+        public void partBroughtToTop(IWorkbenchPart part) { }
+
+        public void partClosed(IWorkbenchPart part) {
+            if (part instanceof IEditorPart) {
+                IEditorPart editor = (IEditorPart) part;
+                IEditorInput input = editor.getEditorInput();
+                if (input instanceof WebBrowserEditorInput) {
+                    WebBrowserEditorInput wbInput = (WebBrowserEditorInput) input;
+                    URL url = wbInput.getURL();
+                    if (url != null && url.equals(whereToGo)) {
+                        closeRegistrationPerspective();
+                    }
+                }
+            }
+        }
+
+        public void partDeactivated(IWorkbenchPart part) { }
+
+        public void partOpened(IWorkbenchPart part) { }
 
     }
 
