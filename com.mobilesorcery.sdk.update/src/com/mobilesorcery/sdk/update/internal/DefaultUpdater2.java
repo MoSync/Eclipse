@@ -357,7 +357,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
             params.put("sdk", versionStr);
             params.put("ide", versionStr);
         }
-        params.put("hhash", MoSyncTool.getDefault().getProperty(MoSyncTool.USER_HASH_PROP_2));
+        params.put("hhash", getUserHalfHash());
         return params;
     }
 
