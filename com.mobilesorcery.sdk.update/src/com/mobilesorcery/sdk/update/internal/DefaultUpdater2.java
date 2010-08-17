@@ -17,9 +17,14 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.browser.Browser;
+import org.eclipse.swt.browser.LocationEvent;
+import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
@@ -56,6 +61,33 @@ import com.mobilesorcery.sdk.update.UpdateManagerBase;
  */
 public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
+    public class InternalLocationListener implements LocationListener {
+
+        private IEditorPart editor;
+
+        public InternalLocationListener(IEditorPart editor) {
+            this.editor = editor;
+        }
+
+        public void changed(LocationEvent event) {
+        }
+
+        public void changing(LocationEvent event) {
+            String location = event.location;
+            // Specially formatted urls will kill the editor.
+            try {
+                URL locationURL = new URL(location);
+                boolean isKillURL = locationURL.getPath().contains("close-ide-registration");
+                if (isKillURL) {
+                    editor.getSite().getWorkbenchWindow().getActivePage().closeEditor(editor, true);
+                }
+            } catch (MalformedURLException e) {
+                // Just ignore.
+            }
+        }
+
+    }
+
     public static final String SHOW_CONNECTION_FAILED_POPUP = "show.conn.fail.popup";
 
     public class OpenBrowserRunnable implements Runnable, IPartListener {
@@ -65,7 +97,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         private URL whereToGo;
         private String name;
         private boolean reopenIntro;
-        
+
         public OpenBrowserRunnable(URL whereToGo, String name) {
             this.whereToGo = whereToGo;
             this.name = name;
@@ -76,11 +108,11 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                 IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
                 IIntroPart currentIntroPart = PlatformUI.getWorkbench().getIntroManager().getIntro();
                 reopenIntro = currentIntroPart != null;
-                
+
                 if (reopenIntro) {
                     PlatformUI.getWorkbench().getIntroManager().closeIntro(currentIntroPart);
                 }
-                
+
                 try {
                     PlatformUI.getWorkbench().showPerspective(REGISTRATION_PERSPECTIVE_ID, window);
                 } catch (WorkbenchException e) {
@@ -88,11 +120,22 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                     CoreMoSyncPlugin.getDefault().log(e);
                 }
 
-                
-                IWorkbenchBrowserSupport browserSupport = PlatformUI.getWorkbench().getBrowserSupport();
-                IWebBrowser browser = browserSupport.createBrowser(IWorkbenchBrowserSupport.AS_EDITOR | IWorkbenchBrowserSupport.STATUS,
-                        MosyncUpdatePlugin.PLUGIN_ID + ".browser", name, name);
-                browser.openURL(whereToGo);
+                IEditorPart editor = RegistrationWebBrowserEditor.openURL("Registration", whereToGo);
+                Browser browser = RegistrationWebBrowserEditor.getBrowser(editor);
+                if (browser != null) {
+                    InternalLocationListener locationListener = new InternalLocationListener(editor);
+                    browser.addLocationListener(locationListener);
+                }
+
+                /*
+                 * IWorkbenchBrowserSupport browserSupport =
+                 * PlatformUI.getWorkbench().getBrowserSupport(); IWebBrowser
+                 * browser =
+                 * browserSupport.createBrowser(IWorkbenchBrowserSupport
+                 * .AS_EDITOR | IWorkbenchBrowserSupport.STATUS,
+                 * MosyncUpdatePlugin.PLUGIN_ID + ".browser", name, name);
+                 * browser.openURL(whereToGo);
+                 */
 
                 window.getActivePage().addPartListener(this);
             } catch (PartInitException e) {
@@ -107,7 +150,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
             if (perspective != null) {
                 page.closePerspective(perspective, false, false);
             }
-            
+
             if (reopenIntro) {
                 PlatformUI.getWorkbench().getIntroManager().showIntro(PlatformUI.getWorkbench().getActiveWorkbenchWindow(), false);
             }
@@ -123,12 +166,9 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
             if (part instanceof IEditorPart) {
                 IEditorPart editor = (IEditorPart) part;
                 IEditorInput input = editor.getEditorInput();
-                if (input instanceof WebBrowserEditorInput) {
-                    WebBrowserEditorInput wbInput = (WebBrowserEditorInput) input;
-                    URL url = wbInput.getURL();
-                    if (url != null && url.equals(whereToGo)) {
-                        closeRegistrationPerspective();
-                    }
+                URL url = RegistrationWebBrowserEditor.getInitialURL(input);
+                if (url != null && url.equals(whereToGo)) {
+                    closeRegistrationPerspective();
                 }
             }
         }
@@ -137,6 +177,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         }
 
         public void partOpened(IWorkbenchPart part) {
+
         }
 
     }
@@ -214,12 +255,13 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
     public boolean shouldPopupConnectionFailedMessage() {
         return MessageDialogWithToggle.ALWAYS.equals(MosyncUpdatePlugin.getDefault().getPreferenceStore().getString(SHOW_CONNECTION_FAILED_POPUP));
     }
-    
-    public void shouldPopupConnectionFailedMessage(boolean shouldPopupConnectionFailedMessage) {
-        // Why doesn't the dialog do this properly - investigate later, for now just make it work.
-        MosyncUpdatePlugin.getDefault().getPreferenceStore().setValue(SHOW_CONNECTION_FAILED_POPUP, shouldPopupConnectionFailedMessage ? MessageDialogWithToggle.ALWAYS : MessageDialogWithToggle.NEVER);
-    }
 
+    public void shouldPopupConnectionFailedMessage(boolean shouldPopupConnectionFailedMessage) {
+        // Why doesn't the dialog do this properly - investigate later, for now
+        // just make it work.
+        MosyncUpdatePlugin.getDefault().getPreferenceStore().setValue(SHOW_CONNECTION_FAILED_POPUP,
+                shouldPopupConnectionFailedMessage ? MessageDialogWithToggle.ALWAYS : MessageDialogWithToggle.NEVER);
+    }
 
     public void update(boolean isStartedByUser) {
         UpdateRunnable updater = new UpdateRunnable(isStartedByUser);
@@ -268,7 +310,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
     private void popupConnectionFailedDialogSync(Display d, boolean isStartedByUser) {
         Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-        //Shell shell = new Shell(d);
+        // Shell shell = new Shell(d);
         String dialogTitle = "Could not connect";
         String msg = "MoSync was unable to connect to its update server.\n"
                 + "If you would like the latest device profiles and updates you will need to be connected to the Internet.\n"
@@ -278,18 +320,17 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
             if (isStartedByUser) {
                 MessageDialog.openInformation(shell, dialogTitle, msg);
             } else {
-                MessageDialogWithToggle dialog = MessageDialogWithToggle.open(MessageDialogWithToggle.INFORMATION, shell, dialogTitle, msg, 
-                        "Show this message if no connection is found",  shouldPopupConnectionFailedMessage(),
-                        MosyncUpdatePlugin.getDefault().getPreferenceStore(), SHOW_CONNECTION_FAILED_POPUP, SWT.SHELL_TRIM);
+                MessageDialogWithToggle dialog = MessageDialogWithToggle.open(MessageDialogWithToggle.INFORMATION, shell, dialogTitle, msg,
+                        "Show this message if no connection is found", shouldPopupConnectionFailedMessage(), MosyncUpdatePlugin.getDefault()
+                                .getPreferenceStore(), SHOW_CONNECTION_FAILED_POPUP, SWT.SHELL_TRIM);
                 if (dialog.getReturnCode() != -1) {
                     shouldPopupConnectionFailedMessage(dialog.getToggleState());
                 }
             }
         } finally {
-            //shell.dispose();
+            // shell.dispose();
         }
     }
-
 
     private void userNotRegisteredAction() throws IOException {
         launchInternalBrowser(getRequestURL("registration/register/", assembleDefaultParams(true)), "Register");
