@@ -14,7 +14,9 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
@@ -44,19 +46,21 @@ import com.mobilesorcery.sdk.update.UpdateManager;
 import com.mobilesorcery.sdk.update.UpdateManagerBase;
 
 /**
- * An updater for the 'new' update process; new obviously new only for a certain
- * period of time, so if you're reading this javadoc it's probably older than
- * the flashy new-and-fresh-car feeling conveyed by the 'new' word.
+ * An updater for the 'new' update process; 'new' is obviously new only for a
+ * certain period of time, so if you're reading this javadoc it's probably older
+ * than the flashy new-and-fresh-car feeling conveyed by the 'new' word.
  * 
  * @author Mattias Bybro, mattias.bybro@purplescout.s
  * 
  */
 public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
+    public static final String SHOW_CONNECTION_FAILED_POPUP = "show.conn.fail.popup";
+
     public class OpenBrowserRunnable implements Runnable, IPartListener {
 
         final static String REGISTRATION_PERSPECTIVE_ID = "com.mobilesorcery.update.perspective";
-        
+
         private URL whereToGo;
         private String name;
 
@@ -74,30 +78,32 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                     // We can still do SOMETHING.
                     CoreMoSyncPlugin.getDefault().log(e);
                 }
-                
+
                 IWorkbenchBrowserSupport browserSupport = PlatformUI.getWorkbench().getBrowserSupport();
                 IWebBrowser browser = browserSupport.createBrowser(IWorkbenchBrowserSupport.AS_EDITOR | IWorkbenchBrowserSupport.STATUS,
                         MosyncUpdatePlugin.PLUGIN_ID + ".browser", name, name);
                 browser.openURL(whereToGo);
-                
+
                 window.getActivePage().addPartListener(this);
             } catch (PartInitException e) {
                 e.printStackTrace();
                 openFallbackDialog(whereToGo, name);
             }
         }
-        
+
         public void closeRegistrationPerspective() {
             IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
             IPerspectiveDescriptor perspective = PlatformUI.getWorkbench().getPerspectiveRegistry().findPerspectiveWithId(REGISTRATION_PERSPECTIVE_ID);
-            if(perspective != null) {
+            if (perspective != null) {
                 page.closePerspective(perspective, false, false);
             }
         }
 
-        public void partActivated(IWorkbenchPart part) { }
+        public void partActivated(IWorkbenchPart part) {
+        }
 
-        public void partBroughtToTop(IWorkbenchPart part) { }
+        public void partBroughtToTop(IWorkbenchPart part) {
+        }
 
         public void partClosed(IWorkbenchPart part) {
             if (part instanceof IEditorPart) {
@@ -113,9 +119,11 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
             }
         }
 
-        public void partDeactivated(IWorkbenchPart part) { }
+        public void partDeactivated(IWorkbenchPart part) {
+        }
 
-        public void partOpened(IWorkbenchPart part) { }
+        public void partOpened(IWorkbenchPart part) {
+        }
 
     }
 
@@ -182,12 +190,22 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                     }
                 }
             } catch (IOException e) {
-                // We just ignore that and hope that the
-                // user has an internet connection next time
-                return;
+                if (isStartedByUser || shouldPopupConnectionFailedMessage()) {
+                    popupConnectionFailedDialog(isStartedByUser);
+                }
             }
         }
     }
+
+    public boolean shouldPopupConnectionFailedMessage() {
+        return MessageDialogWithToggle.ALWAYS.equals(MosyncUpdatePlugin.getDefault().getPreferenceStore().getString(SHOW_CONNECTION_FAILED_POPUP));
+    }
+    
+    public void shouldPopupConnectionFailedMessage(boolean shouldPopupConnectionFailedMessage) {
+        // Why doesn't the dialog do this properly - investigate later, for now just make it work.
+        MosyncUpdatePlugin.getDefault().getPreferenceStore().setValue(SHOW_CONNECTION_FAILED_POPUP, shouldPopupConnectionFailedMessage ? MessageDialogWithToggle.ALWAYS : MessageDialogWithToggle.NEVER);
+    }
+
 
     public void update(boolean isStartedByUser) {
         UpdateRunnable updater = new UpdateRunnable(isStartedByUser);
@@ -205,7 +223,11 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                 showNoUpdatesDialog();
             }
         } catch (Exception e) {
-            // We'll ignore errors during 'update available' checks
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            } else {
+                throw new IOException("Could not connect", e);
+            }
         }
     }
 
@@ -219,6 +241,41 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
             }
         });
     }
+
+    public void popupConnectionFailedDialog(final boolean isStartedByUser) {
+        final Display d = PlatformUI.getWorkbench().getDisplay();
+        d.syncExec(new Runnable() {
+            public void run() {
+                popupConnectionFailedDialogSync(d, isStartedByUser);
+            }
+        });
+
+    }
+
+    private void popupConnectionFailedDialogSync(Display d, boolean isStartedByUser) {
+        Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+        //Shell shell = new Shell(d);
+        String dialogTitle = "Could not connect";
+        String msg = "MoSync was unable to connect to its update server.\n"
+                + "If you would like the latest device profiles and updates you will need to be connected to the Internet.\n"
+                + "Check your Internet connection and your firewall settings.";
+
+        try {
+            if (isStartedByUser) {
+                MessageDialog.openInformation(shell, dialogTitle, msg);
+            } else {
+                MessageDialogWithToggle dialog = MessageDialogWithToggle.open(MessageDialogWithToggle.INFORMATION, shell, dialogTitle, msg, 
+                        "Show this message if no connection is found",  shouldPopupConnectionFailedMessage(),
+                        MosyncUpdatePlugin.getDefault().getPreferenceStore(), SHOW_CONNECTION_FAILED_POPUP, SWT.SHELL_TRIM);
+                if (dialog.getReturnCode() != -1) {
+                    shouldPopupConnectionFailedMessage(dialog.getToggleState());
+                }
+            }
+        } finally {
+            //shell.dispose();
+        }
+    }
+
 
     private void userNotRegisteredAction() throws IOException {
         launchInternalBrowser(getRequestURL("registration/register/", assembleDefaultParams(true)), "Register");
@@ -273,7 +330,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         boolean isValid = getBooleanResponse(validated, "Server failed to accept user key validation request");
         return isValid;
     }
-    
+
     public int getUserStatus() throws IOException {
         Response response = sendRequest(getRequestURL("registration/request/userstatus", assembleDefaultParams(false)));
         InputStream input = null;
