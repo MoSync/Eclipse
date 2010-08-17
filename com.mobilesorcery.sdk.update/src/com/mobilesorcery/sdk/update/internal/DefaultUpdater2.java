@@ -37,6 +37,7 @@ import org.eclipse.ui.browser.IWebBrowser;
 import org.eclipse.ui.browser.IWorkbenchBrowserSupport;
 import org.eclipse.ui.internal.browser.WebBrowserEditor;
 import org.eclipse.ui.internal.browser.WebBrowserEditorInput;
+import org.eclipse.ui.intro.IIntroPart;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IUpdater;
@@ -63,7 +64,8 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
         private URL whereToGo;
         private String name;
-
+        private boolean reopenIntro;
+        
         public OpenBrowserRunnable(URL whereToGo, String name) {
             this.whereToGo = whereToGo;
             this.name = name;
@@ -72,6 +74,13 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         public void run() {
             try {
                 IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+                IIntroPart currentIntroPart = PlatformUI.getWorkbench().getIntroManager().getIntro();
+                reopenIntro = currentIntroPart != null;
+                
+                if (reopenIntro) {
+                    PlatformUI.getWorkbench().getIntroManager().closeIntro(currentIntroPart);
+                }
+                
                 try {
                     PlatformUI.getWorkbench().showPerspective(REGISTRATION_PERSPECTIVE_ID, window);
                 } catch (WorkbenchException e) {
@@ -79,6 +88,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                     CoreMoSyncPlugin.getDefault().log(e);
                 }
 
+                
                 IWorkbenchBrowserSupport browserSupport = PlatformUI.getWorkbench().getBrowserSupport();
                 IWebBrowser browser = browserSupport.createBrowser(IWorkbenchBrowserSupport.AS_EDITOR | IWorkbenchBrowserSupport.STATUS,
                         MosyncUpdatePlugin.PLUGIN_ID + ".browser", name, name);
@@ -96,6 +106,10 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
             IPerspectiveDescriptor perspective = PlatformUI.getWorkbench().getPerspectiveRegistry().findPerspectiveWithId(REGISTRATION_PERSPECTIVE_ID);
             if (perspective != null) {
                 page.closePerspective(perspective, false, false);
+            }
+            
+            if (reopenIntro) {
+                PlatformUI.getWorkbench().getIntroManager().showIntro(PlatformUI.getWorkbench().getActiveWorkbenchWindow(), false);
             }
         }
 
