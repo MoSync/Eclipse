@@ -300,7 +300,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
     public void popupConnectionFailedDialog(final boolean isStartedByUser) {
         final Display d = PlatformUI.getWorkbench().getDisplay();
-        d.syncExec(new Runnable() {
+        d.asyncExec(new Runnable() {
             public void run() {
                 popupConnectionFailedDialogSync(d, isStartedByUser);
             }
