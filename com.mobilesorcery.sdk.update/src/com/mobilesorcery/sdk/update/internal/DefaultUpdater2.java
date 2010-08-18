@@ -405,7 +405,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
     private Map<String, String> assembleDefaultParams(boolean hashOnly) {
         HashMap<String, String> params = new HashMap<String, String>();
         if (!hashOnly) {
-            int version = MoSyncTool.getDefault().getCurrentProfileVersion();
+            int version = MoSyncTool.getDefault().getCurrentBinaryVersion();
             String versionStr = Integer.toString(version);
             // For now we send the same version for all components.
             params.put("db", versionStr);
