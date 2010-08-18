@@ -88,10 +88,11 @@ extends AbstractPackager
 			projectAPK.delete();
 			
 			//String fixedName = project.getName().replace(' ', '_');
+			String packageName = project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME);
 			
 			// Create manifest file
 			File manifest = new File( packageOutDir, "AndroidManifest.xml" );
-			createManifest(project, new Version(internal.getParameters().get(DefaultPackager.APP_VERSION)), manifest);
+			createManifest(project, new Version(internal.getParameters().get(DefaultPackager.APP_VERSION)), packageName, manifest);
 
 			// Create layout (main.xml) file
 			File main_xml = new File( packageOutDir, "res/layout/main.xml" );
@@ -200,7 +201,7 @@ extends AbstractPackager
 					                 "--dex",
 					                 "--patch-string",
 					                 "com/mosync/java/android",
-					                 toByteCodePackageName(project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME)),
+					                 toByteCodePackageName(packageName),
 					                 "--output=" + new File( packageOutDir, "classes.dex" ).getAbsolutePath( ),
 					                 new File( packageOutDir, "classes" ).getAbsolutePath( ) );
 			
@@ -299,13 +300,11 @@ extends AbstractPackager
 		p.delete( );
 	}
 
-    private void createManifest(MoSyncProject project, Version version, File manifest) throws IOException {
+    private void createManifest(MoSyncProject project, Version version, String packageName, File manifest) throws IOException {
 		manifest.getParentFile().mkdirs();
-		String projectName = project.getName();
-		
 		String manifest_string = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 		+"<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\n"
-			+"\tpackage=\"com.mosync.app_"+projectName+"\"\n"
+			+"\tpackage=\"" + packageName + "\"\n"
 			+"\tandroid:versionCode=\"" + project.getProperty(PropertyInitializer.ANDROID_VERSION_CODE) + "\"\n"
 			+"\tandroid:versionName=\"" + version.toString() + "\">\n"
 			+"\t<application android:icon=\"@drawable/icon\" android:label=\"@string/app_name\">\n"

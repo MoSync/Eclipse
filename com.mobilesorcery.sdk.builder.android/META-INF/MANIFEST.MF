@@ -14,3 +14,4 @@ Require-Bundle: org.eclipse.core.resources;bundle-version="3.3.1",
  com.mobilesorcery.sdk.builder.java;bundle-version="1.0.0"
 Bundle-Activator: com.mobilesorcery.sdk.builder.android.Activator
 Bundle-ActivationPolicy: lazy
+Export-Package: com.mobilesorcery.sdk.builder.android

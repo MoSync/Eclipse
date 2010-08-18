@@ -29,6 +29,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.dialogs.ListDialog;
 
+import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
@@ -120,8 +121,7 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 	}
 	
 	public static String getAndroidComponentName(MoSyncProject project) {
-		// Android app names are like this by convention:
-		String packageName = "com.mosync.app_" + project.getName();
+		String packageName = project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME);
 		String activityName = packageName + ".MoSync";
 		String androidComponent = packageName + "/" + activityName;
 		return androidComponent;
