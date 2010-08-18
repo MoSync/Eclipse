@@ -2,6 +2,7 @@ package com.mobilesorcery.sdk.product.intro.actions;
 
 import java.util.Properties;
 
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
@@ -12,11 +13,18 @@ import org.eclipse.ui.intro.IIntroSite;
 import org.eclipse.ui.intro.config.IIntroAction;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
 public class SwitchWorkspaceAction implements IIntroAction {
 
 	public void run(IIntroSite site, Properties params) {
-		String ws = params.getProperty("href");
+		String ws = params.getProperty("ws");
+		if ("example-ws".equalsIgnoreCase(ws)) {
+		    IPath exampleWS = MoSyncTool.getDefault().getMoSyncExamplesWorkspace();
+		    ws = exampleWS.toOSString();
+		}
+		
 		Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 		if (MessageDialog.openConfirm(shell, "Switch workspace", "This will restart the MoSync IDE (please note that it will take a few moments).")) {
 		    restart(ws);    
