@@ -10,6 +10,12 @@
                category="com.mobilesorcery.sdk.preferences.main">
          </page>
       </extension>
+   <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="com.mobilesorcery.sdk.update.internal.preferences.ProfileUpdatesPreferenceInitializer">
+      </initializer>
+   </extension>
          <extension
          point="org.eclipse.ui.actionSets">
       <actionSet
@@ -24,6 +30,14 @@
                menubarPath="help/helpStart">
          </action>
       </actionSet>
+   </extension>
+   <extension
+         point="org.eclipse.ui.editors">
+         <editor
+            id="com.mobilesorcery.ui.registration.editor"
+            name="MoSync Registration" icon="icons/registrationperspective.png"
+            class="com.mobilesorcery.sdk.update.internal.RegistrationWebBrowserEditor"
+            default="false" />
    </extension>
          <extension
                point="com.mobilesorcery.sdk.updater">
