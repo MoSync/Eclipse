@@ -23,6 +23,18 @@ package com.mobilesorcery.sdk.core;
  */
 public interface IUpdater {
 
+    /**
+     * Performs an update request to the update server
+     * @param isStartedByUser whether this request
+     * was explicitly invoked by the user
+     */
 	public void update(boolean isStartedByUser);
 	
+	/**
+	 * Launches a user interface allowing the user
+	 * to register with MoSync
+     * @param isStartedByUser whether this request
+     * was explicitly invoked by the user
+	 */
+	public void register(boolean isStartedByUser);
 }

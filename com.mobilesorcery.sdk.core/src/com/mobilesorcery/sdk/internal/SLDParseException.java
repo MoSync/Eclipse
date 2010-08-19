@@ -16,13 +16,15 @@
  */
 package com.mobilesorcery.sdk.internal;
 
-public class ParseException extends Exception {
+import com.mobilesorcery.sdk.core.ParseException;
+
+public class SLDParseException extends ParseException {
 
 	private static final long serialVersionUID = 8498866424257636660L;
 
 	private int line;
 
-    public ParseException(String message, int line) {
+    public SLDParseException(String message, int line) {
         super(message);
         this.line = line;
     }

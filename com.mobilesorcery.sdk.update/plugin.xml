@@ -43,13 +43,16 @@
          </action>
       </actionSet>
    </extension>
-   <extension
-         point="org.eclipse.ui.editors">
-         <editor
-            id="com.mobilesorcery.ui.registration.editor"
-            name="MoSync Registration" icon="icons/registrationperspective.png"
-            class="com.mobilesorcery.sdk.update.internal.RegistrationWebBrowserEditor"
-            default="false" />
+      <extension
+         point="org.eclipse.ui.views">
+      <view
+            allowMultiple="false"
+            category="com.mobilesorcery.sdk.ui.main"
+            class="com.mobilesorcery.sdk.update.internal.RegistrationWebBrowserView"
+            icon="icons/registrationperspective.png"
+            id="com.mobilesorcery.ui.registration.view"
+            name="MoSync Registration">
+      </view>
    </extension>
          <extension
                point="com.mobilesorcery.sdk.updater">

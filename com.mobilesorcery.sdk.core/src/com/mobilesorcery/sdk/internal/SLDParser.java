@@ -75,15 +75,15 @@ public class SLDParser {
             } else if (state == SLD_STATE) {
                 parseSLDEntry(line);
             }
-        } catch (ParseException e) {
+        } catch (SLDParseException e) {
             errors.add(e);
         }
     }
 
-    private void parseSLDEntry(String line) throws ParseException {
+    private void parseSLDEntry(String line) throws SLDParseException {
         String[] sldEntry = line.split(":", 3);
         if (sldEntry.length != 3) {
-            throw new ParseException(MessageFormat.format("Invalid line: {0}", line), currentLine);
+            throw new SLDParseException(MessageFormat.format("Invalid line: {0}", line), currentLine);
         }
         
         int addr = parseInt(sldEntry[0], 16);
@@ -93,10 +93,10 @@ public class SLDParser {
         sld.addLocationForAddress(addr, lineInFile, fileId);
     }
 
-    private void parseFileEntry(String line) throws ParseException {
+    private void parseFileEntry(String line) throws SLDParseException {
         String[] fileEntry = line.split(":", 3);
         if (fileEntry.length != 3) {
-            throw new ParseException(MessageFormat.format("Invalid line: {0}", line), currentLine);
+            throw new SLDParseException(MessageFormat.format("Invalid line: {0}", line), currentLine);
         }
 
         String id = fileEntry[0];
@@ -107,15 +107,15 @@ public class SLDParser {
         sld.addFile(idValue, name);
     }
 
-    private int parseInt(String str, int radix) throws ParseException {
+    private int parseInt(String str, int radix) throws SLDParseException {
     	return parseInt(str, radix, currentLine);
     }
     
-    public static int parseInt(String str, int radix, int currentLine) throws ParseException {
+    public static int parseInt(String str, int radix, int currentLine) throws SLDParseException {
         try {
             return Integer.parseInt(str, radix);
         } catch (Exception e) {
-            throw new ParseException(MessageFormat.format("Expected a number, found {0}", str), currentLine);
+            throw new SLDParseException(MessageFormat.format("Expected a number, found {0}", str), currentLine);
         }
     }
 }

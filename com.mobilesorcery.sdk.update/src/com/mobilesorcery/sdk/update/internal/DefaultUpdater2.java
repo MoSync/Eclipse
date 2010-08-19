@@ -32,6 +32,7 @@ import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IPageListener;
 import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.IPerspectiveDescriptor;
+import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -63,10 +64,10 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
     public class InternalLocationListener implements LocationListener {
 
-        private IEditorPart editor;
+        private IViewPart view;
 
-        public InternalLocationListener(IEditorPart editor) {
-            this.editor = editor;
+        public InternalLocationListener(IViewPart view) {
+            this.view = view;
         }
 
         public void changed(LocationEvent event) {
@@ -79,7 +80,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                 URL locationURL = new URL(location);
                 boolean isKillURL = locationURL.getPath().contains("close-ide-registration");
                 if (isKillURL) {
-                    editor.getSite().getWorkbenchWindow().getActivePage().closeEditor(editor, true);
+                    view.getSite().getWorkbenchWindow().getActivePage().hideView(view);
                 }
             } catch (MalformedURLException e) {
                 // Just ignore.
@@ -122,22 +123,12 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                     CoreMoSyncPlugin.getDefault().log(e);
                 }
 
-                IEditorPart editor = RegistrationWebBrowserEditor.openURL("Registration", whereToGo);
-                Browser browser = RegistrationWebBrowserEditor.getBrowser(editor);
+                IViewPart view = RegistrationWebBrowserView.open(whereToGo);
+                Browser browser = RegistrationWebBrowserView.getBrowser(view);
                 if (browser != null) {
-                    InternalLocationListener locationListener = new InternalLocationListener(editor);
+                    InternalLocationListener locationListener = new InternalLocationListener(view);
                     browser.addLocationListener(locationListener);
                 }
-
-                /*
-                 * IWorkbenchBrowserSupport browserSupport =
-                 * PlatformUI.getWorkbench().getBrowserSupport(); IWebBrowser
-                 * browser =
-                 * browserSupport.createBrowser(IWorkbenchBrowserSupport
-                 * .AS_EDITOR | IWorkbenchBrowserSupport.STATUS,
-                 * MosyncUpdatePlugin.PLUGIN_ID + ".browser", name, name);
-                 * browser.openURL(whereToGo);
-                 */
 
                 activePage = window.getActivePage();
                 window.getActivePage().addPartListener(this);
@@ -172,14 +163,10 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         }
 
         public void partClosed(IWorkbenchPart part) {
-            if (part instanceof IEditorPart) {
-                IEditorPart editor = (IEditorPart) part;
-                IEditorInput input = editor.getEditorInput();
-                URL url = RegistrationWebBrowserEditor.getInitialURL(input);
-                if (url != null && url.equals(whereToGo)) {
-                    dispose();
-                    closeRegistrationPerspective();
-                }
+            URL url = RegistrationWebBrowserView.getInitialURL(part);
+            if (url != null && url.equals(whereToGo)) {
+                dispose();
+                closeRegistrationPerspective();
             }
         }
 

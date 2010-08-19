@@ -45,7 +45,7 @@ import org.eclipse.ui.XMLMemento;
 
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.BuildState;
-import com.mobilesorcery.sdk.internal.ParseException;
+import com.mobilesorcery.sdk.internal.SLDParseException;
 import com.mobilesorcery.sdk.internal.SLD;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
@@ -648,11 +648,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
      * and returns 
      * @return
      * @throws IOException 
-     * @throws ParseException
+     * @throws SLDParseException
      * @deprecated Well, we're not using it right now; when we do,
      * lets un-deprecate this 
      */
-    public IProfileInfo parsePerformanceInfo(IPath profileInfoFile, IProgressMonitor monitor) throws ParseException, IOException {
+    public IProfileInfo parsePerformanceInfo(IPath profileInfoFile, IProgressMonitor monitor) throws SLDParseException, IOException {
     	throw new UnsupportedOperationException();
     	/*monitor.beginTask("Parsing profile info", 2);
     	SLD sld = parseSLD();
