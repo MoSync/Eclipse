@@ -77,7 +77,7 @@ public abstract class UpdateManagerBase {
     protected String getServiceURL(String serviceName) {
         String baseURL = MoSyncTool.getDefault().getProperty("update-baseurl"); //$NON-NLS-1$ 
         if (baseURL == null) {
-            baseURL = "http://api.mosync.com/{0}"; //$NON-NLS-1$ 
+            baseURL = "http://www.mosync.com/{0}"; //$NON-NLS-1$ 
         }
         return MessageFormat.format(baseURL, serviceName).trim();
     }
