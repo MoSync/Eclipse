@@ -98,6 +98,8 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         private String name;
         private boolean reopenIntro;
 
+        private IWorkbenchPage activePage;
+
         public OpenBrowserRunnable(URL whereToGo, String name) {
             this.whereToGo = whereToGo;
             this.name = name;
@@ -137,10 +139,17 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                  * browser.openURL(whereToGo);
                  */
 
+                activePage = window.getActivePage();
                 window.getActivePage().addPartListener(this);
             } catch (PartInitException e) {
                 e.printStackTrace();
                 openFallbackDialog(whereToGo, name);
+            }
+        }
+        
+        public void dispose() {
+            if (activePage != null) {
+                activePage.removePartListener(this);
             }
         }
 
@@ -168,6 +177,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                 IEditorInput input = editor.getEditorInput();
                 URL url = RegistrationWebBrowserEditor.getInitialURL(input);
                 if (url != null && url.equals(whereToGo)) {
+                    dispose();
                     closeRegistrationPerspective();
                 }
             }
@@ -412,6 +422,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
             params.put("sdk", versionStr);
             params.put("ide", versionStr);
         }
+        addHalfHash(params);
         params.put("hhash", getUserHalfHash());
         return params;
     }

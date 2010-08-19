@@ -131,6 +131,10 @@ public abstract class UpdateManagerBase {
         return null;
     }
     
+    protected void addHalfHash(Map<String, String> request) {
+        request.put("hhash", getUserHalfHash()); //$NON-NLS-1$
+    }
+    
     public boolean shouldPerformAutoUpdate() {
         IPreferenceStore prefStore = MosyncUpdatePlugin.getDefault().getPreferenceStore();
         prefStore.setDefault(MoSyncTool.AUTO_UPDATE_PREF, true);
