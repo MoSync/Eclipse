@@ -228,9 +228,11 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
     class UpdateRunnable implements Runnable {
         private boolean isStartedByUser;
+        private boolean registrationOnly;
 
-        public UpdateRunnable(boolean isStartedByUser) {
+        public UpdateRunnable(boolean isStartedByUser, boolean registrationOnly) {
             this.isStartedByUser = isStartedByUser;
+            this.registrationOnly = registrationOnly;
         }
 
         public void run() {
@@ -250,7 +252,9 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                     userNotRegisteredAction();
                     break;
                 case USER_ACTIVATED:
-                    if (isStartedByUser || shouldPerformAutoUpdate()) {
+                    if (registrationOnly) {
+                        userAlreadyRegisteredAction();
+                    } else if (isStartedByUser || shouldPerformAutoUpdate()) {
                         performUpdateAction(isStartedByUser);
                     }
                 }
@@ -274,8 +278,16 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
     }
 
     public void update(boolean isStartedByUser) {
-        UpdateRunnable updater = new UpdateRunnable(isStartedByUser);
-        Thread updateThread = new Thread(updater, "Registration and update");
+        startUpdateRunnable(isStartedByUser, false);
+    }
+    
+    public void register(boolean isStartedByUser) {
+        startUpdateRunnable(isStartedByUser, true);
+    }
+
+    private void startUpdateRunnable(boolean isStartedByUser, boolean registerOnly) {
+        UpdateRunnable updater = new UpdateRunnable(isStartedByUser, registerOnly);
+        Thread updateThread = new Thread(updater, "Registration and/or update");
         updateThread.start();
     }
 
@@ -348,6 +360,11 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
     private void userNotConfirmedAction() throws IOException {
         launchInternalBrowser(getRequestURL("registration/confirmation/", assembleDefaultParams(true)), "Confirm Registration");
+    }
+    
+    private void userAlreadyRegisteredAction() throws IOException {
+        // The web server handles this in the same way if the user is NOT registered.
+        userNotRegisteredAction();
     }
 
     private void launchInternalBrowser(URL whereToGo, String name) {

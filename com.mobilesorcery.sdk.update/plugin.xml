@@ -29,6 +29,18 @@
                label="Update MoSync Profile Database"
                menubarPath="help/helpStart">
          </action>
+      </actionSet>      
+      <actionSet
+            id="com.mobilesorcery.sdk.update.register"
+            label="Registration"
+            visible="true">
+         ...
+         <action
+               class="com.mobilesorcery.sdk.update.internal.RegistrationAction"
+               id="com.mobilesorcery.sdk.registration"
+               label="Register"
+               menubarPath="help/helpStart">
+         </action>
       </actionSet>
    </extension>
    <extension
