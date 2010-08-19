@@ -33,6 +33,7 @@ import org.eclipse.ui.IPageListener;
 import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.IPerspectiveDescriptor;
 import org.eclipse.ui.IViewPart;
+import org.eclipse.ui.IWindowListener;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -61,6 +62,8 @@ import com.mobilesorcery.sdk.update.UpdateManagerBase;
  * 
  */
 public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
+
+    public final static String REGISTRATION_PERSPECTIVE_ID = "com.mobilesorcery.update.perspective";
 
     public class InternalLocationListener implements LocationListener {
 
@@ -91,15 +94,11 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
     public static final String SHOW_CONNECTION_FAILED_POPUP = "show.conn.fail.popup";
 
-    public class OpenBrowserRunnable implements Runnable, IPartListener {
-
-        final static String REGISTRATION_PERSPECTIVE_ID = "com.mobilesorcery.update.perspective";
+    public class OpenBrowserRunnable implements Runnable {
 
         private URL whereToGo;
         private String name;
         private boolean reopenIntro;
-
-        private IWorkbenchPage activePage;
 
         public OpenBrowserRunnable(URL whereToGo, String name) {
             this.whereToGo = whereToGo;
@@ -123,58 +122,16 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                     CoreMoSyncPlugin.getDefault().log(e);
                 }
 
-                IViewPart view = RegistrationWebBrowserView.open(whereToGo);
+                IViewPart view = RegistrationWebBrowserView.open(whereToGo, reopenIntro);
                 Browser browser = RegistrationWebBrowserView.getBrowser(view);
                 if (browser != null) {
                     InternalLocationListener locationListener = new InternalLocationListener(view);
                     browser.addLocationListener(locationListener);
                 }
-
-                activePage = window.getActivePage();
-                window.getActivePage().addPartListener(this);
             } catch (PartInitException e) {
                 e.printStackTrace();
                 openFallbackDialog(whereToGo, name);
             }
-        }
-        
-        public void dispose() {
-            if (activePage != null) {
-                activePage.removePartListener(this);
-            }
-        }
-
-        public void closeRegistrationPerspective() {
-            IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-            IPerspectiveDescriptor perspective = PlatformUI.getWorkbench().getPerspectiveRegistry().findPerspectiveWithId(REGISTRATION_PERSPECTIVE_ID);
-            if (perspective != null) {
-                page.closePerspective(perspective, false, false);
-            }
-
-            if (reopenIntro) {
-                PlatformUI.getWorkbench().getIntroManager().showIntro(PlatformUI.getWorkbench().getActiveWorkbenchWindow(), false);
-            }
-        }
-
-        public void partActivated(IWorkbenchPart part) {
-        }
-
-        public void partBroughtToTop(IWorkbenchPart part) {
-        }
-
-        public void partClosed(IWorkbenchPart part) {
-            URL url = RegistrationWebBrowserView.getInitialURL(part);
-            if (url != null && url.equals(whereToGo)) {
-                dispose();
-                closeRegistrationPerspective();
-            }
-        }
-
-        public void partDeactivated(IWorkbenchPart part) {
-        }
-
-        public void partOpened(IWorkbenchPart part) {
-
         }
 
     }
@@ -263,7 +220,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         MosyncUpdatePlugin.getDefault().getPreferenceStore().setValue(SHOW_CONNECTION_FAILED_POPUP,
                 shouldPopupConnectionFailedMessage ? MessageDialogWithToggle.ALWAYS : MessageDialogWithToggle.NEVER);
     }
-
+    
     public void update(boolean isStartedByUser) {
         startUpdateRunnable(isStartedByUser, false);
     }

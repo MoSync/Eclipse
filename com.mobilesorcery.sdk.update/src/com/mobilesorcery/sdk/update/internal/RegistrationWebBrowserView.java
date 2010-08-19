@@ -12,12 +12,14 @@ import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.ILocalWorkingSetManager;
+import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.IPersistableElement;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.ViewPart;
 
@@ -31,6 +33,8 @@ public class RegistrationWebBrowserView extends ViewPart {
     private Browser browser;
 
     private URL initialURL;
+
+    private RegistrationPartListener currentListener;
 
     public void init(IEditorSite site) throws PartInitException {
         super.setSite(site);
@@ -52,23 +56,47 @@ public class RegistrationWebBrowserView extends ViewPart {
     public void setFocus() {
     }
 
+    public void dispose() {
+        super.dispose();
+    }
+    
     /**
      * Opens the registration view with a set initial URL; if
      * a view is already open, this method will have no effect.
      * @param whereToGo 
+     * @param reopenIntro2 
      */
-    public static IViewPart open(URL whereToGo) throws PartInitException {
+    public static RegistrationWebBrowserView open(URL whereToGo, boolean reopenIntroHint) throws PartInitException {
         IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
         IViewPart view = page.showView(VIEW_ID);
-        setInitialURL(view, whereToGo);
-        return view;
+        if (!(view instanceof RegistrationWebBrowserView)) {
+            throw new PartInitException("Excepted view to be mosync registration view");
+        }
+        
+        RegistrationWebBrowserView registrationView = (RegistrationWebBrowserView) view;
+        registrationView.registerListener(reopenIntroHint);
+        if (registrationView.initialURL == null) {
+            setInitialURL(view, whereToGo);
+        }
+        
+        return registrationView;
+    }
+
+    private void registerListener(boolean reopenIntro) {
+        RegistrationPartListener listener = new RegistrationPartListener(this, reopenIntro);
+        if (currentListener == null) {
+            currentListener = listener;
+            getSite().getPage().addPartListener(listener);
+            getSite().getWorkbenchWindow().addPerspectiveListener(listener);
+        }
+        currentListener.setReopenIntro(reopenIntro);
     }
 
     public static Browser getBrowser(IViewPart view) {
         return (Browser) view.getAdapter(Browser.class);
     }
     
-    public static void setInitialURL(IWorkbenchPart part, URL initialURL) {
+    static void setInitialURL(IWorkbenchPart part, URL initialURL) {
         if (initialURL != null && part instanceof RegistrationWebBrowserView) {
             RegistrationWebBrowserView registrationView = (RegistrationWebBrowserView) part;
             registrationView.initialURL = initialURL;
