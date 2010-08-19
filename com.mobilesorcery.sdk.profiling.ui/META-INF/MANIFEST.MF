@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Ui
+Bundle-SymbolicName: com.mobilesorcery.sdk.profiling.ui; singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.mobilesorcery.sdk.profiling.ui.ProfilingUiPlugin
+Bundle-Vendor: MOBILESORCERY
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ com.mobilesorcery.sdk.profiling;bundle-version="1.0.0",
+ org.eclipse.debug.core;bundle-version="3.5.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy

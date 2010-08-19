@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+<!-- TODO modes should be 'profiling' -->
+     <extension
+         point="org.eclipse.debug.core.launchConfigurationTypes">
+      <launchConfigurationType
+            delegate="com.mobilesorcery.sdk.profiling.emulator.EmulatorProfilingLaunchConfigurationDelegate"
+            id="com.mobilesorcery.profiling.launchconfigurationtype"
+            modes="run,debug"
+            name="Profiled MoSync Emulated App"/>
+   </extension>
+   
+      <extension point="org.eclipse.debug.ui.launchShortcuts">
+<shortcut id="com.mobilesorcery.profiling.launchShortcut"
+modes="run,debug"
+class=
+"com.mobilesorcery.sdk.profiling.emulator.MoSyncProfilingLaunchShortCut"
+label=
+"Profile on MoSync Emulator"
+icon="icons/testicon.png">
+                     <contextualLaunch>
+            <enablement>
+                <test
+                      forcePluginActivation="true"
+                      property="com.mobilesorcery.sdk.testers.hasMoreNature"/>
+            </enablement>
+            
+         </contextualLaunch>
+</shortcut>
+</extension> 
+   
+      <extension
+         point="org.eclipse.debug.ui.launchConfigurationTabGroups">
+      <launchConfigurationTabGroup
+            class="com.mobilesorcery.sdk.profiling.emulator.EmulatorProfilingLaunchConfigurationTabGroup"
+            id="com.mobilesorcery.profiling.launchconfigurationtabgroup"
+            type="com.mobilesorcery.profiling.launchconfigurationtype"/>
+   </extension>
+   
+      <extension
+         point="org.eclipse.debug.ui.launchConfigurationTypeImages">
+      
+      <launchConfigurationTypeImage
+            configTypeID="com.mobilesorcery.profiling.launchconfigurationtype"
+            icon="icons/profileticon.png"
+            id="com.mobilesorcery.profiling.launchconfigurationtype.image"/>
+   </extension>
+
+
+</plugin>

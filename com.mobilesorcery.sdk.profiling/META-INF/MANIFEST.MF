@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Profiling
+Bundle-SymbolicName: com.mobilesorcery.sdk.profiling;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.mobilesorcery.sdk.profiling.ProfilingPlugin
+Bundle-Vendor: MOBILESORCERY
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ com.mobilesorcery.sdk.core;bundle-version="1.0.0",
+ org.eclipse.debug.core;bundle-version="3.5.0",
+ com.mobilesorcery.sdk.ui;bundle-version="1.0.0",
+ org.eclipse.debug.ui;bundle-version="3.5.1"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy
+Export-Package: com.mobilesorcery.sdk.profiling
