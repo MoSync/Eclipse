@@ -13,22 +13,52 @@
 */
 package com.mobilesorcery.sdk.update;
 
+import org.eclipse.ui.IPerspectiveDescriptor;
+import org.eclipse.ui.IPerspectiveListener;
 import org.eclipse.ui.IWindowListener;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchListener;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.model.WorkbenchAdapter;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
+
+import com.mobilesorcery.sdk.update.internal.RegistrationPartListener;
 
 /**
  * The activator class controls the plug-in life cycle
  */
 public class MosyncUpdatePlugin extends AbstractUIPlugin {
 
-	// The plug-in ID
+	private final class WindowListener implements IWindowListener {
+        public void windowOpened(IWorkbenchWindow window) {
+        }
+
+        public void windowDeactivated(IWorkbenchWindow window) {
+            detachPerspectiveListener(window);
+        }
+
+        public void windowClosed(IWorkbenchWindow window) {
+            // TODO Auto-generated method stub
+            
+        }
+
+        public void windowActivated(IWorkbenchWindow window) {
+            attachPerspectiveListener(window);
+        }
+    }
+
+    // The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.update"; //$NON-NLS-1$
 
 	// The shared instance
 	private static MosyncUpdatePlugin plugin;
+
+    private IPerspectiveListener perspectiveListener = new RegistrationPartListener(null, false);
+
+    private WindowListener windowListener;
 	
 	/**
 	 * The constructor
@@ -43,6 +73,7 @@ public class MosyncUpdatePlugin extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
+		initPerspectiveListener();
 	}
 
 	/*
@@ -52,6 +83,7 @@ public class MosyncUpdatePlugin extends AbstractUIPlugin {
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
+		PlatformUI.getWorkbench().removeWindowListener(windowListener);
 	}
 
 	/**
@@ -62,5 +94,18 @@ public class MosyncUpdatePlugin extends AbstractUIPlugin {
 	public static MosyncUpdatePlugin getDefault() {
 		return plugin;
 	}
+	
+	public void initPerspectiveListener() {
+	    windowListener = new WindowListener();
+	    PlatformUI.getWorkbench().addWindowListener(windowListener);
+	}
+
+    protected void attachPerspectiveListener(IWorkbenchWindow window) {
+        window.addPerspectiveListener(perspectiveListener);
+    }
+    
+    protected void detachPerspectiveListener(IWorkbenchWindow window) {
+        window.removePerspectiveListener(perspectiveListener);
+    }
 
 }

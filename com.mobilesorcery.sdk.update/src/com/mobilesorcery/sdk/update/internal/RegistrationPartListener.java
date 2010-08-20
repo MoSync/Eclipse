@@ -8,7 +8,11 @@ import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartReference;
+import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IUpdater;
 
 public class RegistrationPartListener implements IPartListener, IPerspectiveListener3 {
 
@@ -33,10 +37,11 @@ public class RegistrationPartListener implements IPartListener, IPerspectiveList
             closeRegistrationPerspective();
         }
     }
-    
+
     public void closeRegistrationPerspective() {
         IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-        IPerspectiveDescriptor perspective = PlatformUI.getWorkbench().getPerspectiveRegistry().findPerspectiveWithId(DefaultUpdater2.REGISTRATION_PERSPECTIVE_ID);
+        IPerspectiveDescriptor perspective = PlatformUI.getWorkbench().getPerspectiveRegistry().findPerspectiveWithId(
+                DefaultUpdater2.REGISTRATION_PERSPECTIVE_ID);
         if (perspective != null) {
             page.closePerspective(perspective, false, false);
         }
@@ -46,8 +51,6 @@ public class RegistrationPartListener implements IPartListener, IPerspectiveList
         }
     }
 
-
-
     public void partDeactivated(IWorkbenchPart part) {
     }
 
@@ -56,17 +59,26 @@ public class RegistrationPartListener implements IPartListener, IPerspectiveList
 
     public void perspectiveActivated(IWorkbenchPage page, IPerspectiveDescriptor desc) {
         updateReopenIntro(desc);
+        if (DefaultUpdater2.REGISTRATION_PERSPECTIVE_ID.equals(desc.getId())) {
+            IViewPart registrationView = page.findView(RegistrationWebBrowserView.VIEW_ID);
+            if (registrationView instanceof RegistrationWebBrowserView && !((RegistrationWebBrowserView) registrationView).isActive()) {
+                IUpdater updater = CoreMoSyncPlugin.getDefault().getUpdater();
+                if (updater != null) {
+                    updater.register(false);
+                }
+            }
+        }
     }
 
     public void perspectiveChanged(IWorkbenchPage page, IPerspectiveDescriptor desc, String s) {
     }
 
     public void perspectiveClosed(IWorkbenchPage page, IPerspectiveDescriptor desc) {
-        
+
     }
 
     public void perspectiveDeactivated(IWorkbenchPage page, IPerspectiveDescriptor desc) {
-        
+
     }
 
     public void perspectiveOpened(IWorkbenchPage page, IPerspectiveDescriptor desc) {
@@ -78,18 +90,17 @@ public class RegistrationPartListener implements IPartListener, IPerspectiveList
             // Someone changed perspectives.
             reopenIntro = false;
         }
-        
+
     }
 
     public void perspectiveSavedAs(IWorkbenchPage page, IPerspectiveDescriptor desc1, IPerspectiveDescriptor desc2) {
         // TODO Auto-generated method stub
-        
+
     }
 
-    public void perspectiveChanged(IWorkbenchPage page, IPerspectiveDescriptor desc,
-            IWorkbenchPartReference iworkbenchpartreference, String s) {
+    public void perspectiveChanged(IWorkbenchPage page, IPerspectiveDescriptor desc, IWorkbenchPartReference iworkbenchpartreference, String s) {
         // TODO Auto-generated method stub
-        
+
     }
 
     public void setReopenIntro(boolean reopenIntro) {

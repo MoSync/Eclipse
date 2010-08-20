@@ -36,9 +36,12 @@ public class RegistrationWebBrowserView extends ViewPart {
 
     private RegistrationPartListener currentListener;
 
+    private boolean active;
+
     public void init(IEditorSite site) throws PartInitException {
         super.setSite(site);
         setPartName("Registration");
+        active = true;
     }
     
     public void createPartControl(Composite parent) {
@@ -57,6 +60,7 @@ public class RegistrationWebBrowserView extends ViewPart {
     }
 
     public void dispose() {
+        active = false;
         super.dispose();
     }
     
@@ -75,7 +79,7 @@ public class RegistrationWebBrowserView extends ViewPart {
         
         RegistrationWebBrowserView registrationView = (RegistrationWebBrowserView) view;
         registrationView.registerListener(reopenIntroHint);
-        if (registrationView.initialURL == null) {
+        if (registrationView.initialURL == null && !registrationView.active) {
             setInitialURL(view, whereToGo);
         }
         
@@ -110,5 +114,9 @@ public class RegistrationWebBrowserView extends ViewPart {
         }
         
         return null;
+    }
+
+    public boolean isActive() {
+        return active;
     }
 }
