@@ -41,7 +41,7 @@ public class RegistrationPartListener implements IPartListener, IPerspectiveList
     public void closeRegistrationPerspective() {
         IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
         IPerspectiveDescriptor perspective = PlatformUI.getWorkbench().getPerspectiveRegistry().findPerspectiveWithId(
-                DefaultUpdater2.REGISTRATION_PERSPECTIVE_ID);
+                RegistrationPerspectiveFactory.REGISTRATION_PERSPECTIVE_ID);
         if (perspective != null) {
             page.closePerspective(perspective, false, false);
         }
@@ -59,7 +59,7 @@ public class RegistrationPartListener implements IPartListener, IPerspectiveList
 
     public void perspectiveActivated(IWorkbenchPage page, IPerspectiveDescriptor desc) {
         updateReopenIntro(desc);
-        if (DefaultUpdater2.REGISTRATION_PERSPECTIVE_ID.equals(desc.getId())) {
+        if (RegistrationPerspectiveFactory.REGISTRATION_PERSPECTIVE_ID.equals(desc.getId())) {
             IViewPart registrationView = page.findView(RegistrationWebBrowserView.VIEW_ID);
             if (registrationView instanceof RegistrationWebBrowserView && !((RegistrationWebBrowserView) registrationView).isActive()) {
                 IUpdater updater = CoreMoSyncPlugin.getDefault().getUpdater();
@@ -86,7 +86,7 @@ public class RegistrationPartListener implements IPartListener, IPerspectiveList
     }
 
     private void updateReopenIntro(IPerspectiveDescriptor desc) {
-        if (!DefaultUpdater2.REGISTRATION_PERSPECTIVE_ID.equals(desc.getId())) {
+        if (!RegistrationPerspectiveFactory.REGISTRATION_PERSPECTIVE_ID.equals(desc.getId())) {
             // Someone changed perspectives.
             reopenIntro = false;
         }

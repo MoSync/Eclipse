@@ -2,6 +2,8 @@ package com.mobilesorcery.sdk.update.internal;
 
 import java.net.URL;
 
+import javax.swing.DefaultRowSorter;
+
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
@@ -23,6 +25,8 @@ import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.ViewPart;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IUpdater;
 import com.mobilesorcery.sdk.update.MosyncUpdatePlugin;
 
 // Just because IWebBrowserSupport is useless for our purposes.
@@ -46,6 +50,9 @@ public class RegistrationWebBrowserView extends ViewPart {
     
     public void createPartControl(Composite parent) {
         browser = new Browser(parent, SWT.NONE);
+        // If the user opens manually; we'd like to have
+        // a reasonable default
+        browser.setUrl(DefaultUpdater2.getInitialURL());
     }
 
     public Object getAdapter(Class adapter) {

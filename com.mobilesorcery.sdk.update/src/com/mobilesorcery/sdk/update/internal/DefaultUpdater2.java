@@ -63,8 +63,6 @@ import com.mobilesorcery.sdk.update.UpdateManagerBase;
  */
 public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
-    public final static String REGISTRATION_PERSPECTIVE_ID = "com.mobilesorcery.update.perspective";
-
     public class InternalLocationListener implements LocationListener {
 
         private IViewPart view;
@@ -116,7 +114,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                 }
 
                 try {
-                    PlatformUI.getWorkbench().showPerspective(REGISTRATION_PERSPECTIVE_ID, window);
+                    PlatformUI.getWorkbench().showPerspective(RegistrationPerspectiveFactory.REGISTRATION_PERSPECTIVE_ID, window);
                 } catch (WorkbenchException e) {
                     // We can still do SOMETHING.
                     CoreMoSyncPlugin.getDefault().log(e);
@@ -183,10 +181,22 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
             String userKey = MoSyncTool.getDefault().getProperty(MoSyncTool.USER_HASH_PROP_2);
 
             try {
-                if (userKey == null || !validateKey()) {
+                boolean requestNewKey = userKey == null;
+                if (userKey != null) {
+                    boolean isValidKey = validateKey();
+                    if (!isValidKey) {
+                        MoSyncTool.getDefault().setProperty(MoSyncTool.USER_HASH_PROP_2, null);
+                        showInvalidKeyWarning();
+                    }
+                    
+                    requestNewKey |= !isValidKey;
+                }
+                
+                if (requestNewKey) {
                     userKey = requestKeyFromServer();
                     MoSyncTool.getDefault().setProperty(MoSyncTool.USER_HASH_PROP_2, userKey);
                 }
+                
                 int userStatus = getUserStatus();
                 switch (userStatus) {
                 case USER_NOT_CONFIRMED:
@@ -212,6 +222,18 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
     public boolean shouldPopupConnectionFailedMessage() {
         return MessageDialogWithToggle.ALWAYS.equals(MosyncUpdatePlugin.getDefault().getPreferenceStore().getString(SHOW_CONNECTION_FAILED_POPUP));
+    }
+
+    public void showInvalidKeyWarning() {
+        final Display d = PlatformUI.getWorkbench().getDisplay();
+        d.asyncExec(new Runnable() {
+            public void run() {
+                Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+                MessageDialog.openWarning(shell, "Invalid user key",
+                        "Your registration key is invalid.\n" +
+                        "Please re-register.");
+            }
+        });
     }
 
     public void shouldPopupConnectionFailedMessage(boolean shouldPopupConnectionFailedMessage) {
@@ -271,7 +293,6 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
                 popupConnectionFailedDialogSync(d, isStartedByUser);
             }
         });
-
     }
 
     private void popupConnectionFailedDialogSync(Display d, boolean isStartedByUser) {
@@ -299,7 +320,11 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
     }
 
     private void userNotRegisteredAction() throws IOException {
-        launchInternalBrowser(getRequestURL("registration/register/", assembleDefaultParams(true)), "Register");
+        launchInternalBrowser(getInitialRegistrationRequestURL(), "Register");
+    }
+    
+    private URL getInitialRegistrationRequestURL() throws MalformedURLException {
+        return getRequestURL("registration/register/", assembleDefaultParams(true));
     }
 
     private void userNotConfirmedAction() throws IOException {
@@ -386,6 +411,19 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         addHalfHash(params);
         params.put("hhash", getUserHalfHash());
         return params;
+    }
+
+    public static String getInitialURL() {
+        IUpdater updater = CoreMoSyncPlugin.getDefault().getUpdater();
+        if (updater instanceof DefaultUpdater2) {
+            try {
+                return ((DefaultUpdater2) updater).getInitialRegistrationRequestURL().toExternalForm();
+            } catch (MalformedURLException e) {
+                // That's ok -- we'll log this elsewhere.
+            }
+        }
+        
+        return "";
     }
 
 }
