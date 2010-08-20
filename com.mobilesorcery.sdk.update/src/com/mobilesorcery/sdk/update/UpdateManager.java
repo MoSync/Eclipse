@@ -160,15 +160,6 @@ public class UpdateManager extends UpdateManagerBase {
             }            
         });
     }
-  
-    protected String getServiceURL(String serviceName) {
-        // TODO: REMOVE THIS -- AWAITING NEW UPDATE MECHANISM
-        String baseURL = null; //MoSyncTool.getDefault().getProperty("update-baseurl"); //$NON-NLS-1$ 
-        if (baseURL == null) {
-            baseURL = "http://api.mosync.com/index.php/{0}"; //$NON-NLS-1$ 
-        }
-        return MessageFormat.format(baseURL, serviceName);
-    }
     
 	public void clearRegistrationInfo() {
 		MoSyncTool.getDefault().setProperty(MoSyncTool.EMAIL_PROP, null);
