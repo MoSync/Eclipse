@@ -18,6 +18,7 @@ public class RegistrationPartListener implements IPartListener, IPerspectiveList
 
     private IViewPart view;
     private boolean reopenIntro;
+    private boolean active;
 
     public RegistrationPartListener(IViewPart view, boolean reopenIntro) {
         this.view = view;
@@ -43,7 +44,9 @@ public class RegistrationPartListener implements IPartListener, IPerspectiveList
         IPerspectiveDescriptor perspective = PlatformUI.getWorkbench().getPerspectiveRegistry().findPerspectiveWithId(
                 RegistrationPerspectiveFactory.REGISTRATION_PERSPECTIVE_ID);
         if (perspective != null) {
+            active = false;
             page.closePerspective(perspective, false, false);
+            active = true;
         }
 
         if (reopenIntro) {
@@ -58,13 +61,15 @@ public class RegistrationPartListener implements IPartListener, IPerspectiveList
     }
 
     public void perspectiveActivated(IWorkbenchPage page, IPerspectiveDescriptor desc) {
-        updateReopenIntro(desc);
-        if (RegistrationPerspectiveFactory.REGISTRATION_PERSPECTIVE_ID.equals(desc.getId())) {
-            IViewPart registrationView = page.findView(RegistrationWebBrowserView.VIEW_ID);
-            if (registrationView instanceof RegistrationWebBrowserView && !((RegistrationWebBrowserView) registrationView).isActive()) {
-                IUpdater updater = CoreMoSyncPlugin.getDefault().getUpdater();
-                if (updater != null) {
-                    updater.register(false);
+        if (active) {
+            updateReopenIntro(desc);
+            if (RegistrationPerspectiveFactory.REGISTRATION_PERSPECTIVE_ID.equals(desc.getId())) {
+                IViewPart registrationView = page.findView(RegistrationWebBrowserView.VIEW_ID);
+                if (registrationView instanceof RegistrationWebBrowserView && !((RegistrationWebBrowserView) registrationView).isActive()) {
+                    IUpdater updater = CoreMoSyncPlugin.getDefault().getUpdater();
+                    if (updater != null) {
+                        updater.register(false);
+                    }
                 }
             }
         }
@@ -82,13 +87,17 @@ public class RegistrationPartListener implements IPartListener, IPerspectiveList
     }
 
     public void perspectiveOpened(IWorkbenchPage page, IPerspectiveDescriptor desc) {
-        updateReopenIntro(desc);
+        if (active) {
+            updateReopenIntro(desc);
+        }
     }
 
     private void updateReopenIntro(IPerspectiveDescriptor desc) {
-        if (!RegistrationPerspectiveFactory.REGISTRATION_PERSPECTIVE_ID.equals(desc.getId())) {
-            // Someone changed perspectives.
-            reopenIntro = false;
+        if (active) {
+            if (!RegistrationPerspectiveFactory.REGISTRATION_PERSPECTIVE_ID.equals(desc.getId())) {
+                // Someone changed perspectives.
+                reopenIntro = false;
+            }
         }
 
     }
@@ -105,6 +114,10 @@ public class RegistrationPartListener implements IPartListener, IPerspectiveList
 
     public void setReopenIntro(boolean reopenIntro) {
         this.reopenIntro = reopenIntro;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
 }

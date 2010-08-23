@@ -203,6 +203,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     public void stop(BundleContext context) throws Exception {
         plugin = null;
         projectDependencyManager = null;
+        disposeUpdater();
         MoSyncProject.removeGlobalPropertyChangeListener(reindexListener);
         bpSync.uninstall();
         deinstallResourceListener();
@@ -507,6 +508,12 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		}
 		
 		return updater;
+	}
+	
+	private void disposeUpdater() {
+	    if (updater != null) {
+	        updater.dispose();
+	    }
 	}
 
 	private void checkAutoUpdate() {

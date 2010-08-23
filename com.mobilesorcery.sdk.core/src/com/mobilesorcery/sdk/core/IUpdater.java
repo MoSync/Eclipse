@@ -37,4 +37,12 @@ public interface IUpdater {
      * was explicitly invoked by the user
 	 */
 	public void register(boolean isStartedByUser);
+	
+	/**
+	 * This method is called by the framework to
+	 * indicate that the <code>IUpdater</code> will
+	 * no longer be used. Clients may implement
+	 * clean-up functionality here.
+	 */
+	public void dispose();
 }

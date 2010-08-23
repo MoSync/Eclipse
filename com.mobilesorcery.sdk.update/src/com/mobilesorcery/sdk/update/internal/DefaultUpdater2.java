@@ -15,7 +15,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.MessageDialogWithToggle;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.browser.LocationEvent;
@@ -23,27 +22,15 @@ import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IEditorInput;
-import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IPageListener;
-import org.eclipse.ui.IPartListener;
-import org.eclipse.ui.IPerspectiveDescriptor;
+import org.eclipse.ui.IPerspectiveListener;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWindowListener;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.WorkbenchException;
-import org.eclipse.ui.browser.IWebBrowser;
-import org.eclipse.ui.browser.IWorkbenchBrowserSupport;
-import org.eclipse.ui.internal.browser.WebBrowserEditor;
-import org.eclipse.ui.internal.browser.WebBrowserEditorInput;
 import org.eclipse.ui.intro.IIntroPart;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -105,6 +92,10 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
         public void run() {
             try {
+                // Since we implicitly open a perspective we do not want
+                // the "re-open welcome screen" flag cleared; hence this
+                // listener deactivation.
+                perspectiveListener.setActive(false);
                 IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
                 IIntroPart currentIntroPart = PlatformUI.getWorkbench().getIntroManager().getIntro();
                 reopenIntro = currentIntroPart != null;
@@ -129,6 +120,8 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
             } catch (PartInitException e) {
                 e.printStackTrace();
                 openFallbackDialog(whereToGo, name);
+            } finally {
+                perspectiveListener.setActive(true);
             }
         }
 
@@ -220,6 +213,28 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         }
     }
 
+    private RegistrationPartListener perspectiveListener = new RegistrationPartListener(null, false);
+    
+    private WindowListener windowListener;
+    
+    private final class WindowListener implements IWindowListener {
+        public void windowOpened(IWorkbenchWindow window) {
+        }
+
+        public void windowDeactivated(IWorkbenchWindow window) {
+            detachPerspectiveListener(window);
+        }
+
+        public void windowClosed(IWorkbenchWindow window) {
+            // TODO Auto-generated method stub
+            
+        }
+
+        public void windowActivated(IWorkbenchWindow window) {
+            attachPerspectiveListener(window);
+        }
+    }
+    
     public boolean shouldPopupConnectionFailedMessage() {
         return MessageDialogWithToggle.ALWAYS.equals(MosyncUpdatePlugin.getDefault().getPreferenceStore().getString(SHOW_CONNECTION_FAILED_POPUP));
     }
@@ -241,6 +256,27 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         // just make it work.
         MosyncUpdatePlugin.getDefault().getPreferenceStore().setValue(SHOW_CONNECTION_FAILED_POPUP,
                 shouldPopupConnectionFailedMessage ? MessageDialogWithToggle.ALWAYS : MessageDialogWithToggle.NEVER);
+    }
+    
+    public DefaultUpdater2() {
+        initPerspectiveListener();
+    }
+    
+    public void dispose() {
+        PlatformUI.getWorkbench().removeWindowListener(windowListener);
+    }
+    
+    public void initPerspectiveListener() {
+        windowListener = new WindowListener();
+        PlatformUI.getWorkbench().addWindowListener(windowListener);
+    }
+
+    protected void attachPerspectiveListener(IWorkbenchWindow window) {
+        window.addPerspectiveListener(perspectiveListener);
+    }
+    
+    protected void detachPerspectiveListener(IWorkbenchWindow window) {
+        window.removePerspectiveListener(perspectiveListener);
     }
     
     public void update(boolean isStartedByUser) {
