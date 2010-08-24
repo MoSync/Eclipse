@@ -36,6 +36,7 @@ import org.eclipse.ui.intro.IIntroPart;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IUpdater;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.update.MosyncUpdatePlugin;
 import com.mobilesorcery.sdk.update.UpdateManager;
 import com.mobilesorcery.sdk.update.UpdateManagerBase;
@@ -288,9 +289,11 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
     }
 
     private void startUpdateRunnable(boolean isStartedByUser, boolean registerOnly) {
-        UpdateRunnable updater = new UpdateRunnable(isStartedByUser, registerOnly);
-        Thread updateThread = new Thread(updater, "Registration and/or update");
-        updateThread.start();
+        if (isStartedByUser || !MosyncUIPlugin.getDefault().isExampleWorkspace()) { 
+            UpdateRunnable updater = new UpdateRunnable(isStartedByUser, registerOnly);
+            Thread updateThread = new Thread(updater, "Registration and/or update");
+            updateThread.start();
+        }
     }
 
     private void performUpdateAction(boolean isStartedByUser) throws IOException {

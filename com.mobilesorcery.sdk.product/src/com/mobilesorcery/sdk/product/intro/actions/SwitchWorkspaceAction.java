@@ -20,9 +20,11 @@ public class SwitchWorkspaceAction implements IIntroAction {
 
 	public void run(IIntroSite site, Properties params) {
 		String ws = params.getProperty("ws");
+		//boolean suppressUpdates = false;
 		if ("example-ws".equalsIgnoreCase(ws)) {
 		    IPath exampleWS = MoSyncTool.getDefault().getMoSyncExamplesWorkspace();
 		    ws = exampleWS.toOSString();
+		    //suppressUpdates = true;
 		}
 		
 		Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
@@ -48,8 +50,8 @@ public class SwitchWorkspaceAction implements IIntroAction {
 
 	private static final String NEW_LINE = "\n"; //$NON-NLS-1$
 
-	public void restart(String path) {
-		String command_line = buildCommandLine(path);
+	public void restart(String path/*, boolean suppressUpdates*/) {
+		String command_line = buildCommandLine(path/*, suppressUpdates*/);
 		if (command_line == null) {
 			return;
 		}
@@ -63,7 +65,7 @@ public class SwitchWorkspaceAction implements IIntroAction {
 		PlatformUI.getWorkbench().restart();
 	}
 
-	public String buildCommandLine(String workspace) {
+	public String buildCommandLine(String workspace/*, boolean suppressUpdates*/) {
 		String property = System.getProperty(PROP_VM);
 		if (property == null) {
 			MessageDialog
@@ -90,6 +92,12 @@ public class SwitchWorkspaceAction implements IIntroAction {
 
 		// append the rest of the args, replacing or adding -data as required
 		property = System.getProperty(PROP_COMMANDS);
+		/*if (suppressUpdates) {
+		    property = property == null ? "" : property;
+		    property += "-suppress-updates";
+		    property += NEW_LINE;
+		}*/
+		
 		if (property == null) {
 			result.append(CMD_DATA);
 			result.append(NEW_LINE);
@@ -112,7 +120,7 @@ public class SwitchWorkspaceAction implements IIntroAction {
 				result.append(property);
 			}
 		}
-
+		
 		// put the vmargs back at the very end (the eclipse.commands property
 		// already contains the -vm arg)
 		if (vmargs != null) {

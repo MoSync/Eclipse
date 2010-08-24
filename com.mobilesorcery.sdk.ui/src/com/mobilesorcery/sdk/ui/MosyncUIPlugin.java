@@ -142,14 +142,19 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		importExampleProjects();
 	}
 
+	public boolean isExampleWorkspace() {
+	    IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
+        File wsFile = wsRoot.getLocation().toFile();
+        File exampleWSFile = MoSyncTool.getDefault().getMoSyncExamplesWorkspace().toFile();  
+        boolean isExampleWorkspace = wsFile.equals(exampleWSFile);
+        return isExampleWorkspace;
+	}
+	
 	// If this is the example workspace, then if applicable; import projects
 	private void importExampleProjects() {
-	    IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
-	    File wsFile = wsRoot.getLocation().toFile();
-        File exampleWSFile = MoSyncTool.getDefault().getMoSyncExamplesWorkspace().toFile();  
-        File examplesDir = MoSyncTool.getDefault().getMoSyncExamplesDirectory().toFile();
-        boolean isExampleWorkspace = wsFile.equals(exampleWSFile);
-        if (isExampleWorkspace) {
+        if (isExampleWorkspace()) {
+            File examplesDir = MoSyncTool.getDefault().getMoSyncExamplesDirectory().toFile();
+            IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
             File exampleManifestFile = new File(examplesDir, "examples.list");
             if (exampleManifestFile.exists()) {
                 try {
