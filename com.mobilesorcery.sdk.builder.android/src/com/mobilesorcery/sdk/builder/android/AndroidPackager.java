@@ -324,12 +324,11 @@ extends AbstractPackager
 //				+"</activity>\n"
 			+"\t</application>\n"
 			+"\t<uses-sdk android:minSdkVersion=\"3\" />\n"
-// UNSUPPORTED ON ANDROIND 1.5 Cupcake			
-//			+"\t<supports-screens"
-//				+"\t\tandroid:largeScreens=\"true\""
-//				+"\t\tandroid:normalScreens=\"true\""
-//				+"\t\tandroid:smallScreens=\"true\""
-//				+"\t\tandroid:anyDensity=\"true\" />"
+			+"\t<supports-screens"
+				+"\t\tandroid:largeScreens=\"true\""
+				+"\t\tandroid:normalScreens=\"true\""
+				+"\t\tandroid:smallScreens=\"true\""
+				+"\t\tandroid:anyDensity=\"true\" />"
 			+ createPermissionXML(project)
 		+"</manifest>\n";
 		DefaultPackager.writeFile(manifest, manifest_string);
