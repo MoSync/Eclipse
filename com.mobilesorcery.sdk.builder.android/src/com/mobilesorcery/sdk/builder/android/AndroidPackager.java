@@ -309,6 +309,7 @@ extends AbstractPackager
 			+"\tandroid:versionName=\"" + version.toString() + "\">\n"
 			+"\t<application android:icon=\"@drawable/icon\" android:label=\"@string/app_name\">\n"
 				+"\t\t<activity android:name=\".MoSync\"\n"
+					+"\t\t\tandroid:configChanges=\"keyboardHidden|orientation\"\n"
 					+"\t\t\tandroid:label=\"@string/app_name\">\n"
 					+"\t\t\t<intent-filter>\n"
 						+"\t\t\t\t<action android:name=\"android.intent.action.MAIN\" />\n"
@@ -316,17 +317,19 @@ extends AbstractPackager
 					+"\t\t\t</intent-filter>\n"
 				+"\t\t</activity>\n"
 				+"<activity android:name=\".MoSyncPanicDialog\"\n"
-                  +"android:label=\"@string/app_name\">\n"
+					+"android:label=\"@string/app_name\">\n"
 				+"</activity>\n"
+//				+"<activity android:name=\".WebViewActivity\"\n"
+//                	+"android:label=\"@string/app_name\">\n"
+//				+"</activity>\n"
 			+"\t</application>\n"
 			+"\t<uses-sdk android:minSdkVersion=\"3\" />\n"
-/* UNSUPPORTED ON ANDROIND 1.5 Cupcake			
-			+"\t<supports-screens"
-				+"\t\tandroid:largeScreens=\"true\""
-				+"\t\tandroid:normalScreens=\"true\""
-				+"\t\tandroid:smallScreens=\"true\""
-				+"\t\tandroid:anyDensity=\"true\" />"
-*/				
+// UNSUPPORTED ON ANDROIND 1.5 Cupcake			
+//			+"\t<supports-screens"
+//				+"\t\tandroid:largeScreens=\"true\""
+//				+"\t\tandroid:normalScreens=\"true\""
+//				+"\t\tandroid:smallScreens=\"true\""
+//				+"\t\tandroid:anyDensity=\"true\" />"
 			+ createPermissionXML(project)
 		+"</manifest>\n";
 		DefaultPackager.writeFile(manifest, manifest_string);
