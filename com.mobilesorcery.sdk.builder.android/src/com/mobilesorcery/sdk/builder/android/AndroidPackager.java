@@ -164,7 +164,7 @@ extends AbstractPackager
 					                "-F",
 				                    new File( packageOutDir, "resources.ap_" ).getAbsolutePath( ), 
 				                    "-I", 
-				                    new File( mosyncBinDir, "android/android-1.5.jar" ).getAbsolutePath( ),
+				                    new File( mosyncBinDir, "android/android-1.6.jar" ).getAbsolutePath( ),
 				                    "-S", 
 									new File ( packageOutDir, "res" ).getAbsolutePath( ),
 									"-0",
@@ -323,7 +323,7 @@ extends AbstractPackager
 //                	+"android:label=\"@string/app_name\">\n"
 //				+"</activity>\n"
 			+"\t</application>\n"
-			+"\t<uses-sdk android:minSdkVersion=\"3\" />\n"
+			+"\t<uses-sdk android:minSdkVersion=\"4\" />\n"
 			+"\t<supports-screens"
 				+"\t\tandroid:largeScreens=\"true\""
 				+"\t\tandroid:normalScreens=\"true\""
