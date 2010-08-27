@@ -72,15 +72,4 @@
          </presentation>
       </config>
    </extension>
-      <extension
-         point="org.eclipse.ui.splashHandlers">
-      <splashHandler
-            class="com.mobilesorcery.sdk.product.splash.SplashHandler"
-            id="com.mobilesorcery.sdk.splash">
-      </splashHandler>
-      <splashHandlerProductBinding
-            productId="com.mobilesorcery.sdk.product.product"
-            splashId="com.mobilesorcery.sdk.splash">
-      </splashHandlerProductBinding>
-   </extension>
 </plugin>
