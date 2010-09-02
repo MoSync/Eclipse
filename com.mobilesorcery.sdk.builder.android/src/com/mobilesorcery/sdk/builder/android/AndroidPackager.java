@@ -72,7 +72,7 @@ extends AbstractPackager
 	{
 		DefaultPackager internal = new DefaultPackager(project, variant);
 		IProfile targetProfile = variant.getProfile();
-		String appName = internal.resolve( "%app-name%" );
+		String appName = internal.getParameters().get( DefaultPackager.APP_NAME );
 		
 		internal.setParameters(getParameters());
 		internal.setParameter("D", shouldUseDebugRuntimes() ? "D" : ""); 
