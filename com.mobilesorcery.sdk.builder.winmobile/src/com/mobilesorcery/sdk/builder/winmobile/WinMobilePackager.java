@@ -93,13 +93,21 @@ extends AbstractPackager
             	File copyRuntimeFile = new File(internal.resolve("%package-output-dir%/MoRE-winmobile%D%.exe"));
             	File cabFile = new File(internal.resolve("%package-output-dir%/%app-name%.cab"));
             	
+            	
+            	
             	internal.setParameter( "win-package-output-dir", internal.resolve("%package-output-dir%"));
             	
             	Template confTemplate = new Template(getClass().getResource("/templates/pcab.conf.template"));
             	String resolvedConfTemplate = confTemplate.resolve(internal.getParameters().toMap());
 
             	Util.copyFile(new NullProgressMonitor(), programFile, copyProgramFile);
-            	Util.copyFile(new NullProgressMonitor(), resourceFile, copyResourceFile);
+            	
+            	if( resourceFile.exists() ) {
+            		Util.copyFile(new NullProgressMonitor(), resourceFile, copyResourceFile);
+            	}
+            	else {
+            		copyResourceFile.createNewFile();
+            	}
             	Util.copyFile(new NullProgressMonitor(), runtimeFile, copyRuntimeFile);
             	Util.writeToFile(confFile, resolvedConfTemplate);
             	
