@@ -17,7 +17,16 @@ import com.mobilesorcery.sdk.core.IUpdater;
 public class RegistrationPartListener implements IPartListener, IPerspectiveListener3 {
 
     private IViewPart view;
+    
+    /**
+     * Determines if the welcome screen should be shown when
+     * the registration perspective is closed.
+     */
     private boolean reopenIntro;
+    
+    /**
+     * Determines if the listener should react to events.
+     */
     private boolean active;
 
     public RegistrationPartListener(IViewPart view, boolean reopenIntro) {
@@ -41,6 +50,11 @@ public class RegistrationPartListener implements IPartListener, IPerspectiveList
 
     public void closeRegistrationPerspective() {
         IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+        if(page == null) {
+        	/* Page is null when eclipse is shutting down, so we just return.  */
+        	return;
+        }
+        
         IPerspectiveDescriptor perspective = PlatformUI.getWorkbench().getPerspectiveRegistry().findPerspectiveWithId(
                 RegistrationPerspectiveFactory.REGISTRATION_PERSPECTIVE_ID);
         if (perspective != null) {
