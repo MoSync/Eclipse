@@ -36,6 +36,7 @@ import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IconManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
@@ -83,6 +84,8 @@ extends AbstractPackager
 			File packageOutDir = internal.resolveFile( "%package-output-dir%" );
 			packageOutDir.mkdirs();
 
+			File defaultIcon = internal.resolveFile( "%mosync-bin%/../etc/icon.png" );
+			
 			// Delete previous apk file if any
 			File projectAPK = new File( packageOutDir, appName + ".apk");
 			projectAPK.delete();
@@ -96,11 +99,11 @@ extends AbstractPackager
 
 			// Create layout (main.xml) file
 			File main_xml = new File( packageOutDir, "res/layout/main.xml" );
-			createMain(project.getName(), main_xml);
+			createMain(main_xml);
 			
 			// Create values (strings.xml) file, in this file the application name is written
 			File strings_xml = new File( packageOutDir, "res/values/strings.xml" );
-			createStrings(project.getName(), strings_xml);
+			createStrings(appName, strings_xml);
 			
 			//File res = new File( packageOutDir, "res/raw/resources" );
 			//res.getParentFile().mkdirs();
@@ -125,35 +128,53 @@ extends AbstractPackager
 				Util.copyFile( new NullProgressMonitor( ), resources, new File( packageOutDir, "add/assets/resources.mp3" ) );
 			}
 			
-			// If there was an icon provided, add it, else use the default icon
-			MoSyncIconBuilderVisitor visitor = new MoSyncIconBuilderVisitor();
-			visitor.setProject(project.getWrappedProject());
-			IResource[] iconFiles = visitor.getIconFiles();
-			if (iconFiles.length > 0) {
-				Object xObj = targetProfile.getProperties().get( "MA_PROF_CONST_ICONSIZE_X" );
-				Object yObj = targetProfile.getProperties().get( "MA_PROF_CONST_ICONSIZE_Y" );
-				if (xObj != null && yObj != null) 
-				{
-					String sizeStr = ((Long) xObj) + "x" + ((Long) yObj);
-					internal.runCommandLine( m_iconInjecLoc, 
-							                 "-src", 
-							                 iconFiles[0].getLocation().toOSString( ), 
-						                     "-size", 
-						                     sizeStr, 
-						                     "-platform", 
-						                     "android", 
-						                     "-dst", 
-						                     new File( packageOutDir, "res/drawable/icon.png" ).getAbsolutePath( ) );
-				}
-			}
-			else 
-			{
-				// Copy default icon
-				Util.copyFile( new NullProgressMonitor( ), 
-						       internal.resolveFile( "%mosync-bin%/../etc/icon.png" ), 
-						       new File( packageOutDir, "res/drawable/icon.png" ) );
-			}
+			// Use The IconManager built for Moblin to add icons to the Android package
+			try
+            {
+                File f;
+                File outDir = new File( internal.resolve( "%compile-output-dir%" ) );            	
+                IconManager iconManager = new IconManager( internal,
+	            						project.getWrappedProject( )
+	            						.getLocation( ).toFile( ) );
+          
+                // Get the correct icon size
+                // TODO: Make it better since this is quite the hack
+                int screenWidth = ((Long)(targetProfile.getProperties().get( "MA_PROF_CONST_SCREENSIZE_X" ))).intValue();
 				
+				// screen 240x320, 240x400, 240x432  	-> 30x30
+				// srceen 320x480					   	-> 40x40
+				// screen 480x800, 480x854				-> 60x60
+				
+				int iconSize = 40;
+				if(screenWidth<=240) iconSize = 30;
+				else if(screenWidth>=480) iconSize = 60;
+				
+				
+	            // Set PNG icons
+	            if ( iconManager.hasIcon( "png" ) == true )
+	            {
+	                try 
+		            {
+		                f = new File( packageOutDir, "res/drawable/icon.png" );
+		                if ( f.exists( ) == true )
+		                	f.delete( );
+		                if ( iconManager.inject( f, iconSize, iconSize, "png" ) == false )
+		                	setDefaultIcon(defaultIcon, packageOutDir);
+		            }
+		            catch ( Exception e ) 
+		            {
+		            	buildResult.addError( e.getMessage( ) );
+		            }
+	            }
+	            else
+	            {
+	            	setDefaultIcon(defaultIcon, packageOutDir);
+	            }
+            }
+			catch ( Exception e ) 
+            {
+            	buildResult.addError( e.getMessage( ) );
+            }
 			
 			// build a resources.ap_ file using aapt tool
 			internal.runCommandLine( m_aaptLoc, 
@@ -279,11 +300,36 @@ extends AbstractPackager
 
 	}
 	
+	/**
+	 * Sets the default Android icon for the application
+	 * 
+	 * @param defaultIcon		A file handle to the default icon			
+	 * @param packageOutDir		The folder in which the Android package is stored in
+	 */
+	private void setDefaultIcon(File defaultIcon, File packageOutDir)
+	{
+		try
+		{
+			// Copy default icon
+			Util.copyFile( new NullProgressMonitor( ), defaultIcon, new File( packageOutDir, "res/drawable/icon.png" ) );
+		}
+		catch(Exception e)
+		{
+			
+		}
+	}
+	
 	private String getPassword(MoSyncProject project, String propertyKey) {
         return UIUtils.getPassword(project, propertyKey);
     }
 
 
+	/**
+	 * Converts all the . in the package name with a / since this is what is excpected by the Android build tools
+	 * 
+	 * @param name	The package name with dots
+	 * @return		The package name with slashes
+	 */
     private String toByteCodePackageName(String name) {
         return name.replace('.', '/');
     }
@@ -300,6 +346,15 @@ extends AbstractPackager
 		p.delete( );
 	}
 
+    /**
+     * Generates the Android manifest file
+     * 
+     * @param project			The project object
+     * @param version			The application version
+     * @param packageName		The package which the source code belongs to
+     * @param manifest			The file handle to which the manifest will be written to
+     * @throws IOException
+     */
     private void createManifest(MoSyncProject project, Version version, String packageName, File manifest) throws IOException {
 		manifest.getParentFile().mkdirs();
 		String manifest_string = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
@@ -334,6 +389,12 @@ extends AbstractPackager
 		DefaultPackager.writeFile(manifest, manifest_string);
 	}
     
+    /**
+     * Generates the permissions needed by Android for the different MoSync permissions
+     * 
+     * @param project	The project file
+     * @return			A string containing all the persmissions
+     */
     private String createPermissionXML(MoSyncProject project) {
         StringBuffer result = new StringBuffer();
         IApplicationPermissions permissions = project.getPermissions();
@@ -351,6 +412,7 @@ extends AbstractPackager
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.SMS_RECEIVE), "android.permission.RECEIVE_SMS");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.CAMERA), "android.permission.CAMERA");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH_ADMIN");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.FILE_STORAGE_WRITE), "android.permission.WRITE_EXTERNAL_STORAGE");
         // Always add this.
         addPermission(result, true, "android.permission.READ_PHONE_STATE");
@@ -369,8 +431,13 @@ extends AbstractPackager
             result.append("<uses-permission android:name=\"" + androidPermission + "\" />\n");
     }
 
-
-    private void createMain(String projectName, File main_xml) throws IOException {
+    /**
+     * Generates the res/layout/main.xml file
+     * 
+     * @param main_xml		The file handle to the file which the file is written to
+     * @throws IOException
+     */
+    private void createMain(File main_xml) throws IOException {
 		main_xml.getParentFile().mkdirs();
 
 		String main_xml_string = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
@@ -383,12 +450,19 @@ extends AbstractPackager
 		DefaultPackager.writeFile(main_xml, main_xml_string);
 	}
 	
-	private void createStrings(String projectName, File strings_xml) throws IOException {
+    /**
+     *  Generates the res/values/strings.xml file
+     * 
+     * @param applicationName	The name of the application, which will be shown in Android
+     * @param strings_xml		The file handle to the file which it's being written to
+     * @throws IOException
+     */
+	private void createStrings(String applicationName, File strings_xml) throws IOException {
 		strings_xml.getParentFile().mkdirs();
 
 		String strings_xml_string = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 		+"<resources>\n"
-			+"\t<string name=\"app_name\">"+projectName+"</string>\n"
+			+"\t<string name=\"app_name\">" + applicationName + "</string>\n"
 		+"</resources>\n";
 		DefaultPackager.writeFile(strings_xml, strings_xml_string);
 	}
