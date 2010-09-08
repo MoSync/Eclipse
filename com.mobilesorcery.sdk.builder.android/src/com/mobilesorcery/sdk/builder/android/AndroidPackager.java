@@ -33,10 +33,13 @@ import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.AbstractPackager;
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IconManager;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
@@ -71,6 +74,9 @@ extends AbstractPackager
 	public void createPackage ( MoSyncProject project, IBuildVariant variant, IBuildResult buildResult ) 
 	throws CoreException 
 	{
+		// Create a console which can be used for debug messaging to the Eclispe console
+		IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(MoSyncBuilder.CONSOLE_ID);
+		
 		DefaultPackager internal = new DefaultPackager(project, variant);
 		IProfile targetProfile = variant.getProfile();
 		String appName = internal.getParameters().get( DefaultPackager.APP_NAME );
@@ -114,7 +120,7 @@ extends AbstractPackager
 			File icon = new File(packageOutDir, "res/drawable/icon.png" );
 			icon.getParentFile().mkdirs();
 			
-			// Need to set execution dir, o/w commandline optiones doesn't understand what to do.
+			// Need to set execution dir, o/w commandline options doesn't understand what to do.
 			internal.getExecutor().setExecutionDirectory(projectAPK.getParentFile().getParent());
 			
 			// Copy and rename the program and resource file to package/res/raw/
@@ -159,7 +165,14 @@ extends AbstractPackager
 		                if ( f.exists( ) == true )
 		                	f.delete( );
 		                if ( iconManager.inject( f, iconSize, iconSize, "png" ) == false )
+		                {
+		                	console.addMessage("Unable to inject the icon, using default!");
 		                	setDefaultIcon(defaultIcon, packageOutDir);
+		                }
+		                else
+		                {
+		                	console.addMessage("Icon was injected succesfully!");
+		                }
 		            }
 		            catch ( Exception e ) 
 		            {
@@ -168,6 +181,7 @@ extends AbstractPackager
 	            }
 	            else
 	            {
+	            	console.addMessage("Using default icon!");
 	            	setDefaultIcon(defaultIcon, packageOutDir);
 	            }
             }
