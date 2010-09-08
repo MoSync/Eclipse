@@ -196,11 +196,14 @@ public class IconManager
 		Icon ico;
 		char sep = File.separatorChar;
 		
-		
+		// Create a console which can be used for debug messaging to the Eclispe console
+		IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(MoSyncBuilder.CONSOLE_ID);
 		
 		// Can't do SVG output without source SVG
 		if ( type.equals( "svg" ) == true )
 		{
+			console.addMessage("injecting svg icon");
+			
 			 if ( m_iconMap.containsKey( "vector" ) == false )
 				 return false;
 			 
@@ -212,14 +215,23 @@ public class IconManager
 		}
 		else
 		{
+			console.addMessage("injecting bitmap icon!");
+			
 			ico = findBestMatch( w, h );
 			
+			if(null == ico) console.addMessage("no icon retrived!");
+			
 			// Check if size is the same
-			if ( ico.getScore( w, h ) == Integer.MAX_VALUE )				
+			if ( ico.getScore( w, h ) == Integer.MAX_VALUE )
+			{
+				console.addMessage("using unconverted icon :" + ico.getFile( ).getAbsolutePath( ));
 				Util.copyFile( new NullProgressMonitor( ), ico.getFile( ), o );
+			}
 			else
 			{	
 				// Convert
+				console.addMessage("converting icon :" + ico.getFile( ).getAbsolutePath( ));
+				
 				String bin = MoSyncTool.getDefault( ).getBinary( "ImageMagick/convert" ).toOSString( );
 				if ( m_internal.runCommandLineWithRes( bin,
 										   			   ico.getFile( ).getAbsolutePath( ), 
@@ -311,6 +323,9 @@ public class IconManager
 		XMLHandler 			iconParser = new XMLHandler( );
 		SAXParserFactory	saxFact = SAXParserFactory.newInstance( );
 		
+		// Create a console which can be used for debug messaging to the Eclispe console
+		IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(MoSyncBuilder.CONSOLE_ID);
+		
 		try 
 		{			
 			saxParse = saxFact.newSAXParser( );
@@ -342,6 +357,8 @@ public class IconManager
 			
 			list.add( icon );			
 			m_iconMap.put( type, list );	
+			
+			console.addMessage("icon file: " + path);
 		}		
 	}
 }
