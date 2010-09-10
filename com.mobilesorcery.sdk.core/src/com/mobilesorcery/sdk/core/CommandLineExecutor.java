@@ -173,10 +173,13 @@ public class CommandLineExecutor {
 			    console.addMessage(replace(consoleMsg, parameters));
 			}
 			
+			/* It is better to pass the command as an array here since then Java will
+			 * fix all problems with quotations and such that are suitable for the
+			 * platform. */
 			if (dir == null) {
-			    currentProcess = Runtime.getRuntime().exec(mergedCommandLine);
+			    currentProcess = Runtime.getRuntime().exec(resolvedLine);
 			} else {
-			    currentProcess = Runtime.getRuntime().exec(parseCommandLine( mergedCommandLine ), null, new File(dir));
+			    currentProcess = Runtime.getRuntime().exec(resolvedLine, null, new File(dir));
 			}
 			
 			console.attachProcess(currentProcess, stdoutHandler, stderrHandler);
