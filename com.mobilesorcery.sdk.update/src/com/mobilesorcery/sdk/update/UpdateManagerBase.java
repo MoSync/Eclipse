@@ -21,12 +21,14 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jface.preference.IPreferenceStore;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.Util;
 
 /*
  * Refactoring note: this class is there just to help me implement
@@ -84,22 +86,7 @@ public abstract class UpdateManagerBase {
 
     protected URL getRequestURL(String serviceName, Map<String, String> params) throws MalformedURLException {
         String service = getServiceURL(serviceName);
-
-        StringBuffer paramsStr = new StringBuffer();
-        if (params != null && !params.isEmpty()) {
-            paramsStr.append("?"); //$NON-NLS-1$
-            int paramCnt = 0;
-            for (Map.Entry<String, String> param : params.entrySet()) {
-                paramCnt++;
-                if (paramCnt > 1) {
-                    paramsStr.append("&"); //$NON-NLS-1$
-                }
-
-                paramsStr.append(URLEncoder.encode(param.getKey()) + "=" + URLEncoder.encode(param.getValue())); //$NON-NLS-1$
-            }
-        }
-
-        return new URL(service + paramsStr);
+        return new URL(Util.toGetUrl(service, params));
     }
     
     protected boolean getBooleanResponse(Response response, String errmsg) throws IOException {
@@ -133,6 +120,21 @@ public abstract class UpdateManagerBase {
     
     protected void addHalfHash(Map<String, String> request) {
         request.put("hhash", getUserHalfHash()); //$NON-NLS-1$
+    }
+    
+    protected Map<String, String> assembleDefaultParams(boolean hashOnly) {
+        HashMap<String, String> params = new HashMap<String, String>();
+        if (!hashOnly) {
+            int version = MoSyncTool.getDefault().getCurrentBinaryVersion();
+            String versionStr = Integer.toString(version);
+            // For now we send the same version for all components.
+            params.put("db", versionStr);
+            params.put("sdk", versionStr);
+            params.put("ide", versionStr);
+        }
+        addHalfHash(params);
+        params.put("hhash", getUserHalfHash());
+        return params;
     }
     
     public boolean shouldPerformAutoUpdate() {

@@ -439,21 +439,6 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         }
     }
 
-    private Map<String, String> assembleDefaultParams(boolean hashOnly) {
-        HashMap<String, String> params = new HashMap<String, String>();
-        if (!hashOnly) {
-            int version = MoSyncTool.getDefault().getCurrentBinaryVersion();
-            String versionStr = Integer.toString(version);
-            // For now we send the same version for all components.
-            params.put("db", versionStr);
-            params.put("sdk", versionStr);
-            params.put("ide", versionStr);
-        }
-        addHalfHash(params);
-        params.put("hhash", getUserHalfHash());
-        return params;
-    }
-
     public static String getInitialURL() {
         IUpdater updater = CoreMoSyncPlugin.getDefault().getUpdater();
         if (updater instanceof DefaultUpdater2) {

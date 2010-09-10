@@ -13,6 +13,9 @@
 */
 package com.mobilesorcery.sdk.update;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.ui.IPerspectiveDescriptor;
 import org.eclipse.ui.IPerspectiveListener;
 import org.eclipse.ui.IWindowListener;
@@ -25,6 +28,9 @@ import org.eclipse.ui.model.WorkbenchAdapter;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IUpdater;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.update.internal.RegistrationPartListener;
 
 /**
@@ -71,5 +77,15 @@ public class MosyncUpdatePlugin extends AbstractUIPlugin {
 		return plugin;
 	}
 
+	public static Map<String, String> getDefaultParams(boolean hashOnly) {
+	    HashMap<String, String> result = new HashMap<String, String>();
+        IUpdater updater = CoreMoSyncPlugin.getDefault().getUpdater();
+        // Whoa! We use the fact that we know our updater well...
+        if (updater instanceof UpdateManagerBase) {
+            result.putAll(((UpdateManagerBase) updater).assembleDefaultParams(hashOnly));
+        }
+        
+        return result;
+    }
 
 }
