@@ -18,6 +18,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.net.URI;
+import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
@@ -29,6 +30,7 @@ import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.cdt.internal.ui.text.doctools.Messages;
+import org.eclipse.cdt.utils.Platform;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -38,11 +40,13 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.ISafeRunnable;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
@@ -508,4 +512,20 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 
     }
 
+    public void showHelp(String helpResource, boolean showInExternalBrowser) {
+        if (helpResource != null) {
+            if (showInExternalBrowser) {
+                try {
+                    URL urlToHelpDoc = FileLocator.find(Platform.getBundle("com.mobilesorcery.sdk.help"), new Path(helpResource), null);
+                    URL fileUrlToHelpDoc = FileLocator.toFileURL(urlToHelpDoc);
+                    
+                    PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(fileUrlToHelpDoc);
+                } catch (Exception e) {
+                    CoreMoSyncPlugin.getDefault().log(e);
+                }
+            } else {
+                PlatformUI.getWorkbench().getHelpSystem().displayHelpResource(helpResource);  
+            }
+        }
+    }
 }

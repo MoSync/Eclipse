@@ -43,20 +43,7 @@ public class ShowHelpAction extends Action implements IWorkbenchWindowActionDele
     }
 
     public void run(IAction action) {
-        if (helpResource != null) {
-            if (showInExternalBrowser) {
-                try {
-                    URL urlToHelpDoc = FileLocator.find(Platform.getBundle("com.mobilesorcery.sdk.help"), new Path(helpResource), null);
-                    URL fileUrlToHelpDoc = FileLocator.toFileURL(urlToHelpDoc);
-                    
-                    PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(fileUrlToHelpDoc);
-                } catch (Exception e) {
-                    CoreMoSyncPlugin.getDefault().log(e);
-                }
-            } else {
-                PlatformUI.getWorkbench().getHelpSystem().displayHelpResource(helpResource);  
-            }
-        }
+        MosyncUIPlugin.getDefault().showHelp(helpResource, showInExternalBrowser);
     }
 
     public void selectionChanged(IAction action, ISelection selection) {
