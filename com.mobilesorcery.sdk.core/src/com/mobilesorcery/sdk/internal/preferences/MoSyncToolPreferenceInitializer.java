@@ -13,6 +13,7 @@
 */
 package com.mobilesorcery.sdk.internal.preferences;
 
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -24,16 +25,14 @@ public class MoSyncToolPreferenceInitializer extends AbstractPreferenceInitializ
     }
 
     public void initializeDefaultPreferences() {
-        boolean envOk = MoSyncTool.isValidHome(MoSyncTool.getMoSyncHomeFromEnv());
-        boolean guessOk = MoSyncTool.isValidHome(MoSyncTool.guessHome());
+        IPath env = MoSyncTool.getMoSyncHomeFromEnv();
+        boolean envOk = env != null && MoSyncTool.isValidHome(env);
         
         String home = "";
         
         if (envOk) {
             home = MoSyncTool.getMoSyncHomeFromEnv().toOSString();
-        } else if (guessOk) {
-            home = MoSyncTool.guessHome().toOSString();
-        }
+        } 
         
         CoreMoSyncPlugin.getDefault().getPreferenceStore().setDefault(MoSyncTool.MOSYNC_HOME_PREF, home);
         CoreMoSyncPlugin.getDefault().getPreferenceStore().setDefault(MoSyncTool.MO_SYNC_HOME_FROM_ENV_PREF, envOk);

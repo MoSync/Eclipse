@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
@@ -169,31 +170,6 @@ public class MoSyncTool {
 		} else {
 			return getMoSyncHomeFromEnv();
 		}
-	}
-
-	/**
-	 * Tries to guess where to find the MoSync installation - this will be used
-	 * as a basis for its corresponding preference store default value.
-	 * 
-	 * @return
-	 */
-	public static IPath guessHome() {
-		try {
-			IPath installLocation = new Path(Platform.getInstallLocation()
-					.getURL().getPath());
-			// We guess that the tool is located in a sibling directory of the
-			// eclipse-installation directory.
-			MoSyncTool guess = createMoSyncTool(installLocation
-					.removeLastSegments(1).append("MoSync"));
-			if (guess.isValid()) {
-				return guess.getMoSyncHome();
-			}
-		} catch (Exception e) {
-			// Silently ignore, we're just guessing anyway
-		}
-
-		// By default, we return the default install directory
-		return new Path("C:\\MoSync");
 	}
 
 	/**
@@ -681,7 +657,7 @@ public class MoSyncTool {
 	 * @return
 	 */
 	public String validate() {
-		if (getMoSyncHome() == null) {
+		if (getMoSyncHome() == null || getMoSyncHome().isEmpty()) {
 			return "MoSync home is not set";
 		} else if (!getMoSyncBin().toFile().exists()) {
 			return "Invalid MoSync home - could not find bin directory";
@@ -796,6 +772,5 @@ public class MoSyncTool {
 					+ preferredProfile.getName();
 		}
 	}
-
 
 }
