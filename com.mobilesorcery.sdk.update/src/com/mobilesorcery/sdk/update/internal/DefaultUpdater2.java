@@ -37,6 +37,7 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IUpdater;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
+import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.update.MosyncUpdatePlugin;
 import com.mobilesorcery.sdk.update.UpdateManager;
 import com.mobilesorcery.sdk.update.UpdateManagerBase;
@@ -172,6 +173,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         }
 
         public void run() {
+            UIUtils.awaitWorkbenchStartup();
             String userKey = MoSyncTool.getDefault().getProperty(MoSyncTool.USER_HASH_PROP_2);
 
             try {

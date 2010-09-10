@@ -14,6 +14,9 @@
 package com.mobilesorcery.sdk.ui;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
@@ -33,7 +36,10 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.progress.UIJob;
+import org.eclipse.ui.progress.WorkbenchJob;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 
@@ -171,6 +177,25 @@ public class UIUtils {
         }
     }
 
+    public static void awaitWorkbenchStartup() {
+        if (!PlatformUI.isWorkbenchRunning()) {
+            WorkbenchJob job = new WorkbenchJob("Awaiting workbench") {
+                public IStatus runInUIThread(IProgressMonitor monitor) {
+                    // Do nothing; actually we'll never get here.
+                    return Status.OK_STATUS;
+                }
+            };
+            job.setSystem(true);
+            job.schedule();
+            try {
+                job.join();
+            } catch (InterruptedException e) {
+                // Ignore.
+                CoreMoSyncPlugin.getDefault().log(e);
+            }
+        }
+    }
+
 
     public static void main(String[] args) {
     	Image i = new Image(Display.getCurrent(), "C:\\development\\projects\\mobilesorcery-4\\com.mobilesorcery.sdk.ui\\icons\\mosyncproject.png");
@@ -181,5 +206,5 @@ public class UIUtils {
     	il.save("C:\\development\\projects\\mobilesorcery-4\\com.mobilesorcery.sdk.ui\\icons\\deprecated-mosyncproject.png", SWT.IMAGE_PNG);
     	i.dispose();
     }
-
+    
 }
