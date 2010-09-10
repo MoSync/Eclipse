@@ -77,10 +77,11 @@ public class AndroidSigningPropertyPage extends PropertyPage implements IWorkben
     private void updateUI() {
         boolean isEnabled = useProjectSpecific.getSelection();
         keyCertUI.setEnabled(isEnabled);
-        if (!useProjectSpecific.getSelection()) {
-            KeystoreCertificateInfo defaultInfo = KeystoreCertificateInfo.parseOne(getProject().getDefaultProperty(PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO));
-            keyCertUI.setKeystoreCertInfo(defaultInfo);
-        }
+        KeystoreCertificateInfo certInfo = useProjectSpecific.getSelection() ? 
+                KeystoreCertificateInfo.parseOne(getProject().getProperty(PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO)) :
+                KeystoreCertificateInfo.parseOne(getProject().getDefaultProperty(PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO));
+
+        keyCertUI.setKeystoreCertInfo(certInfo);
     }
     
     public boolean performOk() {
