@@ -13,17 +13,20 @@
 */
 package com.mobilesorcery.ui.internal.actions;
 
-import java.text.MessageFormat;
+import java.net.URL;
 
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.swt.program.Program;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.statushandlers.StatusManager;
 
-import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
 public class ShowHTMLAction extends Action implements IWorkbenchWindowActionDelegate {
 
@@ -35,16 +38,12 @@ public class ShowHTMLAction extends Action implements IWorkbenchWindowActionDele
     }
 
     public void run(IAction action) {
-        // Quasi-hard-coded html help file location
-        Program program = Program.findProgram("html");
-        String registrationKey = MoSyncTool.getDefault().getRegistrationKey();
-        int buildNumber = MoSyncTool.getDefault().getCurrentBinaryVersion();
-        //IPath helpFile = MoSyncTool.getDefault().getMoSyncHome().append(new Path("docs/index.html"));
-        //program.execute(helpFile.toFile().getAbsolutePath());
-        program.execute(MessageFormat.format(
-                "http://www.mosync.com/content/documentation?cc={0}&r={1}",
-                registrationKey,
-                Integer.toString(buildNumber)));
+        try {
+            URL url = new URL(Util.toGetUrl("http://www.mosync.com/content/documentation", MosyncUIPlugin.getDefault().getVersionParameters(true)));
+            PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(url);
+        } catch (Exception e) {
+            StatusManager.getManager().handle(new Status(IStatus.ERROR, MosyncUIPlugin.PLUGIN_ID, "Could not show help", e), StatusManager.SHOW);
+        }
     }
 
     public void selectionChanged(IAction action, ISelection selection) {

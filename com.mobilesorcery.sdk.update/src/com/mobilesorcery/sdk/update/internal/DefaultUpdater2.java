@@ -365,11 +365,11 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
     }
     
     private URL getInitialRegistrationRequestURL() throws MalformedURLException {
-        return getRequestURL("registration/register/", assembleDefaultParams(true));
+        return getRequestURL("registration/register/", MosyncUIPlugin.getDefault().getVersionParameters(true));
     }
 
     private void userNotConfirmedAction() throws IOException {
-        launchInternalBrowser(getRequestURL("registration/confirmation/", assembleDefaultParams(true)), "Confirm Registration");
+        launchInternalBrowser(getRequestURL("registration/confirmation/", MosyncUIPlugin.getDefault().getVersionParameters(true)), "Confirm Registration");
     }
     
     private void userAlreadyRegisteredAction() throws IOException {
@@ -418,13 +418,13 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
     }
 
     public boolean validateKey() throws IOException {
-        Response validated = sendRequest(getRequestURL("registration/request/validate", assembleDefaultParams(false)));
+        Response validated = sendRequest(getRequestURL("registration/request/validate", MosyncUIPlugin.getDefault().getVersionParameters(false)));
         boolean isValid = getBooleanResponse(validated, "Server failed to accept user key validation request");
         return isValid;
     }
 
     public int getUserStatus() throws IOException {
-        Response response = sendRequest(getRequestURL("registration/request/userstatus", assembleDefaultParams(false)));
+        Response response = sendRequest(getRequestURL("registration/request/userstatus", MosyncUIPlugin.getDefault().getVersionParameters(false)));
         InputStream input = null;
         try {
             input = response.getContent();

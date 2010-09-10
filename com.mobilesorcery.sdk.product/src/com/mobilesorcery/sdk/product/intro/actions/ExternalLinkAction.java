@@ -10,6 +10,7 @@ import org.eclipse.ui.intro.config.IIntroAction;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.update.MosyncUpdatePlugin;
 
 public class ExternalLinkAction implements IIntroAction {
@@ -18,7 +19,7 @@ public class ExternalLinkAction implements IIntroAction {
         String href = params.getProperty("href");
         if (!Util.isEmpty(href)) {
             try {
-                String url = Util.toGetUrl(href, MosyncUpdatePlugin.getDefaultParams(false));
+                String url = Util.toGetUrl(href, MosyncUIPlugin.getDefault().getVersionParameters(false));
                 IWebBrowser wb = PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser();
                 wb.openURL(new URL(url));
             } catch (Exception e) {

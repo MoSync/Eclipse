@@ -29,6 +29,7 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
 /*
  * Refactoring note: this class is there just to help me implement
@@ -100,43 +101,11 @@ public abstract class UpdateManagerBase {
         }        
     }
      
-    public String getUserHash() {
-        return MoSyncTool.getDefault().getProperty(MoSyncTool.USER_HASH_PROP_2);
-    }
-
     public void setUserHash(String hash) {
         hash = hash == null ? null : hash.trim();
         MoSyncTool.getDefault().setProperty(MoSyncTool.USER_HASH_PROP_2, hash);
     }
 
-    public String getUserHalfHash() {
-        String hash = getUserHash();
-        if (hash != null) {
-            return hash.substring(0, hash.length() / 2);
-        }
-
-        return null;
-    }
-    
-    protected void addHalfHash(Map<String, String> request) {
-        request.put("hhash", getUserHalfHash()); //$NON-NLS-1$
-    }
-    
-    protected Map<String, String> assembleDefaultParams(boolean hashOnly) {
-        HashMap<String, String> params = new HashMap<String, String>();
-        if (!hashOnly) {
-            int version = MoSyncTool.getDefault().getCurrentBinaryVersion();
-            String versionStr = Integer.toString(version);
-            // For now we send the same version for all components.
-            params.put("db", versionStr);
-            params.put("sdk", versionStr);
-            params.put("ide", versionStr);
-        }
-        addHalfHash(params);
-        params.put("hhash", getUserHalfHash());
-        return params;
-    }
-    
     public boolean shouldPerformAutoUpdate() {
         IPreferenceStore prefStore = MosyncUpdatePlugin.getDefault().getPreferenceStore();
         prefStore.setDefault(MoSyncTool.AUTO_UPDATE_PREF, true);
@@ -163,5 +132,9 @@ public abstract class UpdateManagerBase {
                 // Ignore.
             }
         }
+    }
+    
+    protected void addHalfHash(Map<String, String> request) {
+        request.put("hhash", MosyncUIPlugin.getDefault().getUserHalfHash()); //$NON-NLS-1$
     }
 }

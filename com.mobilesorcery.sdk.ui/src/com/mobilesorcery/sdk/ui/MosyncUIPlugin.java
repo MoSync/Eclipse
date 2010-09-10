@@ -21,6 +21,7 @@ import java.net.URI;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -528,4 +529,45 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
             }
         }
     }
+    
+    public String getUserHash() {
+        return MoSyncTool.getDefault().getProperty(MoSyncTool.USER_HASH_PROP_2);
+    }
+
+    public String getUserHalfHash() {
+        String hash = getUserHash();
+        if (hash != null) {
+            return hash.substring(0, hash.length() / 2);
+        }
+
+        return null;
+    }
+    
+    private void addHalfHash(Map<String, String> request) {
+        request.put("hhash", getUserHalfHash()); //$NON-NLS-1$
+    }
+    
+    /**
+     * Returns a set of version parameters that may be used by
+     * updaters, help urls, etc, to inform the server about the
+     * user's registration status.
+     * @param hashOnly
+     * @return
+     */
+    public Map<String, String> getVersionParameters(boolean hashOnly) {
+        HashMap<String, String> params = new HashMap<String, String>();
+        if (!hashOnly) {
+            int version = MoSyncTool.getDefault().getCurrentBinaryVersion();
+            String versionStr = Integer.toString(version);
+            // For now we send the same version for all components.
+            params.put("db", versionStr);
+            params.put("sdk", versionStr);
+            params.put("ide", versionStr);
+        }
+        addHalfHash(params);
+        params.put("hhash", getUserHalfHash());
+        return params;
+    }
+    
+
 }

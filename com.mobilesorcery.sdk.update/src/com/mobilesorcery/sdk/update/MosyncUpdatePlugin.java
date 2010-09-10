@@ -77,15 +77,4 @@ public class MosyncUpdatePlugin extends AbstractUIPlugin {
 		return plugin;
 	}
 
-	public static Map<String, String> getDefaultParams(boolean hashOnly) {
-	    HashMap<String, String> result = new HashMap<String, String>();
-        IUpdater updater = CoreMoSyncPlugin.getDefault().getUpdater();
-        // Whoa! We use the fact that we know our updater well...
-        if (updater instanceof UpdateManagerBase) {
-            result.putAll(((UpdateManagerBase) updater).assembleDefaultParams(hashOnly));
-        }
-        
-        return result;
-    }
-
 }
