@@ -100,7 +100,7 @@ public class JavaPackager extends AbstractPackager {
                 internal.runCommandLine(m_zipLoc, "-j", "-9", projectJar.getAbsolutePath(), resources.getAbsolutePath());
             }
 
-            createJAD(variant, project.getWrappedProject().getName(), appVendorName, permissions, appVersion, projectJad, projectJar);
+            createJAD(variant, appName, appVendorName, permissions, appVersion, projectJad, projectJar);
 
             MoSyncIconBuilderVisitor visitor = new MoSyncIconBuilderVisitor();
             visitor.setProject(project.getWrappedProject());

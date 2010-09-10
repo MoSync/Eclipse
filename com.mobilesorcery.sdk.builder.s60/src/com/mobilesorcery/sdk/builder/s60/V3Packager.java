@@ -65,7 +65,7 @@ extends S60Packager
 		File packageOutputDir = internal.resolveFile( "%package-output-dir%" ); //$NON-NLS-1$
 		packageOutputDir.mkdirs();
 		String appName = internal.getParameters( ).get( DefaultPackager.APP_NAME );
-		String vendorName = internal.getProjectProperties( ).getProperty( DefaultPackager.APP_VENDOR_NAME_BUILD_PROP );
+		String vendorName = internal.getParameters( ).get( DefaultPackager.APP_VENDOR_NAME );
 		cmdBuilder.flag( "-d" ).with( packageOutputDir )
 				  .flag( "-m" ).with( getModel( project.getTargetProfile( ) ) )
 				  .flag( "-n" ).with( appName )
