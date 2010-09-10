@@ -114,5 +114,32 @@ public abstract class S60Packager extends AbstractPackager {
         
         return null;
     }
+    
+	
+	/**
+	 * Returns the model string for the given target profile.
+	 * 
+	 * @param targetProfile The target profile to extract the UID from.
+	 * @return Model string for the given target profile.
+	 */
+	protected String getModel(IProfile targetProfile)
+	{
+		return targetProfile.getVendor( ) + "/" + targetProfile.getName( );
+	}
+	
+	/**
+	 * Removes 0x in front of the UID if nesseccary.
+	 * 
+	 * @param project To look
+	 * @return The UID associated with the project.
+	 */
+	protected String formatUID(String uid)
+	{	
+		if ( uid.startsWith( "0x" ) ) { //$NON-NLS-1$
+			uid = uid.substring( 2 );
+		}
+		
+		return uid;
+	}
    
 }

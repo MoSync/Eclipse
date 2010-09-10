@@ -16,263 +16,78 @@ package com.mobilesorcery.sdk.builder.s60;
 import java.io.File;
 import java.io.IOException;
 
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 
+import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
-import com.mobilesorcery.sdk.core.Util;
-import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
-import com.mobilesorcery.sdk.core.templates.Template;
-import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
-import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class V3Packager 
 extends S60Packager 
 {
-	static final int V3_EXE_HEADER_SIZE = 0x9c;
-	
-	String m_e32hackLoc;
-	String m_makesis4Loc;
-	String m_signsis4Loc;
-	String m_iconInjecLoc;
+	/**
+	 * Absolute path of the packager tool.
+	 */
+	String m_packagerLoc;
 
-	public V3Packager ( ) 
+	public V3Packager( ) 
 	{
 		MoSyncTool tool = MoSyncTool.getDefault( );
-		m_e32hackLoc    = tool.getBinary( "e32hack" ).toOSString( );
-		m_makesis4Loc   = tool.getBinary( "makesis-4" ).toOSString( );
-		m_signsis4Loc   = tool.getBinary( "signsis-4" ).toOSString( );
-		m_iconInjecLoc  = tool.getBinary( "icon-injector" ).toOSString( );
+		m_packagerLoc = tool.getBinary( "package" ).toOSString();
 	}
-
+	
 	public void createPackage ( MoSyncProject project, 
-			                    IBuildVariant variant, 
-			                    IBuildResult buildResult ) 
-	throws CoreException 
+            IBuildVariant variant, 
+            IBuildResult buildResult )
+	throws CoreException
 	{
-		DefaultPackager internal = new DefaultPackager(project, variant);
-		IProfile targetProfile = variant.getProfile();
-		internal.setParameter("D", shouldUseDebugRuntimes() ? "D" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-
-		try {
-			// Some elegant copy 'n' paste from V2Packager.java...
-			File packageOutputDir = new File(internal.resolve("%package-output-dir%")); //$NON-NLS-1$
-			packageOutputDir.mkdirs();
-
-			String uid = project.getProperty(PropertyInitializer.S60V3_UID);
-			if (uid.startsWith("0x")) { //$NON-NLS-1$
-				uid = uid.substring(2);
-			}
-
-			String appname = project.getName();
-
-			File runtimeDir = new File(internal.resolve("%runtime-dir%")); //$NON-NLS-1$
-			String runtimePath = internal.resolve("%runtime-dir%/MoSync%D%.exe"); //$NON-NLS-1$
-
-			// bin-hack
-			try {
-				createExe(new File(runtimePath), packageOutputDir, uid, targetProfile, project.getPermissions(), internal);
-				createRegRsc(new File(runtimeDir, "MoSync_reg.RSC"), packageOutputDir, uid); //$NON-NLS-1$
-				createResourceFile(new File(runtimeDir, "MoSync.RSC"), packageOutputDir, uid, appname); //$NON-NLS-1$
-			} catch (RuntimeException e) {
-				throw new IOException("Invalid runtime(s)", e);
-			}
-
-			// handle icon
-			MoSyncIconBuilderVisitor visitor = new MoSyncIconBuilderVisitor();
-			visitor.setProject(project.getWrappedProject());
-			IResource[] iconFiles = visitor.getIconFiles();
-			boolean hasIcon = false;
-			if (iconFiles.length > 0) {
-				IResource iconFile = iconFiles[0];
-				Object xObj = targetProfile.getProperties().get("MA_PROF_CONST_ICONSIZE_X"); //$NON-NLS-1$
-				Object yObj = targetProfile.getProperties().get("MA_PROF_CONST_ICONSIZE_Y"); //$NON-NLS-1$
-				String sizeStr;
-				if (xObj != null && yObj != null) {
-					sizeStr = ((Long) xObj) + "x" + ((Long) yObj); //$NON-NLS-1$
-				} else {
-					sizeStr = "default"; //$NON-NLS-1$
-				}
-				internal.runCommandLine( m_iconInjecLoc, 
-						                 "-src",
-						                 iconFile.getLocation( ).toOSString( ),
-					                     "-size", 
-					                     sizeStr, 
-					                     "-platform", 
-					                     "symbian9", 
-					                     "-dst", 
-					                     packageOutputDir + "/" + uid + "_icon.mif" );
-				hasIcon = true;
-			}
-			
-			// write package file
-			internal.setParameter( "pkg-runtime-dir", internal.resolve( "%runtime-dir%" ));
-			internal.setParameter( "pkg-package-output-dir", internal.resolve( "%package-output-dir%" ));
-			internal.setParameter( "pkg-programcomb-output", internal.resolve( "%programcomb-output%" ));
-			
-			String template = Util.readFile(runtimeDir.getAbsolutePath() + "/MoSync-template.pkg"); //$NON-NLS-1$
-			internal.setParameter("uid", uid); //$NON-NLS-1$
-			internal.setParameter("vendor-name", internal.getProjectProperties().getProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP)); //$NON-NLS-1$ //$NON-NLS-2$
-			internal.setParameter("has-icon", hasIcon ? "" : ";");
-			String resolvedTemplate = Template.preprocess(template, internal.getParameters().toMap());
-			File pkgFile = new File(packageOutputDir, uid + ".pkg"); //$NON-NLS-1$
-			Util.writeToFile(pkgFile, resolvedTemplate);
-			
-			// compile sis file
-			internal.runCommandLine( m_makesis4Loc, pkgFile.getAbsolutePath() );
-
-			File unsignedSis = new File(packageOutputDir, uid + ".sis"); //$NON-NLS-1$
-            File renamedAppSis = new File(packageOutputDir, internal.resolve("%app-name%.sis")); //$NON-NLS-1$
-			internal.runCommandLine( new String[] 
-			                         {
-										m_signsis4Loc,
-										unsignedSis.getAbsolutePath(),
-										renamedAppSis.getAbsolutePath(),
-										project.getProperty(PropertyInitializer.S60_CERT_FILE),
-										project.getProperty(PropertyInitializer.S60_KEY_FILE),
-										project.getProperty(PropertyInitializer.S60_PASS_KEY) 
-									 }, 
-                                     "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***" );
-
-			buildResult.setBuildResult(renamedAppSis);
-		} catch (Exception e) {
-			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e));
-		}
-
-	}
-
-	private void createRegRsc(File regrscTemplate, File packageOutputDir, String uidStr) throws IOException {
-		byte[] buffer = readFile(regrscTemplate);
-
-		int uid = (int)Long.parseLong(uidStr, 16);
-
-		writeInt(uid, buffer, 8);
-		int checksum = CRC16.getChecksumForUID(buffer);
-		writeInt(checksum, buffer, 12);
-
-		for (int i = 0; i < uidStr.length(); i++) {
-			byte _c = (byte)(uidStr.charAt(i) & 0xff);
-			buffer[0x20 + i] = _c;
-			buffer[0x3E + i] = _c;
-		}
-
-		writeFile(new File(packageOutputDir, uidStr + "_reg.rsc"), buffer); //$NON-NLS-1$
-	}
-
-	private void createExe ( File exeTemplateFile, 
-			                 File packageOutputDir, 
-			                 String uidStr,
-			                 IProfile profile,
-			                 IApplicationPermissions permissions,
-			                 DefaultPackager internal ) 
-	throws IOException 
-	{
-        File outputFile = new File(packageOutputDir, uidStr + ".exe");
-        File intermediateFile = new File(packageOutputDir, uidStr + ".tmp");
-        modifyCapabilities(exeTemplateFile, intermediateFile, profile, permissions);
-        internal.runCommandLine( m_e32hackLoc, 
-                                 intermediateFile.getAbsolutePath(),
-				                 outputFile.getAbsolutePath(), 
-			                     uidStr );
-        Util.deleteFiles(intermediateFile, null, 1, new NullProgressMonitor());
-	}
-
-	private void modifyCapabilities(File input, File output, IProfile profile, IApplicationPermissions permissions) throws IOException {
-	    Util.copyFile(new NullProgressMonitor(), input, output);
-	    byte[] buffer = readFile(output);
-        System.err.println("BEFORE:    " + Util.toBase16(buffer, 0x88, 4));
-	    int capabilites = Capabilities.toCapability(profile, permissions);
-        writeInt(capabilites, buffer, 0x88);
-        writeFile(output, buffer);
-        System.err.println("AFTER:     " + Util.toBase16(buffer, 0x88, 4));
-    }
-
-    private void createResourceFile(File resourceTemplateFile, File packageOutputDir, String uidStr, String appName) throws IOException {
-		if (appName.length() > 62) {
-			throw new IOException(Messages.S60Packager_ApplicationNameTooLong);
-		}
-
-		byte[] template = readFile(resourceTemplateFile);
-		byte v;
-		int x;
-
-		int originalAppnameLength = (byte)(template[0x42]);
-		if (template[0x42] != template[0x43]) {
-			throw new IOException(Messages.S60Packager_InvalidTemplate);
-		}
-
-		byte[] buffer = new byte[template.length+2*(appName.length()-originalAppnameLength)];
-		System.arraycopy(template, 0, buffer, 0, 0x44);
-		v = template[0x11];
-		x = v - ((originalAppnameLength + 1) * 4);
-		buffer[0x11] = (byte)(x + (appName.length() + 1) * 4);
-
-		buffer[0x42] = (byte)(appName.length() & 0xff);
-		buffer[0x43] = (byte)(appName.length() & 0xff);
-
-		int templateLoc = 0x44;
-		int bufferLoc = 0x44;
-
-		for (int i = 0; i < appName.length(); i++) {
-			buffer[bufferLoc] = (byte)(appName.charAt(i) & 0xff);
-			bufferLoc++;
-		}
-
-		templateLoc += originalAppnameLength;
-
-		for (int i = 0; i < 9; i++) {
-			buffer[bufferLoc++] = template[templateLoc++];
-		}
-
-		buffer[bufferLoc++] = (byte)(appName.length() & 0xff);
-		buffer[bufferLoc++] = (byte)(appName.length() & 0xff);
-
-		for (int i = 0; i < appName.length(); i++) {
-			buffer[bufferLoc] = (byte)(appName.charAt(i) & 0xff);
-			bufferLoc++;
-		}
-
-		templateLoc += 2 + originalAppnameLength;
-
-		//icon filename and surroundings
-		System.arraycopy(template, templateLoc, buffer, bufferLoc, 0x14);
-		templateLoc += 0x14;
-		bufferLoc += 0x14;
-		if (uidStr.length() != 8) {
-			throw new IOException("Invalid UID");
-		}
-		System.arraycopy(uidStr.getBytes(), 0, buffer, bufferLoc, 8);
-		templateLoc += 8;
-		bufferLoc += 8;
-		System.arraycopy(template, templateLoc, buffer, bufferLoc, 9);
-		templateLoc += 9;
-		bufferLoc += 9;
+		DefaultPackager internal = new DefaultPackager( project, variant );
 		
-		//read one byte
-		v = (byte)(template[templateLoc++]);
-		buffer[bufferLoc++] = v;
-	
-		//copy v+8 bytes
-		v += 8;
-		System.arraycopy(template, templateLoc, buffer, bufferLoc, v);
-		templateLoc += v;
-		bufferLoc += v;
-	
-		//write the last magic word
-		v = template[templateLoc];
-		x = v - ((originalAppnameLength + 1) * 2);
-		buffer[bufferLoc] = (byte)(x + (appName.length() + 1) * 2);
-		buffer[bufferLoc + 1] = 0;
-
-		writeFile(new File(packageOutputDir, uidStr + ".rsc"), buffer); //$NON-NLS-1$
+		CommandLineBuilder cmdBuilder = new CommandLineBuilder( m_packagerLoc );
+		
+		/* Add program */
+		File compileOutDir = internal.resolveFile( "%compile-output-dir%" );
+		cmdBuilder.flag( "-p" ).with( new File(compileOutDir, "program") );
+		
+		/* Add resources */
+		File resources = new File( compileOutDir, "resources" );
+		if ( resources.exists( ) == true ) 
+		{
+			cmdBuilder.flag( "-r" ).with( resources );
+		}
+		
+		/* Output dir, model, app ame and vendor */
+		File packageOutputDir = internal.resolveFile( "%package-output-dir%" ); //$NON-NLS-1$
+		packageOutputDir.mkdirs();
+		String appName = internal.getParameters( ).get( DefaultPackager.APP_NAME );
+		String vendorName = internal.getProjectProperties( ).getProperty( DefaultPackager.APP_VENDOR_NAME_BUILD_PROP );
+		cmdBuilder.flag( "-d" ).with( packageOutputDir )
+				  .flag( "-m" ).with( getModel( project.getTargetProfile( ) ) )
+				  .flag( "-n" ).with( appName )
+				  .flag( "--vendor" ).with( vendorName );
+		
+		/* Use debug runtime */
+		if( shouldUseDebugRuntimes( ) )
+		{
+			cmdBuilder.flag( "--debug" );
+		}
+		
+		/* Symbian UID */
+		String uid = formatUID( project.getProperty( PropertyInitializer.S60V3_UID ) );
+		cmdBuilder.flag( "--uid" ).with( uid );
+		
+		try {
+			internal.runCommandLine( cmdBuilder.asArray( ) );
+			buildResult.setBuildResult( new File(packageOutputDir, appName + ".sisx") );
+		}
+		catch (IOException e) {
+			throw new CoreException( new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage( ), e) );
+		}
 	}
-
 
 }
