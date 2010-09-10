@@ -113,33 +113,33 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
                         newExamples.remove(project.getName());
                     }
 
+                    ArrayList<File> projectFiles = new ArrayList<File>();
+                    ArrayList<String> preferredProjectNames = new ArrayList<String>();
+                    
                     if (!newExamples.isEmpty()) {
-                        ArrayList<File> projectFiles = new ArrayList<File>();
-                        ArrayList<String> preferredProjectNames = new ArrayList<String>();
                         for (String newExample : newExamples.keySet()) {
                             String newExampleDir = newExamples.get(newExample);
                             IPath newExampleFullDir = MoSyncTool.getDefault().getMoSyncExamplesDirectory().append(newExampleDir);
                             projectFiles.add(newExampleFullDir.append(MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME).toFile());
                             preferredProjectNames.add(newExample);
                         }
-
-                        ImportProjectsRunnable importer = new ImportProjectsRunnable(projectFiles.toArray(new File[0]), preferredProjectNames
-                                .toArray(new String[0]), ImportProjectsRunnable.DO_NOT_COPY | ImportProjectsRunnable.USE_NEW_PROJECT_IF_AVAILABLE);
-                        // importer.setShowDialogOnSuccess(true);
-                        Job job = importer.createJob(true);
-
-                        final IIntroManager im = PlatformUI.getWorkbench().getIntroManager();
-                        job.addJobChangeListener(new JobChangeAdapter() {
-                            public void done(IJobChangeEvent event) {
-                                im.getIntro().getIntroSite().getShell().getDisplay().asyncExec(new Runnable() {
-                                    public void run() {
-                                        closeIntro(im);
-                                    }
-                                });
-                            }
-                        });
                     }
-
+                    
+                    ImportProjectsRunnable importer = new ImportProjectsRunnable(projectFiles.toArray(new File[0]), preferredProjectNames
+                            .toArray(new String[0]), ImportProjectsRunnable.DO_NOT_COPY | ImportProjectsRunnable.USE_NEW_PROJECT_IF_AVAILABLE);
+                    // importer.setShowDialogOnSuccess(true);
+                    Job job = importer.createJob(true);
+                
+                    final IIntroManager im = PlatformUI.getWorkbench().getIntroManager();
+                    job.addJobChangeListener(new JobChangeAdapter() {
+                        public void done(IJobChangeEvent event) {
+                            im.getIntro().getIntroSite().getShell().getDisplay().asyncExec(new Runnable() {
+                                public void run() {
+                                    closeIntro(im);
+                                }
+                            });
+                        }
+                    });
                 } catch (Exception e) {
                     return new Status(IStatus.ERROR, PLUGIN_ID, "Could not import examples", e);
                 }
