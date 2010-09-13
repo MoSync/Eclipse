@@ -115,7 +115,6 @@ extends AbstractPackager
             	// so it accepts spaces in the vendor name
             	String appVendor = internal.resolve("%app-vendor%");
             	String appVendorNoSpace = appVendor.replace( " ", "");
-            	System.out.println(appVendorNoSpace);
             	
             	internal.runCommandLine( m_cabWizLoc, 
             			"-s",
