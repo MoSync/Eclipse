@@ -111,17 +111,27 @@ extends AbstractPackager
             	Util.copyFile(new NullProgressMonitor(), runtimeFile, copyRuntimeFile);
             	Util.writeToFile(confFile, resolvedConfTemplate);
             	
+            	// Temporary hack, the perl script should be fixed
+            	// so it accepts spaces in the vendor name
+            	String appVendor = internal.resolve("%app-vendor%");
+            	String appVendorNoSpace = appVendor.replace( " ", "");
+            	System.out.println(appVendorNoSpace);
+            	
             	internal.runCommandLine( m_cabWizLoc, 
             			"-s",
             			"%win-package-output-dir%",
+            			"-a",
+            			"%project-name%",
+            			"-p",
+            			appVendorNoSpace,
             			confFile.getAbsolutePath( ) ,
                         cabFile.getAbsolutePath( )
                 );
             	
-            	confFile.delete();
-            	copyRuntimeFile.delete();
-            	copyResourceFile.delete();
-            	copyProgramFile.delete();
+            	//confFile.delete();
+            	//copyRuntimeFile.delete();
+            	//copyResourceFile.delete();
+            	//copyProgramFile.delete();
             	buildResult.setBuildResult(cabFile);
             }
         } 
