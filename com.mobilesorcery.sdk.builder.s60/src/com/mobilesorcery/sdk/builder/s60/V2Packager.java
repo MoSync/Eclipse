@@ -13,80 +13,29 @@
 */
 package com.mobilesorcery.sdk.builder.s60;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 
-import com.mobilesorcery.sdk.core.CommandLineBuilder;
-import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.MoSyncTool;
 
+/**
+ * Packager for Symbian 2nd edition applications.
+ * 
+ * @author Mattias
+ */
 public class V2Packager 
 extends S60Packager 
 {
 	/**
-	 * Absolute path of the packager tool.
+	 * @see IPackager
 	 */
-	String m_packagerLoc;
-
-	public V2Packager( ) 
-	{
-		MoSyncTool tool = MoSyncTool.getDefault( );
-		m_packagerLoc = tool.getBinary( "package" ).toOSString();
-	}
-	
 	public void createPackage ( MoSyncProject project, 
             IBuildVariant variant, 
             IBuildResult buildResult )
 	throws CoreException
 	{
-		DefaultPackager internal = new DefaultPackager( project, variant );
-		
-		CommandLineBuilder cmdBuilder = new CommandLineBuilder( m_packagerLoc );
-		
-		/* Add program */
-		File compileOutDir = internal.resolveFile( "%compile-output-dir%" );
-		cmdBuilder.flag( "-p" ).with( new File(compileOutDir, "program") );
-		
-		/* Add resources */
-		File resources = new File( compileOutDir, "resources" );
-		if ( resources.exists( ) == true ) 
-		{
-			cmdBuilder.flag( "-r" ).with( resources );
-		}
-		
-		/* Output dir, model, app ame and vendor */
-		File packageOutputDir = internal.resolveFile( "%package-output-dir%" ); //$NON-NLS-1$
-		packageOutputDir.mkdirs();
-		String appName = internal.getParameters( ).get( DefaultPackager.APP_NAME );
-		String vendorName = internal.getParameters( ).get( DefaultPackager.APP_VENDOR_NAME );
-		cmdBuilder.flag( "-d" ).with( packageOutputDir )
-				  .flag( "-m" ).with( getModel( project.getTargetProfile( ) ) )
-				  .flag( "-n" ).with( appName )
-				  .flag( "--vendor" ).with( vendorName );
-		
-		/* Use debug runtime */
-		if( shouldUseDebugRuntimes( ) )
-		{
-			cmdBuilder.flag( "--debug" );
-		}
-		
-		/* Symbian UID */
-		String uid = formatUID( project.getProperty( PropertyInitializer.S60V2_UID ) );
-		cmdBuilder.flag( "--uid" ).with( uid );
-		
-		try {
-			internal.runCommandLine( cmdBuilder.asArray( ) );
-			buildResult.setBuildResult( new File(packageOutputDir, appName + ".sis") );
-		}
-		catch (IOException e) {
-			throw new CoreException( new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage( ), e) );
-		}
+		V2V3Builder builder = new V2V3Builder( PropertyInitializer.S60V2_UID, ".sis" );
+		builder.createPackage( project, variant, buildResult, shouldUseDebugRuntimes( ) );
 	}
 }
