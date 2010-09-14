@@ -90,7 +90,7 @@ extends AbstractPackager
             	File resourceFile = new File(internal.resolve("%resource-output%"));
             	File copyResourceFile = new File(internal.resolve("%package-output-dir%/resources"));
             	File runtimeFile = new File(internal.resolve("%runtime-dir%/MoRE-winmobile%D%.exe"));
-            	File copyRuntimeFile = new File(internal.resolve("%package-output-dir%/MoRE-winmobile%D%.exe"));
+            	File copyRuntimeFile = new File(internal.resolve("%package-output-dir%/%project-name%.exe"));
             	File cabFile = new File(internal.resolve("%package-output-dir%/%app-name%.cab"));
             	
             	
@@ -109,6 +109,7 @@ extends AbstractPackager
             		copyResourceFile.createNewFile();
             	}
             	Util.copyFile(new NullProgressMonitor(), runtimeFile, copyRuntimeFile);
+            	
             	Util.writeToFile(confFile, resolvedConfTemplate);
             	
             	// Temporary hack, the perl script should be fixed
