@@ -119,6 +119,27 @@ public class IconManager
 		}
 	}	
 
+	/**
+	 * Recursive search for a file that ends '.icon' 
+	 * 
+	 * @param f The intial directory to search in
+	 * 
+	 * @return a file on success and null if no such file was found.
+	 */
+	public final File findIconFile( final File f ) throws Exception
+	{		
+		if (f.isDirectory()) {
+			final File[] childs = f.listFiles();
+			for( File child : childs ) {
+				File b = findIconFile(child);
+				if(null != b) return b;
+			}
+			return null;
+		}
+		if ( f.getName( ).endsWith( ".icon" ) == true ) return f;
+		return null;
+	}
+
 	
 	
 	private Map<String, List<Icon>>	m_iconMap;
@@ -142,14 +163,10 @@ public class IconManager
 		m_internal = p;
 		m_iconMap  = new HashMap<String, List<Icon>>( );
 		
-		// Go through icon resources
-		for ( File f : b.listFiles( ) )
-		{
-			if ( f.getName( ).endsWith( ".icon" ) == false )
-				continue;
-			
-			loadIconMetaData( f );
-		}
+		File iconXML = findIconFile(b);
+		
+		if(null != iconXML) loadIconMetaData(iconXML);
+
 	}
 	
 	/**
@@ -322,10 +339,7 @@ public class IconManager
 		SAXParser 			saxParse;
 		XMLHandler 			iconParser = new XMLHandler( );
 		SAXParserFactory	saxFact = SAXParserFactory.newInstance( );
-		
-		// Create a console which can be used for debug messaging to the Eclispe console
-		IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(MoSyncBuilder.CONSOLE_ID);
-		
+				
 		try 
 		{			
 			saxParse = saxFact.newSAXParser( );
@@ -335,31 +349,28 @@ public class IconManager
 		{
 			throw new Exception( "Failed to parse icon xml", e );
 		}
+	
+		List<Icon> bitmapList = new LinkedList<Icon>( );
 		
 		// Go through icons
 		for ( Entry<String, Entry<Integer, Integer>> e : iconParser.getIconList( ) )
 		{	
-			List<Icon> list;
-			String  type = "bitmap";
 			int	   	wdth = e.getValue( ).getKey( );
 			int	   	hght = e.getValue( ).getValue( );
 			String  path = f.getParent( ) + File.separatorChar + e.getKey( );			
 			Icon 	icon = new Icon( wdth, hght, path );
 			
-			
 			if ( icon.isSVG( ) == true )
-				type = "vector";
+			{
+				List<Icon> l = new LinkedList<Icon>( );
+				l.add( icon );
+				m_iconMap.put("svg", l);
+			}
+			else bitmapList.add( icon );
+		}
+		
+		m_iconMap.put("bitmap", bitmapList);
 			
-			if ( m_iconMap.containsKey( "type" ) == true )
-				list = m_iconMap.get( type );
-			else
-				list = new LinkedList<Icon>( );
-			
-			list.add( icon );			
-			m_iconMap.put( type, list );	
-			
-			console.addMessage("icon file: " + path);
-		}		
 	}
 }
 
