@@ -1,4 +1,4 @@
-/*  Copyright (C) 2009 Mobile Sorcery AB
+/*  Copyright (C) 2010 MoSync AB
 
     This program is free software; you can redistribute it and/or modify it
     under the terms of the Eclipse Public License v1.0.
@@ -11,6 +11,7 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
+
 package com.mobilesorcery.sdk.builder.android;
 
 import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
@@ -61,15 +62,14 @@ extends AbstractPackager
 	String m_unzipLoc;
 	String m_iconInjecLoc;
 	
+	int m_AndroidVersion;
 	
 	public AndroidPackager ( )
 	{
 		MoSyncTool tool = MoSyncTool.getDefault( );
 		m_unzipLoc      = tool.getBinary( "unzip" ).toOSString( );
 		m_aaptLoc       = tool.getBinary( "android/aapt" ).toOSString( );		
-		m_iconInjecLoc  = tool.getBinary( "icon-injector" ).toOSString( );
 	}
-	
 	
 	public void createPackage ( MoSyncProject project, IBuildVariant variant, IBuildResult buildResult ) 
 	throws CoreException 
@@ -83,7 +83,9 @@ extends AbstractPackager
 		
 		internal.setParameters(getParameters());
 		internal.setParameter("D", shouldUseDebugRuntimes() ? "D" : ""); 
-
+		
+		m_AndroidVersion = getAndroidPlatformVersion(internal);
+		
 		try {
 			File mosyncBinDir = internal.resolveFile( "%mosync-bin%" );
 			File compileOutDir = internal.resolveFile( "%compile-output-dir%" );
@@ -190,6 +192,9 @@ extends AbstractPackager
             	buildResult.addError( e.getMessage( ) );
             }
 			
+			// use the correct jar file for this build
+			String androidJAR = "android/android-" + m_AndroidVersion + ".jar";
+			
 			// build a resources.ap_ file using aapt tool
 			internal.runCommandLine( m_aaptLoc, 
 					                "package", 
@@ -199,7 +204,7 @@ extends AbstractPackager
 					                "-F",
 				                    new File( packageOutDir, "resources.ap_" ).getAbsolutePath( ), 
 				                    "-I", 
-				                    new File( mosyncBinDir, "android/android-1.5.jar" ).getAbsolutePath( ),
+				                    new File( mosyncBinDir, androidJAR ).getAbsolutePath( ),
 				                    "-S", 
 									new File ( packageOutDir, "res" ).getAbsolutePath( ),
 									"-0",
@@ -314,6 +319,17 @@ extends AbstractPackager
 
 	}
 	
+	private int getAndroidPlatformVersion(DefaultPackager internal)
+	{	
+		// determine which Android version we are building for
+		String platformID = internal.getParameters().get( DefaultPackager.PLATFORM_ID );
+		if(platformID.startsWith("android_3")) return 3;
+		else if(platformID.startsWith("android_4")) return 4;
+		else if(platformID.startsWith("android_5")) return 5;
+		
+		return -1;
+	}
+	
 	/**
 	 * Sets the default Android icon for the application
 	 * 
@@ -332,11 +348,17 @@ extends AbstractPackager
 			
 		}
 	}
-	
+
+	/**
+	 * Get the password
+	 * 
+	 * @param project		The MoSync project
+	 * @param propertyKey	The property key
+	 * @return 				The password
+	 */
 	private String getPassword(MoSyncProject project, String propertyKey) {
         return UIUtils.getPassword(project, propertyKey);
     }
-
 
 	/**
 	 * Converts all the . in the package name with a / since this is what is excpected by the Android build tools
@@ -348,7 +370,11 @@ extends AbstractPackager
         return name.replace('.', '/');
     }
 
-
+    /**
+     * Recursive delete of all the files and directories, starting from the given directory
+     * 
+     * @param p		The directory which the delete will start from
+     */
     private void recursiveDel ( File p )
 	{
 		if ( p.isFile( ) == false )
@@ -392,14 +418,18 @@ extends AbstractPackager
 //                	+"android:label=\"@string/app_name\">\n"
 //				+"</activity>\n"
 			+"\t</application>\n"
-			+"\t<uses-sdk android:minSdkVersion=\"3\" />\n"
-// UNSUPPORTED ON ANDROIND 1.5 Cupcake			
-//			+"\t<supports-screens"
-//				+"\t\tandroid:largeScreens=\"true\""
-//				+"\t\tandroid:normalScreens=\"true\""
-//				+"\t\tandroid:smallScreens=\"true\""
-//				+"\t\tandroid:anyDensity=\"true\" />"
-			+ createPermissionXML(project)
+			+"\t<uses-sdk android:minSdkVersion=\"3\" />\n";
+		
+if(m_AndroidVersion>3) // Adding the support-screens for cupcake will lead to problems
+{
+			manifest_string += "\t<supports-screens"
+				+"\t\tandroid:largeScreens=\"true\""
+				+"\t\tandroid:normalScreens=\"true\""
+				+"\t\tandroid:smallScreens=\"true\""
+				+"\t\tandroid:anyDensity=\"true\" />";
+}
+
+			manifest_string += createPermissionXML(project)
 		+"</manifest>\n";
 		DefaultPackager.writeFile(manifest, manifest_string);
 	}
@@ -426,13 +456,17 @@ extends AbstractPackager
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.SMS_SEND), "android.permission.SEND_SMS");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.SMS_RECEIVE), "android.permission.RECEIVE_SMS");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.CAMERA), "android.permission.CAMERA");
-        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH");
-        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH_ADMIN");
+        if(m_AndroidVersion > 3) // Don't try to add these if we are building for cupcake!
+        {
+        	addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH");
+        	addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH_ADMIN");
+        }
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.FILE_STORAGE_WRITE), "android.permission.WRITE_EXTERNAL_STORAGE");
         // Always add this.
         addPermission(result, true, "android.permission.READ_PHONE_STATE");
         return result.toString();
     }
+    
     
     private void addPermission(StringBuffer result, boolean condition, String... androidPermissions) {
         if (condition) {
