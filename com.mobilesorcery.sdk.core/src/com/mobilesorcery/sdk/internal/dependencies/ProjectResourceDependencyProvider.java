@@ -19,10 +19,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+
+import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 
 /**
  * <p>A dependency provider for resource files (*.lst) in
@@ -43,13 +47,23 @@ public class ProjectResourceDependencyProvider implements IDependencyProvider<IR
 	public final static IPath MA_HEADER_PATH = new Path("MAHeaders.h");
 	
 	private final static Map<IResource, Collection<IResource>> EMPTY_MAP = Collections.unmodifiableMap(new HashMap<IResource, Collection<IResource>>());
+
+    private IBuildVariant variant;
+
+    private IProject project;
 	
-	public Map<IResource, Collection<IResource>> computeDependenciesOf(IResource resource)
+	public ProjectResourceDependencyProvider(IProject project, IBuildVariant variant) {
+	    this.project = project;
+        this.variant = variant;
+    }
+
+    public Map<IResource, Collection<IResource>> computeDependenciesOf(IResource resource)
 			throws CoreException {
 		if (resource.getType() == IResource.FILE) {
 			String ext = resource.getFileExtension();
 			if (RESOURCE_EXT.equals(ext) && !STABS_FILE_NAME.equalsIgnoreCase(resource.getName())) {
-				IResource maheaderFile = resource.getParent().getFile(MA_HEADER_PATH);
+			    IPath maHeaderPath = MoSyncBuilder.getOutputPath(project, variant).append(MA_HEADER_PATH);
+				IResource maheaderFile = resource.getParent().getFile(maHeaderPath);
 				HashMap<IResource, Collection<IResource>> result = new HashMap<IResource, Collection<IResource>>();
 				ArrayList<IResource> resourceList = new ArrayList<IResource>();
 				resourceList.add(resource);

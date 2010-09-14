@@ -137,7 +137,11 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	public void setProject(IProject project) {
 		this.project = project;
 	}
-
+	
+	public IProject getProject() {
+	    return project;
+	}
+	
 	public void setConsole(IProcessConsole console) {
 		this.console = console;
 	}

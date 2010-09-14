@@ -210,16 +210,19 @@ public class BuildState implements IBuildState {
         
         List<Entry> dependencyEntries = dependenciesSection.getEntries();
         for (Entry dependencyEntry : dependencyEntries) {
-            Path dependeePath = new Path(dependencyEntry.getKey());
+            IPath dependeePath = new Path(dependencyEntry.getKey());
             IPath[] dependencyPaths = PropertyUtil.toPaths(dependencyEntry.getValue());
             // Ehm... TODO: Dependencies should be on absolute paths, not resources...
             IWorkspaceRoot wr = ResourcesPlugin.getWorkspace().getRoot();
-            IFile[] dependeeFiles = wr.findFilesForLocation(dependeePath);
+            //IFile[] dependeeFiles = wr.findFilesForLocation(dependeePath);
+            IResource[] dependeeFiles = new IResource[] { wr.findMember(dependeePath) }; 
             for (int i = 0; i < dependeeFiles.length; i++) {
                 for (int j = 0; j < dependencyPaths.length; j++) {
-                    IFile[] dependencyFiles = wr.findFilesForLocation(dependencyPaths[i]);
-                    for (int k = 0; k < dependeeFiles.length; k++) {
-                        dependencies.addDependency(dependeeFiles[i], dependencyFiles[k]);
+                    IResource[] dependencyFiles = new IResource[] { wr.findMember(dependencyPaths[i]) };
+                    for (int k = 0; k < dependencyFiles.length; k++) {
+                        if (dependeeFiles[i] != null) {
+                            dependencies.addDependency(dependeeFiles[i], dependencyFiles[k]);
+                        }
                     }
                 }
             }
@@ -290,6 +293,7 @@ public class BuildState implements IBuildState {
             buildStateWriter.write(props.toString());
         } catch (Exception e) {
             CoreMoSyncPlugin.getDefault().log(e);
+            e.printStackTrace();
             // We silently ignore it.
         } finally {    
             Util.safeClose(buildStateWriter);    
@@ -302,9 +306,11 @@ public class BuildState implements IBuildState {
     
     private void saveDependencies(Section deps) {
         for (IResource dependee : dependencies.getAllDependees()) {
-            IPath dependeePath = dependee.getFullPath();
-            Set<IResource> dependentResources = dependencies.getDependenciesOf(dependee);
-            deps.addEntry(new Entry(dependeePath.toPortableString(), PropertyUtil.fromPaths(dependentResources.toArray(new IResource[0]))));    
+            if (dependee != null) {
+                IPath dependeePath = dependee.getFullPath();
+                Set<IResource> dependentResources = dependencies.getDependenciesOf(dependee);
+                deps.addEntry(new Entry(dependeePath.toPortableString(), PropertyUtil.fromPaths(dependentResources.toArray(new IResource[0]))));    
+            }
         }
     }
 

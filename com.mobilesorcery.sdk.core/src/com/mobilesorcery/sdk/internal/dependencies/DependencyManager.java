@@ -73,10 +73,12 @@ public class DependencyManager<T> {
 	}
 	
 	public void addDependency(T from, T to) {
-		Set<T> dependencies = lazyInit(dependencyMap, from, new HashSet<T>());
-		Set<T> reverseDependencies = lazyInit(reverseDependencyMap, to, new HashSet<T>());
-		dependencies.add(to);
-		reverseDependencies.add(from);
+	    if (from != null && to != null) {
+	        Set<T> dependencies = lazyInit(dependencyMap, from, new HashSet<T>());
+	        Set<T> reverseDependencies = lazyInit(reverseDependencyMap, to, new HashSet<T>());
+	        dependencies.add(to);
+	        reverseDependencies.add(from);
+	    }
 	}
 	
 	public void removeDependency(T from, T to) {

@@ -33,6 +33,7 @@ import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -345,7 +346,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     	if (dependencyProvider == null) {
     		//dependencyProvider = new CompoundDependencyProvider<IResource>(new CResourceDependencyProvider(), new ProjectResourceDependencyProvider());
     		dependencyProvider = new CompoundDependencyProvider<IResource>(new GCCDependencyProvider(this),
-    																	   new ProjectResourceDependencyProvider(),
+    																	   new ProjectResourceDependencyProvider(getProject(), getVariant()),
     																	   new ResourceFileDependencyProvider());
     	}
     	
