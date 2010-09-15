@@ -420,7 +420,7 @@ extends AbstractPackager
 			+"\t</application>\n"
 			+"\t<uses-sdk android:minSdkVersion=\"3\" />\n";
 		
-if(m_AndroidVersion>3) // Adding the support-screens for cupcake will lead to problems
+if(m_AndroidVersion >= 4) // Adding the support-screens for cupcake will lead to problems
 {
 			manifest_string += "\t<supports-screens"
 				+"\t\tandroid:largeScreens=\"true\""
@@ -456,7 +456,7 @@ if(m_AndroidVersion>3) // Adding the support-screens for cupcake will lead to pr
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.SMS_SEND), "android.permission.SEND_SMS");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.SMS_RECEIVE), "android.permission.RECEIVE_SMS");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.CAMERA), "android.permission.CAMERA");
-        if(m_AndroidVersion > 3) // Don't try to add these if we are building for cupcake!
+        if(m_AndroidVersion >= 7) // Only add this for android 2.0 and higher
         {
         	addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH");
         	addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH_ADMIN");
