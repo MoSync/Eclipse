@@ -114,8 +114,8 @@ extends AbstractPackager
             	
             	// Temporary hack, the perl script should be fixed
             	// so it accepts spaces in the vendor name
-            	String appVendor = internal.resolve("%app-vendor%");
-            	String appVendorNoSpace = appVendor.replace( " ", "");
+            	/*String appVendor = internal.resolve("%app-vendor%");
+            	String appVendorNoSpace = appVendor.replace( " ", "");*/
             	
             	internal.runCommandLine( m_cabWizLoc, 
             			"-s",
@@ -123,7 +123,7 @@ extends AbstractPackager
             			"-a",
             			"%project-name%",
             			"-p",
-            			appVendorNoSpace,
+            			"%app-vendor%",
             			confFile.getAbsolutePath( ) ,
                         cabFile.getAbsolutePath( )
                 );
