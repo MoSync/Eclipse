@@ -87,6 +87,9 @@ extends AbstractPackager
 		m_AndroidVersion = getAndroidPlatformVersion(internal);
 		
 		try {
+			
+			if(m_AndroidVersion == -1) throw new Exception("No Available Android runtime " + internal.getParameters().get( DefaultPackager.PLATFORM_ID ).toString() );
+			
 			File mosyncBinDir = internal.resolveFile( "%mosync-bin%" );
 			File compileOutDir = internal.resolveFile( "%compile-output-dir%" );
 			File packageOutDir = internal.resolveFile( "%package-output-dir%" );
@@ -314,6 +317,7 @@ extends AbstractPackager
 		} catch (CoreException e) {
 		    throw e;
 		} catch (Exception e) {
+			console.addMessage("Build exception : " + e.toString());
             throw new CoreException(new Status(IStatus.ERROR, "com.mobilesorcery.builder.android", "Could not package for android platform", e));
         }
 
@@ -325,7 +329,7 @@ extends AbstractPackager
 		String platformID = internal.getParameters().get( DefaultPackager.PLATFORM_ID );
 		if(platformID.startsWith("android_3")) return 3;
 		else if(platformID.startsWith("android_4")) return 4;
-		else if(platformID.startsWith("android_5")) return 5;
+		else if(platformID.startsWith("android_7")) return 7;
 		
 		return -1;
 	}
