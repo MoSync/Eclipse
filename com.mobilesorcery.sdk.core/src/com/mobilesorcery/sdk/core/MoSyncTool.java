@@ -156,18 +156,7 @@ public class MoSyncTool {
 		if (overrideHome != null) {
 			return overrideHome;
 		}
-
-		if (CoreMoSyncPlugin.getDefault() == null) {
-			return getMoSyncHomeFromEnv();
-		}
-
-		boolean useEnv = CoreMoSyncPlugin.getDefault().getPreferenceStore()
-				.getBoolean(MO_SYNC_HOME_FROM_ENV_PREF);
-		if (!useEnv) {
-			String home = CoreMoSyncPlugin.getDefault().getPreferenceStore()
-					.getString(MOSYNC_HOME_PREF);
-			return new Path(home);
-		} else {
+		else {
 			return getMoSyncHomeFromEnv();
 		}
 	}
@@ -186,7 +175,7 @@ public class MoSyncTool {
 	/**
 	 * Returns the default home directory as described in
 	 * the system environment variable <code>MOSYNCDIR</code>.
-	 * @return <code>null</code> if no <code>MOSYNCDIR</code> environment variable is set.
+	 * @return An empty path if no <code>MOSYNCDIR</code> environment variable is set.
 	 */
 	public static IPath getMoSyncHomeFromEnv() {
 		String env = System.getenv(MOSYNC_ENV_VAR);
@@ -194,7 +183,7 @@ public class MoSyncTool {
 			return new Path(env);
 		}
 
-		return null;
+		return new Path("");
 	}
 
     /**
@@ -658,7 +647,7 @@ public class MoSyncTool {
 	 */
 	public String validate() {
 		if (getMoSyncHome() == null || getMoSyncHome().isEmpty()) {
-			return "MoSync home is not set";
+			return "the MOSYNCDIR environment variable is not set properly";
 		} else if (!getMoSyncBin().toFile().exists()) {
 			return "Invalid MoSync home - could not find bin directory";
 		} else if (!getProfilesPath().toFile().exists()) {
@@ -772,5 +761,4 @@ public class MoSyncTool {
 					+ preferredProfile.getName();
 		}
 	}
-
 }

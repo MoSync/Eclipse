@@ -88,9 +88,6 @@
    </extension>
    <extension
          point="org.eclipse.core.runtime.preferences">
-      <initializer
-            class="com.mobilesorcery.sdk.internal.preferences.MoSyncToolPreferenceInitializer">
-      </initializer>
    </extension>
    <extension
          point="com.mobilesorcery.core.propertyinitializers">

@@ -104,15 +104,17 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 
         public IStatus runInUIThread(IProgressMonitor monitor) {
             File examplesDir = MoSyncTool.getDefault().getMoSyncExamplesDirectory().toFile();
-            IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
             File exampleManifestFile = new File(examplesDir, "examples.list");
             if (exampleManifestFile.exists()) {
                 try {
+                	/* Parse examples list */
                     SectionedPropertiesFile exampleManifest = SectionedPropertiesFile.parse(exampleManifestFile);
                     Section exampleSection = exampleManifest.getFirstSection("examples");
                     Map<String, String> newExamples = exampleSection.getEntriesAsMap();
+                    
+                    /* Do not import examples that we already have in the workspace */ 
+                    IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
                     IProject[] alreadyImportedProjects = wsRoot.getProjects();
-
                     for (int i = 0; i < alreadyImportedProjects.length; i++) {
                         IProject project = alreadyImportedProjects[i];
                         newExamples.remove(project.getName());
@@ -121,6 +123,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
                     ArrayList<File> projectFiles = new ArrayList<File>();
                     ArrayList<String> preferredProjectNames = new ArrayList<String>();
                     
+                    /* If there are any examples left to import, import them. */
                     if (!newExamples.isEmpty()) {
                         for (String newExample : newExamples.keySet()) {
                             String newExampleDir = newExamples.get(newExample);
@@ -132,9 +135,9 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
                     
                     ImportProjectsRunnable importer = new ImportProjectsRunnable(projectFiles.toArray(new File[0]), preferredProjectNames
                             .toArray(new String[0]), ImportProjectsRunnable.DO_NOT_COPY | ImportProjectsRunnable.USE_NEW_PROJECT_IF_AVAILABLE);
-                    // importer.setShowDialogOnSuccess(true);
                     Job job = importer.createJob(true);
-                
+
+                    /* Close the welcome screen. */
                     final IIntroManager im = PlatformUI.getWorkbench().getIntroManager();
                     job.addJobChangeListener(new JobChangeAdapter() {
                         public void done(IJobChangeEvent event) {
@@ -206,9 +209,14 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
     public boolean isExampleWorkspace() {
         IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
         File wsFile = wsRoot.getLocation().toFile();
-        File exampleWSFile = MoSyncTool.getDefault().getMoSyncExamplesWorkspace().toFile();
-        boolean isExampleWorkspace = wsFile.equals(exampleWSFile);
-        return isExampleWorkspace;
+        File exampleWSPath = MoSyncTool.getDefault().getMoSyncExamplesWorkspace().toFile();
+        if(exampleWSPath.exists()) {
+            boolean isExampleWorkspace = wsFile.equals(exampleWSPath);
+            return isExampleWorkspace;
+        }
+        else {
+        	return false;
+        }
     }
 
     // If this is the example workspace, then if applicable; import projects
