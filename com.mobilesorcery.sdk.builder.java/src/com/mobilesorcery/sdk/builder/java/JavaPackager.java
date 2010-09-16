@@ -79,7 +79,7 @@ public class JavaPackager extends AbstractPackager {
             String appVendorName = internal.getParameters().get(DefaultPackager.APP_VENDOR_NAME);
             String appName = internal.getParameters().get(DefaultPackager.APP_NAME);
             
-            File manifest = new File(internal.resolve("%compile-output-dir%/META-INF/manifest.mf")); //$NON-NLS-1$
+            File manifest = new File("%compile-output-dir%/META-INF/MANIFEST.MF"); //$NON-NLS-1$
             createManifest(variant, appName, appVendorName, permissions, appVersion, manifest);
 
             // Need to set execution dir, o/w zip will not understand what we
