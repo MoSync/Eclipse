@@ -57,8 +57,8 @@ public class JavaPackager extends AbstractPackager {
     public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
         DefaultPackager internal = new DefaultPackager(project, variant);
         IProfile targetProfile = variant.getProfile();
-        File runtimeDir = new File(internal.resolve("%runtime-dir%"));
-        File compileOut = new File(internal.resolve("%compile-output-dir%"));
+        File runtimeDir = internal.resolveFile("%runtime-dir%");
+        File compileOut = internal.resolveFile("%compile-output-dir%");
 
         internal.setParameters(getParameters());
         internal.setParameter("D", shouldUseDebugRuntimes() ? "D" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -70,8 +70,8 @@ public class JavaPackager extends AbstractPackager {
             Version appVersion = new Version(internal.getParameters().get(DefaultPackager.APP_VERSION));
             IApplicationPermissions permissions = project.getPermissions();
             
-            File projectJar = new File(internal.resolve("%package-output-dir%/%app-name%.jar")); //$NON-NLS-1$
-            File projectJad = new File(internal.resolve("%package-output-dir%/%app-name%.jad")); //$NON-NLS-1$
+            File projectJar = internal.resolveFile("%package-output-dir%/%app-name%.jar"); //$NON-NLS-1$
+            File projectJad = internal.resolveFile("%package-output-dir%/%app-name%.jad"); //$NON-NLS-1$
 
             projectJar.delete();
             projectJad.delete();
@@ -79,7 +79,7 @@ public class JavaPackager extends AbstractPackager {
             String appVendorName = internal.getParameters().get(DefaultPackager.APP_VENDOR_NAME);
             String appName = internal.getParameters().get(DefaultPackager.APP_NAME);
             
-            File manifest = new File("%compile-output-dir%/META-INF/MANIFEST.MF"); //$NON-NLS-1$
+            File manifest = internal.resolveFile("%compile-output-dir%/META-INF/MANIFEST.MF"); //$NON-NLS-1$
             createManifest(variant, appName, appVendorName, permissions, appVersion, manifest);
 
             // Need to set execution dir, o/w zip will not understand what we
