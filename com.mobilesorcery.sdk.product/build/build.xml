@@ -85,6 +85,8 @@
 				<include name="com.mobilesorcery.sdk.product/**" />
 				<exclude name="com.mobilesorcery.sdk.product/build/**" />
 				<include name="com.mobilesorcery.sdk.profiles.ui/**" />
+				<include name="com.mobilesorcery.sdk.profiling/**" />
+				<include name="com.mobilesorcery.sdk.profiling.ui/**" />
 				<include name="com.mobilesorcery.sdk.testing/**" />
 				<include name="com.mobilesorcery.sdk.ui/**" />
 				<include name="com.mobilesorcery.sdk.ui.editors.resources/**" />

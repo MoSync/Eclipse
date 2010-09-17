@@ -13,13 +13,20 @@
 */
 package com.mobilesorcery.sdk.profiling;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.eclipse.core.runtime.ListenerList;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.profiling.IProfilingListener.ProfilingEventType;
+import com.mobilesorcery.sdk.profiling.internal.ShowProfilingViewListener;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -33,6 +40,8 @@ public class ProfilingPlugin extends AbstractUIPlugin {
 	private static ProfilingPlugin plugin;
 	
 	private CopyOnWriteArrayList<IProfilingListener> listeners = new CopyOnWriteArrayList<IProfilingListener>();
+
+    private ArrayList<IProfilingSession> sessions = new ArrayList<IProfilingSession>();
 	
 	/**
 	 * The constructor
@@ -47,6 +56,7 @@ public class ProfilingPlugin extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
+		addProfilingListener(ShowProfilingViewListener.getInstance());
 	}
 
 	/*
@@ -56,6 +66,7 @@ public class ProfilingPlugin extends AbstractUIPlugin {
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
+		removeProfilingListener(ShowProfilingViewListener.getInstance());
 	}
 
 	/**
@@ -76,9 +87,19 @@ public class ProfilingPlugin extends AbstractUIPlugin {
     }
 	
 	public void notifyProfilingListeners(ProfilingEventType profilingEventType, IProfilingSession session) {
+	    if (profilingEventType == ProfilingEventType.STARTED) {
+	        sessions.add(session);
+	    } else if (profilingEventType == ProfilingEventType.REMOVED) {
+	        sessions.remove(session);
+	    }
+	    
 	    for (IProfilingListener listener : listeners) {
 	        listener.handleEvent(profilingEventType, session);
 	    }
+	}
+	
+	public List<IProfilingSession> getSessions() {
+	    return Collections.unmodifiableList(sessions);
 	}
 
 }

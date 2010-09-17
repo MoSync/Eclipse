@@ -25,25 +25,29 @@ import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
+import com.mobilesorcery.sdk.core.ISLDInfo;
 import com.mobilesorcery.sdk.core.ParseException;
+import com.mobilesorcery.sdk.core.SLD;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.Invocation;
 
 public class ProfilingDataParser extends DefaultHandler {
 
-    public IInvocation parse(File input) throws IOException, ParseException {
+    public IInvocation parse(File input, SLD sld) throws IOException, ParseException {
         FileInputStream inputStream = new FileInputStream(input);
         try {
-            return parse(inputStream);
+            return parse(inputStream, sld);
         } finally {
             Util.safeClose(inputStream);
         }
     }
 
-    public IInvocation parse(InputStream input) throws IOException, ParseException {
+    public IInvocation parse(InputStream input, SLD sld) throws IOException, ParseException {
         Invocation root = new Invocation(null);
-        ProfilingDataParserHandler handler = new ProfilingDataParserHandler(root);
+        // Make sure it's parsed!
+        ISLDInfo info = sld.parseSLD();
+        ProfilingDataParserHandler handler = new ProfilingDataParserHandler(root, info);
         try {
             SAXParserFactory spf = SAXParserFactory.newInstance();
             spf.setValidating(false);

@@ -13,8 +13,6 @@
 */
 package com.mobilesorcery.sdk.profiling.emulator;
 
-import java.io.IOException;
-
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -23,12 +21,11 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
-import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.ParseException;
+import com.mobilesorcery.sdk.core.SLD;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.profiling.IInvocation;
-import com.mobilesorcery.sdk.profiling.IProfilingSession;
 import com.mobilesorcery.sdk.profiling.ProfilingPlugin;
 import com.mobilesorcery.sdk.profiling.IProfilingListener.ProfilingEventType;
 import com.mobilesorcery.sdk.profiling.internal.ProfilingDataParser;
@@ -41,12 +38,16 @@ public class EmulatorProfilingLaunchConfigurationDelegate extends EmulatorLaunch
         ProfilingSession session = new ProfilingSession(launchConfig);
         ProfilingPlugin.getDefault().notifyProfilingListeners(ProfilingEventType.STARTED, session);
         super.launchSync(launchConfig, mode, launch, emulatorId, monitor);
+        MoSyncProject mosyncProject = MoSyncProject.create(getProject(launchConfig));
         // At this point, we parse profiling data only post-mortem.
-        IPath launchDir = getLaunchDir(MoSyncProject.create(getProject(launchConfig)));
+        IPath launchDir = getLaunchDir(mosyncProject);
+        IBuildConfiguration buildConfiguration = mosyncProject.getActiveBuildConfiguration();
+        SLD sld = mosyncProject.getSLD(buildConfiguration);
+        
         IPath profilingFile = launchDir.append("fp.xml");
         ProfilingDataParser parser = new ProfilingDataParser();
         try {
-            IInvocation profilingResult = parser.parse(profilingFile.toFile());
+            IInvocation profilingResult = parser.parse(profilingFile.toFile(), sld);
             session.setInvocation(profilingResult);
             ProfilingPlugin.getDefault().notifyProfilingListeners(ProfilingEventType.STOPPED, session);
             System.err.print(profilingResult);

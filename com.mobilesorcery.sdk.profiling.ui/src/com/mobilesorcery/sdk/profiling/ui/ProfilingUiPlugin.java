@@ -1,8 +1,18 @@
 package com.mobilesorcery.sdk.profiling.ui;
 
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IViewPart;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
+
+import com.mobilesorcery.sdk.profiling.IProfilingListener;
+import com.mobilesorcery.sdk.profiling.IProfilingSession;
+import com.mobilesorcery.sdk.profiling.ProfilingPlugin;
+import com.mobilesorcery.sdk.profiling.ui.views.ProfilingView;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -58,4 +68,5 @@ public class ProfilingUiPlugin extends AbstractUIPlugin {
 	public static ImageDescriptor getImageDescriptor(String path) {
 		return imageDescriptorFromPlugin(PLUGIN_ID, path);
 	}
+
 }

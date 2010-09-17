@@ -17,7 +17,8 @@ public interface IProfilingListener {
 
     public static enum ProfilingEventType { 
         STARTED,
-        STOPPED
+        STOPPED,
+        REMOVED
     }
 
     public void handleEvent(ProfilingEventType eventType, IProfilingSession session);

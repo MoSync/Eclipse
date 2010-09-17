@@ -20,6 +20,8 @@ public class FunctionDesc {
     private int addr;
     private String name;
 
+    private String toString;
+
     public FunctionDesc(int addr) {
         init(addr, null);
     }
@@ -45,7 +47,26 @@ public class FunctionDesc {
         return name;
     }
     
+    public boolean equals(Object o) {
+        return (o instanceof FunctionDesc) ? toString().equals(o.toString()) : null;
+    }
+    
+    public int hashCode() {
+        return toString().hashCode();
+    }
+    
+    /**
+     * Returns a user-understandable string representing this <code>FunctionDesc</code>.
+     */
     public String toString() {
+        if (toString == null) {
+            toString = internalToString();
+        }
+        
+        return toString;
+    }
+    
+    public String internalToString() {
         return name == null ? "0x" + Integer.toHexString(addr) : name;
     }
 }

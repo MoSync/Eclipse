@@ -17,6 +17,8 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import com.mobilesorcery.sdk.core.ISLDInfo;
+import com.mobilesorcery.sdk.core.SLD;
 import com.mobilesorcery.sdk.profiling.FunctionDesc;
 import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.Invocation;
@@ -31,9 +33,11 @@ class ProfilingDataParserHandler extends DefaultHandler {
     final static String INVOCATION_COUNT_ATTR = "c";
     
     private Invocation current;
+    private ISLDInfo sld;
 
-    public ProfilingDataParserHandler(Invocation root) {
+    public ProfilingDataParserHandler(Invocation root, ISLDInfo info) {
         this.current = root;
+        this.sld = info;
     }
     
     public void startElement(String uri, String name, String qName, Attributes atts) {
@@ -42,6 +46,9 @@ class ProfilingDataParserHandler extends DefaultHandler {
             String functionName = atts.getValue(FUNC_NAME_ATTR);
             String functionAddrStr = atts.getValue(FUNC_ADDR_ATTR);
             int functionAddr = parseAddr(functionAddrStr);
+            if (functionName == null && functionAddrStr != null) {
+                functionName = sld.getFunction(functionAddr);
+            }
             FunctionDesc fd = new FunctionDesc(functionAddr, functionName);
             int count = parseInt(atts.getValue(INVOCATION_COUNT_ATTR), 0);
             float selfTime = parseFloat(atts.getValue(SELF_TIME_ATTR), 0);

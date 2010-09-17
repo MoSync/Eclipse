@@ -26,4 +26,7 @@ public class ProfilingSession implements IProfilingSession {
         return launchConfiguration;
     }
 
+    public String toString() {
+        return launchConfiguration.getName();
+    }
 }

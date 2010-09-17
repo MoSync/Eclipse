@@ -14,7 +14,14 @@
 package com.mobilesorcery.sdk.profiling;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public class Invocation implements IInvocation {
 
@@ -77,4 +84,48 @@ public class Invocation implements IInvocation {
     public String toString() {
         return String.format("%s - %d calls - %d (ms, self time)", profiledEntity, count, (int) Math.round(1000 * selfTime));
     }
+
+    public Collection<IInvocation> flatten(Comparator<IInvocation> comparator) {
+        List<IInvocation> flattenedInvocations = flattenNaturally();
+        Collection<IInvocation> result = flattenedInvocations;
+        if (comparator != null) {
+            result = new TreeSet(comparator);
+            result.addAll(flattenedInvocations);
+        }
+        
+        return result;
+    }
+    
+    private List<IInvocation> flattenNaturally() {
+        ArrayList<IInvocation> unaggregated = new ArrayList<IInvocation>();
+        for (IInvocation invocation : invocations) {
+            unaggregated.add(invocation);
+            unaggregated.addAll(invocation.flatten(null));
+        }
+        
+        return unaggregated;
+    }
+
+    /**
+     * <p>Returns a flat invocation (with no parent nor any childen)
+     * with the aggregated counts, self time, etc of the input
+     * arguments.</p>
+     * <p>The profiled entity will be set to the profiled entity of
+     * the first invocation.</p>
+     * @param invocations
+     * @return
+     */
+    public static Invocation aggregate(IInvocation... invocations) {
+        Invocation result = new Invocation(null);
+        for (int i = 0; i < invocations.length; i++) {
+            IInvocation invocation = invocations[i];
+            result.aggregateTime += invocation.getAggregateTime();
+            result.count += invocation.getCount();
+            result.selfTime += invocation.getSelfTime();
+            result.profiledEntity = invocations[0].getProfiledEntity();
+        }
+        
+        return result;
+    }
+
 }
