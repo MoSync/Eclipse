@@ -11,7 +11,7 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
-package com.mobilesorcery.sdk.internal;
+package com.mobilesorcery.sdk.core;
 
 import java.io.IOException;
 
@@ -19,8 +19,8 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
-import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
-import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.internal.SLDInfoImpl;
+import com.mobilesorcery.sdk.internal.SLDParser;
 
 /**
  * A class for handling a single the state of SLD data;
@@ -37,7 +37,7 @@ public class SLD {
 
 	private long lastSLDTimestamp;
 
-	private SLDInfo lastSLD;
+	private SLDInfoImpl lastSLD;
 
 	private IPath sldFile;
 
@@ -51,7 +51,7 @@ public class SLD {
 	 * <code>parseSLD(false)</code></p>
 	 * @return
 	 */
-    public SLDInfo parseSLD() {
+    public ISLDInfo parseSLD() {
     	return parseSLD(false);
     }
     
@@ -64,7 +64,7 @@ public class SLD {
      * @param force
      * @return
      */
-    public synchronized SLDInfo parseSLD(boolean force) {
+    public synchronized ISLDInfo parseSLD(boolean force) {
         IPath sld = getSLDPath();
         if (!sld.toFile().exists()) {
             return null;
@@ -73,7 +73,7 @@ public class SLD {
         boolean dontCache = Boolean.parseBoolean(project.getProperty(NO_CACHE_SLD_KEY));
         boolean alwaysParse = force || dontCache; 
         
-        SLDInfo result = dontCache ? null : lastSLD;
+        SLDInfoImpl result = dontCache ? null : lastSLD;
         
         long currentSLDTimestamp = sld.toFile().lastModified();
         boolean timestampChanged = lastSLDTimestamp != currentSLDTimestamp;

@@ -26,7 +26,7 @@ import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
  */
 public interface IProcessConsole {
 
-	/**
+    /**
 	 * Attaches this process console to a running process,
 	 * and outputs the process' input, output, and error streams
 	 * @param process

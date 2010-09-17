@@ -20,16 +20,17 @@ import java.util.Iterator;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
-public class SLDInfo {
+import com.mobilesorcery.sdk.core.ISLDInfo;
 
-    public static final int UNKNOWN_LINE = -1;
+public class SLDInfoImpl implements ISLDInfo {
 
     private TreeMap<Integer, String> fileTable = new TreeMap<Integer, String>();
     private TreeMap<Integer, Integer> addrToFile = new TreeMap<Integer, Integer>();
     private TreeMap<Integer, Integer> addrToLine = new TreeMap<Integer, Integer>();
+    public TreeMap<AddressRange, String> startAddrForFunc = new TreeMap<AddressRange, String>(AddressRange.START_COMPARATOR);
     private File file;
 
-    SLDInfo(File sldFile) {
+    SLDInfoImpl(File sldFile) {
         this.file = sldFile;
     }
 
@@ -42,6 +43,16 @@ public class SLDInfo {
         addrToFile.put(addr, fileId);
     }
 
+
+    void addRangeForFunction(String functionName, AddressRange addrRange) {
+        if (addrRange != null) {
+            startAddrForFunc.put(addrRange, functionName);
+        }
+    }
+    
+    /* (non-Javadoc)
+     * @see com.mobilesorcery.sdk.core.ISLDInfo#getFileName(int)
+     */
     public String getFileName(int addr) {
         if (addrToFile.isEmpty()) {
             return null;
@@ -58,6 +69,9 @@ public class SLDInfo {
         return null;
     }
 
+    /* (non-Javadoc)
+     * @see com.mobilesorcery.sdk.core.ISLDInfo#getLine(int)
+     */
     public int getLine(int addr) {
         if (addrToLine.isEmpty()) {
             return UNKNOWN_LINE;
@@ -74,6 +88,16 @@ public class SLDInfo {
         return UNKNOWN_LINE;
     }
 
+    public String getFunction(int addr) {
+        AddressRange key = new AddressRange(addr, addr);
+        Entry<AddressRange, String> closestEntry = startAddrForFunc.floorEntry(key);
+        AddressRange closestAddressRange = closestEntry.getKey();
+        return closestAddressRange != null && closestAddressRange.inRange(addr) ? closestEntry.getValue() : null;
+    }
+    
+    /* (non-Javadoc)
+     * @see com.mobilesorcery.sdk.core.ISLDInfo#write(java.io.Writer)
+     */
     public void write(Writer writer) throws IOException {
         writer.write(SLDParser.FILE_MARKER);
         writer.write('\n');
@@ -97,8 +121,12 @@ public class SLDInfo {
         }
     }
 
+    /* (non-Javadoc)
+     * @see com.mobilesorcery.sdk.core.ISLDInfo#getSLDFile()
+     */
     public File getSLDFile() {
         return file;
     }
+
  
 }

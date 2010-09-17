@@ -1,4 +1,4 @@
-/*  Copyright (C) 2009 Mobile Sorcery AB
+/*  Copyright (C) 2010 Mobile Sorcery AB
 
     This program is free software; you can redistribute it and/or modify it
     under the terms of the Eclipse Public License v1.0.
@@ -11,22 +11,20 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
-package com.mobilesorcery.sdk.core;
+package com.mobilesorcery.sdk.internal;
 
+import java.util.Comparator;
 
-/**
- * <p>
- * Represents the profile info of an execution
- * </p>
- * @author Mattias Bybro, mattias.bybro@purplescout.se
- *
- */
-public interface IProfileInfo {
+public class ReverseComparator<T> implements Comparator<T> {
 
-	/**
-	 * Returns the number of times this file/line was hit
-	 * during execution.
-	 */
-	public int getCount(String file, int line);
-	
+    private Comparator<T> original;
+
+    public ReverseComparator(Comparator<T> original) {
+        this.original = original;
+    }
+
+    public int compare(T first, T second) {
+        return original.compare(second, first);
+    }
+
 }

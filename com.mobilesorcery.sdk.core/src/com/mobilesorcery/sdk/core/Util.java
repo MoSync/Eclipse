@@ -26,20 +26,20 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
-import java.lang.reflect.Array;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.text.FieldPosition;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+
+import com.mobilesorcery.sdk.internal.ReverseComparator;
 
 public class Util {
 
@@ -638,6 +638,10 @@ public class Util {
         }
 
         return baseURL + paramsStr;
+    }
+
+    public static <T> Comparator<T> reverseComparator(Comparator<T> original) {
+        return new ReverseComparator<T>(original);
     }
 	
 }

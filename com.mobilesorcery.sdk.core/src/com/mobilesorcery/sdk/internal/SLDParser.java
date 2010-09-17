@@ -21,24 +21,31 @@ import java.io.LineNumberReader;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 
+
 public class SLDParser {
 
-    static final String FILE_MARKER = "Files";
-    static final String SLD_MARKER = "SLD";
+    public static final String FILE_MARKER = "Files";
+    public static final String SLD_MARKER = "SLD";
+    public static final String FUNCTIONS_MARKER = "FUNCTIONS";
+    public static final String LINE_IP_MARKER = "LINEIP";
+     
     private static final int FILE_STATE = 1;
     private static final int SLD_STATE = 2;
+    private static final int FUNCTIONS_STATE = 3;
+    private static final int LINE_IP_STATE = 4;
+    
 
     private int state;
 
     private ArrayList<Exception> errors = new ArrayList<Exception>();
-    private SLDInfo sld;
+    private SLDInfoImpl sld;
 
     private int currentLine;
 
     public void parse(File sldFile) throws IOException {
         BufferedReader sldReader = new BufferedReader(new FileReader(sldFile));
         try {
-            sld = new SLDInfo(sldFile);
+            sld = new SLDInfoImpl(sldFile);
             currentLine = 0;
             LineNumberReader sldLines = new LineNumberReader(sldReader);
             for (String line = sldLines.readLine(); line != null; line = sldLines.readLine()) {
@@ -49,6 +56,10 @@ public class SLDParser {
                     state = FILE_STATE;
                 } else if (SLD_MARKER.equals(line)) {
                     state = SLD_STATE;
+                } else if (FUNCTIONS_MARKER.equals(line)) { 
+                    state = FUNCTIONS_STATE;
+                } else if (LINE_IP_MARKER.equals(line)) { 
+                    state = LINE_IP_STATE;
                 } else if (line.length() > 0){
                     parseEntry(line);
                 }
@@ -60,7 +71,7 @@ public class SLDParser {
         }
     }
 
-    public SLDInfo getSLD() {
+    public SLDInfoImpl getSLD() {
         return sld;
     }
 
@@ -70,13 +81,28 @@ public class SLDParser {
 
     private void parseEntry(String line) {
         try {
-            if (state == FILE_STATE) {
+            switch (state) {
+            case FILE_STATE:
                 parseFileEntry(line);
-            } else if (state == SLD_STATE) {
+                break;
+            case SLD_STATE:
                 parseSLDEntry(line);
+                break;
+            case FUNCTIONS_STATE:
+                parseFunctionEntry(line);
+                break;
             }
         } catch (SLDParseException e) {
             errors.add(e);
+        }
+    }
+
+    private void parseFunctionEntry(String line) {
+        String[] functionEntry = line.split("\\s", 2);
+        if (functionEntry.length == 2) {
+            String functionName = functionEntry[0];
+            String addrRange = functionEntry[1];
+            sld.addRangeForFunction(functionName, AddressRange.parse(addrRange));
         }
     }
 

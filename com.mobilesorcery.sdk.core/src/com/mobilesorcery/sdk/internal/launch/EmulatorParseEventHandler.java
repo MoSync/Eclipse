@@ -22,9 +22,9 @@ import java.util.concurrent.CountDownLatch;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
+import com.mobilesorcery.sdk.core.ISLDInfo;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.EmulatorOutputParser;
-import com.mobilesorcery.sdk.internal.SLDInfo;
 import com.mobilesorcery.sdk.internal.EmulatorOutputParser.ParseEvent;
 
 public class EmulatorParseEventHandler implements EmulatorOutputParser.IParseEventHandler {
@@ -39,7 +39,7 @@ public class EmulatorParseEventHandler implements EmulatorOutputParser.IParseEve
     }*/
     
     private MoSyncProject project = null;
-    private SLDInfo sldInfo = null;
+    private ISLDInfo sldInfo = null;
 
     private PipedOutputStream messageStream;
 
@@ -62,7 +62,7 @@ public class EmulatorParseEventHandler implements EmulatorOutputParser.IParseEve
     	Runnable sldRunnable = new Runnable() {
 			public void run() {
 				try {
-					SLDInfo oldSLDInfo = sldInfo;
+					ISLDInfo oldSLDInfo = sldInfo;
 					sldInfo = project.getSLD(buildConfiguration).parseSLD();
 					if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 						if (oldSLDInfo == sldInfo) {
@@ -106,7 +106,7 @@ public class EmulatorParseEventHandler implements EmulatorOutputParser.IParseEve
                 stack = new int[] { event.ip };
                 // fall thru
             case EmulatorOutputParser.REPORT_CALL_STACK:
-                SLDInfo sld = getSLD();
+                ISLDInfo sld = getSLD();
                 for (int i = 0; stack != null && i < stack.length; i++) {
                     String filename = sld == null ? null : sld.getFileName(stack[i]);
                     int line = sld == null ? -1 : sld.getLine(stack[i]);
@@ -132,7 +132,7 @@ public class EmulatorParseEventHandler implements EmulatorOutputParser.IParseEve
         return emulatorId > 0 ? "[" + emulatorId + "] " + msg : msg;
     }
 
-    private SLDInfo getSLD() throws IOException {
+    private ISLDInfo getSLD() throws IOException {
     	try {
     		if (sldLatch.getCount() > 0) {
     			messageStream.write("Reading line number information - may take a few moments\n".getBytes());
