@@ -179,7 +179,7 @@ extends AbstractPackager
             // Return stack trace in case of error
             throw new CoreException( new Status( IStatus.ERROR,
                                                  "com.mobilesorcery.builder.iphoneos",
-                                                 "Failed to build the xcode template" ));
+                                                 "Failed to build the xcode template. NOTE: Building for iOS devices is only possible from Mac OS X at the moment." ));
         }
     }
 }
