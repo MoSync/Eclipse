@@ -6,7 +6,7 @@
       provider-name="MOBILESORCERY">
 
    <description>
-   	  Contains builders and packagers for the Java ME platform.
+      Contains builders and packagers for the Java ME platform.
    </description>
 
    <copyright>
@@ -73,6 +73,15 @@ expat-license.txt covers Expat.
 
 info-zip-license.txt covers Info-Zip.
    </license>
+
+   <requires>
+      <import plugin="com.mobilesorcery.sdk.core" version="1.0.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.core.resources" version="3.3.1" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.core.runtime" version="3.3.100" match="greaterOrEqual"/>
+      <import plugin="com.mobilesorcery.sdk.ui" version="1.0.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.ui" version="3.4.0" match="greaterOrEqual"/>
+   </requires>
+
    <plugin
          id="com.mobilesorcery.sdk.builder.java"
          download-size="0"

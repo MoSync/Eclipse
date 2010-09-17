@@ -59,6 +59,8 @@ public class MoSyncIconBuilderVisitor extends IncrementalBuilderVisitor {
 
     public void incrementalCompile(IProgressMonitor monitor, DependencyManager<IResource> dependencyManager) throws CoreException {
     	IResource[] iconFiles = getChangedOrAddedResources();
+    // Disabled the building of icons for MoRE, it just made the output really confusing
+    /*	
     	if (iconFiles.length > 0) {
     		IResource iconFile = iconFiles[0];
         	MoSyncProject mosyncProject = MoSyncProject.create(project);
@@ -80,6 +82,7 @@ public class MoSyncIconBuilderVisitor extends IncrementalBuilderVisitor {
        	       throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage()));
         	}    	
     	}
+    */	
     }
     
     protected String getName() {

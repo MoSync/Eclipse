@@ -179,12 +179,12 @@ public class PipeTool {
         	IPath depsFile = getResourcesDependencyFile(project);
         	depsFile.toFile().getParentFile().mkdirs();
         	// Pipetool only accepts -depend files in exeuction dir        
-        	args.add(Util.ensureQuoted("-depend=" + depsFile.toOSString()));
+        	args.add("-depend=" + depsFile.toOSString());
         }
         
-        args.add(Util.ensureQuoted(outputFile.toOSString()));
+        args.add(outputFile.toOSString());
 
-        args.addAll(Arrays.asList(Util.ensureQuoted(inputFiles)));
+        args.addAll(Arrays.asList(inputFiles));
 
         if ( BUILD_C_MODE == mode || 
              BUILD_LIB_MODE == mode || 

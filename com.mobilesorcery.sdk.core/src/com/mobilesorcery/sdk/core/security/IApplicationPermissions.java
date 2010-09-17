@@ -17,13 +17,19 @@ import java.util.List;
 
 public interface IApplicationPermissions {
 
-    public List<String> getRequiredPermissions();
+    public List<String> getRequestedPermissions();
     
-    public void setRequiredPermissions(List<String> required);
+    public void setRequestedPermissions(List<String> required);
     
-    public void setRequiredPermission(String required, boolean set);
+    public void setRequestedPermission(String required, boolean set);
     
-    public boolean isPermissionRequired(String key);
+    /**
+     * <p>Returns <code>true</code> if the specified permission
+     * is required.</p>
+     * @param key
+     * @return
+     */
+    public boolean isPermissionRequested(String key);
     
     public List<String> getAvailablePermissions(String parentPermission);
 

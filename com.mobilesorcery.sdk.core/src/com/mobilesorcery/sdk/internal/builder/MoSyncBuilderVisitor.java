@@ -33,6 +33,7 @@ import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -216,23 +217,23 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             String[] includeStr = assembleIncludeString(includePaths.toArray(new IPath[0]));
 
             ArrayList<String> args = new ArrayList<String>();
-            args.add(Util.ensureQuoted(xgcc.toOSString()));
+            args.add(xgcc.toOSString());
             args.add("-o");
-            args.add(Util.ensureQuoted(output.toOSString()));
+            args.add(output.toOSString());
             args.add("-S");
             args.add("-g");
             
             if (generateDependencies) {
             	args.add("-MMD");
             	args.add("-MF");
-            	args.add(Util.ensureQuoted(mapToDependencyFile(output.toOSString())));
+            	args.add(mapToDependencyFile(output.toOSString()));
             }
             
             addGccWarnings(args);
             args.add("-DMAPIP");
-            String[] extra = extraSwitches == null ? new String[0] : Util.ensureQuoted(Util.parseCommandLine(extraSwitches));
+            String[] extra = extraSwitches == null ? new String[0] : Util.parseCommandLine(extraSwitches);
             args.addAll(Arrays.asList(extra));
-            args.add(Util.ensureQuoted(cFile.getLocation().toOSString()));
+            args.add(cFile.getLocation().toOSString());
             args.addAll(Arrays.asList(includeStr));
 
             // Create output if it does not exist
@@ -345,7 +346,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     	if (dependencyProvider == null) {
     		//dependencyProvider = new CompoundDependencyProvider<IResource>(new CResourceDependencyProvider(), new ProjectResourceDependencyProvider());
     		dependencyProvider = new CompoundDependencyProvider<IResource>(new GCCDependencyProvider(this),
-    																	   new ProjectResourceDependencyProvider(),
+    																	   new ProjectResourceDependencyProvider(getProject(), getVariant()),
     																	   new ResourceFileDependencyProvider());
     	}
     	

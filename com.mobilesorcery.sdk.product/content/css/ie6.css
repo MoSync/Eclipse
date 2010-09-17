@@ -1,0 +1,23 @@
+.content {
+	background: url('../images/ie6/welcome_text.png') 48px 40px no-repeat !important;
+	padding: 150px 44px 0 44px;
+	}
+	
+.link a.button#book { background: url('../images/ie6/btn_book.png') center top no-repeat; }
+.link a.button#book:hover { background: url('../images/ie6/btn_book_hover.png') center top no-repeat; }
+
+.link a.button#gear { background: url('../images/ie6/btn_gear.png') center top no-repeat; }
+.link a.button#gear:hover { background: url('../images/ie6/btn_gear_hover.png') center top no-repeat; }
+
+.link a.button#lamp { background: url('../images/ie6/btn_lamp.png') center top no-repeat; }
+.link a.button#lamp:hover { background: url('../images/ie6/btn_lamp_hover.png') center top no-repeat; }
+
+.link a.button#arrow { background: url('../images/ie6/btn_arrow.png') center top no-repeat; }
+.link a.button#arrow:hover { background: url('../images/ie6/btn_arrow_hover.png') center top no-repeat; }
+
+.link a { margin-top: -129px !important; }
+.link a.button {
+	height: 145px;
+	padding-top: 145px;
+	margin: 0 !important;
+	}

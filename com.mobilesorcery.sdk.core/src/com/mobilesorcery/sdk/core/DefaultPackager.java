@@ -143,12 +143,12 @@ public class DefaultPackager {
 		return executor;
 	}
 
-    public void runCommandLine(String... commandLine) throws IOException {
-        getExecutor().runCommandLine(commandLine);
+    public int runCommandLine(String... commandLine) throws IOException {
+        return getExecutor().runCommandLine(commandLine);
     }
     
-    public void runCommandLine(String[] commandLine, String consoleMsg) throws IOException {
-        getExecutor().runCommandLine(commandLine, consoleMsg);
+    public int runCommandLine(String[] commandLine, String consoleMsg) throws IOException {
+        return getExecutor().runCommandLine(commandLine, consoleMsg);
     }
 	
 	public int runCommandLineWithRes ( String... commandLine ) 

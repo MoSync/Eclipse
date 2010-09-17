@@ -27,6 +27,9 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Array;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.text.FieldPosition;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -613,5 +616,28 @@ public class Util {
         return result;
     }
 
+    /**
+     * Creates a GET URL, given a baseURL and a map of parameters to send in the GET
+     * @param service
+     * @param params
+     * @return A URL of the format <code>baseURL?param1=value1&param2=value2...</code>
+     */
+    public static String toGetUrl(String baseURL, Map<String, String> params) {
+        StringBuffer paramsStr = new StringBuffer();
+        if (params != null && !params.isEmpty()) {
+            paramsStr.append("?"); //$NON-NLS-1$
+            int paramCnt = 0;
+            for (Map.Entry<String, String> param : params.entrySet()) {
+                paramCnt++;
+                if (paramCnt > 1) {
+                    paramsStr.append("&"); //$NON-NLS-1$
+                }
+
+                paramsStr.append(URLEncoder.encode(param.getKey()) + "=" + URLEncoder.encode(param.getValue())); //$NON-NLS-1$
+            }
+        }
+
+        return baseURL + paramsStr;
+    }
 	
 }

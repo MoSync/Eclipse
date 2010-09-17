@@ -18,10 +18,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
-import org.eclipse.cdt.internal.ui.util.StringMatcher;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+
+import com.mobilesorcery.sdk.internal.StringMatcher;
 
 public class PathExclusionFilter implements IFilter<IResource> {
 

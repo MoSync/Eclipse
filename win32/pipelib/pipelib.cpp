@@ -218,12 +218,16 @@ PIPELIB_API int proc_spawn(char* cmd, char* args, char* dir)
 #else
 	pid_t pid = 0;
 	char **argv = parseCmdLineN( args );
-	int res = posix_spawnp(&pid, cmd, NULL, NULL, argv, environ);
+	
+	pid = fork();
+	if( pid == 0 ) {
+		/* The child creates a new session and becomes process group leader,
+		   so that we may send a signal to the whole process tree later. */
+		setsid();
+		execvp(cmd, argv);
+	}
 	parseFreeMem( argv );
 	
-	if(res < 0) {
-		return res;
-	}
 	return pid;
 #endif
 }
@@ -272,8 +276,9 @@ PIPELIB_API int proc_kill(int pid, int exit_code) {
 	CloseHandle(procHandle);
 
 	return killStatus;
-#else
+#else	
 	// exit_code is ignored.
-	return kill(pid, SIGTERM);
+	pid_t processGroup = getpgid( pid );
+	return killpg(processGroup, SIGTERM);
 #endif
 }

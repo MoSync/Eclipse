@@ -135,4 +135,70 @@ public class Version {
     public boolean isValid() {
         return valid;
     }
+    
+    public boolean equals(Object o) {
+        if (o instanceof Version) {
+            return equals((Version) o);
+        }
+        
+        return false;
+    }
+    
+    public boolean equals(Version v) {
+        return getMajor() == v.getMajor() &&
+               getMinor() == v.getMinor() &&
+               getMicro() == v.getMicro() &&
+               Util.equals(getQualifier(), v.getQualifier());
+    }
+    
+    /**
+     * Returns whether this version is 
+     * "before" another version; ie when 
+     * it can be concluded from the major, minor, micro
+     * whether this version is older than
+     * another. (So the qualifier is always disregarded).
+     * @return
+     */
+    public boolean isOlder(Version other) {
+        if (other == null) {
+            return false;
+        }
+        if (getMajor() < other.getMajor()) {
+            return true;
+        } else if (getMajor() == other.getMajor()) {
+            if (getMinor() < other.getMinor()) {
+                return true;
+            } else if (getMinor() == other.getMinor()) {
+                return getMicro() < other.getMicro();
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Returns whether this version is 
+     * "after" another version; ie when 
+     * it can be concluded from the major, minor, micro
+     * whether this version is newer than
+     * another. (So the qualifier is always disregarded).
+     * @return
+     */
+    public boolean isNewer(Version other) {
+        if (other == null) {
+            return false;
+        }
+        if (getMajor() > other.getMajor()) {
+            return true;
+        } else if (getMajor() == other.getMajor()) {
+            if (getMinor() > other.getMinor()) {
+                return true;
+            } else if (getMinor() == other.getMinor()) {
+                return getMicro() > other.getMicro();
+            }
+        }
+        
+        return false;
+    }
+
 }

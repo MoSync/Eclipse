@@ -78,7 +78,9 @@ public class SectionedPropertiesFile {
 				    key = value;
 				}
 				
-				if (!Util.isEmpty(value) && !Util.isEmpty(key)) {
+				// Bug #751: used to check whether value
+				// empty too, but we shouldn't.
+				if (!Util.isEmpty(key)) {
 				    return new Entry(key, value);
 				} else {
 				    return null;

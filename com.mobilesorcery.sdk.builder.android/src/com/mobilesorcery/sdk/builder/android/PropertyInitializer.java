@@ -18,6 +18,7 @@ import java.util.Random;
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.jface.preference.IPreferenceStore;
 
+import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.IPropertyInitializerDelegate;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -29,15 +30,9 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
 
     private static final String PREFIX = "android:"; //$NON-NLS-1$
     
-    public static final String ANDROID_KEYSTORE = PREFIX + "keystore"; //$NON-NLS-1$
-    
-    public static final String ANDROID_PASS_STORE = PREFIX + "pass.store"; //$NON-NLS-1$
-
-    public static final String ANDROID_PASS_KEY = PREFIX + "pass.key"; //$NON-NLS-1$
+    public static final String ANDROID_KEYSTORE_CERT_INFO = PREFIX + "keystore.cert.info"; //$NON-NLS-1$
 
     public static final String ANDROID_PROJECT_SPECIFIC_KEYS = PREFIX + "proj.spec.keys"; //$NON-NLS-1$
-
-    public static final String ANDROID_ALIAS = PREFIX + "key.alias";
     
     /**
      * The package name, as it's used in the android manifest
@@ -74,10 +69,7 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
 
     public void initializeDefaultPreferences() {
         IPreferenceStore store = Activator.getDefault().getPreferenceStore();
-        store.setDefault(ANDROID_KEYSTORE, MoSyncTool.getDefault().getMoSyncHome().append("etc/mosync.keystore").toOSString());
-        store.setDefault(ANDROID_PASS_KEY, "default");
-        store.setDefault(ANDROID_PASS_STORE, "default");
-        store.setDefault(ANDROID_ALIAS, "mosync.keystore");
+        store.setDefault(ANDROID_KEYSTORE_CERT_INFO, KeystoreCertificateInfo.unparse(KeystoreCertificateInfo.createDefault()));
     }
 
 

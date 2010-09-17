@@ -39,7 +39,6 @@
       </win>
    </launcher>
 
-
    <vm>
       <windows>org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/OSGi%Minimum-1.0</windows>
    </vm>
@@ -308,8 +307,8 @@ Creative Commons 3.0 Attribution License covers the Android Icon, a &quot;modifi
 
    <features>
       <feature id="com.mobilesorcery.sdk.feature" version="1.0.0"/>
-      <feature id="com.mobilesorcery.sdk.builder.android.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.builder.java.feature" version="1.0.0.qualifier"/>
+      <feature id="com.mobilesorcery.sdk.builder.android.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.builder.moblin.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.builder.iphoneos.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.builder.s60.feature" version="1.0.0.qualifier"/>

@@ -90,8 +90,10 @@ extends AbstractPackager
             	File resourceFile = new File(internal.resolve("%resource-output%"));
             	File copyResourceFile = new File(internal.resolve("%package-output-dir%/resources"));
             	File runtimeFile = new File(internal.resolve("%runtime-dir%/MoRE-winmobile%D%.exe"));
-            	File copyRuntimeFile = new File(internal.resolve("%package-output-dir%/MoRE-winmobile%D%.exe"));
+            	File copyRuntimeFile = new File(internal.resolve("%package-output-dir%/%project-name%.exe"));
             	File cabFile = new File(internal.resolve("%package-output-dir%/%app-name%.cab"));
+            	
+            	
             	
             	internal.setParameter( "win-package-output-dir", internal.resolve("%package-output-dir%"));
             	
@@ -99,21 +101,37 @@ extends AbstractPackager
             	String resolvedConfTemplate = confTemplate.resolve(internal.getParameters().toMap());
 
             	Util.copyFile(new NullProgressMonitor(), programFile, copyProgramFile);
-            	Util.copyFile(new NullProgressMonitor(), resourceFile, copyResourceFile);
+            	
+            	if( resourceFile.exists() ) {
+            		Util.copyFile(new NullProgressMonitor(), resourceFile, copyResourceFile);
+            	}
+            	else {
+            		copyResourceFile.createNewFile();
+            	}
             	Util.copyFile(new NullProgressMonitor(), runtimeFile, copyRuntimeFile);
+            	
             	Util.writeToFile(confFile, resolvedConfTemplate);
+            	
+            	// Temporary hack, the perl script should be fixed
+            	// so it accepts spaces in the vendor name
+            	/*String appVendor = internal.resolve("%app-vendor%");
+            	String appVendorNoSpace = appVendor.replace( " ", "");*/
             	
             	internal.runCommandLine( m_cabWizLoc, 
             			"-s",
             			"%win-package-output-dir%",
+            			"-a",
+            			"%project-name%",
+            			"-p",
+            			"%app-vendor%",
             			confFile.getAbsolutePath( ) ,
                         cabFile.getAbsolutePath( )
                 );
             	
-            	confFile.delete();
-            	copyRuntimeFile.delete();
-            	copyResourceFile.delete();
-            	copyProgramFile.delete();
+            	//confFile.delete();
+            	//copyRuntimeFile.delete();
+            	//copyResourceFile.delete();
+            	//copyProgramFile.delete();
             	buildResult.setBuildResult(cabFile);
             }
         } 

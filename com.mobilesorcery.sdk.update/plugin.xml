@@ -10,6 +10,12 @@
                category="com.mobilesorcery.sdk.preferences.main">
          </page>
       </extension>
+   <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="com.mobilesorcery.sdk.update.internal.preferences.ProfileUpdatesPreferenceInitializer">
+      </initializer>
+   </extension>
          <extension
          point="org.eclipse.ui.actionSets">
       <actionSet
@@ -23,7 +29,30 @@
                label="Update MoSync Profile Database"
                menubarPath="help/helpStart">
          </action>
+      </actionSet>      
+      <actionSet
+            id="com.mobilesorcery.sdk.update.register"
+            label="Registration"
+            visible="true">
+         ...
+         <action
+               class="com.mobilesorcery.sdk.update.internal.RegistrationAction"
+               id="com.mobilesorcery.sdk.registration"
+               label="Register"
+               menubarPath="help/helpStart">
+         </action>
       </actionSet>
+   </extension>
+      <extension
+         point="org.eclipse.ui.views">
+      <view
+            allowMultiple="false"
+            category="com.mobilesorcery.sdk.ui.main"
+            class="com.mobilesorcery.sdk.update.internal.RegistrationWebBrowserView"
+            icon="icons/registrationperspective.png"
+            id="com.mobilesorcery.ui.registration.view"
+            name="MoSync Registration">
+      </view>
    </extension>
          <extension
                point="com.mobilesorcery.sdk.updater">
@@ -31,6 +60,15 @@
                   id="com.mobilesorcery.sdk.update.default"
                   implementation="com.mobilesorcery.sdk.update.internal.DefaultUpdater2">
             </updater>
+         </extension>
+         <extension
+               point="org.eclipse.ui.perspectives">
+           <perspective
+            id="com.mobilesorcery.update.perspective"
+            name="MoSync Registration"
+            class="com.mobilesorcery.sdk.update.internal.RegistrationPerspectiveFactory"
+            icon="icons/registrationperspective.png">
+        </perspective>
          </extension>
       
 </plugin>

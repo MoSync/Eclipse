@@ -115,7 +115,7 @@ icon="icons/launchshortcut.png">
                    </test>
                 </enabledWhen>
           </page>
-          <!--<page
+          <page
                 class="com.mobilesorcery.sdk.ui.internal.properties.PermissionsPropertyPage"
                 id="com.mobilesorcery.sdk.ui.properties.permissions"
                 name="Application Permissions"
@@ -127,7 +127,7 @@ icon="icons/launchshortcut.png">
                          property="com.mobilesorcery.sdk.testers.hasMoreNature">
                    </test>
                 </enabledWhen>
-          </page>-->
+          </page>
        </extension>
       
          <extension point = "org.eclipse.ui.actionSets">
@@ -144,7 +144,8 @@ icon="icons/launchshortcut.png">
                menubarPath="help/helpStart"
                label="MoSync API Reference">
                <class class="com.mobilesorcery.ui.internal.actions.ShowHelpAction">
-                   <parameter name="resource" value="/com.mobilesorcery.sdk.help/docs/html/index.html"/>
+                   <parameter name="resource" value="/docs/html/index.html"/>
+                   <parameter name="showInExternalBrowser" value="true"/>
                </class>
            </action>
            <action id="com.mobilesorcery.sdk.htmlhelp"

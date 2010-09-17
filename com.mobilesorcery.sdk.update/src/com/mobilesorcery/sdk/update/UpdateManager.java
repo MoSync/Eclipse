@@ -44,6 +44,9 @@ import com.mobilesorcery.sdk.core.Util;
 public class UpdateManager extends UpdateManagerBase {
     
     private static final UpdateManager INSTANCE = new UpdateManager();
+  
+    // TODO: Should not be here...?
+    private static final int HARDCODED_BASE_VERSION_CODE = 24;
 
     protected UpdateManager() {
 
@@ -55,10 +58,10 @@ public class UpdateManager extends UpdateManagerBase {
 
     public boolean isUpdateAvailable() throws IOException {
         Map<String, String> params = new HashMap<String, String>();
-        addProfileVersion(params);
+        addVersionInfo(params);
         addHalfHash(params);
 
-        Response response = sendRequest(getRequestURL("currentProfile", params)); //$NON-NLS-1$
+        Response response = sendRequest(getRequestURL("updates/available", params)); //$NON-NLS-1$
         try {
             return getBooleanResponse(response, Messages.UpdateManager_ServerBouncedResendReq);
         } finally {
@@ -68,7 +71,7 @@ public class UpdateManager extends UpdateManagerBase {
 
     public String getUpdateMessage() throws IOException {
         Map<String, String> params = new HashMap<String, String>();
-        addProfileVersion(params);
+        addVersionInfo(params);
         addHalfHash(params);
 
         Response response = sendRequest(getRequestURL("updateMessage", params)); //$NON-NLS-1$
@@ -91,7 +94,7 @@ public class UpdateManager extends UpdateManagerBase {
     
     public void downloadProfileUpdate(IProgressMonitor monitor) throws IOException {
         Map<String, String> params = new HashMap<String, String>();
-        addProfileVersion(params);
+        addVersionInfo(params);
         addHalfHash(params);
 
         File updateZipFile = getUpdateZip();
@@ -123,6 +126,11 @@ public class UpdateManager extends UpdateManagerBase {
         //MoSyncTool.getDefault().reinit();
     }
 
+    private void addVersionInfo(Map<String, String> request) {
+        request.put("revision", Integer.toString(MoSyncTool.getDefault().getCurrentBinaryVersion()));
+        request.put("baseversion", Integer.toString(HARDCODED_BASE_VERSION_CODE));
+    }
+
     public void runUpdater(IProgressMonitor monitor) throws IOException {
         monitor.setTaskName(Messages.UpdateManager_RestartingProgress);
         
@@ -152,32 +160,12 @@ public class UpdateManager extends UpdateManagerBase {
             }            
         });
     }
-  
-    protected String getServiceURL(String serviceName) {
-        // TODO: REMOVE THIS -- AWAITING NEW UPDATE MECHANISM
-        String baseURL = null; //MoSyncTool.getDefault().getProperty("update-baseurl"); //$NON-NLS-1$ 
-        if (baseURL == null) {
-            baseURL = "http://api.mosync.com/index.php/{0}"; //$NON-NLS-1$ 
-        }
-        return MessageFormat.format(baseURL, serviceName);
-    }
     
 	public void clearRegistrationInfo() {
 		MoSyncTool.getDefault().setProperty(MoSyncTool.EMAIL_PROP, null);
         MoSyncTool.getDefault().setProperty(MoSyncTool.USER_HASH_PROP, null);
         MoSyncTool.getDefault().setProperty(MoSyncTool.USER_HASH_PROP_2, null);
 	}
-
-
-    private void addProfileVersion(Map<String, String> request) throws IOException {
-        request.put("version", Integer.toString(MoSyncTool.getDefault().getCurrentProfileVersion())); //$NON-NLS-1$
-        request.put("type", "3"); // 'Magic string' //$NON-NLS-1$ //$NON-NLS-2$
-    }
-
-    private void addHalfHash(Map<String, String> request) {
-        request.put("hhash", getUserHalfHash()); //$NON-NLS-1$
-    }
-
 
 
     public static void main(String[] args) throws Exception {

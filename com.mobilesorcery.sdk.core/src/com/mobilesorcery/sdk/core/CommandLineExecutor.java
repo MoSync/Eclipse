@@ -70,20 +70,24 @@ public class CommandLineExecutor {
 	 * @param commandLine
 	 * @throws IOException
 	 */
-    public void runCommandLine(String[] commandLine) throws IOException {
+    public int runCommandLine(String[] commandLine) throws IOException {
+        int res;
         lines.clear();
         consoleMsgs.clear();
         addCommandLine(commandLine, null);
-        execute();
+        res = execute();
         lines.clear();
         consoleMsgs.clear();
+        return res;
 	}
 	
-    public void runCommandLine(String[] commandLine, String consoleMsg) throws IOException {
+    public int runCommandLine(String[] commandLine, String consoleMsg) throws IOException {
+        int res;
         lines.clear();
         addCommandLine(commandLine, consoleMsg);
-        execute();
-        lines.clear();       
+        res = execute();
+        lines.clear(); 
+        return res;
     }
     
 	/**
@@ -96,13 +100,7 @@ public class CommandLineExecutor {
 	public int runCommandLineWithRes ( String[] commandLine ) 
 	throws IOException 
 	{
-		int res;
-		lines.clear();
-		addCommandLine(commandLine, null);
-		res = execute();
-		lines.clear();
-		
-		return res;
+	    return runCommandLine(commandLine);
 	}	
 
 	public void setParameters(CascadingProperties parameters) {
@@ -175,10 +173,13 @@ public class CommandLineExecutor {
 			    console.addMessage(replace(consoleMsg, parameters));
 			}
 			
+			/* It is better to pass the command as an array here since then Java will
+			 * fix all problems with quotations and such that are suitable for the
+			 * platform. */
 			if (dir == null) {
-			    currentProcess = Runtime.getRuntime().exec(mergedCommandLine);
+			    currentProcess = Runtime.getRuntime().exec(resolvedLine);
 			} else {
-			    currentProcess = Runtime.getRuntime().exec(parseCommandLine( mergedCommandLine ), null, new File(dir));
+			    currentProcess = Runtime.getRuntime().exec(resolvedLine, null, new File(dir));
 			}
 			
 			console.attachProcess(currentProcess, stdoutHandler, stderrHandler);

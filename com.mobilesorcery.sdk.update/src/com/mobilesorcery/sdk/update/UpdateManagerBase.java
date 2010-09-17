@@ -21,12 +21,15 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jface.preference.IPreferenceStore;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
 /*
  * Refactoring note: this class is there just to help me implement
@@ -77,29 +80,14 @@ public abstract class UpdateManagerBase {
     protected String getServiceURL(String serviceName) {
         String baseURL = MoSyncTool.getDefault().getProperty("update-baseurl"); //$NON-NLS-1$ 
         if (baseURL == null) {
-            baseURL = "http://api.mosync.com/{0}"; //$NON-NLS-1$ 
+            baseURL = "http://www.mosync.com/{0}"; //$NON-NLS-1$ 
         }
-        return MessageFormat.format(baseURL, serviceName);
+        return MessageFormat.format(baseURL, serviceName).trim();
     }
 
     protected URL getRequestURL(String serviceName, Map<String, String> params) throws MalformedURLException {
         String service = getServiceURL(serviceName);
-
-        StringBuffer paramsStr = new StringBuffer();
-        if (params != null && !params.isEmpty()) {
-            paramsStr.append("?"); //$NON-NLS-1$
-            int paramCnt = 0;
-            for (Map.Entry<String, String> param : params.entrySet()) {
-                paramCnt++;
-                if (paramCnt > 1) {
-                    paramsStr.append("&"); //$NON-NLS-1$
-                }
-
-                paramsStr.append(URLEncoder.encode(param.getKey()) + "=" + URLEncoder.encode(param.getValue())); //$NON-NLS-1$
-            }
-        }
-
-        return new URL(service + paramsStr);
+        return new URL(Util.toGetUrl(service, params));
     }
     
     protected boolean getBooleanResponse(Response response, String errmsg) throws IOException {
@@ -113,24 +101,11 @@ public abstract class UpdateManagerBase {
         }        
     }
      
-    public String getUserHash() {
-        return MoSyncTool.getDefault().getProperty(MoSyncTool.USER_HASH_PROP_2);
-    }
-
     public void setUserHash(String hash) {
         hash = hash == null ? null : hash.trim();
         MoSyncTool.getDefault().setProperty(MoSyncTool.USER_HASH_PROP_2, hash);
     }
 
-    public String getUserHalfHash() {
-        String hash = getUserHash();
-        if (hash != null) {
-            return hash.substring(0, hash.length() / 2);
-        }
-
-        return null;
-    }
-    
     public boolean shouldPerformAutoUpdate() {
         IPreferenceStore prefStore = MosyncUpdatePlugin.getDefault().getPreferenceStore();
         prefStore.setDefault(MoSyncTool.AUTO_UPDATE_PREF, true);
@@ -157,5 +132,9 @@ public abstract class UpdateManagerBase {
                 // Ignore.
             }
         }
+    }
+    
+    protected void addHalfHash(Map<String, String> request) {
+        request.put("hhash", MosyncUIPlugin.getDefault().getUserHalfHash()); //$NON-NLS-1$
     }
 }

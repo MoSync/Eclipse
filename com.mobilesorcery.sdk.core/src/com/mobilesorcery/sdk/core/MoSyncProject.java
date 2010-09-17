@@ -45,7 +45,7 @@ import org.eclipse.ui.XMLMemento;
 
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.BuildState;
-import com.mobilesorcery.sdk.internal.ParseException;
+import com.mobilesorcery.sdk.internal.SLDParseException;
 import com.mobilesorcery.sdk.internal.SLD;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
@@ -167,7 +167,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	
 	private static final String VERSION_KEY = "version";
 
-	private static final String VERSION = "1";
+	/**
+	 * The format version currently used to store projects.
+	 * @see MoSyncProject#getFormatVersion()
+	 */
+	public static final Version CURRENT_VERSION = new Version("1.1");
 
 	/**
 	 * The name of the file where this project's <b>shared</b> meta data is located.
@@ -225,6 +229,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
     private IApplicationPermissions permissions;
     
+    private Version formatVersion = CURRENT_VERSION;
+    
     private MoSyncProject(IProject project) {
         Assert.isNotNull(project);
         this.project = project;
@@ -259,6 +265,9 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
             // from that first
             input = new FileReader(projectMetaDataPath.toFile());
             XMLMemento memento = XMLMemento.createReadRoot(input);
+            String formatVersionStr = memento.getString(VERSION_KEY);
+            formatVersion = formatVersionStr == null ? CURRENT_VERSION : new Version(formatVersionStr);
+            
             initTargetProfileFromProjectMetaData(memento);
             // Special case; device filters are always shared.
             if (store == SHARED_PROPERTY) {
@@ -379,7 +388,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
             IMemento propertiesMemento = root.createChild(PROPERTIES);
             saveProperties(propertiesMemento, getProperties(store));
     
-            root.putString(VERSION_KEY, VERSION);
+            root.putString(VERSION_KEY, formatVersion.asCanonicalString());
             root.save(output);
             output.close();
         } catch (IOException e) {
@@ -639,11 +648,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
      * and returns 
      * @return
      * @throws IOException 
-     * @throws ParseException
+     * @throws SLDParseException
      * @deprecated Well, we're not using it right now; when we do,
      * lets un-deprecate this 
      */
-    public IProfileInfo parsePerformanceInfo(IPath profileInfoFile, IProgressMonitor monitor) throws ParseException, IOException {
+    public IProfileInfo parsePerformanceInfo(IPath profileInfoFile, IProgressMonitor monitor) throws SLDParseException, IOException {
     	throw new UnsupportedOperationException();
     	/*monitor.beginTask("Parsing profile info", 2);
     	SLD sld = parseSLD();
@@ -678,7 +687,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     /**
      * <p>Returns all properties of this project, including 
      * properties for all build configurations.</p>
-     * <p>This method will return a copy of the properties, so the map returned may be freely modified by clients</p>
+     * <p>This method will return a copy of the properties WITHOUT default values, so the map returned may be freely modified by clients</p>
      * <p><b>NOTE:</b> Are you sure you want to use this method? You probably want to use getPropertyOwner(), which
      * will properly handle build configurations, etc.</code>
      */
@@ -1033,7 +1042,6 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		return this;
 	}
 
-
 	public LibraryLookup getLibraryLookup(IPropertyOwner buildProperties) {
 		// TODO: cache?
 		return new LibraryLookup(MoSyncBuilder.getLibraryPaths(getWrappedProject(), buildProperties), MoSyncBuilder.getLibraries(buildProperties));
@@ -1041,6 +1049,15 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
     public IApplicationPermissions getPermissions() {
         return permissions;
+    }
+    
+    /**
+     * Returns the version of the format used to persist
+     * the project meta data.
+     * @return
+     */
+    public Version getFormatVersion() {
+        return formatVersion;
     }
 
 }

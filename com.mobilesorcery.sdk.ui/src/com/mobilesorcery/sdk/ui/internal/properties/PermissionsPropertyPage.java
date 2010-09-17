@@ -19,6 +19,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
 
@@ -85,7 +86,7 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
                     return false;
                 }
                 int availablePermissionCount = available.size();
-                available.removeAll(permissionsWorkingCopy.getRequiredPermissions());
+                available.removeAll(permissionsWorkingCopy.getRequestedPermissions());
                 int notRequiredPermissionCount = available.size();
                 boolean shouldBeGrayed = availablePermissionCount != notRequiredPermissionCount && notRequiredPermissionCount > 0;
 
@@ -94,27 +95,31 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
             
             public boolean isChecked(Object element) {
                 String permission = (String) element;
-                return isGrayed(element) || permissionsWorkingCopy.isPermissionRequired(permission);
+                return isGrayed(element) || permissionsWorkingCopy.isPermissionRequested(permission);
             }
         });
-        
-        permissionsList.setInput(permissionsWorkingCopy);
+
+        setPermissionsWorkingCopy(permissionsWorkingCopy);
         permissionsList.getTree().setLayoutData(new GridData(GridData.FILL_BOTH));
-        permissionsList.expandAll();
         
         permissionsList.addCheckStateListener(new ICheckStateListener() {
             public void checkStateChanged(CheckStateChangedEvent event) {
                 String permission = (String) event.getElement();
-                permissionsWorkingCopy.setRequiredPermission(permission, event.getChecked());
+                permissionsWorkingCopy.setRequestedPermission(permission, event.getChecked());
                 permissionsList.refresh(true);
             }
         });
         return main;
     }
 
+    private void setPermissionsWorkingCopy(IApplicationPermissions permissionsWorkingCopy) {
+        this.permissionsWorkingCopy = permissionsWorkingCopy;
+        permissionsList.setInput(permissionsWorkingCopy);
+        permissionsList.expandAll();
+    }
 
     public void performDefaults() {
-        
+        setPermissionsWorkingCopy(CoreMoSyncPlugin.getDefault().getDefaultPermissions(getProject()));
     }
     
     public boolean performOk() {

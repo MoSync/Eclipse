@@ -144,7 +144,7 @@ public class SplashHandler extends AbstractSplashHandler {
         // Since we have no control of when the original shell is disposed of,
         // and since we want to always play the animation to the end, this
         // we just create a new shell and hide the old one.
-        internalShell = new Shell(splash.getDisplay(), splash.getStyle() | SWT.TOOL | SWT.ON_TOP);
+        internalShell = new Shell(splash.getDisplay(), splash.getStyle() | SWT.TOOL);
         internalShell.setBackground(splash.getBackground());
         internalShell.setBounds(splash.getBounds());
         internalShell.addListener(SWT.KeyDown, new Listener() {

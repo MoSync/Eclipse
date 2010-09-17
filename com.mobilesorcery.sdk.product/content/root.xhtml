@@ -4,7 +4,13 @@
 	<head>
 	  	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	  	<title>Welcome to MoSync!</title>
-	  	<link rel="stylesheet" href="css/shared.css" type="text/css" />
+		<link rel="stylesheet" href="css/shared.css" type="text/css" />
+		<!--[if lt IE 7]>
+		<link rel="stylesheet" href="css/ie6.css" type="text/css" />
+		<![endif]-->
+		<!--[if lt IE 8]>
+		<link rel="stylesheet" href="css/ie.css" type="text/css" />
+		<![endif]-->
   	</head>
 	<body> 
 		<div id="wrapper">
@@ -12,16 +18,16 @@
 				<div class="left-content">
 					<p class="text">Learn what you can do with the MoSync® SDK...</p>
 					<div class="link">
-						<a href="http://www.mosync.com/content/documentation" class="button" id="book">Online user guides</a>
-						<a href="http://org.eclipse.ui.intro/showHelpTopic?id=/com.mobilesorcery.sdk.help/docs/html/api_areas.html">API reference manual</a>
+						<a href="http://org.eclipse.ui.intro/runAction?pluginId=com.mobilesorcery.sdk.product&#38;class=com.mobilesorcery.sdk.product.intro.actions.ExternalLinkAction&#38;href=http://www.mosync.com/content/documentation" class="button" id="book">Online user guides</a>
+						<a href="http://org.eclipse.ui.intro/runAction?pluginId=com.mobilesorcery.sdk.product&#38;class=com.mobilesorcery.sdk.product.intro.actions.ShowHelpAction&#38;helpResource=/docs/html/index.html&#38;showInExternalBrowser=true">API reference manual</a>
 					</div>
 					<div class="link">
-						<a href="http://org.eclipse.ui.intro/runAction?pluginId=com.mobilesorcery.sdk.product&#38;class=com.mobilesorcery.sdk.product.intro.actions.SwitchWorkspaceAction" class="button" id="gear">Example applications</a>
-						<a href="http://www.mosync.com/forum">Developer center</a>
+						<a href="http://org.eclipse.ui.intro/runAction?pluginId=com.mobilesorcery.sdk.product&#38;class=com.mobilesorcery.sdk.product.intro.actions.SwitchWorkspaceAction&#38;ws=example-ws" class="button" id="gear">Example applications</a>
+						<a href="http://org.eclipse.ui.intro/runAction?pluginId=com.mobilesorcery.sdk.product&#38;class=com.mobilesorcery.sdk.product.intro.actions.ExternalLinkAction&#38;href=http://www.mosync.com/forum">Developer center</a>
 					</div>
 					<div class="link">
-						<a href="http://www.mosync.com/content/code-examples" class="button" id="lamp">Online tutorials</a>
-						<a href="http://www.mosync.com/screencasts">Screencasts</a>
+					    <a href="http://org.eclipse.ui.intro/runAction?pluginId=com.mobilesorcery.sdk.product&#38;class=com.mobilesorcery.sdk.product.intro.actions.ExternalLinkAction&#38;href=http://www.mosync.com/content/code-examples" class="button" id="lamp">Online tutorials</a>
+						<a href="http://org.eclipse.ui.intro/runAction?pluginId=com.mobilesorcery.sdk.product&#38;class=com.mobilesorcery.sdk.product.intro.actions.ExternalLinkAction&#38;href=http://www.mosync.com/screencasts">Screencasts</a>
 					</div>
 				</div>
 				<div class="right-content">
@@ -34,7 +40,7 @@
 		</div>
 		<div id="bottom-panel">
 			<form id="foo">
-				<input type="checkbox" id="showOrHide" /><label for="showOrHide">Show this screen at startup</label>
+			    <contentProvider id="awc" class="com.mobilesorcery.sdk.product.intro.actions.AlwaysWelcomeCheckbox" pluginId="com.mobilesorcery.sdk.product"/>
 			</form>
 		</div>
 	</body>

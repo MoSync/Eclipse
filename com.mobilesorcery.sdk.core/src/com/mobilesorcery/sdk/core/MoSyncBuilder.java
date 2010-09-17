@@ -513,6 +513,8 @@ public class MoSyncBuilder extends ACBuilder {
             console.addMessage(createBuildMessage("Building", mosyncProject, variant));
 
             MoSyncBuilderVisitor compilerVisitor = new MoSyncBuilderVisitor();
+            compilerVisitor.setProject(project);           
+            compilerVisitor.setVariant(variant);
 
             PipeTool pipeTool = new PipeTool();
             pipeTool.setAppCode(getCurrentAppCode(session));
@@ -542,8 +544,6 @@ public class MoSyncBuilder extends ACBuilder {
             IPath compileDir = getOutputPath(project, variant);
             monitor.setTaskName(MessageFormat.format("Compiling for {0}", targetProfile));
 
-            compilerVisitor.setProject(project);
-            compilerVisitor.setVariant(variant);
             compilerVisitor.setConsole(console);
             compilerVisitor.setExtraCompilerSwitches(buildProperties.getProperty(EXTRA_COMPILER_SWITCHES));
             Integer gccWarnings = PropertyUtil.getInteger(buildProperties, GCC_WARNINGS);
@@ -992,11 +992,6 @@ public class MoSyncBuilder extends ACBuilder {
         }
 
         return result.toArray(new IPath[0]);
-    }
-
-    private IDependencyProvider<IResource> createDependencyProvider(MoSyncBuilderVisitor mbv) {
-        return new CompoundDependencyProvider<IResource>(new GCCDependencyProvider(mbv), new ProjectResourceDependencyProvider(),
-                new ResourceFileDependencyProvider());
     }
 
     public static boolean isBuilderPreference(String preferenceKey) {

@@ -51,6 +51,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.ErrorPackager;
 import com.mobilesorcery.sdk.internal.PID;
 import com.mobilesorcery.sdk.internal.PROCESS;
@@ -60,6 +61,7 @@ import com.mobilesorcery.sdk.internal.RebuildListener;
 import com.mobilesorcery.sdk.internal.ReindexListener;
 import com.mobilesorcery.sdk.internal.debug.MoSyncBreakpointSynchronizer;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
+import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 import com.mobilesorcery.sdk.lib.JNALibInitializer;
 import com.mobilesorcery.sdk.profiles.filter.IDeviceFilterFactory;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.ConstantFilterFactory;
@@ -201,6 +203,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     public void stop(BundleContext context) throws Exception {
         plugin = null;
         projectDependencyManager = null;
+        disposeUpdater();
         MoSyncProject.removeGlobalPropertyChangeListener(reindexListener);
         bpSync.uninstall();
         deinstallResourceListener();
@@ -506,6 +509,12 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		
 		return updater;
 	}
+	
+	private void disposeUpdater() {
+	    if (updater != null) {
+	        updater.dispose();
+	    }
+	}
 
 	private void checkAutoUpdate() {
 		if (CoreMoSyncPlugin.isHeadless()) {
@@ -644,6 +653,16 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
     public String[] getBuildConfigurationTypes() {
         return buildConfigurationTypes;
+    }
+    
+    /**
+     * <p>Returns a working copy of an <code>IApplicationPermissions</code>
+     * with default permissions.</p>
+     * @param project
+     * @return
+     */
+    public IApplicationPermissions getDefaultPermissions(MoSyncProject project) {
+        return ApplicationPermissions.getDefaultPermissions(project);
     }
 	
 }
