@@ -11,6 +11,8 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.TabFolder;
+import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.ui.part.ViewPart;
@@ -27,25 +29,35 @@ public class ProfilingView extends ViewPart {
 
     public class ProfilingListener implements IProfilingListener {
         public void handleEvent(ProfilingEventType eventType, final IProfilingSession session) {
-            if (profilingComposite != null && eventType == ProfilingEventType.STOPPED) {
-                profilingComposite.getDisplay().asyncExec(new Runnable() {
+            if (hotspotProfilingComposite != null && eventType == ProfilingEventType.STOPPED) {
+                hotspotProfilingComposite.getDisplay().asyncExec(new Runnable() {
                     public void run() {
-                        profilingComposite.setInput(session.getInvocation());
+                        hotspotProfilingComposite.setInput(session.getInvocation());
+                        callTreeProfilingComposite.setInput(session.getInvocation());
                     }                    
                 });
             }
         }
     }
 
-	private ProfilingComposite profilingComposite;
+	private ProfilingComposite hotspotProfilingComposite;
     private ProfilingListener profilingEventListener;
+    private ProfilingComposite callTreeProfilingComposite;
 
 	public ProfilingView() {
 	    profilingEventListener = new ProfilingListener();
 	}
 	
 	public void createPartControl(Composite parent) {
-	    profilingComposite = new ProfilingComposite(parent, SWT.FLAT);
+	    TabFolder main = new TabFolder(parent, SWT.BOTTOM);
+	    TabItem hotSpotTab = new TabItem(main, SWT.NONE);
+	    hotSpotTab.setText("Hotspots");
+	    TabItem callTreeTab = new TabItem(main, SWT.NONE);
+	    callTreeTab.setText("Call Tree");
+	    hotspotProfilingComposite = new ProfilingComposite(main, SWT.FLAT);
+	    hotSpotTab.setControl(hotspotProfilingComposite);
+	    callTreeProfilingComposite = new ProfilingComposite(main, SWT.NONE);
+	    callTreeTab.setControl(callTreeProfilingComposite);
 	   	ProfilingPlugin.getDefault().addProfilingListener(profilingEventListener);
 	}
 
@@ -55,6 +67,6 @@ public class ProfilingView extends ViewPart {
 	}
 	
 	public void setFocus() {
-		profilingComposite.setFocus();
+		hotspotProfilingComposite.setFocus();
 	}
 }
