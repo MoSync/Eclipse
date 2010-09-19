@@ -100,6 +100,8 @@ public class V2V3Builder {
 		String uid = formatUID( project.getProperty( m_uidString ) );
 		cmdBuilder.flag( "--uid" ).with( uid );
 		
+		cmdBuilder.flag( "--silent" );
+		
 		try {
 			internal.runCommandLine( cmdBuilder.asArray( ) );
 			buildResult.setBuildResult( new File(packageOutputDir, appName + m_resultExtension) );
