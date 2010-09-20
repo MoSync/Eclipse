@@ -1,18 +1,9 @@
 package com.mobilesorcery.sdk.profiling.ui;
 
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.IViewPart;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
+import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
-
-import com.mobilesorcery.sdk.profiling.IProfilingListener;
-import com.mobilesorcery.sdk.profiling.IProfilingSession;
-import com.mobilesorcery.sdk.profiling.ProfilingPlugin;
-import com.mobilesorcery.sdk.profiling.ui.views.ProfilingView;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -21,6 +12,12 @@ public class ProfilingUiPlugin extends AbstractUIPlugin {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.profiling.ui";
+
+    public static final String METHOD_IMG = "method";
+
+    public static final String CALL_TREE_TAB_IMG = "call.tree.tab.img";
+
+    public static final String HOTSPOTS_TAB_IMG = "hotspots.tab.img";
 
 	// The shared instance
 	private static ProfilingUiPlugin plugin;
@@ -69,4 +66,10 @@ public class ProfilingUiPlugin extends AbstractUIPlugin {
 		return imageDescriptorFromPlugin(PLUGIN_ID, path);
 	}
 
+	public void initializeImageRegistry(ImageRegistry reg) {
+        super.initializeImageRegistry(reg);
+        reg.put(METHOD_IMG, AbstractUIPlugin.imageDescriptorFromPlugin(PLUGIN_ID, "$nl$/icons/methods_co.gif"));
+        reg.put(CALL_TREE_TAB_IMG, AbstractUIPlugin.imageDescriptorFromPlugin(PLUGIN_ID, "$nl$/icons/call_tree.gif"));
+        reg.put(HOTSPOTS_TAB_IMG, AbstractUIPlugin.imageDescriptorFromPlugin(PLUGIN_ID, "$nl$/icons/hotspots.gif"));
+    }
 }

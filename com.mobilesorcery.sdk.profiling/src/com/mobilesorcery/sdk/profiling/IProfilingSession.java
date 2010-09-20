@@ -20,4 +20,10 @@ public interface IProfilingSession {
     public ILaunchConfiguration getLaunchConfiguration();
     
     public IInvocation getInvocation();
+    
+    /**
+     * Returns a user-friendly name to identify this session.
+     * @return
+     */
+    public String getName();
 }

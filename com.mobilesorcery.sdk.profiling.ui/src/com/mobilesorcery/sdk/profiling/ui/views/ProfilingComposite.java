@@ -5,7 +5,9 @@ import java.util.Comparator;
 
 import org.eclipse.jface.layout.TreeColumnLayout;
 import org.eclipse.jface.viewers.ColumnWeightData;
+import org.eclipse.jface.viewers.TreeColumnViewerLabelProvider;
 import org.eclipse.jface.viewers.TreeViewer;
+import org.eclipse.jface.viewers.TreeViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.swt.SWT;
@@ -17,6 +19,7 @@ import org.eclipse.swt.widgets.TreeColumn;
 
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiling.IInvocation;
+import com.mobilesorcery.sdk.profiling.IProfilingSession;
 
 public class ProfilingComposite extends Composite {
     
@@ -31,7 +34,11 @@ public class ProfilingComposite extends Composite {
             return comparator.compare((IInvocation) o1, (IInvocation) o2);
         }
     }
+    
     private TreeViewer profileTreeViewer;
+    private IProfilingSession session;
+    ProfilingLabelProvider labelProvider;
+    FunctionNameLabelProvider functionNameLabelProvider;
 
     public ProfilingComposite(Composite parent, int style) {
         super(parent, style);
@@ -47,56 +54,74 @@ public class ProfilingComposite extends Composite {
         profileTreeViewer.setInput(IInvocation.EMPTY);
         
         ArrayList<TreeColumn> columns = new ArrayList<TreeColumn>();
+        labelProvider = new ProfilingLabelProvider(!isFlat());
+        TreeColumnViewerLabelProvider cellLabelProvider = new TreeColumnViewerLabelProvider(labelProvider);
+        functionNameLabelProvider = new FunctionNameLabelProvider();
         
-        TreeColumn functionNameCol = new TreeColumn(profileTree, SWT.NONE);
-        functionNameCol.setText("Function");
-        functionNameCol.setData(ProfilingLabelProvider.FUNCTION_COL);
+        TreeViewerColumn functionNameCol = new TreeViewerColumn(profileTreeViewer, SWT.NONE);
+        functionNameCol.getColumn().setText("Function");
+        functionNameCol.getColumn().setData(ProfilingLabelProvider.FUNCTION_COL);
+        functionNameCol.setLabelProvider(functionNameLabelProvider);
         prepareColumn(functionNameCol, IInvocation.SORT_BY_FUNC_NAME);
-        columns.add(functionNameCol);
+        columns.add(functionNameCol.getColumn());
+        
+        TreeViewerColumn percentageCol = new TreeViewerColumn(profileTreeViewer, SWT.NONE);
+        percentageCol.getColumn().setText("[%]");
+        percentageCol.getColumn().setData(ProfilingLabelProvider.PERCENTAGE_TIME_COL);
+        percentageCol.getColumn().setAlignment(SWT.RIGHT);
+        percentageCol.setLabelProvider(cellLabelProvider);
+        prepareColumn(percentageCol, IInvocation.SORT_BY_SELF_TIME);
+        layout.setColumnData(percentageCol.getColumn(), new ColumnWeightData(1));
+        columns.add(percentageCol.getColumn());
         
         if (isFlat()) {
-            TreeColumn selfTimeCol = new TreeColumn(profileTree, SWT.NONE);
-            selfTimeCol.setText("Self time");
-            selfTimeCol.setData(ProfilingLabelProvider.SELF_TIME_COL);
+            TreeViewerColumn selfTimeCol = new TreeViewerColumn(profileTreeViewer, SWT.NONE);
+            selfTimeCol.getColumn().setText("Self time");
+            selfTimeCol.getColumn().setData(ProfilingLabelProvider.SELF_TIME_COL);
+            selfTimeCol.getColumn().setAlignment(SWT.RIGHT);
+            selfTimeCol.setLabelProvider(cellLabelProvider);
             prepareColumn(selfTimeCol, IInvocation.SORT_BY_SELF_TIME);
-            layout.setColumnData(selfTimeCol, new ColumnWeightData(1));
-            columns.add(selfTimeCol);
+            layout.setColumnData(selfTimeCol.getColumn(), new ColumnWeightData(1));
+            columns.add(selfTimeCol.getColumn());
         } else {
-            TreeColumn aggTimeCol = new TreeColumn(profileTree, SWT.NONE);
-            aggTimeCol.setText("Aggregate time");
-            aggTimeCol.setData(ProfilingLabelProvider.AGG_TIME_COL);
+            TreeViewerColumn aggTimeCol = new TreeViewerColumn(profileTreeViewer, SWT.NONE);
+            aggTimeCol.getColumn().setText("Aggregate time");
+            aggTimeCol.getColumn().setData(ProfilingLabelProvider.AGG_TIME_COL);
+            aggTimeCol.getColumn().setAlignment(SWT.RIGHT);
+            aggTimeCol.setLabelProvider(cellLabelProvider);
             prepareColumn(aggTimeCol, IInvocation.SORT_BY_AGG_TIME);
-            layout.setColumnData(aggTimeCol, new ColumnWeightData(1));
-            columns.add(aggTimeCol);
+            layout.setColumnData(aggTimeCol.getColumn(), new ColumnWeightData(1));
+            columns.add(aggTimeCol.getColumn());
         }
         
-        TreeColumn callsCol = new TreeColumn(profileTree, SWT.NONE);
-        callsCol.setText("Calls");
-        callsCol.setData(ProfilingLabelProvider.CALLS_COL);
+        TreeViewerColumn callsCol = new TreeViewerColumn(profileTreeViewer, SWT.NONE);
+        callsCol.getColumn().setText("Calls");
+        callsCol.getColumn().setData(ProfilingLabelProvider.CALLS_COL);
+        callsCol.getColumn().setAlignment(SWT.RIGHT);
+        callsCol.setLabelProvider(cellLabelProvider);
         prepareColumn(callsCol, IInvocation.SORT_BY_INVOCATION_COUNT);
-        columns.add(callsCol);
+        columns.add(callsCol.getColumn());
         
-        profileTreeViewer.setLabelProvider(new ProfilingLabelProvider(columns.toArray(new TreeColumn[0])));
+        layout.setColumnData(functionNameCol.getColumn(), new ColumnWeightData(3));
+        layout.setColumnData(callsCol.getColumn(), new ColumnWeightData(1));
         
-        layout.setColumnData(functionNameCol, new ColumnWeightData(3));
-        layout.setColumnData(callsCol, new ColumnWeightData(1));
-    
+        labelProvider.setColumns(columns.toArray(new TreeColumn[0]));
     }
     
     private boolean isFlat() {
         return (getStyle() & SWT.FLAT) != 0;
     }
     
-    private void prepareColumn(final TreeColumn column, final Comparator<IInvocation> comparator) {
+    private void prepareColumn(final TreeViewerColumn functionNameCol, final Comparator<IInvocation> comparator) {
         if (isFlat()) {
-            column.addSelectionListener(new SelectionAdapter() {
+            functionNameCol.getColumn().addSelectionListener(new SelectionAdapter() {
                 public void widgetSelected(SelectionEvent event) {
                     int sortDir = SWT.DOWN;
-                    if (profileTreeViewer.getTree().getSortColumn() == column) {
+                    if (profileTreeViewer.getTree().getSortColumn() == functionNameCol.getColumn()) {
                         sortDir = profileTreeViewer.getTree().getSortDirection() == SWT.UP ? SWT.DOWN : SWT.UP;
                     }
                     
-                    profileTreeViewer.getTree().setSortColumn(column);
+                    profileTreeViewer.getTree().setSortColumn(functionNameCol.getColumn());
                     profileTreeViewer.getTree().setSortDirection(sortDir);
                     profileTreeViewer.setSorter(new ComparatorViewerSorter(comparator, sortDir == SWT.UP));
                 }
@@ -108,7 +133,9 @@ public class ProfilingComposite extends Composite {
         return profileTreeViewer.getControl().setFocus();
     }
 
-    public void setInput(IInvocation invocation) {
-        profileTreeViewer.setInput(invocation);
+    public void setInput(IProfilingSession session) {
+        this.session = session;
+        labelProvider.setSession(session);
+        profileTreeViewer.setInput(session);
     }
 }

@@ -13,5 +13,12 @@
             id="com.mobilesorcery.sdk.profiling.ui.profiling">
       </view>
    </extension>
-
+      <extension
+         point="org.eclipse.debug.ui.launchConfigurationTypeImages">
+      
+      <launchConfigurationTypeImage
+            configTypeID="com.mobilesorcery.profiling.launchconfigurationtype"
+            icon="icons/profiling.png"
+            id="com.mobilesorcery.launchconfigurationtype.profiling.image"/>
+   </extension>
 </plugin>

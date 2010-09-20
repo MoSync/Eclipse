@@ -11,6 +11,7 @@ import org.eclipse.jface.viewers.Viewer;
 
 import com.mobilesorcery.sdk.profiling.FunctionDesc;
 import com.mobilesorcery.sdk.profiling.IInvocation;
+import com.mobilesorcery.sdk.profiling.IProfilingSession;
 import com.mobilesorcery.sdk.profiling.Invocation;
 
 class ProfilingContentProvider implements ITreeContentProvider {
@@ -46,7 +47,14 @@ class ProfilingContentProvider implements ITreeContentProvider {
     }
 
     public Object[] getElements(Object inputElement) {
-        return flat ? aggregate(((IInvocation) inputElement).flatten(null)) : getChildren(inputElement);
+        IInvocation root = null;
+        if (inputElement instanceof IProfilingSession) {
+            root = ((IProfilingSession) inputElement).getInvocation();
+        } else {
+            root = (IInvocation) inputElement;
+        }
+        
+        return flat ? aggregate(root.flatten(null)) : getChildren(root);
     }
 
     private IInvocation[] aggregate(Collection<IInvocation> invocations) {

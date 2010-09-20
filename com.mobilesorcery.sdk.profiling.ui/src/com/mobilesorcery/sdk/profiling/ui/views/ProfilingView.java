@@ -22,6 +22,7 @@ import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.IProfilingListener;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;
 import com.mobilesorcery.sdk.profiling.ProfilingPlugin;
+import com.mobilesorcery.sdk.profiling.ui.ProfilingUiPlugin;
 
 public class ProfilingView extends ViewPart {
     
@@ -32,8 +33,8 @@ public class ProfilingView extends ViewPart {
             if (hotspotProfilingComposite != null && eventType == ProfilingEventType.STOPPED) {
                 hotspotProfilingComposite.getDisplay().asyncExec(new Runnable() {
                     public void run() {
-                        hotspotProfilingComposite.setInput(session.getInvocation());
-                        callTreeProfilingComposite.setInput(session.getInvocation());
+                        hotspotProfilingComposite.setInput(session);
+                        callTreeProfilingComposite.setInput(session);
                     }                    
                 });
             }
@@ -56,9 +57,11 @@ public class ProfilingView extends ViewPart {
 	    callTreeTab.setText("Call Tree");
 	    hotspotProfilingComposite = new ProfilingComposite(main, SWT.FLAT);
 	    hotSpotTab.setControl(hotspotProfilingComposite);
-	    callTreeProfilingComposite = new ProfilingComposite(main, SWT.NONE);
+	    hotSpotTab.setImage(ProfilingUiPlugin.getDefault().getImageRegistry().get(ProfilingUiPlugin.HOTSPOTS_TAB_IMG));
+        callTreeProfilingComposite = new ProfilingComposite(main, SWT.NONE);
 	    callTreeTab.setControl(callTreeProfilingComposite);
-	   	ProfilingPlugin.getDefault().addProfilingListener(profilingEventListener);
+	    callTreeTab.setImage(ProfilingUiPlugin.getDefault().getImageRegistry().get(ProfilingUiPlugin.CALL_TREE_TAB_IMG));
+        ProfilingPlugin.getDefault().addProfilingListener(profilingEventListener);
 	}
 
     public void dispose() {

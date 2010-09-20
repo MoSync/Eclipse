@@ -18,8 +18,11 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
@@ -30,6 +33,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -177,6 +181,18 @@ public class UIUtils {
         }
     }
 
+    public static Font modifyFont(Font original, int style) {
+        if (original == null) {
+            original = JFaceResources.getDefaultFont();
+        }
+        
+        FontData[] fd = original.getFontData();
+        for (int i = 0; i < fd.length; i++) {
+            fd[i].setStyle(style);
+        }
+        return new Font(original.getDevice(), fd);
+    }
+    
     public static void awaitWorkbenchStartup() {
         if (!PlatformUI.isWorkbenchRunning()) {
             WorkbenchJob job = new WorkbenchJob("Awaiting workbench") {
@@ -205,6 +221,19 @@ public class UIUtils {
     	il.data = new ImageData[] { d2 };
     	il.save("C:\\development\\projects\\mobilesorcery-4\\com.mobilesorcery.sdk.ui\\icons\\deprecated-mosyncproject.png", SWT.IMAGE_PNG);
     	i.dispose();
+    }
+
+    public static void dispose(Object... resources) {
+        for (int i = 0; i < resources.length; i++) {
+            Object resource = resources[i];
+            if (resource instanceof Color) {
+                ((Color) resource).dispose();
+            } else if (resource instanceof Font) {
+                ((Font) resource).dispose();
+            } else if (resource instanceof Widget) {
+                ((Widget) resource).dispose();
+            }
+        }
     }
     
 }
