@@ -21,6 +21,11 @@ import java.io.LineNumberReader;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 
+import org.eclipse.cdt.utils.CPPFilt;
+
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.MoSyncTool;
+
 
 public class SLDParser {
 
@@ -34,17 +39,23 @@ public class SLDParser {
     private static final int FUNCTIONS_STATE = 3;
     private static final int LINE_IP_STATE = 4;
     
-
     private int state;
 
     private ArrayList<Exception> errors = new ArrayList<Exception>();
     private SLDInfoImpl sld;
 
     private int currentLine;
+    private CPPFilt cppFilt;
 
     public void parse(File sldFile) throws IOException {
         BufferedReader sldReader = new BufferedReader(new FileReader(sldFile));
         try {
+            try {
+                cppFilt = new CPPFilt(MoSyncTool.getDefault().getBinary("c++filt").toOSString());
+            } catch (IOException e) {
+                // Ignore but log.
+                CoreMoSyncPlugin.getDefault().logOnce(e, getClass().getName() + "c++filt");
+            }
             sld = new SLDInfoImpl(sldFile);
             currentLine = 0;
             LineNumberReader sldLines = new LineNumberReader(sldReader);
@@ -67,6 +78,9 @@ public class SLDParser {
         } finally {
             if (sldReader != null) {
                 sldReader.close();
+            }
+            if (cppFilt != null) {
+                cppFilt.dispose();
             }
         }
     }
@@ -100,9 +114,15 @@ public class SLDParser {
     private void parseFunctionEntry(String line) {
         String[] functionEntry = line.split("\\s", 2);
         if (functionEntry.length == 2) {
-            String functionName = functionEntry[0];
+            String symbol = functionEntry[0];
+            String unmangledFunctionName = symbol;
+            try {
+               unmangledFunctionName = cppFilt.getFunction(symbol);
+            } catch (IOException e) {
+                // Just present the mangled name
+            }
             String addrRange = functionEntry[1];
-            sld.addRangeForFunction(functionName, AddressRange.parse(addrRange));
+            sld.addRangeForFunction(unmangledFunctionName, AddressRange.parse(addrRange));
         }
     }
 

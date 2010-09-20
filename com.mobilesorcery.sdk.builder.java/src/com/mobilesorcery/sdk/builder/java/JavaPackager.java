@@ -85,7 +85,6 @@ public class JavaPackager extends AbstractPackager {
             // Need to set execution dir, o/w zip will not understand what we
             // really want.
             internal.getExecutor().setExecutionDirectory(manifest.getParentFile().getParent());
-
             {
                 String runtime = internal.resolve("MoSyncRuntime%D%.jar");
                 Util.copyFile(new NullProgressMonitor(), new File(runtimeDir, runtime), projectJar);

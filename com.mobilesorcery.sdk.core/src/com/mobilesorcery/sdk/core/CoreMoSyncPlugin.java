@@ -14,11 +14,13 @@
 package com.mobilesorcery.sdk.core;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -109,6 +111,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	private EmulatorProcessManager emulatorProcessManager;
 
     private String[] buildConfigurationTypes;
+
+    private HashMap<String, Integer> logCounts = new HashMap<String, Integer>();
 
     /**
      * The constructor
@@ -663,6 +667,26 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
      */
     public IApplicationPermissions getDefaultPermissions(MoSyncProject project) {
         return ApplicationPermissions.getDefaultPermissions(project);
+    }
+
+    /**
+     * Logs a specified method ONCE
+     * @param e
+     * @param token Used to distinguish the source of log messages
+     */
+    public void logOnce(Exception e, String token) {
+        Integer logCount = logCounts.get(token);
+        if (logCount == null) {
+            logCount = 0;
+        }
+        
+        if (logCount < 1) {
+            log(e);
+        }
+        
+        logCount++;
+        logCounts.put(token, logCount);
+        
     }
 	
 }
