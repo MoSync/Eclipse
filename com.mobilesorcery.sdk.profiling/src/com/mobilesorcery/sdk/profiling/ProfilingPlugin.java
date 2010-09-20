@@ -25,6 +25,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.profiling.IProfilingListener.ProfilingEventType;
 import com.mobilesorcery.sdk.profiling.internal.ShowProfilingViewListener;
 
@@ -101,5 +102,13 @@ public class ProfilingPlugin extends AbstractUIPlugin {
 	public List<IProfilingSession> getSessions() {
 	    return Collections.unmodifiableList(sessions);
 	}
+
+    public IFilter<IInvocation> getDefaultFilter() {
+        return new IFilter<IInvocation>() {
+            public boolean accept(IInvocation invocation) {
+                return true;
+            }
+        };
+    }
 
 }

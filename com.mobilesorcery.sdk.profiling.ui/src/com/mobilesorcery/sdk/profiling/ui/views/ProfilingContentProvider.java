@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
+import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.profiling.FunctionDesc;
 import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;
@@ -19,6 +20,8 @@ class ProfilingContentProvider implements ITreeContentProvider {
     private static final Object[] EMPTY = new Object[0];
 
     private boolean flat;
+
+    private IProfilingSession session;
 
     public ProfilingContentProvider(boolean flat) {
         this.flat = flat;
@@ -49,13 +52,15 @@ class ProfilingContentProvider implements ITreeContentProvider {
     public Object[] getElements(Object inputElement) {
         IInvocation root = null;
         if (inputElement instanceof IProfilingSession) {
-            root = ((IProfilingSession) inputElement).getInvocation();
+            session = (IProfilingSession) inputElement;
+            root = session.getInvocation();
         } else {
             root = (IInvocation) inputElement;
         }
         
         return flat ? aggregate(root.flatten(null)) : getChildren(root);
     }
+
 
     private IInvocation[] aggregate(Collection<IInvocation> invocations) {
         LinkedHashMap<FunctionDesc, IInvocation> result = new LinkedHashMap<FunctionDesc, IInvocation>();

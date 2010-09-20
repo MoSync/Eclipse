@@ -15,11 +15,27 @@ package com.mobilesorcery.sdk.profiling;
 
 import org.eclipse.debug.core.ILaunchConfiguration;
 
+import com.mobilesorcery.sdk.core.IFilter;
+
 public interface IProfilingSession {
 
+    /**
+     * Returns the launch configuration of this profiling session
+     * @return
+     */
     public ILaunchConfiguration getLaunchConfiguration();
     
+    /**
+     * Returns the 'root' invocation of this session
+     * @return
+     */
     public IInvocation getInvocation();
+    
+    /**
+     * Returns the filter of this profiling session
+     * @return
+     */
+    public IFilter<IInvocation> getFilter();
     
     /**
      * Returns a user-friendly name to identify this session.

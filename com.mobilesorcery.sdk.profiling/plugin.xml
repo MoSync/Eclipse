@@ -18,7 +18,7 @@ class=
 "com.mobilesorcery.sdk.profiling.emulator.MoSyncProfilingLaunchShortCut"
 label=
 "Profile on MoSync Emulator"
-icon="icons/testicon.png">
+icon="icons/profiling.png">
                      <contextualLaunch>
             <enablement>
                 <test

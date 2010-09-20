@@ -12,6 +12,8 @@ import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
@@ -52,19 +54,22 @@ public class ProfilingView extends ViewPart {
 	}
 	
 	public void createPartControl(Composite parent) {
-	    CTabFolder main = new CTabFolder(parent, SWT.BOTTOM);
-	    CTabItem hotSpotTab = new CTabItem(main, SWT.NONE);
+	    Composite main = new Composite(parent, SWT.NONE);
+	    main.setLayout(new GridLayout(1, false));
+	    CTabFolder results = new CTabFolder(main, SWT.BOTTOM | SWT.BORDER);
+	    results.setLayoutData(new GridData(GridData.FILL_BOTH));
+	    CTabItem hotSpotTab = new CTabItem(results, SWT.NONE);
 	    hotSpotTab.setText("Hotspots");
-	    CTabItem callTreeTab = new CTabItem(main, SWT.NONE);
+	    CTabItem callTreeTab = new CTabItem(results, SWT.NONE);
 	    callTreeTab.setText("Call Tree");
-	    hotspotProfilingComposite = new ProfilingComposite(main, SWT.FLAT);
+	    hotspotProfilingComposite = new ProfilingComposite(results, SWT.FLAT);
 	    hotSpotTab.setControl(hotspotProfilingComposite);
 	    hotSpotTab.setImage(ProfilingUiPlugin.getDefault().getImageRegistry().get(ProfilingUiPlugin.HOTSPOTS_TAB_IMG));
-        callTreeProfilingComposite = new ProfilingComposite(main, SWT.NONE);
+        callTreeProfilingComposite = new ProfilingComposite(results, SWT.NONE);
 	    callTreeTab.setControl(callTreeProfilingComposite);
 	    callTreeTab.setImage(ProfilingUiPlugin.getDefault().getImageRegistry().get(ProfilingUiPlugin.CALL_TREE_TAB_IMG));
 
-	    main.setSelection(hotSpotTab);
+	    results.setSelection(hotSpotTab);
 
 	    ProfilingPlugin.getDefault().addProfilingListener(profilingEventListener);
 	}

@@ -10,7 +10,10 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.TextStyle;
 import org.eclipse.swt.widgets.Display;
 
+import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.profiling.CppFiltName;
 import com.mobilesorcery.sdk.profiling.IInvocation;
+import com.mobilesorcery.sdk.profiling.IProfilingSession;
 import com.mobilesorcery.sdk.profiling.ui.ProfilingUiPlugin;
 import com.mobilesorcery.sdk.ui.UIUtils;
 
@@ -21,6 +24,7 @@ public class FunctionNameLabelProvider extends StyledCellLabelProvider {
     private Styler prefixStyler;
     private Styler lastNameStyle;
     private Styler disabledStyle;
+    private IProfilingSession session;
     
     public FunctionNameLabelProvider() {
         prefixFont = UIUtils.modifyFont(null, SWT.ITALIC);
@@ -39,31 +43,25 @@ public class FunctionNameLabelProvider extends StyledCellLabelProvider {
     public void update(ViewerCell cell) {
         Object obj = cell.getElement();
         IInvocation invocation = (IInvocation) obj;
-        StyledString styledFunctionName = styleFunctionName(invocation.getProfiledEntity().toString());
+        boolean enabled = session.getFilter().accept(invocation);
+        StyledString styledFunctionName = styleFunctionName(enabled, invocation.getProfiledEntity().toString());
         cell.setStyleRanges(styledFunctionName.getStyleRanges());
         cell.setText(styledFunctionName.getString());
         cell.setImage(ProfilingUiPlugin.getDefault().getImageRegistry().get(ProfilingUiPlugin.METHOD_IMG));
     }
     
-    private StyledString styleFunctionName(String fn) {
+    private StyledString styleFunctionName(boolean enabled, String fn) {
+        CppFiltName name = CppFiltName.parse(fn);
         StyledString result = new StyledString();
-        // Parse stuff
-        int firstParenIx = fn.indexOf('(');
-        int lastSpaceIx = Math.max(0, (firstParenIx == -1 ? fn : fn.substring(0, firstParenIx)).lastIndexOf(' '));
-        String prefixText = fn.substring(0, lastSpaceIx);
-        
-        String unmangledSymbol = fn.substring(lastSpaceIx);
-        firstParenIx = unmangledSymbol.indexOf('('); 
-        String unmangleSymbolNoSignature = firstParenIx == -1 ? unmangledSymbol : unmangledSymbol.substring(0, firstParenIx);
-        String signatureString = firstParenIx == -1 ? "" : unmangledSymbol.substring(firstParenIx);
 
-        int lastDoubleColonIx = unmangleSymbolNoSignature.lastIndexOf("::");
-        String lastSegment = lastDoubleColonIx == -1 ? unmangleSymbolNoSignature : unmangleSymbolNoSignature.substring(lastDoubleColonIx);
-        String otherSegments = unmangleSymbolNoSignature.substring(0, unmangleSymbolNoSignature.length() - lastSegment.length());
-        result.append(prefixText, prefixStyler);
-        result.append(otherSegments);
-        result.append(lastSegment, lastNameStyle);
-        result.append(signatureString, disabledStyle);
+        result.append(name.getPrefix(), enabled ? prefixStyler : disabledStyle);
+        result.append(name.getNamespace(), enabled ? null : disabledStyle);
+        String shortName = name.getShortName();
+        if (!Util.isEmpty(name.getNamespace())) {
+            shortName = "::" + shortName;
+        }
+        result.append(shortName, enabled ? lastNameStyle : disabledStyle);
+        result.append(name.getSignature(), disabledStyle);
         return result;
     }
 
@@ -80,5 +78,9 @@ public class FunctionNameLabelProvider extends StyledCellLabelProvider {
          }; 
          
          return result;
+    }
+    
+    public void setSession(IProfilingSession session) {
+        this.session = session;
     }
 }

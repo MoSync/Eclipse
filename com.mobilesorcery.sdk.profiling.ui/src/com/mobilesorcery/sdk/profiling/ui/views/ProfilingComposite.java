@@ -9,6 +9,7 @@ import org.eclipse.jface.viewers.TreeColumnViewerLabelProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.TreeViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -38,7 +39,9 @@ public class ProfilingComposite extends Composite {
     private TreeViewer profileTreeViewer;
     private IProfilingSession session;
     PercentageBarLabelProvider percentageLabelProvider;
-
+    private FunctionNameLabelProvider functionNameLabelProvider;
+    private ProfilingLabelProvider labelProvider;
+   
     public ProfilingComposite(Composite parent, int style) {
         super(parent, style);
         Composite treeContainer = this;
@@ -53,9 +56,9 @@ public class ProfilingComposite extends Composite {
         profileTreeViewer.setInput(IInvocation.EMPTY);
         
         ArrayList<TreeColumn> columns = new ArrayList<TreeColumn>();
-        ProfilingLabelProvider labelProvider = new ProfilingLabelProvider();
+        labelProvider = new ProfilingLabelProvider();
         TreeColumnViewerLabelProvider cellLabelProvider = new TreeColumnViewerLabelProvider(labelProvider);
-        FunctionNameLabelProvider functionNameLabelProvider = new FunctionNameLabelProvider();
+        functionNameLabelProvider = new FunctionNameLabelProvider();
         percentageLabelProvider = new PercentageBarLabelProvider(!isFlat());
         
         TreeViewerColumn functionNameCol = new TreeViewerColumn(profileTreeViewer, SWT.NONE);
@@ -70,7 +73,7 @@ public class ProfilingComposite extends Composite {
         percentageCol.getColumn().setData(ProfilingLabelProvider.PERCENTAGE_TIME_COL);
         percentageCol.getColumn().setAlignment(SWT.RIGHT);
         percentageCol.setLabelProvider(percentageLabelProvider);
-        prepareColumn(percentageCol, IInvocation.SORT_BY_SELF_TIME);
+        prepareColumn(percentageCol, isFlat() ? IInvocation.SORT_BY_SELF_TIME : IInvocation.SORT_BY_AGG_TIME);
         layout.setColumnData(percentageCol.getColumn(), new ColumnWeightData(1));
         columns.add(percentageCol.getColumn());
         
@@ -106,6 +109,15 @@ public class ProfilingComposite extends Composite {
         layout.setColumnData(callsCol.getColumn(), new ColumnWeightData(1));
         
         labelProvider.setColumns(columns.toArray(new TreeColumn[0]));
+        
+        profileTreeViewer.setFilters(new ViewerFilter[] {
+                new ViewerFilter() {
+                    public boolean select(Viewer viewer, Object parentElement, Object element) {
+                        IInvocation invocation = (IInvocation) element;
+                        return !isFlat() || (session != null && session.getFilter().accept(invocation));
+                    }
+                }
+        });
     }
     
     private boolean isFlat() {
@@ -113,7 +125,7 @@ public class ProfilingComposite extends Composite {
     }
     
     private void prepareColumn(final TreeViewerColumn functionNameCol, final Comparator<IInvocation> comparator) {
-        if (isFlat()) {
+        //if (isFlat()) {
             functionNameCol.getColumn().addSelectionListener(new SelectionAdapter() {
                 public void widgetSelected(SelectionEvent event) {
                     int sortDir = SWT.DOWN;
@@ -124,9 +136,10 @@ public class ProfilingComposite extends Composite {
                     profileTreeViewer.getTree().setSortColumn(functionNameCol.getColumn());
                     profileTreeViewer.getTree().setSortDirection(sortDir);
                     profileTreeViewer.setSorter(new ComparatorViewerSorter(comparator, sortDir == SWT.UP));
+                    profileTreeViewer.refresh();
                 }
             });
-        }
+        //}
     }
     
     public boolean setFocus() {
@@ -135,7 +148,9 @@ public class ProfilingComposite extends Composite {
 
     public void setInput(IProfilingSession session) {
         this.session = session;
+        functionNameLabelProvider.setSession(session);
         percentageLabelProvider.setSession(session);
+        labelProvider.setSession(session);
         profileTreeViewer.setInput(session);
     }
 }

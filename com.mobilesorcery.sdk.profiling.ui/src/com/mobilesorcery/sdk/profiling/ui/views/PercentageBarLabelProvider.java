@@ -14,6 +14,7 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.TreeItem;
 
+import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;
 
@@ -38,48 +39,51 @@ public class PercentageBarLabelProvider extends OwnerDrawLabelProvider {
     }
 
     protected void paint(Event event, Object obj) {
-        measure(event, obj);
-        IInvocation invocation = (IInvocation) obj;
-        float timeInMs = aggregatedPercentage ? invocation.getAggregateTime() : invocation.getSelfTime();
-        String percentage = getPercentage(timeInMs);
-        float ratio = getRatio(timeInMs);
-        
-        GC gc = event.gc;
-        Rectangle bounds = event.getBounds();
-        
-        Point actualTextExtent = gc.textExtent(percentage);
-        gc.drawText(percentage, bounds.x + event.width - actualTextExtent.x, bounds.y);
-        
-        gc.setBackground(gc.getDevice().getSystemColor(SWT.COLOR_RED));
-        gc.setForeground(gc.getDevice().getSystemColor(SWT.COLOR_RED));
-        int barWidth = Math.round(((float)bounds.width - maxTextExtent(event).x) * ratio);
-        gc.fillRectangle(bounds.x, bounds.y + 1, barWidth, bounds.height - 2);
+        if (obj != null && session.getFilter().accept((IInvocation) obj)) {
+            measure(event, obj);
+            IInvocation invocation = (IInvocation) obj;
+            IFilter<IInvocation> filter = aggregatedPercentage ? null : session.getFilter();
+            float timeInMs = aggregatedPercentage ? invocation.getAggregateTime() : invocation.getSelfTime();
+            String percentage = getPercentage(timeInMs, filter);
+            float ratio = getRatio(timeInMs, filter);
+            
+            GC gc = event.gc;
+            Rectangle bounds = event.getBounds();
+            
+            Point actualTextExtent = gc.textExtent(percentage);
+            gc.drawText(percentage, bounds.x + event.width - actualTextExtent.x, bounds.y);
+            
+            gc.setBackground(gc.getDevice().getSystemColor(SWT.COLOR_RED));
+            gc.setForeground(gc.getDevice().getSystemColor(SWT.COLOR_RED));
+            int barWidth = Math.round(((float)bounds.width - maxTextExtent(event).x) * ratio);
+            gc.fillRectangle(bounds.x, bounds.y + 1, barWidth, bounds.height - 2);
+        }
     }
 
     private Point maxTextExtent(Event event) {
         return event.gc.textExtent(">100.00%");
     }
-    private float getRatio(float timeInMs) {
-        float totalTime = getTotalTime(session);
+    
+    private float getRatio(float timeInMs, IFilter<IInvocation> filter) {
+        float totalTime = getFilteredAggregateTime(session.getInvocation(), filter);
         float ratio = timeInMs / totalTime;
         return ratio;   
     }
     
-    private String getPercentage(float timeInMs) {
-        return PERCENTAGE.format(getRatio(timeInMs));
+    private String getPercentage(float timeInMs, IFilter<IInvocation> filter) {
+        return PERCENTAGE.format(getRatio(timeInMs, filter));
     }
 
-    private float getTotalTime(IProfilingSession session) {
+    private float getFilteredAggregateTime(IInvocation rootInvocation, IFilter<IInvocation> filter) {
         // TODO: Refactor
         float totalTime = 0;
-        IInvocation rootInvocation = session.getInvocation();
-        for (IInvocation child : rootInvocation.flatten(null)) {
-            if (child.getInvocations().isEmpty()) {
-                totalTime += child.getAggregateTime();
-            } else {
+        for (IInvocation child : rootInvocation.getInvocations()) {
+            if (filter == null || filter.accept(child)) {
                 totalTime += child.getSelfTime();
             }
+            totalTime += getFilteredAggregateTime(child, filter);
         }
+        
         return totalTime;
     }
 }

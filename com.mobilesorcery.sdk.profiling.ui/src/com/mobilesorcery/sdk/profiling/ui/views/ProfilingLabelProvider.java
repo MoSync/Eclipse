@@ -3,39 +3,25 @@
  */
 package com.mobilesorcery.sdk.profiling.ui.views;
 
-import java.awt.image.IndexColorModel;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
 
-import javax.swing.text.StyledEditorKit.ItalicAction;
-
-import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.viewers.ITableColorProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
-import org.eclipse.jface.viewers.StyledCellLabelProvider;
-import org.eclipse.jface.viewers.StyledString;
-import org.eclipse.jface.viewers.ViewerCell;
-import org.eclipse.jface.viewers.StyledString.Styler;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.TextStyle;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.TreeColumn;
 
 import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;
-import com.mobilesorcery.sdk.profiling.ui.ProfilingUiPlugin;
-import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
-import com.mobilesorcery.sdk.ui.UIUtils;
 
-class ProfilingLabelProvider extends LabelProvider implements ITableLabelProvider {
+class ProfilingLabelProvider extends LabelProvider implements ITableLabelProvider, ITableColorProvider {
     
     public static final String FUNCTION_COL = "fn";
     public static final String CALLS_COL = "c";
@@ -48,6 +34,7 @@ class ProfilingLabelProvider extends LabelProvider implements ITableLabelProvide
     private final static NumberFormat NUMBER_FORMAT_US = new DecimalFormat("###,###,##0", DecimalFormatSymbols.getInstance(Locale.US));
     
     private HashMap<Integer, Object> columns = new HashMap<Integer, Object>();
+    private IProfilingSession session;
     
     public ProfilingLabelProvider() {
         
@@ -80,5 +67,17 @@ class ProfilingLabelProvider extends LabelProvider implements ITableLabelProvide
         for (int i = 0; i < columns.length; i++) {
             this.columns.put(i, columns[i].getData());
         }
+    }
+
+    public Color getBackground(Object obj, int ix) {
+        return null;
+    }
+
+    public Color getForeground(Object obj, int ix) {
+        return session.getFilter().accept((IInvocation) obj) ? null : Display.getCurrent().getSystemColor(SWT.COLOR_GRAY);
+    }
+    
+    public void setSession(IProfilingSession session) {
+        this.session = session;
     }
 }
