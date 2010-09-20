@@ -8,6 +8,8 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.CTabFolder;
+import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.Composite;
@@ -50,10 +52,10 @@ public class ProfilingView extends ViewPart {
 	}
 	
 	public void createPartControl(Composite parent) {
-	    TabFolder main = new TabFolder(parent, SWT.BOTTOM);
-	    TabItem hotSpotTab = new TabItem(main, SWT.NONE);
+	    CTabFolder main = new CTabFolder(parent, SWT.BOTTOM);
+	    CTabItem hotSpotTab = new CTabItem(main, SWT.NONE);
 	    hotSpotTab.setText("Hotspots");
-	    TabItem callTreeTab = new TabItem(main, SWT.NONE);
+	    CTabItem callTreeTab = new CTabItem(main, SWT.NONE);
 	    callTreeTab.setText("Call Tree");
 	    hotspotProfilingComposite = new ProfilingComposite(main, SWT.FLAT);
 	    hotSpotTab.setControl(hotspotProfilingComposite);
@@ -61,7 +63,10 @@ public class ProfilingView extends ViewPart {
         callTreeProfilingComposite = new ProfilingComposite(main, SWT.NONE);
 	    callTreeTab.setControl(callTreeProfilingComposite);
 	    callTreeTab.setImage(ProfilingUiPlugin.getDefault().getImageRegistry().get(ProfilingUiPlugin.CALL_TREE_TAB_IMG));
-        ProfilingPlugin.getDefault().addProfilingListener(profilingEventListener);
+
+	    main.setSelection(hotSpotTab);
+
+	    ProfilingPlugin.getDefault().addProfilingListener(profilingEventListener);
 	}
 
     public void dispose() {

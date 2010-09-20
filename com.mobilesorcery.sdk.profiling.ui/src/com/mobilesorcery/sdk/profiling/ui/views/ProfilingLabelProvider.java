@@ -46,15 +46,11 @@ class ProfilingLabelProvider extends LabelProvider implements ITableLabelProvide
     
     //private final static NumberFormat NUMBER_FORMAT_MS = new DecimalFormat("###,###,##0.000", DecimalFormatSymbols.getInstance(Locale.US));
     private final static NumberFormat NUMBER_FORMAT_US = new DecimalFormat("###,###,##0", DecimalFormatSymbols.getInstance(Locale.US));
-    private final static NumberFormat PERCENTAGE = new DecimalFormat("##0.00%", DecimalFormatSymbols.getInstance(Locale.US));
     
     private HashMap<Integer, Object> columns = new HashMap<Integer, Object>();
-   
-    private IProfilingSession session;
-    private boolean aggregatedPercentage;
     
-    public ProfilingLabelProvider(boolean aggregatedPercentage) {
-        this.aggregatedPercentage = aggregatedPercentage;
+    public ProfilingLabelProvider() {
+        
     }
     
     public String getColumnText(Object obj, int index) {
@@ -67,8 +63,6 @@ class ProfilingLabelProvider extends LabelProvider implements ITableLabelProvide
 	        return "" + invocation.getCount();
 	    } else if (AGG_TIME_COL == column) {
 	        return formatTime(invocation.getAggregateTime());
-	    } else if (PERCENTAGE_TIME_COL == column) {
-	        return getPercentage(aggregatedPercentage ? invocation.getAggregateTime() : invocation.getSelfTime());
 	    }
 	    
 	    return getText(obj);
@@ -78,33 +72,8 @@ class ProfilingLabelProvider extends LabelProvider implements ITableLabelProvide
         return null;
     }
 
-    private String getPercentage(float timeInMs) {
-	    float totalTime = getTotalTime(session);
-        float ratio = timeInMs / totalTime;
-        
-        return PERCENTAGE.format(ratio);
-    }
-
-    private float getTotalTime(IProfilingSession session) {
-        // TODO: Refactor
-        float totalTime = 0;
-        IInvocation rootInvocation = session.getInvocation();
-        for (IInvocation child : rootInvocation.flatten(null)) {
-            if (child.getInvocations().isEmpty()) {
-                totalTime += child.getAggregateTime();
-            } else {
-                totalTime += child.getSelfTime();
-            }
-        }
-        return totalTime;
-    }
-
     private String formatTime(float timeInMs) {
         return NUMBER_FORMAT_US.format(1000 * timeInMs) + " \u00B5s";
-    }
-
-    public void setSession(IProfilingSession session) {
-        this.session = session;
     }
 
     public void setColumns(TreeColumn[] columns) {

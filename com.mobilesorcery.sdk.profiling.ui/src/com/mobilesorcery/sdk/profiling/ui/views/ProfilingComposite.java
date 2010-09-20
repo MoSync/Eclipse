@@ -37,8 +37,7 @@ public class ProfilingComposite extends Composite {
     
     private TreeViewer profileTreeViewer;
     private IProfilingSession session;
-    ProfilingLabelProvider labelProvider;
-    FunctionNameLabelProvider functionNameLabelProvider;
+    PercentageBarLabelProvider percentageLabelProvider;
 
     public ProfilingComposite(Composite parent, int style) {
         super(parent, style);
@@ -54,9 +53,10 @@ public class ProfilingComposite extends Composite {
         profileTreeViewer.setInput(IInvocation.EMPTY);
         
         ArrayList<TreeColumn> columns = new ArrayList<TreeColumn>();
-        labelProvider = new ProfilingLabelProvider(!isFlat());
+        ProfilingLabelProvider labelProvider = new ProfilingLabelProvider();
         TreeColumnViewerLabelProvider cellLabelProvider = new TreeColumnViewerLabelProvider(labelProvider);
-        functionNameLabelProvider = new FunctionNameLabelProvider();
+        FunctionNameLabelProvider functionNameLabelProvider = new FunctionNameLabelProvider();
+        percentageLabelProvider = new PercentageBarLabelProvider(!isFlat());
         
         TreeViewerColumn functionNameCol = new TreeViewerColumn(profileTreeViewer, SWT.NONE);
         functionNameCol.getColumn().setText("Function");
@@ -69,7 +69,7 @@ public class ProfilingComposite extends Composite {
         percentageCol.getColumn().setText("[%]");
         percentageCol.getColumn().setData(ProfilingLabelProvider.PERCENTAGE_TIME_COL);
         percentageCol.getColumn().setAlignment(SWT.RIGHT);
-        percentageCol.setLabelProvider(cellLabelProvider);
+        percentageCol.setLabelProvider(percentageLabelProvider);
         prepareColumn(percentageCol, IInvocation.SORT_BY_SELF_TIME);
         layout.setColumnData(percentageCol.getColumn(), new ColumnWeightData(1));
         columns.add(percentageCol.getColumn());
@@ -135,7 +135,7 @@ public class ProfilingComposite extends Composite {
 
     public void setInput(IProfilingSession session) {
         this.session = session;
-        labelProvider.setSession(session);
+        percentageLabelProvider.setSession(session);
         profileTreeViewer.setInput(session);
     }
 }
