@@ -75,9 +75,16 @@ public class V2V3Builder {
 		
 		/* Add resources */
 		File resources = new File( compileOutDir, "resources" );
-		if ( resources.exists( ) == true ) 
+		if( resources.exists( ) == true ) 
 		{
 			cmdBuilder.flag( "-r" ).with( resources );
+		}
+		
+		/* Add icons */
+		File icon = project.getIconFile( );
+		if( icon != null )
+		{
+			cmdBuilder.flag( "-i" ).with( icon.getAbsolutePath( ) );
 		}
 		
 		/* Output dir, model, app name and vendor */

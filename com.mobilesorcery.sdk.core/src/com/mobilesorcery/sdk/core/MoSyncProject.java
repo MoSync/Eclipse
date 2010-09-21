@@ -16,6 +16,7 @@ package com.mobilesorcery.sdk.core;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -135,6 +136,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 * strategy at all (always rebuild).
 	 */
 	public static final int NULL_DEPENDENCY_STRATEGY = 1;
+	
+	/**
+	 * The extension of the XML files that describes the icons used in a project.
+	 */
+    public static final String ICON_FILE_EXTENSION = ".icon";
 
     private static final String PROJECT = "project";    
 
@@ -1030,6 +1036,47 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     public IApplicationPermissions getPermissions() {
         return permissions;
     }
+    
+    /**
+     * Returns the icon file associated with this project.
+     * 
+     * @return the icon file associated with this project, null
+     *         if no icon file exists.
+     */
+    public File getIconFile()
+    {
+    	return findIconFile(getWrappedProject().getLocation().toFile());
+    }
+	
+	/**
+	 * Recursive search for a file that ends with 
+	 * DefaultPackager.ICON_FILE_EXTENSION.
+	 * 
+	 * @param rootFile The root directory to begin searching in.
+	 * @return a file on success and null if no such file was found.
+	 */
+	private File findIconFile(final File rootFile)
+	{
+		if(rootFile.isDirectory())
+		{
+			final File[] childs = rootFile.listFiles();
+			for(File child : childs)
+			{
+				File iconFile = findIconFile(child);
+				if(iconFile != null)
+				{
+					return iconFile;
+				}
+			}
+			return null;
+		}
+		
+		if(rootFile.getName().endsWith(ICON_FILE_EXTENSION) == true)
+		{
+			return rootFile;
+		}
+		return null;
+	}
     
     /**
      * Returns the version of the format used to persist
