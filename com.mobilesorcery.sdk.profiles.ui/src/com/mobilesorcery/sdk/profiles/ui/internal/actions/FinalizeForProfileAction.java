@@ -41,10 +41,12 @@ public class FinalizeForProfileAction extends Action {
             if (selected instanceof IProfile && project != null) {
                 //FinalizerParser.autoSwitchConfiguration(project);
                 IProfile profile = (IProfile) selected;
-                IBuildConfiguration cfg = project.getActiveBuildConfiguration();
+                // Temporary bug fix
+                project.setTargetProfile(profile);
+                /*IBuildConfiguration cfg = project.getActiveBuildConfiguration();
                 BuildVariant variant = new BuildVariant(profile, cfg == null ? null : cfg.getId(), true);
                 FinalizerBuildJob job = new FinalizerBuildJob(project, variant);
-                job.schedule();
+                job.schedule();*/
             }
         }
     }
