@@ -49,24 +49,16 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.BuildAction;
 import org.eclipse.ui.ide.IDE;
-import org.eclipse.ui.internal.ide.actions.BuildUtilities;
 
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.internal.BuildSession;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.builder.MoSyncBuilderVisitor;
-import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
 import com.mobilesorcery.sdk.internal.builder.MoSyncResourceBuilderVisitor;
-import com.mobilesorcery.sdk.internal.dependencies.CompoundDependencyProvider;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
-import com.mobilesorcery.sdk.internal.dependencies.GCCDependencyProvider;
-import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
-import com.mobilesorcery.sdk.internal.dependencies.ProjectResourceDependencyProvider;
-import com.mobilesorcery.sdk.internal.dependencies.ResourceFileDependencyProvider;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 /**
@@ -228,13 +220,6 @@ public class MoSyncBuilder extends ACBuilder {
         }
 
         return toAbsolute(project.getLocation().append("Output"), outputPath);
-        /*
-         * IPath output = project.getFile(new Path("Output")).getLocation();
-         * IPath cfgPath = getRelativeConfigurationOutputPath(project); if
-         * (cfgPath != null) { output.append(cfgPath); }
-         * 
-         * return output;
-         */
     }
 
     /**
@@ -245,10 +230,6 @@ public class MoSyncBuilder extends ACBuilder {
      */
     public static IPath toAbsolute(IPath root, String pathStr) {
         Path path = new Path(pathStr);
-        /*if (path.isAbsolute()) {
-         * DO NOT ACTIVATE THIS; / is considered an absolute path - what will happen if you do a clean on that?
-            return path;
-        } else {*/
         return root.append(path);
     }
 
@@ -330,27 +311,6 @@ public class MoSyncBuilder extends ACBuilder {
         return project.findMaxProblemSeverity(ICModelMarker.C_MODEL_PROBLEM_MARKER, true, depth) == IMarker.SEVERITY_ERROR;
     }
 
-    /**
-     * Returns all deltas for <code>project</code>; including any projects that
-     * <code>project</code> depends on.
-     * 
-     * @param project
-     * @return
-     */
-    private IResourceDelta[] getDeltas(IProject project) {
-        Set<IProject> projectDependencies = CoreMoSyncPlugin.getDefault().getProjectDependencyManager().getDependenciesOf(project);
-        projectDependencies.add(project);
-        ArrayList<IResourceDelta> result = new ArrayList<IResourceDelta>();
-        for (IProject projectDependency : projectDependencies) {
-            IResourceDelta delta = getDelta(projectDependency);
-            if (delta != null) {
-                result.add(delta);
-            }
-        }
-
-        return result.toArray(new IResourceDelta[result.size()]);
-    }
-
     public void clean(IProgressMonitor monitor) {
         forgetLastBuiltState();
         IProject project = getProject();
@@ -424,63 +384,86 @@ public class MoSyncBuilder extends ACBuilder {
         return null;
     }
     
+    /**
+     * Returns the pipe tool mode that should be used for the given kind
+     * of input. 
+     * 
+     * @param profile The profile we want to use pipe-tool for.
+     * @param isLib Indicates whether we are building a library or not.
+     * @return The appropriate mode for the given profile.
+     */
+    String getPipeToolMode(IProfile profile, boolean isLib)
+    {
+        if ( isLib ) 
+        {
+        	return PipeTool.BUILD_LIB_MODE;
+        }
+        
+        Map<String, Object> properties = profile.getProperties( );
+        if ( properties.containsKey( "MA_PROF_OUTPUT_CPP" ) )
+        {
+        	return PipeTool.BUILD_GEN_CPP_MODE ;
+        }
+        else if ( properties.containsKey( "MA_PROF_OUTPUT_JAVA" ) )
+        {
+        	return PipeTool.BUILD_GEN_JAVA_MODE;
+        }
+        else
+        {
+        	return PipeTool.BUILD_C_MODE;
+        }
+    }
+    
+    /**
+     * Returns true if any of the libraries that the given project depends
+     * on have changed.
+     * 
+     * @param mosyncProject Project to check for changes. 
+     * @param buildProperties Build properties of project.
+     * @param programComb Latest built program file.
+     * @return true if any of the libraries have changed, false otherwise. 
+     */
+    private boolean haveLibrariesChanged(MoSyncProject mosyncProject, IPropertyOwner buildProperties, IPath programComb)
+    {
+        long librariesTouched = mosyncProject.getLibraryLookup(buildProperties).getLastTouched();
+        long programCombTouched = programComb.toFile().lastModified();
+        return librariesTouched > programCombTouched;
+    }
+    
     IBuildResult incrementalBuild(IProject project, IBuildSession session, IBuildVariant variant, 
-            IFilter<IResource> resourceFilter, IProgressMonitor monitor) throws CoreException {
-
-    	String pipeOutput = "il";
-    	
-    	
+            IFilter<IResource> resourceFilter, IProgressMonitor monitor) throws CoreException 
+    {
         if (CoreMoSyncPlugin.getDefault().isDebugging()) {
             CoreMoSyncPlugin.trace("Building project {0}", project);
         }
-
-        ErrorParserManager epm = createErrorParserManager(project);
-
-        MoSyncProject mosyncProject = MoSyncProject.create(project);
-
-        String cfgId = variant.getConfigurationId();
-        IBuildConfiguration cfg = mosyncProject.getBuildConfiguration(cfgId);
-
-        IProfile targetProfile = variant.getProfile();
-
+        
         BuildResult buildResult = new BuildResult(project);
         buildResult.setVariant(variant);
         Calendar timestamp = Calendar.getInstance();
         buildResult.setTimestamp(timestamp.getTimeInMillis());
         
+        MoSyncProject mosyncProject = MoSyncProject.create(project);
         IBuildState buildState = mosyncProject.getBuildState(variant);
-        IFileTreeDiff diff = createDiff(buildState, session);
         
         ensureOutputIsMarkedDerived(project, variant);
-        
-    	// Check what sort of output we're producing.
-    	if ( mosyncProject.getTargetProfile( )
-                          .getProperties( )
-                          .containsKey( "MA_PROF_OUTPUT_CPP" ) == true )
-    	{
-    		pipeOutput = "cpp";
-    	} 
-    	else if ( mosyncProject.getTargetProfile( )
-                               .getProperties( )
-                               .containsKey( "MA_PROF_OUTPUT_JAVA" ) == true )
-    	{
-    		pipeOutput = "java";
-    	}    		
-    	
-        
+
+        ErrorParserManager epm = createErrorParserManager(project);
         
         try {
+        	/* Set up build monitor */
             monitor.beginTask(MessageFormat.format("Building {0}", project), 4);
-
-            IPropertyOwner buildProperties = getPropertyOwner(mosyncProject, cfg);
-
             monitor.setTaskName("Clearing old problem markers");
-
+            
+            if (session.doLink() && !session.doBuildResources()) {
+                throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
+                        "If resource building is suppressed, then linking should also be."));
+            }
+            
             // And we only remove things that are on the project.
+            IFileTreeDiff diff = createDiff(buildState, session);
             boolean hadSevereBuildErrors = hasErrorMarkers(project, IResource.DEPTH_ZERO);
-
             if (hadSevereBuildErrors) {
-                // Build all
+                // Build all files
                 diff = null;
             }
 
@@ -488,47 +471,38 @@ public class MoSyncBuilder extends ACBuilder {
                 buildState.getDependencyManager().clear();
             }
 
-            boolean isLib = PROJECT_TYPE_LIBRARY.equals(mosyncProject.getProperty(PROJECT_TYPE));
+            IProcessConsole console = createConsole(session);
 
-            GCCLineHandler linehandler = new GCCLineHandler(epm);
-
-            IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(CONSOLE_ID);
-            prepareConsole(session, console);
-
-            if (!MoSyncTool.getDefault().isValid()) {
-                String error = MoSyncTool.getDefault().validate();
-                console.addMessage(MessageFormat.format("MoSync Tool not properly initialized: {0}", error));
-                console.addMessage("- go to Window > Preferences > MoSync Tool to set the MoSync home directory");
-            }
-
-            if (session.doLink() && !session.doBuildResources()) {
-                throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
-                        "If resource building is suppressed, then linking should also be."));
-            }
-
-            console
-                    .addMessage("Build started at "
-                            + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG).format(timestamp.getTime()));
-
+            DateFormat dateFormater = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG);
+            console.addMessage("Build started at " + dateFormater.format(timestamp.getTime()));
             console.addMessage(createBuildMessage("Building", mosyncProject, variant));
 
+            /**
+             * Compile source files.
+             */
+            
+            /* Set up the compiler */
             MoSyncBuilderVisitor compilerVisitor = new MoSyncBuilderVisitor();
             compilerVisitor.setProject(project);           
             compilerVisitor.setVariant(variant);
 
+            GCCLineHandler linehandler = new GCCLineHandler(epm);
+            
+            /* Set up pipe-tool */
             PipeTool pipeTool = new PipeTool();
             pipeTool.setAppCode(getCurrentAppCode(session));
             pipeTool.setProject(project);
             pipeTool.setConsole(console);
             pipeTool.setLineHandler(linehandler);
+            IPropertyOwner buildProperties = getPropertyOwner(mosyncProject, variant.getConfigurationId());
             pipeTool.setArguments(buildProperties);
 
+            /* Set up resource visitor */
             MoSyncResourceBuilderVisitor resourceVisitor = new MoSyncResourceBuilderVisitor();
-
-            IPath resource = getResourceOutputPath(project, variant);
             resourceVisitor.setProject(project);
             resourceVisitor.setVariant(variant);
             resourceVisitor.setPipeTool(pipeTool);
+            IPath resource = getResourceOutputPath(project, variant);
             resourceVisitor.setOutputFile(resource);
             resourceVisitor.setDependencyProvider(compilerVisitor.getDependencyProvider());
             resourceVisitor.setDiff(diff);
@@ -542,8 +516,10 @@ public class MoSyncBuilder extends ACBuilder {
 
             // ...and then the actual code is compiled
             IPath compileDir = getOutputPath(project, variant);
+            IProfile targetProfile = variant.getProfile();
             monitor.setTaskName(MessageFormat.format("Compiling for {0}", targetProfile));
 
+            /* Compile all files */
             compilerVisitor.setConsole(console);
             compilerVisitor.setExtraCompilerSwitches(buildProperties.getProperty(EXTRA_COMPILER_SWITCHES));
             Integer gccWarnings = PropertyUtil.getInteger(buildProperties, GCC_WARNINGS);
@@ -555,81 +531,59 @@ public class MoSyncBuilder extends ACBuilder {
             compilerVisitor.setResourceFilter(resourceFilter);
             compilerVisitor.incrementalCompile(monitor, buildState.getDependencyManager());
 
+            /* Update dependencies */
             IResource[] allAffectedResources = compilerVisitor.getAllAffectedResources();
             Set<IProject> projectDependencies = computeProjectDependencies(monitor, mosyncProject, buildState, allAffectedResources);
             DependencyManager<IProject> projectDependencyMgr = CoreMoSyncPlugin.getDefault().getProjectDependencyManager(ResourcesPlugin.getWorkspace());
             projectDependencyMgr.setDependencies(project, projectDependencies);
+            
             monitor.worked(1);
-
             if (monitor.isCanceled()) {
                 return buildResult;
             }
-
-            String[] objectFiles = compilerVisitor.getObjectFilesForProject(project);
-
-            int ec = compilerVisitor.getErrorCount();
-
             monitor.setTaskName(MessageFormat.format("Packaging for {0}", targetProfile));
 
             IPath program = getProgramOutputPath(project, variant);
-
             IPath programComb = getProgramCombOutputPath(project, variant);
 
             // We'll relink if we had some non-empty delta; we'll use
             // the compiler visitor to tell us that. We'll also relink
             // if some library that our project depends on is changed.
-            boolean requiresLinking = allAffectedResources.length > 0;
-            if (!requiresLinking) {
-                long librariesTouched = mosyncProject.getLibraryLookup(buildProperties).getLastTouched();
-                long programCombTouched = programComb.toFile().lastModified();
-                boolean librariesNewer = librariesTouched > programCombTouched;
-                requiresLinking = librariesNewer;
-
-                if (librariesNewer && programCombTouched > 0) {
-                    console.addMessage("Libraries have changed, will require re-linking");
-                }
+            
+            boolean librariesHaveChanged = haveLibrariesChanged(mosyncProject, buildProperties, programComb);
+            boolean requiresLinking = session.doLink() && (allAffectedResources.length > 0 || librariesHaveChanged);
+            if (librariesHaveChanged) {
+            	console.addMessage("Libraries have changed, will require re-linking");
             }
 
-            requiresLinking &= session.doLink();
-
-            if (ec == 0 && requiresLinking) {
-                boolean elim = !isLib && PropertyUtil.getBoolean(buildProperties, DEAD_CODE_ELIMINATION);                
-                
-                //
-                // Check if we need to tell pipe-tool to output 
-                // something other then IL.
-                //
-                if ( isLib == true)
-                	pipeTool.setMode( PipeTool.BUILD_LIB_MODE );
-                else 
-                {
-	                if ( pipeOutput.equals( "cpp" ) == true )
-	                	pipeTool.setMode( PipeTool.BUILD_GEN_CPP_MODE );
-	                else if ( pipeOutput.equals( "java" ) == true )
-	                	pipeTool.setMode( PipeTool.BUILD_GEN_JAVA_MODE );
-	                else
-	                	pipeTool.setMode( PipeTool.BUILD_C_MODE );
-                }
-                
+            /**
+             * Perform linking.
+             */
+            boolean isLib = PROJECT_TYPE_LIBRARY.equals(mosyncProject.getProperty(PROJECT_TYPE));
+            int errorCount = compilerVisitor.getErrorCount();
+            if (errorCount == 0 && requiresLinking) {
+                String[] objectFiles = compilerVisitor.getObjectFilesForProject(project);
                 pipeTool.setInputFiles(objectFiles);
+                String pipeToolMode = getPipeToolMode( targetProfile, isLib );
+                pipeTool.setMode( pipeToolMode );
                 IPath libraryOutput = computeLibraryOutput(mosyncProject, buildProperties);
                 pipeTool.setOutputFile(isLib ? libraryOutput : program);
                 pipeTool.setLibraryPaths(getLibraryPaths(project, buildProperties));
                 pipeTool.setLibraries(getLibraries(buildProperties));
+                boolean elim = !isLib && PropertyUtil.getBoolean(buildProperties, DEAD_CODE_ELIMINATION);
                 pipeTool.setDeadCodeElimination(elim);
                 pipeTool.setCollectStabs(true);
 
                 String[] extraLinkerSwitches = PropertyUtil.getStrings(buildProperties, EXTRA_LINK_SWITCHES);
                 pipeTool.setExtraSwitches(extraLinkerSwitches);
 
-                if (objectFiles.length > 0) {                	
+                if (objectFiles.length > 0) {
                     pipeTool.run();
                     
                     // If needed, run a second time to generate IL
-                    if ( isLib == false && pipeOutput.equals( "il" ) == false )
-                    {
-                    	pipeTool.setMode( PipeTool.BUILD_C_MODE );
-                		pipeTool.run( );
+                    if (isLib == false && pipeToolMode.equals(PipeTool.BUILD_C_MODE) == false) {
+                    	pipeTool.setMode(PipeTool.BUILD_C_MODE);
+                		pipeTool.run();
                     }
                 }
 
@@ -643,6 +597,8 @@ public class MoSyncBuilder extends ACBuilder {
                     elimPipeTool.setOutputFile(program);
                     elimPipeTool.setConsole(console);
                     elimPipeTool.setExtraSwitches(extraLinkerSwitches);
+                    elimPipeTool.setAppCode(getCurrentAppCode(session));
+                    elimPipeTool.setArguments(buildProperties);
                     File rebuildFile = new File(elimPipeTool.getExecDir(), "rebuild.s");
                     elimPipeTool.setInputFiles(new String[] { rebuildFile.getAbsolutePath() });
                     elimPipeTool.run();
@@ -666,35 +622,26 @@ public class MoSyncBuilder extends ACBuilder {
                 }
             }
 
-            // And the icon, finally...
-            MoSyncIconBuilderVisitor iconVisitor = new MoSyncIconBuilderVisitor();
-            iconVisitor.setProject(project);
-            iconVisitor.setVariant(variant);
-            iconVisitor.setConsole(console);
-            iconVisitor.setDiff(diff);
-            iconVisitor.setResourceFilter(resourceFilter);
-            iconVisitor.incrementalCompile(monitor, buildState.getDependencyManager());
-
-            if (session.doPack() && !isLib) {
+            /**
+             * Package application.
+             */
+            boolean shouldPack = session.doPack() && !isLib && errorCount == 0;
+            if (shouldPack) {
                 IPackager packager = targetProfile.getPackager();
                 packager.setParameter(USE_DEBUG_RUNTIME_LIBS, Boolean.toString(PropertyUtil
-                        .getBoolean(getPropertyOwner(mosyncProject, variant.getConfigurationId()), USE_DEBUG_RUNTIME_LIBS)));
+                        .getBoolean(buildProperties, USE_DEBUG_RUNTIME_LIBS)));
+                packager.createPackage(mosyncProject, variant, buildResult);
 
-                if (ec == 0) {
-                    packager.createPackage(mosyncProject, variant, buildResult);
-
-                    if (buildResult.getBuildResult() == null || !buildResult.getBuildResult().exists()) {
-                        throw new IOException(MessageFormat.format("Failed to create package for {0} (platform: {1})", targetProfile, getAbbreviatedPlatform(targetProfile)));
-                    } else {
-                        console.addMessage(MessageFormat.format("Created package: {0} (platform: {1})", buildResult.getBuildResult(), getAbbreviatedPlatform(targetProfile)));
-                    }
+                if (buildResult.getBuildResult() == null || !buildResult.getBuildResult().exists()) {
+                    throw new IOException(MessageFormat.format("Failed to create package for {0} (platform: {1})", targetProfile, getAbbreviatedPlatform(targetProfile)));
+                } else {
+                    console.addMessage(MessageFormat.format("Created package: {0} (platform: {1})", buildResult.getBuildResult(), getAbbreviatedPlatform(targetProfile)));
                 }
             }
 
             monitor.worked(1);
 
-            console.addMessage("Build finished at "
-                    + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG).format(Calendar.getInstance().getTime()));
+            console.addMessage("Build finished at " + dateFormater.format(Calendar.getInstance().getTime()));
 
             project.refreshLocal(IProject.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
 
@@ -702,7 +649,7 @@ public class MoSyncBuilder extends ACBuilder {
             
             return buildResult;
         } catch (OperationCanceledException e) { 
-            // That's ok
+            // That's ok, why?
             return buildResult; 
         } catch (Exception e) {
             e.printStackTrace();
@@ -847,6 +794,26 @@ public class MoSyncBuilder extends ACBuilder {
             }
         }
     }
+    
+    /**
+     * Creates a console that is ready for printing.
+     * 
+     * @param session The current build session.
+     * @return A console that is ready for printing.
+     */
+    private IProcessConsole createConsole(IBuildSession session)
+    {
+        IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(CONSOLE_ID);
+        prepareConsole(session, console);
+
+        if (!MoSyncTool.getDefault().isValid()) {
+            String error = MoSyncTool.getDefault().validate();
+            console.addMessage(MessageFormat.format("MoSync Tool not properly initialized: {0}", error));
+            console.addMessage("- go to Window > Preferences > MoSync Tool to set the MoSync home directory");
+        }
+        
+        return console;
+    }
 
     private Set<IProject> computeProjectDependencies(IProgressMonitor monitor, MoSyncProject mosyncProject, IBuildState buildState, IResource[] allAffectedResources) {
         IProject project = mosyncProject.getWrappedProject();
@@ -934,8 +901,6 @@ public class MoSyncBuilder extends ACBuilder {
         ArrayList<IPath> result = new ArrayList<IPath>();
         if (!PropertyUtil.getBoolean(buildProperties, IGNORE_DEFAULT_INCLUDE_PATHS)) {
             result.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
-            // result.add(getOutputPath(project.getWrappedProject(),
-            // buildProperties).removeTrailingSeparator());
         }
         
         result.addAll(Arrays.asList(MoSyncBuilder.getProfileIncludes(variant.getProfile())));

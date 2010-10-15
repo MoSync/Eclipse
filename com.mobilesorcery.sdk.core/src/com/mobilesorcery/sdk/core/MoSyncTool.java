@@ -676,13 +676,35 @@ public class MoSyncTool {
 	 * @return Path to the binary
 	 */
 	public IPath getBinary(String name) {
+
+		String extension = getBinExtension();
+		return getMoSyncBin().append(name + extension);
+	}
+	
+	/**
+	 * Returns the path to java binary defined by the java.home property.
+	 * 
+	 * @return the path to java binary defined by the java.home property.
+	 */
+	public IPath getJava() {
+		IPath javaHome = new Path(System.getProperty("java.home"));
+		IPath javaBin = javaHome.append("bin/java" + getBinExtension());
+		
+		return javaBin;
+	}
+	
+	/**
+	 * Returns the extension of executables on the current platform.
+	 */
+	private String getBinExtension()
+	{
 		String extension = "";
 		
 		if(System.getProperty("os.name").toLowerCase().indexOf("win") >= 0) {
 			extension = ".exe";
 		}
 		
-		return getMoSyncBin().append(name + extension);
+		return extension;
 	}
 	
 	/**

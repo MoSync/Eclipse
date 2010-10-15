@@ -32,6 +32,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.AbstractPackager;
+import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
@@ -127,7 +128,6 @@ public class JavaPackager extends AbstractPackager {
         List<KeystoreCertificateInfo> keystoreCertInfos = KeystoreCertificateInfo
                 .parseList(project.getProperty(PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS));
         // sign jar file using jarSigner
-        File mosyncBinDir = internal.resolveFile("%mosync-bin%");
         // File unsignedProjectJar = new File(projectJar.getParentFile(),
         // Util.getNameWithoutExtension(projectJar) + "_unsigned.jar");
 
@@ -158,27 +158,34 @@ public class JavaPackager extends AbstractPackager {
              * internal.runCommandLine(jarSignerCommandLine,
              * "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***");
              */
-            String[] addCertCommandLine = new String[] {
-                    "java",
-                    "-classpath",
-                    new File(mosyncBinDir, "javame/JadTool.jar").getAbsolutePath() + File.pathSeparatorChar
-                            + new File(mosyncBinDir, "javame/core__environment.jar").getAbsolutePath() + File.pathSeparatorChar
-                            + new File(mosyncBinDir, "javame/core__properties.jar").getAbsolutePath(), "com.sun.midp.jadtool.JadTool", "-addcert", "-keystore",
-                    keystore, "-alias", alias, "-inputjad", projectJad.getAbsolutePath(), "-outputjad",
-                    projectJad.getAbsolutePath() };
+            
+            MoSyncTool moSyncTool = MoSyncTool.getDefault();
+            String javaPath = moSyncTool.getJava().toOSString();
+            CommandLineBuilder addCertCmd = new CommandLineBuilder(javaPath);
+            
+            String jadToolPath = moSyncTool.getMoSyncBin().append("javame/JadTool.jar").toOSString();
+            addCertCmd.flag("-jar").with(jadToolPath);
+            addCertCmd.flag("-addcert");
+            addCertCmd.flag("-alias").with(alias);
+            addCertCmd.flag("-keystore").with(keystore);
+            addCertCmd.flag("-inputjad").with(projectJad);
+            addCertCmd.flag("-outputjad").with(projectJad);
+            addCertCmd.flag("-storepass").with(storepass);
+            
+            assertOk(internal.runCommandLine(addCertCmd.asArray(), addCertCmd.toHiddenString("-storepass")));
 
-            assertOk(internal.runCommandLine(addCertCommandLine, "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***"));
+            CommandLineBuilder addJarSigCmd = new CommandLineBuilder(javaPath);
+            addJarSigCmd.flag("-jar").with(jadToolPath);
+            addJarSigCmd.flag("-addjarsig");
+            addJarSigCmd.flag("-jarfile").with(projectJar);
+            addJarSigCmd.flag("-keystore").with(keystore);
+            addJarSigCmd.flag("-storepass").with(storepass);
+            addJarSigCmd.flag("-alias").with(alias);
+            addJarSigCmd.flag("-keypass").with(keypass);
+            addJarSigCmd.flag("-inputjad").with(projectJad);
+            addJarSigCmd.flag("-outputjad").with(projectJad);
 
-            String[] addJarSigCommandLine = new String[] {
-                    "java",
-                    "-classpath",
-                    new File(mosyncBinDir, "javame/JadTool.jar").getAbsolutePath() + File.pathSeparatorChar
-                            + new File(mosyncBinDir, "javame/core__environment.jar").getAbsolutePath() + File.pathSeparatorChar
-                            + new File(mosyncBinDir, "javame/core__properties.jar").getAbsolutePath(), "com.sun.midp.jadtool.JadTool", "-addjarsig",
-                    "-keystore", keystore, "-keypass", keypass, "-alias", alias, "-jarfile", projectJar.getAbsolutePath(), "-inputjad",
-                    projectJad.getAbsolutePath(), "-outputjad", projectJad.getAbsolutePath() };
-
-            assertOk(internal.runCommandLine(addJarSigCommandLine, "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***"));
+            assertOk(internal.runCommandLine(addJarSigCmd.asArray(), addJarSigCmd.toHiddenString("-storepass", "-keypass")));
         }
     }
     

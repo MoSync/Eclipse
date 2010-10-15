@@ -58,31 +58,6 @@ public class MoSyncIconBuilderVisitor extends IncrementalBuilderVisitor {
     }
 
     public void incrementalCompile(IProgressMonitor monitor, DependencyManager<IResource> dependencyManager) throws CoreException {
-    	IResource[] iconFiles = getChangedOrAddedResources();
-    // Disabled the building of icons for MoRE, it just made the output really confusing
-    /*	
-    	if (iconFiles.length > 0) {
-    		IResource iconFile = iconFiles[0];
-        	MoSyncProject mosyncProject = MoSyncProject.create(project);
-            DefaultPackager internal = new DefaultPackager(mosyncProject, MoSyncBuilder.getActiveVariant(mosyncProject, false));
-        	try {
-        		String iconInjectorLoc = MoSyncTool.getDefault().getBinary("icon-injector").toOSString();
-        		File morePng = internal.resolveFile("%compile-output-dir%/more.png");
-        		
-            	internal.runCommandLine(iconInjectorLoc, 
-            							"-src", 
-            							iconFile.getLocation().toOSString(), 
-            							"-size", 
-            							"16x16", 
-            							"-platform",
-            							"more",
-            							"-dst", 
-            							morePng.getAbsolutePath()  );                                            		
-        	} catch(IOException e) {
-       	       throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage()));
-        	}    	
-    	}
-    */	
     }
     
     protected String getName() {
