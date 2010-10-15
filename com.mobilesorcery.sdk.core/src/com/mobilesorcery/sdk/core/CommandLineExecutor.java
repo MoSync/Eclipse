@@ -84,9 +84,11 @@ public class CommandLineExecutor {
     public int runCommandLine(String[] commandLine, String consoleMsg) throws IOException {
         int res;
         lines.clear();
+        consoleMsgs.clear();
         addCommandLine(commandLine, consoleMsg);
         res = execute();
         lines.clear(); 
+        consoleMsgs.clear();
         return res;
     }
     

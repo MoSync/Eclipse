@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.List;
 
 /**
  * A fluent class for building command lines.
@@ -22,7 +25,7 @@ public class CommandLineBuilder
 	 * The set of flags, if a flag does not have a parameter its
 	 * key is null.
 	 */
-	private HashMap<String, String> m_params = new HashMap<String, String>();
+	private HashMap<String, String> m_params = new LinkedHashMap<String, String>();
 	
 	/**
 	 * The trailing parameters of the command line, e.g. files to the cp command.
@@ -173,28 +176,81 @@ public class CommandLineBuilder
 	 */
 	public String toString()
 	{
-		StringBuffer cmdLine = new StringBuffer( m_executable );
+		StringBuffer cmdLine = new StringBuffer( quote( m_executable ) );
 		
-		/* Add flags and their parameters */
-		for( String flag : m_params.keySet( ) )
+		addFlags( m_params, cmdLine );
+		addTrailingArgs( m_endParams, cmdLine );
+		
+		return cmdLine.toString( );
+	}
+	
+	/**
+	 * Converts the command line into a single string. Arguments containing
+	 * spaces are quoted. Flags in the given list of hidden flags are
+	 * hidden with "*HIDDEN*".
+	 * 
+	 * @param hiddenFlags A list of flags which should be hidden from the
+	 *                    command line.
+	 * @return the command line as a string.
+	 */
+	public String toHiddenString(String ... hiddenFlags)
+	{
+		/* Copy internal map and hide specified parameters. */
+		Map<String, String> paramsHidden = new LinkedHashMap<String, String>( m_params );
+		for( String hiddenFlag : hiddenFlags )
+		{
+			if( paramsHidden.containsKey( hiddenFlag ) )
+			{
+				paramsHidden.put( hiddenFlag, "***HIDDEN***" );
+			}
+		}
+
+		StringBuffer cmdLine = new StringBuffer( quote( m_executable ) );
+		
+		addFlags( paramsHidden, cmdLine );
+		addTrailingArgs( m_endParams, cmdLine );
+		
+		return cmdLine.toString( );
+	}
+	
+	/**
+	 * Flattens a map of flag pairs elements into to a string, and quotes
+	 * the parameter if it contains spaces or tabs. 
+	 * 
+	 * @param flags A map of flag pairs that will be appended in the
+	 *              command line.
+	 * @param cmdLine The command flag pairs will be appended here.
+	 */
+	private void addFlags(Map<String, String> flags, StringBuffer cmdLine)
+	{
+		for( String flag : flags.keySet( ) )
 		{
 			cmdLine.append( " " + flag );
 			
-			String value = m_params.get( flag );
+			String value = flags.get( flag );
 			if( value != null )
 			{
 				cmdLine.append( " " + quote( value ) );
 			}		
 		}
-		
-		/* Add trailing arguments */
-		for( String parameter : m_endParams )
+	}
+	
+	/**
+	 * Flattens a list of parameters into a string, and quotes a parameter
+	 * if it contains spaces or tabs.
+	 * 
+	 * @param args A list of arguments that will be appended to the command 
+	 *             line.
+	 * @param cmdLine The command parameters will be appended here.
+	 */
+	private void addTrailingArgs(List<String> args, StringBuffer cmdLine)
+	{
+		for( String parameter : args )
 		{
 			cmdLine.append( " " + quote( parameter ) );
 		}
-		
-		return cmdLine.toString( );
 	}
+	
 	
 	/**
 	 * Surrounds the input string with quotation marks
