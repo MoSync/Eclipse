@@ -63,9 +63,11 @@ public class ProfilingView extends ViewPart {
 	    CTabItem callTreeTab = new CTabItem(results, SWT.NONE);
 	    callTreeTab.setText("Call Tree");
 	    hotspotProfilingComposite = new ProfilingComposite(results, SWT.FLAT);
+	    hotspotProfilingComposite.setStatusLineManager(getViewSite().getActionBars().getStatusLineManager());
 	    hotSpotTab.setControl(hotspotProfilingComposite);
 	    hotSpotTab.setImage(ProfilingUiPlugin.getDefault().getImageRegistry().get(ProfilingUiPlugin.HOTSPOTS_TAB_IMG));
-        callTreeProfilingComposite = new ProfilingComposite(results, SWT.NONE);
+	    callTreeProfilingComposite = new ProfilingComposite(results, SWT.NONE);
+	    callTreeProfilingComposite.setStatusLineManager(getViewSite().getActionBars().getStatusLineManager());
 	    callTreeTab.setControl(callTreeProfilingComposite);
 	    callTreeTab.setImage(ProfilingUiPlugin.getDefault().getImageRegistry().get(ProfilingUiPlugin.CALL_TREE_TAB_IMG));
 

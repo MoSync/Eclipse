@@ -1,10 +1,16 @@
 package com.mobilesorcery.sdk.profiling.ui.views;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 
+import org.eclipse.core.runtime.Path;
+import org.eclipse.jface.action.IStatusLineManager;
 import org.eclipse.jface.layout.TreeColumnLayout;
 import org.eclipse.jface.viewers.ColumnWeightData;
+import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.IDoubleClickListener;
+import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeColumnViewerLabelProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.TreeViewerColumn;
@@ -17,10 +23,12 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
+import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;
+import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class ProfilingComposite extends Composite {
     
@@ -41,6 +49,7 @@ public class ProfilingComposite extends Composite {
     PercentageBarLabelProvider percentageLabelProvider;
     private FunctionNameLabelProvider functionNameLabelProvider;
     private ProfilingLabelProvider labelProvider;
+	private IStatusLineManager statusLine;
    
     public ProfilingComposite(Composite parent, int style) {
         super(parent, style);
@@ -118,8 +127,33 @@ public class ProfilingComposite extends Composite {
                     }
                 }
         });
+        
+        profileTreeViewer.addDoubleClickListener(new IDoubleClickListener() {
+			public void doubleClick(DoubleClickEvent event) {
+				IStructuredSelection selection = (IStructuredSelection) event.getSelection();
+				Object element = selection.getFirstElement();
+				if (element instanceof IInvocation) {
+					IInvocation invocation = (IInvocation) element;
+					String filename = invocation.getProfiledEntity().getFileName();
+					int linenumber = invocation.getProfiledEntity().getLineNumber();
+					if (filename != null && new File(filename).exists()) {
+						UIUtils.openResource(new Path(filename), linenumber);
+						if (statusLine != null) {
+							statusLine.setErrorMessage(null);
+						}
+					} else if (filename != null) {
+						if (statusLine != null) {
+							statusLine.setErrorMessage(String.format("Could not open file %s; it does not exist?", filename));
+						}
+					}
+				}
+			}
+		});
     }
     
+    public void setStatusLineManager(IStatusLineManager statusLine) {
+    	this.statusLine = statusLine;
+    }
     private boolean isFlat() {
         return (getStyle() & SWT.FLAT) != 0;
     }

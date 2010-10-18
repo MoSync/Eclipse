@@ -22,6 +22,8 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
+import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.SLD;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
@@ -40,8 +42,9 @@ public class EmulatorProfilingLaunchConfigurationDelegate extends EmulatorLaunch
         super.launchSync(launchConfig, mode, launch, emulatorId, monitor);
         MoSyncProject mosyncProject = MoSyncProject.create(getProject(launchConfig));
         // At this point, we parse profiling data only post-mortem.
-        IPath launchDir = getLaunchDir(mosyncProject);
-        IBuildConfiguration buildConfiguration = mosyncProject.getActiveBuildConfiguration();
+        IBuildVariant variant = getVariant(launchConfig, mode);
+        IPath launchDir = getLaunchDir(mosyncProject, variant);
+        IBuildConfiguration buildConfiguration = mosyncProject.getBuildConfiguration(variant.getConfigurationId());
         SLD sld = mosyncProject.getSLD(buildConfiguration);
         
         IPath profilingFile = launchDir.append("fp.xml");

@@ -435,4 +435,11 @@ icon="icons/launchshortcut.png">
     </toolbar>
     </menuContribution>
       </extension>
+      
+       <extension point="org.eclipse.ui.activities">
+  <category id="com.mobilesorcery.activities.experimental"
+   description="MoSync Experimental Activities"
+   name="MoSync Experimental Activities" />
+ </extension>
+      
 </plugin>

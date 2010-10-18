@@ -22,21 +22,32 @@ public class FunctionDesc {
 
     private String toString;
 
+	private String filename;
+
+	private int lineno;
+
     public FunctionDesc(int addr) {
-        init(addr, null);
+        init(addr, null, null, NO_ADDR);
     }
 
     public FunctionDesc(String name) {
-        init(NO_ADDR, name);
+        init(NO_ADDR, name, null, NO_ADDR);
     }
     
     public FunctionDesc(int addr, String name) {
-        init(addr, name);
+        init(addr, name, null, NO_ADDR);
     }
 
-    private void init(int addr, String name) {
+    public FunctionDesc(int functionAddr, String functionName, String filename,
+			int lineno) {
+    	init(functionAddr, functionName, filename, lineno);
+	}
+
+	private void init(int addr, String name, String filename, int lineno) {
         this.addr = addr;
         this.name = name;
+        this.filename = filename;
+        this.lineno = lineno;
     }
     
     public int getAddr() {
@@ -45,6 +56,14 @@ public class FunctionDesc {
     
     public String getName() {
         return name;
+    }
+    
+    public String getFileName() {
+    	return filename;
+    }
+    
+    public int getLineNumber() {
+    	return lineno;
     }
     
     public boolean equals(Object o) {

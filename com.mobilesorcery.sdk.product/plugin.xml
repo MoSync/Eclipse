@@ -7,10 +7,10 @@
          point="org.eclipse.core.runtime.products">
       <product
             application="org.eclipse.ui.ide.workbench"
-            name="%productName">
+            name="MoSync IDE">
          <property
                name="windowImages"
-               value="icons/mosync_16x16.png,icons/mosync_32x32.png">
+               value="icons/mosync_16x16.png,icons/mosync_32x32.png,icons/mosync_48x48.png,icons/mosync_64x64.png,icons/mosync_128x128.png">
          </property>
          <property
                name="aboutText"
@@ -34,7 +34,7 @@
          </property>
          <property
                name="appName"
-               value="%productName">
+               value="MoSync IDE">
          </property>
          <property
                name="preferenceCustomization"

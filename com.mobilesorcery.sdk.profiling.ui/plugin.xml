@@ -21,4 +21,21 @@
             icon="icons/profiling.png"
             id="com.mobilesorcery.launchconfigurationtype.profiling.image"/>
    </extension>
+   
+  <extension point="org.eclipse.ui.activities">
+    <activity id="com.mobilesorcery.profiling"
+      description="MoSync Profiling"
+   name="MoSync Profiling" />
+  
+     <categoryActivityBinding activityId="com.mobilesorcery.profiling"
+   categoryId="com.mobilesorcery.activities.experimental" />
+   
+   <activityPatternBinding activityId="com.mobilesorcery.profiling"
+   pattern="com\.mobilesorcery\.sdk\.profiling\.ui/.*" />
+   
+   
+   <activityPatternBinding activityId="com.mobilesorcery.profiling"
+   pattern="com\.mobilesorcery\.sdk\.profiling/.*" />
+   
+  </extension> 
 </plugin>

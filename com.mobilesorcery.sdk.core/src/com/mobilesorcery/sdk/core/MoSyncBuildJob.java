@@ -24,21 +24,23 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 
 // TODO: This class currently only supports 'finalizing' one variant.
-public class FinalizerBuildJob extends Job {
-    private IBuildVariant variant;
+public class MoSyncBuildJob extends Job {
     private MoSyncProject project;
+	private IBuildSession session;
+	private IBuildVariant variant;
 
-    public FinalizerBuildJob(MoSyncProject project, IBuildVariant variant) {
+    public MoSyncBuildJob(MoSyncProject project, IBuildSession session, IBuildVariant variant) {
         super(MessageFormat.format("Finalizing project {0} for profile {1}", project.getName(), variant.getProfile()));
+        this.session = session;
         this.variant = variant;
         this.project = project;
-        setUser(true);
+        setSystem(true);
+        setRule(project.getWrappedProject().getWorkspace().getRoot());
     }
 
     protected IStatus run(IProgressMonitor monitor) {
         try {
-            IBuildSession buildSession = MoSyncBuilder.createFinalizerBuildSession(Arrays.asList(variant));
-            new MoSyncBuilder().fullBuild(project.getWrappedProject(), buildSession, variant, null, monitor);
+            new MoSyncBuilder().fullBuild(project.getWrappedProject(), session, variant, null, monitor);
         } catch (OperationCanceledException e) {
             return Status.CANCEL_STATUS;
         } catch (CoreException e) {

@@ -13,17 +13,23 @@
 */
 package com.mobilesorcery.sdk.testing.emulator;
 
+import java.util.SortedSet;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.ui.internal.misc.TestPartListener;
 
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.testing.TestManager;
 import com.mobilesorcery.sdk.testing.TestPlugin;
+import com.mobilesorcery.sdk.testing.project.MoSyncProjectTestManager;
 
 public class EmulatorTestLaunchConfigurationDelegate extends
 		EmulatorLaunchConfigurationDelegate {
@@ -47,6 +53,15 @@ public class EmulatorTestLaunchConfigurationDelegate extends
 	        throw new CoreException(new Status(IStatus.ERROR, TestPlugin.PLUGIN_ID, "Running tests requires build configurations to be active"));
 	    }
 	    
+	    IBuildConfiguration cfg = getAutoSwitchBuildConfiguration(configuration, mode);
+	    if (!MoSyncProjectTestManager.isTestConfig(cfg)) {
+	    	SortedSet<String> testConfigs = project.getBuildConfigurationsOfType(TestPlugin.TEST_BUILD_CONFIGURATION_TYPE);
+	    	String instructionStr = testConfigs.isEmpty() ? 
+	    			"Make sure to configure your project to have test configurations (via the \'Create MoSync Unit Test Suite\' wizard)" :
+	    			String.format("Make sure that the test suite is launched for one of these configurations: %s", Util.join(testConfigs.toArray(), ", "));
+	    	throw new CoreException(new Status(IStatus.ERROR, TestPlugin.PLUGIN_ID,
+	    			String.format("Cannot start tests for this build configuration (%s), it's not a test configuration. %s", cfg, instructionStr)));
+	    }
 	    return result;
 	}
 	

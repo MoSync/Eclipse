@@ -16,6 +16,10 @@ public class BuildVariant implements IBuildVariant {
         this.isFinalizerBuild = isFinalizerBuild;
     }
     
+    public BuildVariant(IProfile profile, IBuildConfiguration cfg, boolean isFinalizerBuild) {
+        this(profile, cfg == null ? null : cfg.getId(), isFinalizerBuild);
+    }
+    
     public String getConfigurationId() {
         return cfgId;
     }

@@ -45,11 +45,17 @@ class ProfilingDataParserHandler extends DefaultHandler {
             Invocation invocation = new Invocation(current);
             String functionName = atts.getValue(FUNC_NAME_ATTR);
             String functionAddrStr = atts.getValue(FUNC_ADDR_ATTR);
+            String filename = null;
+            int lineno = -1;
             int functionAddr = parseAddr(functionAddrStr);
             if (functionName == null && functionAddrStr != null) {
                 functionName = sld.getFunction(functionAddr);
             }
-            FunctionDesc fd = new FunctionDesc(functionAddr, functionName);
+            if (functionAddrStr != null) {
+            	filename = sld.getFileName(functionAddr);
+            	lineno = sld.getLine(functionAddr);
+            }
+            FunctionDesc fd = new FunctionDesc(functionAddr, functionName, filename, lineno);
             int count = parseInt(atts.getValue(INVOCATION_COUNT_ATTR), 0);
             float selfTime = parseFloat(atts.getValue(SELF_TIME_ATTR), 0);
             float aggTime = parseFloat(atts.getValue(AGG_TIME_ATTR), 0);

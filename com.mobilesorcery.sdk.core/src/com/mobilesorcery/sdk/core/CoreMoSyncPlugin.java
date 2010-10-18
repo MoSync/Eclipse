@@ -265,7 +265,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
             }
         }
 
-        return "";
+        return null;
     }
 
     private void initReIndexerListener() {
@@ -686,7 +686,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         
         logCount++;
         logCounts.put(token, logCount);
-        
     }
 	
 }

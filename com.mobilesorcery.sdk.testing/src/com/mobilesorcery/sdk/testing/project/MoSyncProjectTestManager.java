@@ -112,6 +112,10 @@ public class MoSyncProjectTestManager {
 	    }
     }
 
+    public static boolean isTestConfig(IBuildConfiguration cfg) {
+    	return cfg != null && cfg.getTypes().contains(TestPlugin.TEST_BUILD_CONFIGURATION_TYPE);
+    }
+    
     private boolean isTestLibrary(IPath lib) {
         return TEST_LIBRARY.equalsIgnoreCase(lib.toPortableString()) || TEST_LIBRARY_DEBUG.equalsIgnoreCase(lib.toPortableString());
     }
