@@ -1,8 +1,12 @@
 package com.mobilesorcery.sdk.profiling.emulator;
 
+import java.io.File;
+import java.util.Calendar;
+
 import org.eclipse.debug.core.ILaunchConfiguration;
 
 import com.mobilesorcery.sdk.core.IFilter;
+import com.mobilesorcery.sdk.core.SLD;
 import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;
 import com.mobilesorcery.sdk.profiling.ProfilingPlugin;
@@ -10,11 +14,19 @@ import com.mobilesorcery.sdk.profiling.ProfilingPlugin;
 public class ProfilingSession implements IProfilingSession {
 
     private IInvocation invocation = IInvocation.EMPTY;
-    private ILaunchConfiguration launchConfiguration;
     private IFilter<IInvocation> filter = ProfilingPlugin.getDefault().getDefaultFilter();
+	private Calendar startTime;
+	private String name;
+	private SLD sld;
+	private File profilingFile;
 
-    public ProfilingSession(ILaunchConfiguration launchConfiguration) {
-        this.launchConfiguration = launchConfiguration;
+    public ProfilingSession(String name, Calendar startTime) {
+        this.name = name;
+        this.startTime = startTime;
+    }
+    
+    public Calendar getStartTime() {
+    	return startTime;
     }
     
     public void setInvocation(IInvocation root) {
@@ -25,12 +37,8 @@ public class ProfilingSession implements IProfilingSession {
         return invocation;
     }
 
-    public ILaunchConfiguration getLaunchConfiguration() {
-        return launchConfiguration;
-    }
-
     public String getName() {
-        return launchConfiguration.getName();
+        return name;
     }
     
     public String toString() {
@@ -40,4 +48,27 @@ public class ProfilingSession implements IProfilingSession {
     public IFilter<IInvocation> getFilter() {
         return filter;
     }
+
+	public void setSLD(SLD sld) {
+		this.sld = sld;
+	}
+	
+	public SLD getSLD() {
+		return sld;
+	}
+
+	public Object getAdapter(Class adapter) {
+		if (SLD.class.equals(adapter)) {
+			return getSLD();
+		}
+		return null;
+	}
+
+	public void setProfilingFile(File profilingFile) {
+		this.profilingFile = profilingFile;
+	}
+	
+	public File getProfilingFile() {
+		return profilingFile;
+	}
 }

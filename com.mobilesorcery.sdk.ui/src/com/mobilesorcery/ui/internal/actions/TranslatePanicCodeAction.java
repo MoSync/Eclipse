@@ -41,6 +41,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class TranslatePanicCodeAction extends Action implements IWorkbenchWindowActionDelegate {
 

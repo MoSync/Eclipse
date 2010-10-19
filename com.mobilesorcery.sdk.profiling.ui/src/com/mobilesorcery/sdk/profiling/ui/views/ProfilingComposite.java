@@ -25,9 +25,11 @@ import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.ui.PlatformUI;
 
+import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;
+import com.mobilesorcery.sdk.profiling.filter.NameFilter;
 import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class ProfilingComposite extends Composite {
@@ -154,7 +156,8 @@ public class ProfilingComposite extends Composite {
     public void setStatusLineManager(IStatusLineManager statusLine) {
     	this.statusLine = statusLine;
     }
-    private boolean isFlat() {
+
+    public boolean isFlat() {
         return (getStyle() & SWT.FLAT) != 0;
     }
     
@@ -180,6 +183,10 @@ public class ProfilingComposite extends Composite {
         return profileTreeViewer.getControl().setFocus();
     }
 
+    public TreeViewer getViewer() {
+    	return profileTreeViewer;
+    }
+    
     public void setInput(IProfilingSession session) {
         this.session = session;
         functionNameLabelProvider.setSession(session);
@@ -187,4 +194,10 @@ public class ProfilingComposite extends Composite {
         labelProvider.setSession(session);
         profileTreeViewer.setInput(session);
     }
+
+	public void setFilter(IFilter<IInvocation> filter, boolean recursive) {
+		profileTreeViewer.setFilters(new ViewerFilter[] {
+			new InvocationViewerFilter(filter, recursive)	
+		});
+	}
 }

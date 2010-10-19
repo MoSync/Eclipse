@@ -44,9 +44,13 @@ public class ProfilingDataParser extends DefaultHandler {
     }
 
     public IInvocation parse(InputStream input, SLD sld) throws IOException, ParseException {
-        Invocation root = new Invocation(null);
         // Make sure it's parsed!
         ISLDInfo info = sld.parseSLD();
+        return parse(input, info);
+    }
+    
+    public IInvocation parse(InputStream input, ISLDInfo info) throws IOException, ParseException {
+            Invocation root = new Invocation(null);
         ProfilingDataParserHandler handler = new ProfilingDataParserHandler(root, info);
         try {
             SAXParserFactory spf = SAXParserFactory.newInstance();

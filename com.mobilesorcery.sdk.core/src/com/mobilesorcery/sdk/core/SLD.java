@@ -14,6 +14,9 @@
 package com.mobilesorcery.sdk.core;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
@@ -115,6 +118,22 @@ public class SLD {
     	return sldFile;       
     }
     
-
+    /**
+     * Utility method for parsing SDL info files
+     * @param input
+     * @param enc The character encoding to use, or <code>null</code> for
+     * the default encoding
+     * @return
+     * @throws IOException 
+     */
+    public static ISLDInfo parseSLDInfo(InputStream input, String enc) throws IOException {
+    	if (enc == null) {
+    		enc = "UTF-8";
+    	}
+    	InputStreamReader reader = new InputStreamReader(input, enc);
+    	SLDParser parser = new SLDParser();
+    	parser.parse(reader);
+    	return parser.getSLD();
+    }
 	
 }

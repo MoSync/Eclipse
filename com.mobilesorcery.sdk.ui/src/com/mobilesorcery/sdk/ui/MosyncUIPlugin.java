@@ -168,6 +168,11 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 
     static final String PASSWORD_HIDE = "p.hide";
 
+    static final String COLLAPSE_ALL = "collapse.all";
+    
+    static final String EXPAND_ALL = "expand.all";
+
+
     // The shared instance
     private static MosyncUIPlugin plugin;
 
@@ -517,7 +522,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         reg.put(IMG_OVR_EXCLUDED_RESOURCE, AbstractUIPlugin.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID, "$nl$/icons/exclude_ovr.png"));
         reg.put(PASSWORD_HIDE, AbstractUIPlugin.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID, "$nl$/icons/hide_pwd.png"));
         reg.put(PASSWORD_SHOW, AbstractUIPlugin.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID, "$nl$/icons/show_pwd.png"));
-
+        reg.put(COLLAPSE_ALL, AbstractUIPlugin.imageDescriptorFromPlugin(PLUGIN_ID, "$nl$/icons/collapseall.gif"));
+        reg.put(EXPAND_ALL, AbstractUIPlugin.imageDescriptorFromPlugin(PLUGIN_ID, "$nl$/icons/expandall.gif"));
     }
 
     public void showHelp(String helpResource, boolean showInExternalBrowser) {

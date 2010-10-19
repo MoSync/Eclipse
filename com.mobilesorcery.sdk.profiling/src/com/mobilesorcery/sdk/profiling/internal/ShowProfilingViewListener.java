@@ -7,6 +7,7 @@ import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.profiling.IProfilingListener;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;
+import com.mobilesorcery.sdk.profiling.ProfilingSessionEditorInput;
 
 public class ShowProfilingViewListener implements IProfilingListener {
 
@@ -16,15 +17,16 @@ public class ShowProfilingViewListener implements IProfilingListener {
         
     }
     
-    public void handleEvent(ProfilingEventType eventType, IProfilingSession session) {
+    public void handleEvent(ProfilingEventType eventType, final IProfilingSession session) {
         if (eventType == ProfilingEventType.STARTED) {
             Display d = PlatformUI.getWorkbench().getDisplay();
             d.asyncExec(new Runnable() {
                 public void run() {
                     IWorkbenchPage activePage = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-                    if (activePage != null && activePage.findView("com.mobilesorcery.sdk.profiling.ui.profiling") == null) {
+                    ProfilingSessionEditorInput editorInput = new ProfilingSessionEditorInput(session);
+                    if (activePage != null && activePage.findEditor(editorInput) == null) {
                         try {
-                            activePage.showView("com.mobilesorcery.sdk.profiling.ui.profiling");
+                            activePage.openEditor(editorInput, "com.mobilesorcery.sdk.profiling.ui.profiling");
                         } catch (PartInitException e) {
                             e.printStackTrace();
                         }

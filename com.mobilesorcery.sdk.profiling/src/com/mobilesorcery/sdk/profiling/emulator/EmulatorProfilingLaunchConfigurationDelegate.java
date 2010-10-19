@@ -13,6 +13,8 @@
 */
 package com.mobilesorcery.sdk.profiling.emulator;
 
+import java.util.Calendar;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -37,7 +39,7 @@ public class EmulatorProfilingLaunchConfigurationDelegate extends EmulatorLaunch
     @Override
     public void launchSync(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor)
     throws CoreException {
-        ProfilingSession session = new ProfilingSession(launchConfig);
+        ProfilingSession session = new ProfilingSession(launchConfig.getName(), Calendar.getInstance());
         ProfilingPlugin.getDefault().notifyProfilingListeners(ProfilingEventType.STARTED, session);
         super.launchSync(launchConfig, mode, launch, emulatorId, monitor);
         MoSyncProject mosyncProject = MoSyncProject.create(getProject(launchConfig));
@@ -52,8 +54,9 @@ public class EmulatorProfilingLaunchConfigurationDelegate extends EmulatorLaunch
         try {
             IInvocation profilingResult = parser.parse(profilingFile.toFile(), sld);
             session.setInvocation(profilingResult);
+            session.setSLD(sld);
+            session.setProfilingFile(profilingFile.toFile());
             ProfilingPlugin.getDefault().notifyProfilingListeners(ProfilingEventType.STOPPED, session);
-            System.err.print(profilingResult);
         } catch (Exception e) {
             throw new CoreException(new Status(IStatus.ERROR, ProfilingPlugin.PLUGIN_ID, "Could not parse profiling data.", e));
         }

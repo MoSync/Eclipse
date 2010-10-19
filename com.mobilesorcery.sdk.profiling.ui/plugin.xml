@@ -3,15 +3,15 @@
 <plugin>
 
    <extension
-         point="org.eclipse.ui.views">
-      <view
-            name="MoSync Application Profiling"
+         point="org.eclipse.ui.editors">
+      <editor
+            class="com.mobilesorcery.sdk.profiling.ui.views.ProfilingEditor"
+            default="true"
+            extensions="prof"
             icon="icons/profiling.png"
-            allowMultiple="false"
-            category="com.mobilesorcery.sdk.ui.main"
-            class="com.mobilesorcery.sdk.profiling.ui.views.ProfilingView"
-            id="com.mobilesorcery.sdk.profiling.ui.profiling">
-      </view>
+            id="com.mobilesorcery.sdk.profiling.ui.profiling"
+            name="MoSync Application Profiling">
+      </editor>
    </extension>
       <extension
          point="org.eclipse.debug.ui.launchConfigurationTypeImages">

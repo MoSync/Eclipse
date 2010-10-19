@@ -13,18 +13,16 @@
 */
 package com.mobilesorcery.sdk.profiling;
 
+import java.io.File;
+import java.util.Calendar;
+
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
 import com.mobilesorcery.sdk.core.IFilter;
 
-public interface IProfilingSession {
+public interface IProfilingSession extends IAdaptable{
 
-    /**
-     * Returns the launch configuration of this profiling session
-     * @return
-     */
-    public ILaunchConfiguration getLaunchConfiguration();
-    
     /**
      * Returns the 'root' invocation of this session
      * @return
@@ -42,4 +40,17 @@ public interface IProfilingSession {
      * @return
      */
     public String getName();
+
+    /**
+     * Returns the start time of this session.
+     * @return
+     */
+	public Calendar getStartTime();
+	
+	/**
+	 * Returns the file that holds the data of this session.
+	 * May be <code>null</code>.
+	 * @return
+	 */
+	public File getProfilingFile(); 
 }

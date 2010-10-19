@@ -18,8 +18,10 @@ public class ProfilingUiPlugin extends AbstractUIPlugin {
     public static final String CALL_TREE_TAB_IMG = "call.tree.tab.img";
 
     public static final String HOTSPOTS_TAB_IMG = "hotspots.tab.img";
-
-	// The shared instance
+    
+    public static final String EXPORT_SESSION_IMG = "export.session";
+    
+   	// The shared instance
 	private static ProfilingUiPlugin plugin;
 	
 	/**
@@ -71,5 +73,6 @@ public class ProfilingUiPlugin extends AbstractUIPlugin {
         reg.put(METHOD_IMG, AbstractUIPlugin.imageDescriptorFromPlugin(PLUGIN_ID, "$nl$/icons/methods_co.gif"));
         reg.put(CALL_TREE_TAB_IMG, AbstractUIPlugin.imageDescriptorFromPlugin(PLUGIN_ID, "$nl$/icons/call_tree.gif"));
         reg.put(HOTSPOTS_TAB_IMG, AbstractUIPlugin.imageDescriptorFromPlugin(PLUGIN_ID, "$nl$/icons/hotspots.gif"));
-    }
+        reg.put(EXPORT_SESSION_IMG, AbstractUIPlugin.imageDescriptorFromPlugin(PLUGIN_ID, "$nl$/icons/export.gif"));
+	}
 }
