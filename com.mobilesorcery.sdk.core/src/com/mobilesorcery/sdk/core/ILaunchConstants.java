@@ -36,7 +36,7 @@ public interface ILaunchConstants {
 	 * The launch property deciding whether to automatically change
 	 * the build configuration before launch 
 	 */
-	String AUTO_CHANGE_CONFIG = "auto.change.config";
+	String AUTO_CHANGE_CONFIG = "auto.change.config.2";
 
 	/**
 	 * The launch property deciding which build configuration to automatically change
@@ -48,7 +48,7 @@ public interface ILaunchConstants {
 	 * The launch property deciding whether to automatically change
 	 * the build configuration before a <i>debug</i> launch 
 	 */
-	String AUTO_CHANGE_CONFIG_DEBUG = AUTO_CHANGE_CONFIG + ".debug";
+	String AUTO_CHANGE_CONFIG_DEBUG = AUTO_CHANGE_CONFIG + ".debug.2";
 
 	/**
 	 * The launch property deciding which build configuration to automatically change
