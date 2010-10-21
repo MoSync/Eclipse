@@ -9,8 +9,10 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.IToolBarManager;
+import org.eclipse.jface.preference.PathEditor;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -38,6 +40,7 @@ import org.eclipse.ui.editors.text.ILocationProvider;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.statushandlers.StatusManager;
 
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiling.IProfilingListener;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;
 import com.mobilesorcery.sdk.profiling.ProfilingPlugin;
@@ -84,6 +87,7 @@ public class ProfilingEditor extends EditorPart {
 	private List<IProfilingSession> sessions = new ArrayList<IProfilingSession>();
 	
 	private boolean trackProfilingHistory = false;
+	private IPath path;
 
 	public ProfilingEditor() {
 	    profilingEventListener = new ProfilingListener();
@@ -174,12 +178,19 @@ public class ProfilingEditor extends EditorPart {
 		dialog.setFilterNames(new String[] { "MoSync Profiling Data Files" });
 		String file = dialog.open();
 		if (file != null) {
-			ProfilingSessionParser parser = new ProfilingSessionParser();
 			try {
-				parser.unparse(sessions, new File(file));
+				if (path != null) {
+					// This was a profiling session on-file
+					Util.copy(null, path.toFile(), new File(file), null);
+				} else {
+					ProfilingSessionParser parser = new ProfilingSessionParser();
+					parser.unparse(sessions, new File(file));
+				}
 			} catch (Exception e) {
 				StatusManager.getManager().handle(new Status(IStatus.ERROR, ProfilingUiPlugin.PLUGIN_ID, e.getMessage(), e), StatusManager.SHOW);
 			}
+			path = new Path(new File(file).getAbsolutePath());
+			setPartName(computePartName());
 		}
 	}
 
@@ -190,8 +201,7 @@ public class ProfilingEditor extends EditorPart {
 		if (input instanceof ProfilingSessionEditorInput) {
 			sessions = Arrays.asList(((ProfilingSessionEditorInput) input).getSession());
 		} else if (input instanceof IAdaptable) {
-			ILocationProvider location = (ILocationProvider) ((IAdaptable) input).getAdapter(ILocationProvider.class);
-			IPath path = location == null ? null : location.getPath(input);
+			path = getPath(input);
 			ProfilingSessionParser parser = new ProfilingSessionParser();
 			try {
 				sessions = Arrays.asList(parser.parse(path.toFile()));
@@ -203,14 +213,24 @@ public class ProfilingEditor extends EditorPart {
 
 		setPartName(computePartName());
 	}
-	
+
+	private IPath getPath(IEditorInput input) {
+		ILocationProvider location = (ILocationProvider) ((IAdaptable) input).getAdapter(ILocationProvider.class);
+		IPath path = location == null ? null : location.getPath(input);
+		return path;
+	}
+
 	private String computePartName() {
+		if (path != null) {
+			return path.lastSegment();
+		}
+		
 		if (sessions.size() == 1) {
 			// Support for more soon
 			return sessions.get(0).getName();
-		} else {
-			return getPartName();
 		}
+		
+		return getPartName();
 	}
 
 	public int getSessionCount() {

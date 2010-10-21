@@ -225,6 +225,10 @@ public class Util {
 
 		}
 
+		if (monitor == null) {
+			monitor = new NullProgressMonitor();
+		}
+		
 		monitor.beginTask("Copying...", src.length);
 
 		for (int i = 0; i < src.length; i++) {
