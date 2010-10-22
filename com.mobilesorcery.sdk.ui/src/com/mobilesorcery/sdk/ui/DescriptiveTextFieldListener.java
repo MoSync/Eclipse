@@ -27,8 +27,15 @@ public class DescriptiveTextFieldListener implements Listener {
 		enterNewState(hasFocus, true);
 		text.addListener(SWT.FocusIn, this);
 		text.addListener(SWT.FocusOut, this);
+		text.addListener(SWT.Modify, this);
 	}
 
+	public void dispose() {
+		text.removeListener(SWT.FocusIn, this);
+		text.removeListener(SWT.FocusOut, this);
+		text.removeListener(SWT.Modify, this);		
+	}
+	
 	public void handleEvent(Event event) {
 		if (event.type == SWT.FocusIn || event.type == SWT.FocusOut) {
 			enterNewState(event.type == SWT.FocusIn, false);
@@ -54,6 +61,10 @@ public class DescriptiveTextFieldListener implements Listener {
 			}
 		}
 	
+		updateTextColor();
+	}
+	
+	private void updateTextColor() {
 		text.setForeground(text.getDisplay().getSystemColor(descriptionMode ? SWT.COLOR_DARK_GRAY : SWT.COLOR_BLACK));
 	}
 	
@@ -64,4 +75,10 @@ public class DescriptiveTextFieldListener implements Listener {
 	public String getText() {
 		return descriptionMode ? "" : text.getText();
 	}
+	
+	public void setText(String text) {
+		this.text.setText(text);
+		enterNewState(hasFocus, true);
+	}
+	
 }

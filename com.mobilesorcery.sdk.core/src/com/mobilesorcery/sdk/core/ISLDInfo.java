@@ -3,6 +3,7 @@ package com.mobilesorcery.sdk.core;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Collection;
 
 public interface ISLDInfo {
 
@@ -18,4 +19,8 @@ public interface ISLDInfo {
 
     public String getFunction(int addr);
 
+    public Collection<String> getAllFilenames();
+    
+    public Collection<String> getAllFunctions();
+   
 }

@@ -88,6 +88,7 @@ public class ProfilingEditor extends EditorPart {
 	
 	private boolean trackProfilingHistory = false;
 	private IPath path;
+	private DescriptiveTextFieldListener filterDescription;
 
 	public ProfilingEditor() {
 	    profilingEventListener = new ProfilingListener();
@@ -110,8 +111,8 @@ public class ProfilingEditor extends EditorPart {
 			public void selectionChanged(SelectionChangedEvent event) {
 				IProfilingSession session = (IProfilingSession) ((IStructuredSelection)event.getSelection()).getFirstElement();
                 updateProfilingComposites(session);
-                if (filter != null) {
-                	filter.setText("");
+                if (filterDescription != null) {
+                	filterDescription.setText("");
                 }
 			}
 		});
@@ -120,7 +121,7 @@ public class ProfilingEditor extends EditorPart {
 	    GridData filterData = new GridData(SWT.RIGHT, SWT.CENTER, true, false);
 	    filterData.widthHint = UIUtils.getDefaultFieldSize();
 	    filter.setLayoutData(filterData);
-	    final DescriptiveTextFieldListener filterDescription = new DescriptiveTextFieldListener(filter, "Quick Filter");
+	    filterDescription = new DescriptiveTextFieldListener(filter, "Quick Filter");
 	    
 	    CTabFolder results = new CTabFolder(main, SWT.BOTTOM | SWT.BORDER);
 	    results.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));

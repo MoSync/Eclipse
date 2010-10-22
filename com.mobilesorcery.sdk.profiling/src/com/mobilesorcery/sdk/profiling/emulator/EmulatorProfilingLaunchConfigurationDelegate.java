@@ -15,6 +15,7 @@ package com.mobilesorcery.sdk.profiling.emulator;
 
 import java.util.Calendar;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -39,10 +40,12 @@ public class EmulatorProfilingLaunchConfigurationDelegate extends EmulatorLaunch
     @Override
     public void launchSync(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor)
     throws CoreException {
+    	IProject project = getProject(launchConfig);
         ProfilingSession session = new ProfilingSession(launchConfig.getName(), Calendar.getInstance());
+        session.setLocationProvider(new DefaultLocationProvider(project));
         ProfilingPlugin.getDefault().notifyProfilingListeners(ProfilingEventType.STARTED, session);
         super.launchSync(launchConfig, mode, launch, emulatorId, monitor);
-        MoSyncProject mosyncProject = MoSyncProject.create(getProject(launchConfig));
+        MoSyncProject mosyncProject = MoSyncProject.create(project);
         // At this point, we parse profiling data only post-mortem.
         IBuildVariant variant = getVariant(launchConfig, mode);
         IPath launchDir = getLaunchDir(mosyncProject, variant);

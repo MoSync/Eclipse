@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.action.IStatusLineManager;
 import org.eclipse.jface.layout.TreeColumnLayout;
@@ -28,6 +29,7 @@ import org.eclipse.ui.PlatformUI;
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiling.IInvocation;
+import com.mobilesorcery.sdk.profiling.ILocationProvider;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;
 import com.mobilesorcery.sdk.profiling.filter.NameFilter;
 import com.mobilesorcery.sdk.ui.UIUtils;
@@ -137,13 +139,14 @@ public class ProfilingComposite extends Composite {
 				if (element instanceof IInvocation) {
 					IInvocation invocation = (IInvocation) element;
 					String filename = invocation.getProfiledEntity().getFileName();
+					filename = mapToLocalFilename(filename);
 					int linenumber = invocation.getProfiledEntity().getLineNumber();
 					if (filename != null && new File(filename).exists()) {
 						UIUtils.openResource(new Path(filename), linenumber);
 						if (statusLine != null) {
 							statusLine.setErrorMessage(null);
 						}
-					} else if (filename != null) {
+					} else {
 						if (statusLine != null) {
 							statusLine.setErrorMessage(String.format("Could not open file %s; it does not exist?", filename));
 						}
@@ -153,7 +156,19 @@ public class ProfilingComposite extends Composite {
 		});
     }
     
-    public void setStatusLineManager(IStatusLineManager statusLine) {
+    protected String mapToLocalFilename(String filename) {
+		if (session != null) {
+			ILocationProvider locationProvider = session.getLocationProvider();
+			IFile workspaceRelativeLocation = locationProvider.getLocation(filename);
+			if (workspaceRelativeLocation != null) {
+				return workspaceRelativeLocation.getLocation().toOSString();
+			}
+		}
+		
+		return filename;
+	}
+
+	public void setStatusLineManager(IStatusLineManager statusLine) {
     	this.statusLine = statusLine;
     }
 

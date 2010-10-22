@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.core.runtime.IPath;
+
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section.Entry;
 
 /**
@@ -120,6 +122,10 @@ public class SectionedPropertiesFile {
 		public void addEntry(Entry entry) {
 			entries.add(entry);
 		}
+
+		public void addEntry(String key, String value) {
+			addEntry(new Entry(key, value));
+		}
 		
         public void addEntries(Map<String, String> properties) {
             for (String key : properties.keySet()) {
@@ -173,6 +179,7 @@ public class SectionedPropertiesFile {
 		private String unescape(String str) {
 			return str.replace("\\", "\\\\").replace("=", "\\="); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 		}
+
 	}
 	
 	public static SectionedPropertiesFile parse(File file) throws IOException {

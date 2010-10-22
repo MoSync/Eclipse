@@ -16,6 +16,8 @@ package com.mobilesorcery.sdk.internal;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.TreeMap;
 import java.util.Map.Entry;
@@ -127,6 +129,14 @@ public class SLDInfoImpl implements ISLDInfo {
     public File getSLDFile() {
         return file;
     }
+
+	public Collection<String> getAllFilenames() {
+		return Collections.unmodifiableCollection(fileTable.values());
+	}
+
+	public Collection<String> getAllFunctions() {
+		return Collections.unmodifiableCollection(startAddrForFunc.values());	
+	}
 
  
 }

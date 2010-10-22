@@ -8,6 +8,7 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.SLD;
 import com.mobilesorcery.sdk.profiling.IInvocation;
+import com.mobilesorcery.sdk.profiling.ILocationProvider;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;
 import com.mobilesorcery.sdk.profiling.ProfilingPlugin;
 
@@ -19,10 +20,19 @@ public class ProfilingSession implements IProfilingSession {
 	private String name;
 	private SLD sld;
 	private File profilingFile;
+	private ILocationProvider locationProvider = new DefaultLocationProvider(null);
 
     public ProfilingSession(String name, Calendar startTime) {
         this.name = name;
         this.startTime = startTime;
+    }
+    
+    public void setLocationProvider(ILocationProvider locationProvider) {
+    	this.locationProvider  = locationProvider;
+    }
+    
+    public ILocationProvider getLocationProvider() {
+    	return locationProvider;
     }
     
     public Calendar getStartTime() {

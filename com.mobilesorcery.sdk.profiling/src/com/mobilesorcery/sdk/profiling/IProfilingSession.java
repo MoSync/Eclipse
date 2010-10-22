@@ -21,7 +21,7 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 
 import com.mobilesorcery.sdk.core.IFilter;
 
-public interface IProfilingSession extends IAdaptable{
+public interface IProfilingSession extends IAdaptable {
 
     /**
      * Returns the 'root' invocation of this session
@@ -53,4 +53,9 @@ public interface IProfilingSession extends IAdaptable{
 	 * @return
 	 */
 	public File getProfilingFile(); 
+	
+	/**
+	 * Returns the location provider of this session
+	 */
+	public ILocationProvider getLocationProvider();
 }
