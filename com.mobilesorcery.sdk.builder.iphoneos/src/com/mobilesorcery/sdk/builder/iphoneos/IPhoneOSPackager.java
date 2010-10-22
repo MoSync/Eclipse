@@ -153,8 +153,12 @@ extends AbstractPackager
 		            for ( int s : sizes )
 		            {
 			            try 
-			            {	            	
-			                f = new File( out, "icon_"+s+"x"+s+".png" );
+			            {	            
+			            	if ( s == 57 )
+			            		f = new File( out, "Icon.png" );
+			            	else
+			            		f = new File( out, "Icon-"+s+".png" );
+			            	
 			                if ( f.exists( ) == true )
 			                	f.delete( );
 			                
