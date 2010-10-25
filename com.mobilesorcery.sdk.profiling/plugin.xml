@@ -43,7 +43,7 @@ icon="icons/profiling.png">
       
       <launchConfigurationTypeImage
             configTypeID="com.mobilesorcery.profiling.launchconfigurationtype"
-            icon="icons/profileticon.png"
+            icon="icons/profiling.png"
             id="com.mobilesorcery.profiling.launchconfigurationtype.image"/>
    </extension>
 

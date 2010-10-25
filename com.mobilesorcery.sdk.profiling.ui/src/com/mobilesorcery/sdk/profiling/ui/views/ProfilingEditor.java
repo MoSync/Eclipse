@@ -249,7 +249,9 @@ public class ProfilingEditor extends EditorPart {
     private void initActionBars() {
     	IToolBarManager tbMgr = getEditorSite().getActionBars().getToolBarManager();
 		expandAllAction = new ExpandAllAction();
+		expandAllAction.setToolTipText("Expand all profiling nodes");
 		collapseAllAction = new CollapseAllAction();
+		collapseAllAction.setToolTipText("Collapse all profiling nodes");
 		tbMgr.add(expandAllAction);
 		tbMgr.add(collapseAllAction);
     }
