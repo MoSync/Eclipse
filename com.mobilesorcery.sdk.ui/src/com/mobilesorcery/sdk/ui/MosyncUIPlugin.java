@@ -19,14 +19,11 @@ import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
-import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -43,17 +40,12 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.ISafeRunnable;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
-import org.eclipse.core.runtime.jobs.IJobChangeListener;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.resource.ImageRegistry;
@@ -76,7 +68,6 @@ import org.eclipse.ui.ide.undo.CreateProjectOperation;
 import org.eclipse.ui.intro.IIntroManager;
 import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
-import org.eclipse.ui.progress.WorkbenchJob;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -86,8 +77,6 @@ import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
-import com.mobilesorcery.sdk.core.SectionedPropertiesFile;
-import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section.Entry;
 import com.mobilesorcery.sdk.ui.internal.console.IDEProcessConsole;
 import com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator;
@@ -96,65 +85,6 @@ import com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator;
  * The activator class controls the plug-in life cycle
  */
 public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener, ISelectionListener, IProvider<IProcessConsole, String> {
-
-    private final class ImportExamplesProjectJob extends WorkbenchJob {
-        private ImportExamplesProjectJob(String name) {
-            super(name);
-        }
-
-        public IStatus runInUIThread(IProgressMonitor monitor) {
-            File examplesDir = MoSyncTool.getDefault().getMoSyncExamplesDirectory().toFile();
-            File exampleManifestFile = new File(examplesDir, "examples.list");
-            if (exampleManifestFile.exists()) {
-                try {
-                	/* Parse examples list */
-                    SectionedPropertiesFile exampleManifest = SectionedPropertiesFile.parse(exampleManifestFile);
-                    Section exampleSection = exampleManifest.getFirstSection("examples");
-                    Map<String, String> newExamples = exampleSection.getEntriesAsMap();
-                    
-                    /* Do not import examples that we already have in the workspace */ 
-                    IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
-                    IProject[] alreadyImportedProjects = wsRoot.getProjects();
-                    for (int i = 0; i < alreadyImportedProjects.length; i++) {
-                        IProject project = alreadyImportedProjects[i];
-                        newExamples.remove(project.getName());
-                    }
-
-                    ArrayList<File> projectFiles = new ArrayList<File>();
-                    ArrayList<String> preferredProjectNames = new ArrayList<String>();
-                    
-                    /* If there are any examples left to import, import them. */
-                    if (!newExamples.isEmpty()) {
-                        for (String newExample : newExamples.keySet()) {
-                            String newExampleDir = newExamples.get(newExample);
-                            IPath newExampleFullDir = MoSyncTool.getDefault().getMoSyncExamplesDirectory().append(newExampleDir);
-                            projectFiles.add(newExampleFullDir.append(MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME).toFile());
-                            preferredProjectNames.add(newExample);
-                        }
-                    }
-                    
-                    ImportProjectsRunnable importer = new ImportProjectsRunnable(projectFiles.toArray(new File[0]), preferredProjectNames
-                            .toArray(new String[0]), ImportProjectsRunnable.DO_NOT_COPY | ImportProjectsRunnable.USE_NEW_PROJECT_IF_AVAILABLE);
-                    Job job = importer.createJob(true);
-
-                    /* Close the welcome screen. */
-                    final IIntroManager im = PlatformUI.getWorkbench().getIntroManager();
-                    job.addJobChangeListener(new JobChangeAdapter() {
-                        public void done(IJobChangeEvent event) {
-                            im.getIntro().getIntroSite().getShell().getDisplay().asyncExec(new Runnable() {
-                                public void run() {
-                                    closeIntro(im);
-                                }
-                            });
-                        }
-                    });
-                } catch (Exception e) {
-                    return new Status(IStatus.ERROR, PLUGIN_ID, "Could not import examples", e);
-                }
-            }
-            return Status.OK_STATUS;
-        }
-    }
 
     // The plug-in ID
     public static final String PLUGIN_ID = "com.mobilesorcery.sdk.ui";
@@ -203,7 +133,6 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         listeners = new PropertyChangeSupport(this);
         CoreMoSyncPlugin.getDefault().setIDEProcessConsoleProvider(this);
         registerGlobalProjectListener();
-        importExampleProjects();
     }
 
     public boolean isExampleWorkspace() {
@@ -216,15 +145,6 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         }
         else {
         	return false;
-        }
-    }
-
-    // If this is the example workspace, then if applicable; import projects
-    private void importExampleProjects() {
-        if (isExampleWorkspace()) {
-            WorkbenchJob job = new ImportExamplesProjectJob("Importing example projects");
-            job.setUser(true);
-            job.schedule();
         }
     }
 
@@ -474,7 +394,6 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
                         || MoSyncProject.BUILD_CONFIGURATION_SUPPORT_CHANGED.equals(event.getPropertyName())
                         || MoSyncProject.EXCLUDE_FILTER_KEY.equals(NameSpacePropertyOwner.getKey(event.getPropertyName()))) {
                     try {
-                        MoSyncProject project = (MoSyncProject) source;
                         final ExcludedResourceDecorator dec = (ExcludedResourceDecorator) PlatformUI.getWorkbench().getDecoratorManager().getLabelDecorator(
                                 ExcludedResourceDecorator.ID);
                         if (dec != null) {
