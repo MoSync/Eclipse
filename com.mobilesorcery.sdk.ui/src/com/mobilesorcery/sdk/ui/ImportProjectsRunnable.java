@@ -85,7 +85,6 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 	public final static int USE_NEW_PROJECT_IF_AVAILABLE = 1 << 12;
 
 	private FileFilter copyFilter = new FileFilter() {
-		@Override
 		public boolean accept(File file) {
 			String name = file.getName();
 			return !name.equals(".project") && !name.equals(".cproject") && !name.equals(MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME); //$NON-NLS-1$ //$NON-NLS-2$ 
@@ -127,7 +126,6 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
     public void useNewCopyFilter()
     {
     	copyFilter = new FileFilter() {
-    		@Override
     		public boolean accept(File file) {
     			String name = file.getName();
     			return !name.equals(".project") && !name.equals(".cproject"); //$NON-NLS-1$ //$NON-NLS-2$ 
