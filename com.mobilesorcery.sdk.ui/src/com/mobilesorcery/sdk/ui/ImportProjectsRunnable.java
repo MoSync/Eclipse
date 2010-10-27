@@ -87,7 +87,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 	static FileFilter COPY_FILE_FILTER = new FileFilter() {
 		public boolean accept(File file) {
 			String name = file.getName();
-			return !name.equals(".project") && !name.equals(".cproject") && !name.equals(MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME); //$NON-NLS-1$ //$NON-NLS-2$ 
+			return !name.equals(".project") && !name.equals(".cproject"); //$NON-NLS-1$ //$NON-NLS-2$ 
 		}
 	};
 
