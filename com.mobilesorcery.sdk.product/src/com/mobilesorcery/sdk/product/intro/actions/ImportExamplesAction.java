@@ -79,7 +79,8 @@ public class ImportExamplesAction implements IIntroAction
                 															 preferredProjectNameArray , 
                 															 ImportProjectsRunnable.COPY_ALL_FILES | 
                 															 ImportProjectsRunnable.USE_NEW_PROJECT_IF_AVAILABLE);
-                Job job = importer.createJob(true);
+                importer.useNewCopyFilter( );
+                Job job = importer.createJob( true );
                 
                 closeWelcomeWhenDone( job );
 

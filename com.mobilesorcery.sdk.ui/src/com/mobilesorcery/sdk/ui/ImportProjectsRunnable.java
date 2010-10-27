@@ -84,12 +84,13 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 	 */
 	public final static int USE_NEW_PROJECT_IF_AVAILABLE = 1 << 12;
 
-	static FileFilter COPY_FILE_FILTER = new FileFilter() {
+	private FileFilter copyFilter = new FileFilter() {
+		@Override
 		public boolean accept(File file) {
 			String name = file.getName();
 			return !name.equals(".project") && !name.equals(".cproject") && !name.equals(MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME); //$NON-NLS-1$ //$NON-NLS-2$ 
 		}
-	};
+	}; 
 
 	private File[] projectDescriptions;
     private String[] preferredProjectNames;
@@ -118,6 +119,21 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		this.useNewProjectIfAvailable = (strategy & USE_NEW_PROJECT_IF_AVAILABLE) == USE_NEW_PROJECT_IF_AVAILABLE;
 		this.result = result == null ? new ArrayList<IProject>() : result;
 	}
+    
+    /**
+     * Temporary fix for using the new copy filter only when
+     * importing from the welcome screen. 
+     */
+    public void useNewCopyFilter()
+    {
+    	copyFilter = new FileFilter() {
+    		@Override
+    		public boolean accept(File file) {
+    			String name = file.getName();
+    			return !name.equals(".project") && !name.equals(".cproject"); //$NON-NLS-1$ //$NON-NLS-2$ 
+    		}
+    	};
+    }
 
 	public Job createJob(boolean schedule) {
 	    Job importJob = new Job("Import projects") {
@@ -356,7 +372,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 			try {
 				Util.copyDir(new SubProgressMonitor(monitor, 1), projectDir,
 						project.getWrappedProject().getLocation().toFile(),
-						COPY_FILE_FILTER);
+						copyFilter);
 			} catch (IOException e) {
 				e.printStackTrace();
 				success = false;
@@ -383,7 +399,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 					File copyDest = projectFile.getLocation().toFile();
 					try {
 						Util.copy(new SubProgressMonitor(monitor, 1),
-								copySrc, copyDest, COPY_FILE_FILTER);
+								copySrc, copyDest, copyFilter);
 					} catch (IOException e) {
 						e.printStackTrace();
 						success = false;
