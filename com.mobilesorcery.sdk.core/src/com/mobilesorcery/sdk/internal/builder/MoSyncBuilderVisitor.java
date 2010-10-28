@@ -78,6 +78,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
     private ArrayList<String> objectFiles = new ArrayList<String>();
     private int errors;
+	private int compileCount = 0;
     private IPath outputPath;
     private String extraSwitches;
     private IBuildResult buildResult;
@@ -258,7 +259,8 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
                     if (buildResult != null) {
                         buildResult.addError("Failed to compile " + cFile.getLocation());
                     }
-                }                
+                }               
+                compileCount ++;
             } catch (Exception e) {
                 throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
             }     
@@ -320,6 +322,10 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
     public int getErrorCount() {
         return errors;
+    }
+    
+    public int getCompileCount() {
+    	return compileCount;
     }
 
     public void setOutputPath(IPath outputPath) {

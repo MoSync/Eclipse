@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.eclipse.core.runtime.IPath;
 
+import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section.Entry;
 
 /**
@@ -276,6 +277,10 @@ public class SectionedPropertiesFile {
 	 */
 	public Section getDefaultSection() {
 		return getFirstSection(null);
+	}
+
+	public List<Section> getSections() {
+		return sections;
 	}
 
 }

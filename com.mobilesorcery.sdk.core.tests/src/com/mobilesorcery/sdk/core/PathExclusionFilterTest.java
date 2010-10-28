@@ -25,6 +25,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -36,6 +37,9 @@ public class PathExclusionFilterTest {
 	public static void setUp() throws Exception {
 		try {
 			project = ResourcesPlugin.getWorkspace().getRoot().getProject("project");
+			if (project.exists()) {
+				project.delete(true, new NullProgressMonitor());
+			}
 			project.create(null);
 			MoSyncNature.addNatureToProject(project);
 		} catch (CoreException e) {

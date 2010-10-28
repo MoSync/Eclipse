@@ -32,6 +32,7 @@ import org.eclipse.cdt.core.IMarkerGenerator;
 import org.eclipse.cdt.core.model.ICModelMarker;
 import org.eclipse.cdt.core.resources.ACBuilder;
 import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -220,6 +221,17 @@ public class MoSyncBuilder extends ACBuilder {
         }
 
         return toAbsolute(project.getLocation().append("Output"), outputPath);
+    }
+    
+    /**
+     * Determines whether a resource is part of the output directory tree
+     * @param project
+     * @param res
+     * @return
+     */
+    public static boolean isInOutput(IProject project, IResource res) {
+    	IPath projectRelativePath = res.getProjectRelativePath();
+    	return new Path("FinalOutput").isPrefixOf(projectRelativePath) || new Path("Output").isPrefixOf(projectRelativePath);
     }
 
     /**
@@ -426,7 +438,7 @@ public class MoSyncBuilder extends ACBuilder {
     private boolean haveLibrariesChanged(MoSyncProject mosyncProject, IPropertyOwner buildProperties, IPath programComb)
     {
         long librariesTouched = mosyncProject.getLibraryLookup(buildProperties).getLastTouched();
-        long programCombTouched = programComb.toFile().lastModified();
+        long programCombTouched = programComb.toFile().exists() ? programComb.toFile().lastModified() : Long.MAX_VALUE;
         return librariesTouched > programCombTouched;
     }
     
@@ -609,7 +621,9 @@ public class MoSyncBuilder extends ACBuilder {
                     // always
                     // make one, even though no resources present.
                     ArrayList<File> parts = new ArrayList<File>();
-                    parts.add(program.toFile());
+                    if (program.toFile().exists()) {
+                    	parts.add(program.toFile());
+                    }
                     if (resourceVisitor.getResourceFiles().length > 0 && program.toFile().exists() && resource.toFile().exists()) {
                         parts.add(resource.toFile());
                     }
