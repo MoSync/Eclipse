@@ -19,10 +19,12 @@ public interface IApplicationPermissions {
 
     public List<String> getRequestedPermissions();
     
-    public void setRequestedPermissions(List<String> required);
+    public void resetRequestedPermissions(List<String> required);
     
     public void setRequestedPermission(String required, boolean set);
-    
+
+    public void setRequestedPermissions(List<String> required, boolean set);
+
     /**
      * <p>Returns <code>true</code> if the specified permission
      * is required.</p>
@@ -36,4 +38,5 @@ public interface IApplicationPermissions {
     public IApplicationPermissions createWorkingCopy();
     
     public void apply(IApplicationPermissions workingCopy);
+
 }

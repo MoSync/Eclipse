@@ -80,13 +80,19 @@ public class ApplicationPermissions implements IApplicationPermissions {
         return new ArrayList<String>(requestedPermissions);
     }
 
-    public void setRequestedPermissions(List<String> requested) {
+    public void resetRequestedPermissions(List<String> requested) {
         this.requestedPermissions = new TreeSet<String>(requested);
         save();
     }
 
     public void setRequestedPermission(String requested, boolean set) {
         setRequestedPermission(requested, set, true);
+    }
+    
+    public void setRequestedPermissions(List<String> requested, boolean set) {
+        for (String oneRequested : requested) {
+        	setRequestedPermission(oneRequested, set);
+        }
     }
     
     private void setRequestedPermission(String requested, boolean set, boolean setSubPermissions) {
@@ -129,10 +135,6 @@ public class ApplicationPermissions implements IApplicationPermissions {
     public final static String toPropertyString(String... permissions) {
         return PropertyUtil.fromStrings(permissions);
     }
-    
-    private void setRequestedPermissions(String[] requested) {
-        setRequestedPermissions(Arrays.asList(requested));
-    }
 
     public List<String> getAvailablePermissions(String parentPermission) {
         if (parentPermission == null) {
@@ -167,7 +169,7 @@ public class ApplicationPermissions implements IApplicationPermissions {
     }
 
     public void apply(IApplicationPermissions workingCopy) {
-        setRequestedPermissions(workingCopy.getRequestedPermissions());
+        resetRequestedPermissions(workingCopy.getRequestedPermissions());
     }
     
     public String toString() {
