@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Core
+Bundle-SymbolicName: com.mobilesorcery.sdk.capabilities.core;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.mobilesorcery.sdk.capabilities.core.CapabilitiesPlugin
+Bundle-Vendor: MOBILESORCERY
+Require-Bundle: org.eclipse.core.runtime,
+ com.mobilesorcery.sdk.core;bundle-version="1.0.0",
+ org.eclipse.core.resources;bundle-version="3.4.0",
+ org.eclipse.cdt.core;bundle-version="5.0.0",
+ org.eclipse.ui;bundle-version="3.4.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy
+Export-Package: com.mobilesorcery.sdk.capabilities.core
