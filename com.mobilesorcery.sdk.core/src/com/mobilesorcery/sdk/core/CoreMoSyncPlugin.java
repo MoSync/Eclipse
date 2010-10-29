@@ -65,6 +65,7 @@ import com.mobilesorcery.sdk.internal.debug.MoSyncBreakpointSynchronizer;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 import com.mobilesorcery.sdk.lib.JNALibInitializer;
+import com.mobilesorcery.sdk.profiles.filter.DeviceFilterFactoryProxy;
 import com.mobilesorcery.sdk.profiles.filter.IDeviceFilterFactory;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.ConstantFilterFactory;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.FeatureFilterFactory;
@@ -335,7 +336,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         getLog().log(new Status(IStatus.ERROR, PLUGIN_ID, e.getMessage(), e));
     }
 
-    public void initNativeLibs(BundleContext context) {
+    private void initNativeLibs(BundleContext context) {
         try {	
             JNALibInitializer.init(this.getBundle(), "libpipe");
             @SuppressWarnings("unused")
@@ -455,11 +456,26 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	private void initDeviceFilterFactories() {
 		factories = new HashMap<String, IDeviceFilterFactory>();
-		// We'll just add them explicitly
+		// We'll just add some of them explicitly
 		factories.put(ConstantFilterFactory.ID, new ConstantFilterFactory());
 		factories.put(VendorFilterFactory.ID, new VendorFilterFactory());
 		factories.put(FeatureFilterFactory.ID, new FeatureFilterFactory());
 		factories.put(ProfileFilterFactory.ID, new ProfileFilterFactory());
+		
+		IConfigurationElement[] factoryCEs = Platform.getExtensionRegistry().getConfigurationElementsFor(PLUGIN_ID + ".filter.factories");
+		for (int i = 0; i < factoryCEs.length; i++) {
+			IConfigurationElement factoryCE = factoryCEs[i];
+			String id = factoryCE.getAttribute("id");
+			DeviceFilterFactoryProxy factory = new DeviceFilterFactoryProxy(factoryCE);
+			registerDeviceFilterFactory(id, factory);
+		}
+	}
+	
+	private void registerDeviceFilterFactory(String id, IDeviceFilterFactory factory) {
+		if (factories.containsKey(id)) {
+			throw new IllegalStateException("Id already used");
+		}
+		factories.put(id, factory);
 	}
 	
 	private void installResourceListener() {
