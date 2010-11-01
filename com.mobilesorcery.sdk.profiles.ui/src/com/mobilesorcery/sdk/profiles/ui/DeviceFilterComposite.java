@@ -163,6 +163,12 @@ public class DeviceFilterComposite extends Composite {
         
         return dialog;
     }
+    
+    protected boolean isEditable(IDeviceFilter filter) {
+		return filter instanceof FeatureFilter ||
+		       filter instanceof ConstantFilter ||
+		       filter instanceof ProfileFilter;
+	}
 
     protected void removeSelectedFilters() {
         IStructuredSelection selection = (IStructuredSelection) filterTable.getSelection();
@@ -195,15 +201,18 @@ public class DeviceFilterComposite extends Composite {
                 remove.setEnabled(!noFilters);
                 
                 IStructuredSelection selection = (IStructuredSelection) filterTable.getSelection();
-                edit.setEnabled(selection.size() == 1 && selection.getFirstElement() instanceof IDeviceFilter && !noFilters);
+                edit.setEnabled(selection.size() == 1 &&
+                		selection.getFirstElement() instanceof IDeviceFilter &&
+                		isEditable((IDeviceFilter) selection.getFirstElement()) &&
+                		!noFilters);
                 if (updateCount) {
                     updateDeviceCount();
                 }
             }
         });
     }
-    
-    private void updateDeviceCount() {
+
+	private void updateDeviceCount() {
         deviceCountLabel.setText(getDeviceCountText());        
     }
     
