@@ -253,6 +253,7 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
         getSite().setSelectionProvider(selectionProvider);
         
         projectChanged(null, null);
+        currentProjectChanged();
     }
 
     private void initMenu(Control control) {
