@@ -54,6 +54,11 @@ import org.eclipse.debug.core.model.IPersistableSourceLocator;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.LaunchConfigurationDelegate;
 import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupDirector;
+import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 import com.mobilesorcery.sdk.core.BuildVariant;
@@ -102,14 +107,49 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 
     public boolean preLaunchCheck(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
     	IProject project = getProject(configuration);
-    	// We need here as well as in the buildbeforelaunch method since that method may never be called
-    	// depending on user prefs.
-    	getAutoSwitchBuildConfiguration(configuration, mode);
+    	if (!shouldAutoSwitch(configuration, mode)) {
+    		MoSyncProject mosyncProject = MoSyncProject.create(project);
+    		IBuildConfiguration activeCfg = mosyncProject.getActiveBuildConfiguration();
+    		String[] preferredTypes = getRequiredBuildConfigTypes(mode);
+    		if (activeCfg == null || !activeCfg.getTypes().containsAll(Arrays.asList(preferredTypes))) {
+    			return showSwitchConfigDialog(mosyncProject, mode, activeCfg, preferredTypes);
+    		}
+    	}
     	
     	return super.preLaunchCheck(configuration, mode, monitor);
     }
     
-    /**
+    private boolean showSwitchConfigDialog(MoSyncProject mosyncProject, String mode,
+			final IBuildConfiguration activeCfg, String[] requiredTypes) {
+    	if (isDebugMode(mode)) {
+    		Display d = PlatformUI.getWorkbench().getDisplay();
+    		final boolean[] result = new boolean[1];
+    		d.syncExec(new Runnable() {
+				public void run() {
+			    	Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+					MessageDialog dialog = new MessageDialog(shell, "Incompatible build configuration", null,
+						MessageFormat.format("The build configuration \"{0}\" is not intended for debugging. Debug anyway?",
+						activeCfg.getId()), MessageDialog.WARNING, new String[] { "Debug", "Cancel" }, 1);
+					result[0] = dialog.open() == 0;
+				}    			
+    		});
+			return result[0];
+    	}
+		return true;
+	}
+
+	/**
+     * Clients may override. This method returns the set of required
+     * build configuration types for this launch. (Used to determine
+     * whether to show a dialog to user).
+     * @param mode
+     * @return
+     */
+    protected String[] getRequiredBuildConfigTypes(String mode) {
+		return new String[] { isDebugMode(mode) ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE };
+	}
+
+	/**
      * Returns the default build configuration to use for a given mode (debug or launch).
      * @param mode
      * @return
@@ -419,17 +459,20 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         return false;
     }
     
-    protected static IBuildConfiguration getAutoSwitchBuildConfiguration(ILaunchConfiguration configuration, String mode) throws CoreException {
+    protected static boolean shouldAutoSwitch(ILaunchConfiguration configuration, String mode) throws CoreException {
+    	String autoChangeConfigKey = isDebugMode(mode) ? ILaunchConstants.AUTO_CHANGE_CONFIG_DEBUG : ILaunchConstants.AUTO_CHANGE_CONFIG;
+        return configuration.getAttribute(autoChangeConfigKey, false);
+    }
+    
+	protected static IBuildConfiguration getAutoSwitchBuildConfiguration(ILaunchConfiguration configuration, String mode) throws CoreException {
         IProject project = getProject(configuration);
         MoSyncProject mosyncProject = MoSyncProject.create(project);
         // We'll let non-mosync projects slip through; they'll be handled in launchSync
         if (mosyncProject != null && mosyncProject.areBuildConfigurationsSupported()) {
-            boolean isDebugMode = "debug".equals(mode);
             
-            String autoChangeConfigKey = isDebugMode ? ILaunchConstants.AUTO_CHANGE_CONFIG_DEBUG : ILaunchConstants.AUTO_CHANGE_CONFIG;
-            String buildConfigKey = isDebugMode ? ILaunchConstants.BUILD_CONFIG_DEBUG : ILaunchConstants.BUILD_CONFIG;
+            String buildConfigKey = isDebugMode(mode) ? ILaunchConstants.BUILD_CONFIG_DEBUG : ILaunchConstants.BUILD_CONFIG;
 
-            if (configuration.getAttribute(autoChangeConfigKey, false)) {
+            if (shouldAutoSwitch(configuration, mode)) {
                 String buildConfig = configuration.getAttribute(buildConfigKey, getDefaultBuildConfiguration(mosyncProject, mode));
                 IBuildConfiguration activeBuildConfig = mosyncProject.getActiveBuildConfiguration();
                 String activeBuildConfigId = activeBuildConfig == null ? null : activeBuildConfig.getId();
@@ -441,5 +484,10 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         
         return mosyncProject.getActiveBuildConfiguration();
     }
-    
+        
+    private static boolean isDebugMode(String mode) {
+        boolean isDebugMode = "debug".equals(mode);
+        return isDebugMode;
+	}
+
 }
