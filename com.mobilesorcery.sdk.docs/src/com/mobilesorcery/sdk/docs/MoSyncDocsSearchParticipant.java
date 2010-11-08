@@ -9,10 +9,12 @@ import org.apache.lucene.document.Document;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.help.search.ISearchIndex;
 import org.eclipse.help.search.LuceneSearchParticipant;
 import org.eclipse.ui.PlatformUI;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.Util;
 
 public class MoSyncDocsSearchParticipant extends LuceneSearchParticipant {
@@ -31,11 +33,16 @@ public class MoSyncDocsSearchParticipant extends LuceneSearchParticipant {
 					"docs/html", locale);
 			Enumeration docs = Platform.getBundle("com.mobilesorcery.sdk.help")
 					.getEntryPaths(path);
-			while (docs.hasMoreElements()) {
-				String doc = (String) docs.nextElement();
-				String id = createId(doc);
-				String url = "/com.mobilesorcery.sdk.help/" + doc;
-				allDocs.add(url + "?id=" + id);
+			if (docs != null) {
+				while (docs.hasMoreElements()) {
+					String doc = (String) docs.nextElement();
+					String id = createId(doc);
+					String url = "/com.mobilesorcery.sdk.help/" + doc;
+					allDocs.add(url + "?id=" + id);
+				}
+			} else {
+				CoreMoSyncPlugin.getDefault().getLog().log(
+						new Status(IStatus.WARNING, MoSyncDocsActivator.PLUGIN_ID, "Could not find MoSync help bundle"));
 			}
 		}
 		return allDocs;
