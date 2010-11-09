@@ -51,4 +51,17 @@
             name="JavaME Signing">
       </page>
    </extension>
+                 <extension
+                       point="com.mobilesorcery.sdk.capabilities.matchers">
+                    <matcher
+                          class="com.mobilesorcery.sdk.builder.java.capabilities.JavaMEOpCertCapabilitiesMatcher">
+                    </matcher>
+                 </extension>
+                 <extension
+                       point="com.mobilesorcery.sdk.core.filter.factories">
+                     <filter
+                           id="com.mobilesorcery.sdk.builder.java.capabilities.elementfactory"
+                           class="com.mobilesorcery.sdk.builder.java.capabilities.JavaMEOpCertFilterFactory"> 
+                     </filter>
+                 </extension>
 </plugin>
