@@ -282,6 +282,10 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         window.removePerspectiveListener(perspectiveListener);
     }
     
+    public void closeRegistrationPerspective() {
+    	perspectiveListener.closeRegistrationPerspective();
+    }
+    
     public void update(boolean isStartedByUser) {
         startUpdateRunnable(isStartedByUser, false);
     }
