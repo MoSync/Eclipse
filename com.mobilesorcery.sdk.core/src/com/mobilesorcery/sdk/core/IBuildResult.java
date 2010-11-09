@@ -15,8 +15,6 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 
-import com.mobilesorcery.sdk.profiles.IProfile;
-
 public interface IBuildResult {
 
 	/**

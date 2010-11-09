@@ -26,7 +26,6 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildVariant;
-import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.SLD;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;

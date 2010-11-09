@@ -14,20 +14,18 @@
 package com.mobilesorcery.sdk.builder.iphoneos;
 
 import java.io.File;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.CoreException;
 
+import com.mobilesorcery.sdk.core.AbstractPackager;
+import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IconManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.AbstractPackager;
-import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;

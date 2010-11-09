@@ -14,31 +14,31 @@
 package com.mobilesorcery.sdk.builder.linux.deb;
 
 
+import java.io.BufferedOutputStream;
 import java.io.File;
-import java.util.Map;
-import java.util.List;
-import java.util.Vector;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map.Entry;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
 import java.util.AbstractMap.SimpleEntry;
-import java.security.NoSuchAlgorithmException;
+import java.util.Map.Entry;
 
-import java.io.IOException;
-import java.io.FileOutputStream;
-import java.io.BufferedOutputStream;
-import java.io.FileNotFoundException;
+import org.apache.commons.compress.archivers.ar.ArArchiveEntry;
+import org.apache.commons.compress.archivers.ar.ArArchiveOutputStream;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
-import org.apache.commons.compress.archivers.ar.*;
-import org.apache.commons.compress.archivers.tar.*;
-import org.apache.commons.compress.compressors.gzip.*;
-
+import com.mobilesorcery.sdk.builder.linux.deb.fields.ArchitectureHeader;
 import com.mobilesorcery.sdk.builder.linux.deb.fields.Header;
 import com.mobilesorcery.sdk.builder.linux.deb.fields.NameHeader;
 import com.mobilesorcery.sdk.builder.linux.deb.fields.SizeHeader;
 import com.mobilesorcery.sdk.builder.linux.deb.fields.VersionHeader;
-
-import com.mobilesorcery.sdk.builder.linux.deb.fields.ArchitectureHeader;
 
 
 

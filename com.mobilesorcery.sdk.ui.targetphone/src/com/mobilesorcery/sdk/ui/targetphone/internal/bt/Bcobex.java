@@ -35,7 +35,6 @@ import javax.obex.ResponseCodes;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
-import com.intel.bluetooth.obex.OBEXConnectionParams;
 import com.mobilesorcery.sdk.core.Util;
 
 /**

@@ -1,7 +1,5 @@
 package com.mobilesorcery.sdk.profiling.ui.views;
 
-import java.util.IdentityHashMap;
-
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerFilter;
 

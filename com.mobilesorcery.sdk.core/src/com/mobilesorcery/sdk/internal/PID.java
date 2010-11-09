@@ -13,8 +13,8 @@
 */
 package com.mobilesorcery.sdk.internal;
 
-import com.sun.jna.Native;
 import com.sun.jna.Library;
+import com.sun.jna.Native;
 
 public interface PID extends Library {
 

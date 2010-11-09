@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
-import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.ui.ImportProjectsRunnable;

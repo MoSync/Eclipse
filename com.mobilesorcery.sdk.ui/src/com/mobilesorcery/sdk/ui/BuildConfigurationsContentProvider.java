@@ -20,7 +20,6 @@ import java.util.Set;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
-import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 
 public class BuildConfigurationsContentProvider implements IStructuredContentProvider, PropertyChangeListener {

@@ -14,22 +14,22 @@
 package com.mobilesorcery.sdk.builder.linux;
 
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.util.Map;
-import java.util.Set;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.util.zip.GZIPInputStream;
-import java.io.FileNotFoundException;
-import com.mobilesorcery.sdk.builder.linux.deb.BuilderUtil;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.zip.GZIPInputStream;
+
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -37,6 +37,8 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+
+import com.mobilesorcery.sdk.builder.linux.deb.BuilderUtil;
 
 /**
  * This package unpacks and parses a template package, recursivly

@@ -14,7 +14,6 @@
 package com.mobilesorcery.sdk.builder.android.ui.properties;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.jface.preference.FileFieldEditor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -25,7 +24,6 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbenchPropertyPage;
 import org.eclipse.ui.dialogs.PropertyPage;
 
@@ -34,7 +32,6 @@ import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.builder.java.ui.KeystoreCertificateInfoEditor;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PropertyUtil;
-import com.mobilesorcery.sdk.ui.PasswordTextFieldDecorator;
 
 public class AndroidSigningPropertyPage extends PropertyPage implements IWorkbenchPropertyPage {
 

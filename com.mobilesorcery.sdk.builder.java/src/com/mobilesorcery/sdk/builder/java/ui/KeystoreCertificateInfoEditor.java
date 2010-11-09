@@ -8,7 +8,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
-import com.mobilesorcery.sdk.builder.java.PropertyInitializer;
 import com.mobilesorcery.sdk.ui.PasswordTextFieldDecorator;
 
 public class KeystoreCertificateInfoEditor extends Composite {

@@ -14,8 +14,8 @@
 package com.mobilesorcery.sdk.internal;
 
 import com.mobilesorcery.sdk.core.IProcessUtil;
-import com.sun.jna.Native;
 import com.sun.jna.Library;
+import com.sun.jna.Native;
 
 public interface PROCESS extends Library, IProcessUtil {
 

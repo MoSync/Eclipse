@@ -14,18 +14,14 @@
 package com.mobilesorcery.sdk.ui.targetphone;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.window.IShellProvider;
 import org.eclipse.ui.IMemento;
 
-import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
-import com.mobilesorcery.sdk.profiles.IProfile;
 
 public interface ITargetPhoneTransportDelegate {
 

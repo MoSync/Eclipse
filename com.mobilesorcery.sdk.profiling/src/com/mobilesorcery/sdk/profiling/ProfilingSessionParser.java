@@ -40,9 +40,9 @@ import com.mobilesorcery.sdk.core.ISLDInfo;
 import com.mobilesorcery.sdk.core.ParseException;
 import com.mobilesorcery.sdk.core.SLD;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section.Entry;
-import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiling.emulator.ProfilingSession;
 import com.mobilesorcery.sdk.profiling.internal.ProfilingDataParser;
 

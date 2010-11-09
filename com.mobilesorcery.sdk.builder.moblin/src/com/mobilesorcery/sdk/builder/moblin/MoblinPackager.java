@@ -17,17 +17,13 @@ package com.mobilesorcery.sdk.builder.moblin;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
-//import java.io.IOException;
-//import java.util.logging.Level;
-//import java.util.logging.Logger;
 import org.eclipse.core.runtime.CoreException;
-
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 
+import com.mobilesorcery.sdk.builder.linux.PackageBuilder;
+import com.mobilesorcery.sdk.builder.linux.PackageBuilder.DesktopEntryCategory;
 import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
@@ -36,9 +32,6 @@ import com.mobilesorcery.sdk.core.IconManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.profiles.IProfile;
-
-import com.mobilesorcery.sdk.builder.linux.PackageBuilder;
-import com.mobilesorcery.sdk.builder.linux.PackageBuilder.DesktopEntryCategory;
 
 /**
  * Plugin entry point. Is responsible for creating debian

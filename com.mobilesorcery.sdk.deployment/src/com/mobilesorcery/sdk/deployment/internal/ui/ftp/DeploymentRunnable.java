@@ -3,7 +3,6 @@ package com.mobilesorcery.sdk.deployment.internal.ui.ftp;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
-import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -14,7 +13,6 @@ import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.deployment.IDeploymentStrategy;
 import com.mobilesorcery.sdk.deployment.ProjectDeploymentStrategy;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
-import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class DeploymentRunnable implements IRunnableWithProgress {
 

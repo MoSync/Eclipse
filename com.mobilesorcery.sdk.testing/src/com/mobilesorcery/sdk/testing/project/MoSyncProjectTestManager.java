@@ -19,7 +19,6 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.testing.TestPlugin;
-import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
 public class MoSyncProjectTestManager {
 

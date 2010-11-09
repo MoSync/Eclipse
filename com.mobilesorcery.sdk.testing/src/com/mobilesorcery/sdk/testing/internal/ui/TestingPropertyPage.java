@@ -1,7 +1,6 @@
 package com.mobilesorcery.sdk.testing.internal.ui;
 
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
@@ -16,8 +15,6 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
-import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.testing.TestPlugin;
 import com.mobilesorcery.sdk.testing.project.MoSyncProjectTestManager;
 import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
 

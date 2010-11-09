@@ -13,7 +13,6 @@
  */
 package com.mobilesorcery.sdk.ui.targetphone.android;
 
-import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -30,7 +29,6 @@ import org.eclipse.ui.IMemento;
 import org.eclipse.ui.dialogs.ListDialog;
 
 import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
-import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;

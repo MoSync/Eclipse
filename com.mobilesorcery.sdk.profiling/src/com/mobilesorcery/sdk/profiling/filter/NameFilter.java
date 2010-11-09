@@ -6,7 +6,6 @@ import java.util.regex.Pattern;
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.profiling.CppFiltName;
 import com.mobilesorcery.sdk.profiling.IInvocation;
-import com.mobilesorcery.sdk.profiling.filter.NameFilter.Type;
 
 public class NameFilter implements IFilter<IInvocation> {
 

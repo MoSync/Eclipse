@@ -15,8 +15,6 @@ package com.mobilesorcery.sdk.core;
 
 import org.eclipse.core.runtime.CoreException;
 
-import com.mobilesorcery.sdk.profiles.IProfile;
-
 /**
  * <p>To be used with the extension point com.mobilesorcery.core.packager.</p>
  * <p>A packager is called after compiling and linking.</p>

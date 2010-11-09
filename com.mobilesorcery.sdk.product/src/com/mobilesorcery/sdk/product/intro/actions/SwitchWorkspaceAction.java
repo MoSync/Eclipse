@@ -5,7 +5,6 @@ import java.util.Properties;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.internal.ide.IDEWorkbenchMessages;
@@ -14,7 +13,6 @@ import org.eclipse.ui.intro.config.IIntroAction;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncTool;
-import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
 public class SwitchWorkspaceAction implements IIntroAction {
 

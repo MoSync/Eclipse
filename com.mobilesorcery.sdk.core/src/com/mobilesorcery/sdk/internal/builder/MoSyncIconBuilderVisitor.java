@@ -16,23 +16,13 @@
  */
 package com.mobilesorcery.sdk.internal.builder;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 
-import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
-import com.mobilesorcery.sdk.core.DefaultPackager;
-import com.mobilesorcery.sdk.core.MoSyncBuilder;
-import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.MoSyncTool;
-import com.mobilesorcery.sdk.core.WineHelper;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
 public class MoSyncIconBuilderVisitor extends IncrementalBuilderVisitor {

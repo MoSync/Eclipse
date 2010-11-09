@@ -13,24 +13,22 @@
 */
 package com.mobilesorcery.sdk.builder.linux;
 
-import java.util.Map;
-import java.util.List;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.StringTokenizer;
-
-import java.io.File;
-import java.io.IOException;
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-
+import java.io.IOException;
 import java.security.KeyFactory;
-import java.security.PrivateKey;
-import java.security.spec.KeySpec;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.StringTokenizer;
 
 import org.freecompany.redline.Builder;
 import org.freecompany.redline.header.Architecture;
@@ -45,7 +43,6 @@ import com.mobilesorcery.sdk.builder.linux.deb.fields.DescriptionHeader;
 import com.mobilesorcery.sdk.builder.linux.deb.fields.MaintainerHeader;
 import com.mobilesorcery.sdk.builder.linux.deb.fields.PriorityHeader;
 import com.mobilesorcery.sdk.builder.linux.deb.fields.SectionHeader;
-import com.mobilesorcery.sdk.core.Version;
 
 
 

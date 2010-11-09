@@ -13,7 +13,6 @@
 */
 package com.mobilesorcery.sdk.testing.emulator;
 
-import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.testing.TestPlugin;
 import com.mobilesorcery.sdk.ui.internal.launch.EmulatorLaunchConfigurationTabGroup;
 

@@ -24,14 +24,12 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
-import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.ILocationProvider;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;
-import com.mobilesorcery.sdk.profiling.filter.NameFilter;
 import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class ProfilingComposite extends Composite {

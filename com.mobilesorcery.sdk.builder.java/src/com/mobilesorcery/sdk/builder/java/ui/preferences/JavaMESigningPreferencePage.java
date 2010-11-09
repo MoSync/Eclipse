@@ -14,7 +14,6 @@ import com.mobilesorcery.sdk.builder.java.Activator;
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.builder.java.PropertyInitializer;
 import com.mobilesorcery.sdk.builder.java.ui.KeystoreCertificateInfoEditor;
-import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.ui.UpdateListener;
 import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 

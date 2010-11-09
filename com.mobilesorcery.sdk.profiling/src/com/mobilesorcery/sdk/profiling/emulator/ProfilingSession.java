@@ -3,8 +3,6 @@ package com.mobilesorcery.sdk.profiling.emulator;
 import java.io.File;
 import java.util.Calendar;
 
-import org.eclipse.debug.core.ILaunchConfiguration;
-
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.SLD;
 import com.mobilesorcery.sdk.profiling.IInvocation;

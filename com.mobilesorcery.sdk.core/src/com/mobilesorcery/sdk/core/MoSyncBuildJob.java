@@ -14,7 +14,6 @@
 package com.mobilesorcery.sdk.core;
 
 import java.text.MessageFormat;
-import java.util.Arrays;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;

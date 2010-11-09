@@ -1,6 +1,5 @@
 package com.mobilesorcery.sdk.ui.targetphone.internal;
 
-import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.graphics.Image;
 

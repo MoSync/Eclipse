@@ -13,10 +13,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
 
-import com.mobilesorcery.sdk.core.Util;
-import com.mobilesorcery.sdk.deployment.DeploymentPlugin;
 import com.mobilesorcery.sdk.deployment.IDeploymentStrategy;
-import com.mobilesorcery.sdk.deployment.IDeploymentStrategyFactory;
 import com.mobilesorcery.sdk.deployment.internal.ftp.FTPDeploymentStrategy;
 
 public class FTPDeploymentParamsPage extends WizardPage implements Listener {

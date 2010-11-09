@@ -2,7 +2,6 @@ package com.mobilesorcery.sdk.product.intro.actions;
 
 import java.util.Properties;
 
-import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.intro.IIntroSite;
 import org.eclipse.ui.intro.config.IIntroAction;
 

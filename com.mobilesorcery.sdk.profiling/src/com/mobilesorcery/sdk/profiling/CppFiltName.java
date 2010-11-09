@@ -13,7 +13,6 @@
 */
 package com.mobilesorcery.sdk.profiling;
 
-import org.eclipse.jface.viewers.StyledString;
 
 public class CppFiltName {
 

@@ -2,32 +2,16 @@ package com.mobilesorcery.sdk.update.internal;
 
 import java.net.URL;
 
-import javax.swing.DefaultRowSorter;
-
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
-import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.ui.IEditorInput;
-import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorSite;
-import org.eclipse.ui.ILocalWorkingSetManager;
-import org.eclipse.ui.IPartListener;
-import org.eclipse.ui.IPersistableElement;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.intro.IIntroPart;
-import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.ViewPart;
-
-import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
-import com.mobilesorcery.sdk.core.IUpdater;
-import com.mobilesorcery.sdk.update.MosyncUpdatePlugin;
 
 // Just because IWebBrowserSupport is useless for our purposes.
 public class RegistrationWebBrowserView extends ViewPart {

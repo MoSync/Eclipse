@@ -17,8 +17,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
-import com.mobilesorcery.sdk.core.Util;
-
 public interface IInvocation {
 
     public static final Comparator<IInvocation> SORT_BY_SELF_TIME = new Comparator<IInvocation>() {

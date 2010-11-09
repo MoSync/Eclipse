@@ -18,9 +18,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import com.mobilesorcery.sdk.core.ISLDInfo;
-import com.mobilesorcery.sdk.core.SLD;
 import com.mobilesorcery.sdk.profiling.FunctionDesc;
-import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.Invocation;
 
 class ProfilingDataParserHandler extends DefaultHandler {

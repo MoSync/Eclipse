@@ -66,7 +66,6 @@ import com.mobilesorcery.sdk.profiles.ui.DeviceFilterComposite;
 import com.mobilesorcery.sdk.profiles.ui.DeviceViewerFilter;
 import com.mobilesorcery.sdk.profiles.ui.ProfileContentProvider;
 import com.mobilesorcery.sdk.profiles.ui.ProfileLabelProvider;
-import com.mobilesorcery.sdk.profiles.ui.internal.ProfilesView.InternalSelectionProvider;
 import com.mobilesorcery.sdk.profiles.ui.internal.actions.FinalizeForProfileAction;
 import com.mobilesorcery.sdk.profiles.ui.internal.actions.SetTargetProfileAction;
 import com.mobilesorcery.sdk.profiles.ui.internal.actions.ShowProfileInfoAction;

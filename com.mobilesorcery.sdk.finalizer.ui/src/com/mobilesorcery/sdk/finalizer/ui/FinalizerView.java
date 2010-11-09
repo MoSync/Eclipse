@@ -13,8 +13,6 @@
 */
 package com.mobilesorcery.sdk.finalizer.ui;
 
-import java.io.StringReader;
-
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;

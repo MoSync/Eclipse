@@ -17,10 +17,7 @@
 package com.mobilesorcery.sdk.ui.targetphone.internal.bt;
 
 import com.mobilesorcery.sdk.core.Util;
-import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.ui.targetphone.AbstractTargetPhone;
-import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
-import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransport;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 
 

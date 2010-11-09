@@ -19,8 +19,6 @@ import org.eclipse.debug.ui.ILaunchConfigurationDialog;
 import org.eclipse.debug.ui.ILaunchConfigurationTab;
 import org.eclipse.debug.ui.sourcelookup.SourceLookupTab;
 
-import com.mobilesorcery.sdk.core.IBuildConfiguration;
-
 public class EmulatorLaunchConfigurationTabGroup extends AbstractLaunchConfigurationTabGroup {
 
     public void initializeFrom(ILaunchConfiguration configuration) {

@@ -17,7 +17,6 @@ import java.io.File;
 import java.util.Calendar;
 
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.debug.core.ILaunchConfiguration;
 
 import com.mobilesorcery.sdk.core.IFilter;
 

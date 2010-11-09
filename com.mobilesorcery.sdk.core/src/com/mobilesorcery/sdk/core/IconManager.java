@@ -14,10 +14,10 @@
 package com.mobilesorcery.sdk.core;
 
 import java.io.File;
-import java.util.Map;
-import java.util.List;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Map.Entry;
@@ -25,11 +25,10 @@ import java.util.Map.Entry;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.xml.sax.Attributes;
-import org.xml.sax.helpers.DefaultHandler;
-
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.xml.sax.Attributes;
+import org.xml.sax.helpers.DefaultHandler;
 
 /**
  * A simple class for handling icon and their injection for Linux 

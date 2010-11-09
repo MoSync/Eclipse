@@ -1,7 +1,5 @@
 package com.mobilesorcery.sdk.ui.targetphone.internal.bt;
 
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -9,7 +7,6 @@ import java.util.HashMap;
 import javax.bluetooth.DeviceClass;
 import javax.bluetooth.RemoteDevice;
 
-import com.mobilesorcery.sdk.core.SimpleQueue;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.ui.targetphone.internal.bt.BluetoothDialog.DeviceUpdate;
 

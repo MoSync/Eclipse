@@ -11,7 +11,6 @@ import org.eclipse.ui.intro.config.IIntroAction;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
-import com.mobilesorcery.sdk.update.MosyncUpdatePlugin;
 
 public class ExternalLinkAction implements IIntroAction {
 

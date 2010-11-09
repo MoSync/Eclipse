@@ -9,7 +9,6 @@ import java.util.LinkedHashMap;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
-import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.profiling.FunctionDesc;
 import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;

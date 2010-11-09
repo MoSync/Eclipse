@@ -15,16 +15,9 @@ package com.mobilesorcery.sdk.update;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.LineNumberReader;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
-import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 
