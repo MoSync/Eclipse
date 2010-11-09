@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.0"?>
 <plugin>
 
@@ -199,8 +200,7 @@
             id="org.eclipse.cdt.ui.AnnotationHover">
       </hover>
    </extension>
-
-<!-- MOSYNC SDK REMOVAL      
+   
    <extension
          point="org.eclipse.ui.perspectives">
       <perspective
@@ -210,7 +210,6 @@
             id="org.eclipse.cdt.ui.CPerspective">
       </perspective>
    </extension>
--->
    <extension
          point="org.eclipse.ui.perspectiveExtensions">
       <perspectiveExtension
@@ -284,16 +283,20 @@
             icon="icons/view16/class_hi.gif"
             id="org.eclipse.cdt.ui.typeHierarchy"
             name="%typeHierarchy.name"/>
+      <view
+            name="%templatesViewName"
+            icon="$nl$/icons/view16/templates.gif"
+            category="org.eclipse.ui"
+            class="org.eclipse.ui.texteditor.templates.TemplatesView"
+            id="org.eclipse.ui.texteditor.TemplatesView" />
    </extension>
 <!-- The wizards -->
    <extension
          point="org.eclipse.ui.newWizards">
-<!-- MOSYNC SDK REMOVAL
       <category
             name="%newCWizardsCategory.name"
             id="org.eclipse.cdt.ui.newCWizards">
       </category>
--->	  
       <wizard
             name="%NewWizards.sourceFile"
             icon="icons/etool16/newcfile_wiz.gif"
@@ -320,7 +323,6 @@
             %NewWizards.headerFile.description
          </description>
       </wizard>
-<!-- MOSYNC SDK REMOVAL
       <wizard
             name="%NewWizards.file"
             icon="icons/etool16/newfile_wiz.gif"
@@ -334,7 +336,6 @@
             %NewWizards.file.description
          </description>
       </wizard>
--->
       <wizard
             name="%NewWizards.sourceFolder"
             icon="icons/etool16/newsrcfldr_wiz.gif"
@@ -361,7 +362,6 @@
             %NewWizards.folder.description
          </description>
       </wizard>
-<!-- MOSYNC SDK REMOVAL	  
       <wizard
             name="%NewWizards.class"
             icon="icons/etool16/newclass_wiz.gif"
@@ -376,8 +376,6 @@
             %NewWizards.class.description
          </description>
       </wizard>
--->
-<!-- MOSYNC SDK REMOVAL
       <wizard
             canFinishEarly="false"
             category="org.eclipse.cdt.ui.newCWizards"
@@ -392,8 +390,6 @@
              %CPPproject.desc
           </description>
        </wizard>
--->
-<!-- MOSYNC SDK REMOVAL
        <wizard
              canFinishEarly="false"
              category="org.eclipse.cdt.ui.newCWizards"
@@ -408,7 +404,6 @@
              %Cproject.desc
          </description>
       </wizard>
--->	  
    </extension>
 
 <!-- Define the document setup participant for the C/C++ and Assembly Editors -->
@@ -560,6 +555,12 @@
          label="%Dummy.label"
          value="0,0,0">
       </colorDefinition>
+      <colorDefinition
+            id="org.eclipse.cdt.ui.ColoredLabels.match_highlight"
+            isEditable="false"
+            label="%Dummy.label"
+            value="206, 204, 247">
+      </colorDefinition>
       <theme
          id="org.eclipse.ui.ide.systemDefault">
          <colorOverride
@@ -661,9 +662,10 @@
           <keywordReference id="org.eclipse.cdt.ui.codestyle"/>
           <keywordReference id="org.eclipse.cdt.ui.common"/>
       </page>
+      <!-- Note that build console should be eventually moved to build plugin -->
       <page
             name="%CPluginBuildConsolePreferencePage.name"
-            category="org.eclipse.cdt.ui.preferences.CPluginPreferencePage"
+            category="org.eclipse.cdt.make.ui.preferences.BuildSettings"
             class="org.eclipse.cdt.internal.ui.preferences.BuildConsolePreferencePage"
             id="org.eclipse.cdt.ui.preferneces.CBuildConsolePreferernces">
           <keywordReference id="org.eclipse.cdt.ui.common"/>
@@ -1021,76 +1023,38 @@
            adaptable="true"
            id="org.eclipse.cdt.ui.buildConfigContribution"
            objectClass="org.eclipse.core.resources.IResource">
-        <action
-              class="org.eclipse.cdt.ui.actions.ChangeBuildConfigContextAction"
-              enablesFor="+"
-              id="org.eclipse.cdt.ui.buildConfigPulldownAction"
-              label="%BuildConfigContextAction.label"
-              menubarPath="org.eclipse.cdt.ui.cfgmenu/gm1"
-              style="pulldown"
-              tooltip="%BuildConfigAction.tooltip"/>
+        <visibility>
+           <and>
+              <objectState
+                 name="projectNature"
+                 value="org.eclipse.cdt.core.cnature"/>
+              <objectClass name="org.eclipse.core.resources.IProject"/>
+           </and>
+        </visibility>
         <action
               class="org.eclipse.cdt.ui.actions.ManageConfigsAction"
               enablesFor="+"
               id="org.eclipse.cdt.ui.manageConfigsAction0"
               label="%ManageConfigAction.label"
-              menubarPath="org.eclipse.cdt.ui.cfgmenu/gm2"
+              menubarPath="org.eclipse.cdt.ui.cfgmenu/manage"
               />
+        <action
+              class="org.eclipse.cdt.ui.actions.ChangeBuildConfigContextAction"
+              enablesFor="+"
+              id="org.eclipse.cdt.ui.buildConfigPulldownAction"
+              label="%BuildConfigContextAction.label"
+              menubarPath="org.eclipse.cdt.ui.cfgmenu/manage"
+              style="pulldown"
+              tooltip="%BuildConfigAction.tooltip"/>
         <menu
               id="org.eclipse.cdt.ui.cfgmenu"
               label="%Configurations.menu"
               path="buildGroup">
-           <groupMarker name="gm1"/>
-           <groupMarker name="gm3"/>
-           <separator
-                 name="sep1">
-           </separator>
-           <groupMarker
-                 name="gm2">
-           </groupMarker>
+           <groupMarker name="manage"/>
+           <separator name="sep1"/>
+           <groupMarker name="build"/>
         </menu>
-        
-        <visibility>
-<!-- BUG #465: build configuration menu should not be visible for mosync projects -->
-              <and>
-              <not>
-              <objectState
-                 name="projectNature"
-                 value="com.mobilesorcery.sdk.core.nature"/>
-              </not>
-              <objectState
-                 name="projectNature"
-                 value="org.eclipse.cdt.core.cnature"/>
-              </and>
-        </visibility>
      </objectContribution>
-
-     <objectContribution
-           adaptable="true"
-           id="org.eclipse.cdt.ui.buildConfigContributionM"
-           objectClass="org.eclipse.core.resources.IResource">
-        <action
-              class="org.eclipse.cdt.ui.actions.DeleteResConfigsAction"
-              enablesFor="+"
-              id="org.eclipse.cdt.ui.deleteConfigsAction0"
-              label="%DeleteRcConfigAction.label"
-              menubarPath="org.eclipse.cdt.ui.cfgmenu/gm3"
-              />
-        <action
-              class="org.eclipse.cdt.ui.actions.ExcludeFromBuildAction"
-              enablesFor="+"
-              id="org.eclipse.cdt.ui.excludeAction0"
-              label="%ExcludeAction.label"
-              menubarPath="buildGroup"
-              />
-        
-        <visibility>
-              <objectState
-                 name="projectNature"
-                 value="org.eclipse.cdt.managedbuilder.core.managedBuildNature"/>
-        </visibility>
-     </objectContribution>
-     
    </extension>
    
    <extension
@@ -1154,28 +1118,13 @@
          <menu
                id="org.eclipse.cdt.ui.prjmenu"
                label="%Configurations.menu">
-            <separator
-                  name="gm1" visible="false">
-            </separator>
-            <separator
-                  name="s2" visible="true">
-            </separator>
-            <separator
-                  name="gm2" visible="false">
-            </separator>
-            <separator
-                  name="s3" visible="true">
-            </separator>
-            <separator
-                  name="gm3" visible="false">
-            </separator>
-            <separator
-                  name="gm4" visible="false">
-            </separator>
+            <separator name="manage" visible="false"/>
+            <separator name="sep1" visible="true"/>
+            <separator name="wrksets" visible="false"/>
          </menu>
       </menuContribution>
       <menuContribution
-            locationURI="menu:org.eclipse.cdt.ui.prjmenu?before=gm4">
+            locationURI="menu:org.eclipse.cdt.ui.prjmenu?before=wrksets">
          <menu
                id="org.eclipse.cdt.ui.workingSets.buildMenu"
                label="%buildWorkingSetConfig.label">
@@ -1235,7 +1184,10 @@
             <separator name="typeGroup"/>
             <separator name="typeGroup2"/>
             <separator name="codingGroup2"/>
-            <separator name="typeGroup3"/>            
+            <separator name="typeGroup3"/>
+            <separator
+                  name="historyGroup">
+            </separator>            
          </menu>
          <!-- reorg group  -->
          <action
@@ -1273,6 +1225,70 @@
                id="org.eclipse.cdt.ui.actions.ExtractLocalVariable"
                retarget="true">
          </action>
+         <action
+               class="org.eclipse.ltk.ui.refactoring.actions.ShowRefactoringHistoryAction"
+               definitionId="org.eclipse.ltk.ui.refactor.show.refactoring.history"
+               id="org.eclipse.cdt.ui.actions.RefactoringHistory"
+               label="%historyAction.label"
+               menubarPath="org.eclipse.jdt.ui.refactoring.menu/historyGroup"
+               retarget="false">
+         </action>
+         <action
+               class="org.eclipse.ltk.ui.refactoring.actions.CreateRefactoringScriptAction"
+               definitionId="org.eclipse.ltk.ui.refactor.create.refactoring.script"
+               id="org.eclipse.cdt.ui.actions.createRefactoringScript"
+               label="%createScriptAction.label"
+               menubarPath="org.eclipse.jdt.ui.refactoring.menu/historyGroup"
+               retarget="false">
+         </action>
+         <action
+               class="org.eclipse.ltk.ui.refactoring.actions.ApplyRefactoringScriptAction"
+               definitionId="org.eclipse.ltk.ui.refactor.apply.refactoring.script"
+               id="org.eclipse.cdt.ui.actions.applyRefactoringScript"
+               label="%applyScriptAction.label"
+               menubarPath="org.eclipse.jdt.ui.refactoring.menu/historyGroup"
+               retarget="false">
+         </action>
+<!-- =========================================================================== -->
+<!-- Source Menu                                                                 -->
+<!-- =========================================================================== -->
+         <!-- Note: This menu layout must match the definition in org.eclipse.jdt.ui -->
+         <menu
+               id="org.eclipse.jdt.ui.source.menu"
+               label="%Source.menu.label"
+               path="edit">
+		    <separator
+                  name="commentGroup">
+            </separator>
+            <separator
+                  name="editGroup">
+            </separator>
+            <separator
+                  name="importGroup">
+            </separator>
+            <separator
+                  name="generateGroup">
+            </separator>
+            <separator
+                  name="codeGroup">
+            </separator>
+            <separator
+                  name="externalizeGroup">
+            </separator>
+            <separator
+                  name="convertGroup">
+            </separator>
+         </menu>
+<!-- Code Group -->
+         <action
+               class="org.eclipse.cdt.internal.ui.actions.SurroundWithTemplateMenuAction"
+               definitionId="org.eclipse.cdt.ui.edit.text.c.surround.with.quickMenu"
+               label="%SurroundWithTemplateAction.label"
+               menubarPath="org.eclipse.jdt.ui.source.menu/codeGroup"
+               id="org.eclipse.cdt.internal.ui.actions.SurroundWithTemplateMenuAction"
+               style="pulldown">
+         </action>
+<!-- Generate Group -->
         <action
                definitionId="org.eclipse.cdt.ui.refactor.getters.and.setters"
                label="%Refactoring.gettersAndSetters.label"
@@ -1287,14 +1303,88 @@
                id="org.eclipse.cdt.ui.actions.ImplementMethod"
                retarget="true">
          </action>
-         <menu
-               id="org.eclipse.jdt.ui.source.menu"
-               label="%Source.menu.label"
-               path="edit">
-            <separator
-                  name="generateGroup">
-            </separator>
-         </menu>
+<!-- Import Group -->
+         <action
+               definitionId="org.eclipse.cdt.ui.edit.text.c.sort.lines"
+               label="%SortLinesAction.label"
+               retarget="true"
+               menubarPath="org.eclipse.jdt.ui.source.menu/importGroup"
+               id="org.eclipse.cdt.ui.actions.SortLines">
+         </action>
+         <action
+               definitionId="org.eclipse.cdt.ui.edit.text.c.add.include"
+               label="%AddIncludeAction.label"
+               retarget="true"
+               menubarPath="org.eclipse.jdt.ui.source.menu/importGroup"
+               id="org.eclipse.cdt.ui.actions.AddInclude">
+         </action>
+<!-- Edit group -->
+         <action
+               definitionId="org.eclipse.cdt.ui.edit.text.c.format"
+               label="%FormatAction.label"
+               retarget="true"
+               menubarPath="org.eclipse.jdt.ui.source.menu/editGroup"
+               id="org.eclipse.cdt.ui.actions.Format">
+         </action>
+         <action
+               definitionId="org.eclipse.cdt.ui.edit.text.c.indent"
+               label="%IndentAction.label"
+               retarget="true"
+               menubarPath="org.eclipse.jdt.ui.source.menu/editGroup"
+               id="org.eclipse.cdt.ui.actions.Indent">
+         </action>
+         <action
+               definitionId="org.eclipse.ui.edit.text.shiftLeft"
+               disabledIcon="icons/dlcl16/shift_l_edit.gif"
+               icon="icons/elcl16/shift_l_edit.gif"
+               id="org.eclipse.cdt.ui.actions.ShiftLeft"
+               label="%ShiftLeftAction.label"
+               menubarPath="org.eclipse.jdt.ui.source.menu/editGroup"
+               retarget="true">
+         </action>
+         <action
+               definitionId="org.eclipse.ui.edit.text.shiftRight"
+               disabledIcon="icons/dlcl16/shift_r_edit.gif"
+               icon="icons/elcl16/shift_r_edit.gif"
+               id="org.eclipse.cdt.ui.actions.ShiftRight"
+               label="%ShiftRightAction.label"
+               menubarPath="org.eclipse.jdt.ui.source.menu/editGroup"
+               retarget="true">
+         </action>
+<!-- Comment Group -->
+         <action
+               definitionId="org.eclipse.cdt.ui.edit.text.c.uncomment"
+               label="%UncommentAction.label"
+               retarget="true"
+               id="org.eclipse.cdt.ui.actions.Uncomment">
+         </action>
+         <action
+               definitionId="org.eclipse.cdt.ui.edit.text.c.comment"
+               label="%CommentAction.label"
+               retarget="true"
+               id="org.eclipse.cdt.ui.actions.Comment">
+         </action>
+         <action
+               definitionId="org.eclipse.cdt.ui.edit.text.c.remove.block.comment"
+               label="%RemoveBlockCommentAction.label"
+               retarget="true"
+               menubarPath="org.eclipse.jdt.ui.source.menu/commentGroup"
+               id="org.eclipse.cdt.ui.actions.RemoveBlockComment">
+         </action>
+         <action
+               definitionId="org.eclipse.cdt.ui.edit.text.c.add.block.comment"
+               label="%AddBlockCommentAction.label"
+               retarget="true"
+               menubarPath="org.eclipse.jdt.ui.source.menu/commentGroup"
+               id="org.eclipse.cdt.ui.actions.AddBlockComment">
+         </action>
+         <action
+               definitionId="org.eclipse.cdt.ui.edit.text.c.toggle.comment"
+               label="%ToggleCommentAction.label"
+               retarget="true"
+               menubarPath="org.eclipse.jdt.ui.source.menu/commentGroup"
+               id="org.eclipse.cdt.ui.actions.ToggleComment">
+         </action>
       </actionSet>
       <actionSet
             label="%CSearchActionSet.label"
@@ -1385,6 +1475,7 @@
                id="org.eclipse.cdt.ui.actions.OpenDeclaration">
          </action>
       </actionSet>
+<!-- MOSYNC REMOVAL 
       <actionSet
            description="%BuildConfigurationActionSet.descr"
            id="org.eclipse.cdt.ui.buildConfigActionSet"
@@ -1401,14 +1492,6 @@
               toolbarPath="buildConfig"
               tooltip="%BuildConfigAction.tooltip2"/>
         <action
-              class="org.eclipse.cdt.ui.actions.ChangeBuildConfigMenuAction"
-              enablesFor="+"
-              id="org.eclipse.cdt.ui.buildConfigMenuAction"
-              label="%BuildConfigMenuAction.label"
-              menubarPath="project/org.eclipse.cdt.ui.prjmenu/gm1"
-              style="pulldown"
-              tooltip="%BuildConfigAction.tooltip"/>
-       <action
               class="org.eclipse.cdt.ui.actions.BuildActiveConfigMenuAction"
               disabledIcon="icons/dlcl16/build_exec.png"
               enablesFor="+"
@@ -1418,28 +1501,29 @@
               style="pulldown"
               toolbarPath="buildConfig"
               tooltip="%BuildActiveConfiguration.tooltip"/>
-         <action
+        <action
               class="org.eclipse.cdt.ui.actions.ManageConfigsAction"
               enablesFor="+"
               id="org.eclipse.cdt.ui.manageConfigsAction2"
               label="%ManageConfigAction.label"
-              menubarPath="project/org.eclipse.cdt.ui.prjmenu/gm2"
+              menubarPath="project/org.eclipse.cdt.ui.prjmenu/manage"
               />
         <action
-              class="org.eclipse.cdt.ui.actions.DeleteResConfigsAction"
+              class="org.eclipse.cdt.ui.actions.ChangeBuildConfigMenuAction"
               enablesFor="+"
-              id="org.eclipse.cdt.ui.deleteConfigsAction2"
-              label="%DeleteRcConfigAction.label"
-              menubarPath="project/org.eclipse.cdt.ui.prjmenu/gm1"
-              />
+              id="org.eclipse.cdt.ui.buildConfigMenuAction"
+              label="%BuildConfigMenuAction.label"
+              menubarPath="project/org.eclipse.cdt.ui.prjmenu/manage"
+              style="pulldown"
+              tooltip="%BuildConfigAction.tooltip"/>
         <action
               class="org.eclipse.cdt.ui.actions.WorkingSetConfigAction"
               id="org.eclipse.cdt.ui.wsselection"
               label="%wsselection"
-              menubarPath="project/org.eclipse.cdt.ui.prjmenu/gm4"
+              menubarPath="project/org.eclipse.cdt.ui.prjmenu/wrksets"
               style="push"
               />
-     </actionSet>
+     </actionSet> -->
      <actionSet
             label="%CElementCreationActionSet.label"
             description="%CElementCreationActionSet.description"
@@ -1545,6 +1629,23 @@
  
       <!--  win32:  M1=CTRL,    M2=SHIFT, M3=ALT, M4=-
             carbon: M1=COMMAND, M2=SHIFT, M3=ALT, M4=CTRL -->
+      <key
+            sequence="M2+M3+S"
+            commandId="org.eclipse.cdt.ui.edit.text.c.source.quickMenu"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            contextId="org.eclipse.cdt.ui.cEditorScope"/>
+      <key
+            platform="carbon"
+            sequence="M2+M3+S"
+            commandId=""
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            contextId="org.eclipse.cdt.ui.cEditorScope"/>
+      <key
+            platform="carbon"
+            sequence="COMMAND+ALT+S"
+            commandId="org.eclipse.cdt.ui.edit.text.c.source.quickMenu"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            contextId="org.eclipse.cdt.ui.cEditorScope"/>
    	 <key
             sequence="M1+M2+F"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
@@ -1575,13 +1676,53 @@
             contextId="org.eclipse.cdt.ui.cEditorScope"
             commandId="org.eclipse.cdt.ui.edit.text.c.indent"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+       <key
+            sequence="M2+M3+Z"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId="org.eclipse.cdt.ui.edit.text.c.surround.with.quickMenu"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>        
+       <key
+            platform="carbon"
+            sequence="M2+M3+Z"
+            commandId=""
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+       <key
+            platform="carbon"
+            sequence="COMMAND+ALT+Z"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId="org.eclipse.cdt.ui.edit.text.c.surround.with.quickMenu"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>            
      <key
             sequence="M1+M3+H"
             contextId="org.eclipse.cdt.ui.cEditorScope"
             commandId="org.eclipse.cdt.ui.edit.open.call.hierarchy"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
      <key
+            platform="carbon"
             sequence="M1+M3+H"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId=""
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+     <key
+            platform="carbon"
+            sequence="M3+M4+H"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId="org.eclipse.cdt.ui.edit.open.call.hierarchy"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+     <key
+            sequence="M1+M3+H"
+            contextId="org.eclipse.cdt.ui.cViewScope"
+            commandId="org.eclipse.cdt.ui.edit.open.call.hierarchy"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+     <key
+            platform="carbon"
+            sequence="M1+M3+H"
+            contextId="org.eclipse.cdt.ui.cViewScope"
+            commandId=""
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+     <key
+            platform="carbon"
+            sequence="M3+M4+H"
             contextId="org.eclipse.cdt.ui.cViewScope"
             commandId="org.eclipse.cdt.ui.edit.open.call.hierarchy"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
@@ -1667,6 +1808,23 @@
             commandId="org.eclipse.cdt.ui.edit.text.c.add.include"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
      <key
+            sequence="M1+M3+S"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId="org.eclipse.cdt.ui.edit.text.c.sort.lines"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+     <key
+     		platform="carbon"
+            sequence="M1+M3+S"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId=""
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+     <key
+     		platform="carbon"
+            sequence="CTRL+COMMAND+S"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId="org.eclipse.cdt.ui.edit.text.c.sort.lines"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+     <key
             sequence="M1+O"
             contextId="org.eclipse.cdt.ui.cEditorScope"
             commandId="org.eclipse.cdt.ui.edit.open.outline"
@@ -1697,6 +1855,18 @@
             commandId="org.eclipse.cdt.ui.edit.text.c.toggle.source.header"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
      <key
+            platform="carbon"
+            sequence="M1+TAB"
+            contextId=""
+            commandId=""
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+     <key
+            platform="carbon"
+            sequence="CTRL+TAB"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId="org.eclipse.cdt.ui.edit.text.c.toggle.source.header"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+     <key
             sequence="M3+ARROW_LEFT"
             contextId="org.eclipse.cdt.ui.macroExpansionHoverScope"
             commandId="org.eclipse.cdt.ui.hover.backwardMacroExpansion"
@@ -1716,6 +1886,18 @@
 	        contextId="org.eclipse.cdt.ui.cEditorScope"
 	        commandId="org.eclipse.cdt.ui.edit.text.c.toggleMarkOccurrences"
 	        schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+	 <key
+	        platform="carbon"
+	        sequence="M2+M3+O"
+	        contextId="org.eclipse.cdt.ui.cEditorScope"
+	        commandId=""
+	        schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+	 <key
+	        platform="carbon"
+	        sequence="M1+M3+O"
+	        contextId="org.eclipse.cdt.ui.cEditorScope"
+	        commandId="org.eclipse.cdt.ui.edit.text.c.toggleMarkOccurrences"
+	        schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
      <key
             sequence="M1+="
             contextId="org.eclipse.cdt.ui.cEditorScope"
@@ -1731,13 +1913,49 @@
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             contextId="org.eclipse.cdt.ui.cEditorScope"
             commandId="org.eclipse.cdt.ui.edit.text.rename.element"/>
-   	 <key
+     <key
+            platform="carbon"
+            sequence="M2+M3+R"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId=""/>
+     <key
+            platform="carbon"
+            sequence="M1+M3+R"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId="org.eclipse.cdt.ui.edit.text.rename.element"/>
+     <key
             sequence="M2+M3+R"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             contextId="org.eclipse.cdt.ui.cViewScope"
             commandId="org.eclipse.cdt.ui.edit.text.rename.element"/>
      <key
+            platform="carbon"
+            sequence="M2+M3+R"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            contextId="org.eclipse.cdt.ui.cViewScope"
+            commandId=""/>
+     <key
+            platform="carbon"
+            sequence="M1+M3+R"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            contextId="org.eclipse.cdt.ui.cViewScope"
+            commandId="org.eclipse.cdt.ui.edit.text.rename.element"/>
+     <key
             sequence="M2+M3+M"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId="org.eclipse.cdt.ui.refactor.extract.function"/>
+     <key
+            platform="carbon"
+            sequence="M2+M3+M"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId=""/>
+     <key
+            platform="carbon"
+            sequence="M1+M3+M"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             contextId="org.eclipse.cdt.ui.cEditorScope"
             commandId="org.eclipse.cdt.ui.refactor.extract.function"/>
@@ -1751,7 +1969,18 @@
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             contextId="org.eclipse.cdt.ui.cEditorScope"
             commandId="org.eclipse.cdt.ui.refactor.extract.local.variable"/>
-            
+     <key
+            platform="carbon"
+            sequence="M2+M3+L"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId=""/>
+     <key
+            platform="carbon"
+            sequence="M1+M3+L"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            contextId="org.eclipse.cdt.ui.cEditorScope"
+            commandId="org.eclipse.cdt.ui.refactor.extract.local.variable"/>
       <scheme
             id="org.eclipse.cdt.ui.visualstudio"
 			parentId="org.eclipse.ui.defaultAcceleratorConfiguration"
@@ -1933,6 +2162,24 @@
             id="org.eclipse.cdt.ui.edit.text.c.format">
       </command>
       <command
+            name="%ActionDefinition.sourceQuickMenu.name"
+            description="%ActionDefinition.sourceQuickMenu.description"
+            categoryId="org.eclipse.cdt.ui.category.source"
+            id="org.eclipse.cdt.ui.edit.text.c.source.quickMenu">
+      </command>
+      <command
+            name="%ActionDefinition.comment.name"
+            description="%ActionDefinition.comment.description"
+            categoryId="org.eclipse.cdt.ui.category.source"
+            id="org.eclipse.cdt.ui.edit.text.c.comment">
+      </command>
+      <command
+            name="%ActionDefinition.uncomment.name"
+            description="%ActionDefinition.uncomment.description"
+            categoryId="org.eclipse.cdt.ui.category.source"
+            id="org.eclipse.cdt.ui.edit.text.c.uncomment">
+      </command>
+      <command
             name="%ActionDefinition.toggleComment.name"
             description="%ActionDefinition.toggleComment.description"
             categoryId="org.eclipse.cdt.ui.category.source"
@@ -2024,6 +2271,12 @@
             description="%ActionDefinition.addInclude.description"
             categoryId="org.eclipse.cdt.ui.category.source"
             id="org.eclipse.cdt.ui.edit.text.c.add.include">
+      </command>
+      <command
+            name="%ActionDefinition.sortLines.name"
+            description="%ActionDefinition.sortLines.description"
+            categoryId="org.eclipse.cdt.ui.category.source"
+            id="org.eclipse.cdt.ui.edit.text.c.sort.lines">
       </command>
       <command
             name="%ActionDefinition.showOutline.name"
@@ -2139,6 +2392,12 @@
             description="%ActionDefinition.gettersAndSetters.description"
 	        categoryId="org.eclipse.cdt.ui.category.source"
 	        id="org.eclipse.cdt.ui.refactor.getters.and.setters"/>
+      <command
+            name="%ActionDefinition.surroundWith.quickMenu.name"
+            description="%ActionDefinition.surroundWith.quickMenu.description"
+            categoryId="org.eclipse.cdt.ui.category.source"
+            id="org.eclipse.cdt.ui.edit.text.c.surround.with.quickMenu">
+      </command>
    </extension>
    <extension
          id="pdomSearchPage"
@@ -2206,6 +2465,11 @@
             class="org.eclipse.cdt.ui.dialogs.MachOBinaryParserPage"
             parserID="org.eclipse.cdt.core.MachO"
             id="MachOBinaryParserPage">
+      </parserPage>
+      <parserPage
+            class="org.eclipse.cdt.ui.dialogs.MachOBinaryParserPage"
+            parserID="org.eclipse.cdt.core.MachO64"
+            id="MachO64BinaryParserPage">
       </parserPage>
       <parserPage
             class="org.eclipse.cdt.ui.dialogs.GNUSomBinaryParserPage"
@@ -2296,8 +2560,7 @@
          </filter>            
          <enabledWhen>
             <or>
-		     <instanceof value="org.eclipse.core.resources.IProject"/>
-		     <instanceof value="org.eclipse.cdt.core.model.ICProject"/>
+		     <adapt type="org.eclipse.core.resources.IProject"/>
 		     
 		     <instanceof value="org.eclipse.core.resources.IFolder"/>
 		     <instanceof value="org.eclipse.cdt.core.model.ICContainer"/>
@@ -2376,6 +2639,18 @@
 		     </adapt>         
          </enabledWhen>
       </page>
+      <page
+            name="%BuildLoggingPreferencePage.name"
+            id="org.eclipse.cdt.managedbuilder.ui.properties.BuildLogPreferencePage"
+            class="org.eclipse.cdt.internal.ui.preferences.BuildLogPreferencePage"
+            category="org.eclipse.cdt.managedbuilder.ui.properties.Page_head_build">
+         <keywordReference id="org.eclipse.cdt.ui.common"/>
+         <enabledWhen>
+             <adapt type="org.eclipse.core.resources.IProject">
+                 <test property="org.eclipse.core.resources.projectNature" value="org.eclipse.cdt.core.cnature"/>
+             </adapt>
+         </enabledWhen>
+      </page>
    </extension>
 
    <extension
@@ -2448,6 +2723,7 @@
    <extension
          point="org.eclipse.ui.editors.templates">
       <contextTypeRegistry id="org.eclipse.cdt.ui.editor.CEditor"/>
+      <contextTypeRegistry id="org.eclipse.cdt.ui.codeTemplates"/>
       <contextType
             name="%c.contextType.name"
             class="org.eclipse.cdt.internal.corext.template.c.CContextType"
@@ -2491,12 +2767,6 @@
             id="org.eclipse.cdt.ui.fastIndexer"
             indexerID="org.eclipse.cdt.core.fastIndexer"
             name="%CDTIndexer.fastindexer"/>
-	  <indexerUI
-            class="org.eclipse.cdt.ui.dialogs.DOMSourceIndexerBlock"
-            id="org.eclipse.cdt.ui.DOMASTSourceIndexerUI"
-            indexerID="org.eclipse.cdt.core.domsourceindexer"
-            name="%CDTIndexer.domsourceindexer"/>
-
    </extension>
 
     <extension
@@ -2973,7 +3243,7 @@
      <wizard
            category="org.eclipse.cdt.ui.exportWizardCategory"
            class="org.eclipse.cdt.internal.ui.wizards.settingswizards.ProjectSettingsExportWizard"
-           icon="icons/obj16/hfolder_obj.gif"
+           icon="icons/obj16/export_settings_wiz.gif"
            id="org.eclipse.cdt.ui.projectSettingsExportWizard"
            name="%projectSettingsIndexExportWizard.name">
         <selection
@@ -3092,7 +3362,6 @@
             targetId="org.eclipse.cdt.ui.cCode">
       </hyperlinkDetector>
    </extension>
-<!-- MOSYNC SDK REMOVAL
    <extension
          point="org.eclipse.ui.importWizards">
       <category
@@ -3102,14 +3371,14 @@
       <wizard
             category="org.eclipse.cdt.ui.importWizardCategory"
             class="org.eclipse.cdt.internal.ui.wizards.settingswizards.ProjectSettingsImportWizard"
-            icon="icons/obj16/hfolder_obj.gif"
+            icon="icons/obj16/import_settings_wiz.gif"
             id="org.eclipse.cdt.ui.projectSettingsImportWizard"
             name="%projectSettingsIndexExportWizard.name">
          <selection
                class="org.eclipse.core.resources.IProject">
          </selection>
       </wizard>
-   </extension> -->
+   </extension>
    <extension
          point="org.eclipse.cdt.ui.workingSetConfigurations">
       <projectConfigurationFactory
@@ -3178,4 +3447,191 @@
          </enabledWhen>
       </page>
    </extension>
+   <extension
+         point="org.eclipse.ltk.core.refactoring.refactoringContributions">
+      <contribution
+            class="org.eclipse.cdt.internal.ui.refactoring.extractconstant.ExtractConstantRefactoringContribution"
+            id="org.eclipse.cdt.ui.refactoring.extractconstant.ExtractConstantRefactoring">
+      </contribution>
+      <contribution
+            class="org.eclipse.cdt.internal.ui.refactoring.extractlocalvariable.ExtractLocalVariableRefactoringContribution"
+            id="org.eclipse.cdt.internal.ui.refactoring.extractlocalvariable.ExtractLocalVariableRefactoring">
+      </contribution>
+      <contribution
+            class="org.eclipse.cdt.internal.ui.refactoring.hidemethod.HideMethodRefactoringContribution"
+            id="org.eclipse.cdt.internal.ui.refactoring.hidemethod.HideMethodRefactoring">
+      </contribution>
+      <contribution
+            class="org.eclipse.cdt.internal.ui.refactoring.extractfunction.ExtractFunctionRefactoringContribution"
+            id="org.eclipse.cdt.internal.ui.refactoring.extractfunction.ExtractFunctionRefactoring">
+      </contribution>
+   </extension>
+	<extension point="org.eclipse.ltk.core.refactoring.renameParticipants">
+		<renameParticipant id="org.eclipse.jdt.junit.renameTypeParticipant"
+			name="%renameParticipant.name"
+			class="org.eclipse.cdt.internal.ui.refactoring.rename.RenameSourceFolder">
+			<enablement>
+				<or>
+				<with variable="affectedNatures">
+					<iterate operator="or">
+						<equals value="org.eclipse.cdt.core.ccnature" />
+					</iterate>
+				</with>
+				<with variable="affectedNatures">
+					<iterate operator="or">
+						<equals value="org.eclipse.cdt.core.cnature" />
+					</iterate>
+				</with>
+				</or>
+				<with variable="element">
+					<instanceof value="org.eclipse.core.resources.IFolder" />
+				</with>
+			</enablement>
+		</renameParticipant>
+	</extension>
+   <!-- Add support for undo / redo in the FileListControl -->
+   <extension
+         id="org.eclipse.cdt.ui.FileListControlHandler"
+         point="org.eclipse.ui.handlers">
+      <handler
+            class="org.eclipse.ui.internal.handlers.WidgetMethodHandler:undo"
+            commandId="org.eclipse.ui.edit.undo">
+         <activeWhen>      
+         	<with variable="activeFocusControlId">
+         	         <equals value="org.eclipse.cdt.ui.FileListControl"/>
+         	</with>
+         </activeWhen>
+      </handler>
+      <handler
+            class="org.eclipse.ui.internal.handlers.WidgetMethodHandler:redo"
+            commandId="org.eclipse.ui.edit.redo">
+         <activeWhen>      
+         	<with variable="activeFocusControlId">
+         	         <equals value="org.eclipse.cdt.ui.FileListControl"/>
+         	</with>
+         </activeWhen>
+      </handler>
+      <handler
+            class="org.eclipse.ui.internal.handlers.WidgetMethodHandler:delete"
+            commandId="org.eclipse.ui.edit.delete">
+         <activeWhen>      
+         	<with variable="activeFocusControlId">
+         	         <equals value="org.eclipse.cdt.ui.FileListControl"/>
+         	</with>
+         </activeWhen>
+      </handler>
+   </extension>
+   <extension
+         point="org.eclipse.cdt.core.templateProcessTypes">
+            <processType
+            name="OpenFiles"
+            processRunner="org.eclipse.cdt.ui.templateengine.processes.OpenFiles">
+         <simple
+               name="projectName">
+         </simple>
+         <complexArray
+               name="files">
+            <baseType>
+               <simple
+                     name="target">
+               </simple>
+            </baseType>
+         </complexArray>
+      </processType>
+   </extension>
+	<extension point="org.eclipse.ui.decorators">
+		<decorator adaptable="true"
+			class="org.eclipse.cdt.internal.ui.viewsupport.ExcludedFileDecorator"
+			id="org.eclipse.cdt.managedbuilder.ui.excludedFile" label="%excluded-file.name"
+			lightweight="true" state="true">
+			<enablement>
+				<objectClass name="org.eclipse.core.resources.IFile" />
+			</enablement>
+		</decorator>
+	</extension>
+ <extension
+       point="org.eclipse.ui.commands">
+    <command
+          id="org.eclipse.cdt.ui.deleteConfigsCommand"
+          name="%deleteConfigsCommand.name">
+    </command>
+    <command
+          id="org.eclipse.cdt.ui.excludeCommand"
+          name="%excludeCommand.name">
+    </command>
+ </extension>
+ <extension
+       point="org.eclipse.ui.handlers">
+    <handler
+          class="org.eclipse.cdt.internal.ui.actions.DeleteResConfigsHandler"
+          commandId="org.eclipse.cdt.ui.deleteConfigsCommand">
+    </handler>
+    <handler
+          class="org.eclipse.cdt.internal.ui.actions.ExcludeFromBuildHandler"
+          commandId="org.eclipse.cdt.ui.excludeCommand">
+    </handler>
+ </extension>
+ <extension
+       point="org.eclipse.ui.menus">
+    <menuContribution
+          locationURI="popup:org.eclipse.ui.popup.any?endof=buildGroup">
+       <menu
+             id="org.eclipse.cdt.ui.buildConfigContributionM"
+             label="%ResourceConfigurations.menu">
+            <visibleWhen
+                  checkEnabled="false">
+              <with variable="activeMenuSelection">
+		         <iterate ifEmpty="false">
+		         	<or>
+			            <adapt type="org.eclipse.core.resources.IFile">
+				            <test
+				                  property="org.eclipse.core.resources.projectNature"
+				                  value="org.eclipse.cdt.core.cnature"/>
+			            </adapt>
+			            <adapt type="org.eclipse.core.resources.IFolder">
+				            <test
+				                  property="org.eclipse.core.resources.projectNature"
+				                  value="org.eclipse.cdt.core.cnature"/>
+			            </adapt>
+			        </or> 
+		         </iterate>
+              </with>
+            </visibleWhen>
+       </menu>
+    </menuContribution>
+    <menuContribution
+          locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+       <menu
+             id="org.eclipse.cdt.ui.buildConfigContributionM"
+             label="%ResourceConfigurations.menu">
+            <visibleWhen
+                  checkEnabled="false">
+	   		  <with variable="activeMenuEditorInput">
+ 				<iterate ifEmpty="false">
+		            <adapt type="org.eclipse.core.resources.IFile">
+			            <test
+			                  property="org.eclipse.core.resources.projectNature"
+			                  value="org.eclipse.cdt.core.cnature"/>
+		            </adapt>
+		   		</iterate>
+	   		  </with>
+            </visibleWhen>
+       </menu>
+    </menuContribution>
+    <menuContribution
+          locationURI="popup:org.eclipse.cdt.ui.buildConfigContributionM">
+       <command
+             commandId="org.eclipse.cdt.ui.excludeCommand"
+             id="org.eclipse.cdt.ui.excludeCommand.menu"
+             label="%ExcludeAction.label"
+             style="push">
+       </command>
+       <command
+             commandId="org.eclipse.cdt.ui.deleteConfigsCommand"
+             id="org.eclipse.cdt.ui.deleteConfigsCommand.menu"
+             label="%DeleteRcConfigAction.label"
+             style="push">
+       </command>
+    </menuContribution>
+ </extension>
 </plugin>

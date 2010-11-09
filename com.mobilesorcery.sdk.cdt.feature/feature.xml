@@ -32,11 +32,11 @@
       <import plugin="org.eclipse.debug.core" version="3.2.0" match="compatible"/>
       <import plugin="org.eclipse.cdt.core" version="5.0.0" match="compatible"/>
       <import plugin="org.eclipse.core.filesystem" version="1.2.0" match="greaterOrEqual"/>
-      <import plugin="org.eclipse.cdt.debug.core" version="6.0.0" match="compatible"/>
+      <import plugin="org.eclipse.cdt.debug.core" version="7.0.0" match="compatible"/>
       <import plugin="org.eclipse.core.variables" version="3.2.200" match="greaterOrEqual"/>
       <import plugin="org.eclipse.ui" version="3.2.0" match="compatible"/>
-      <import plugin="org.eclipse.cdt.debug.mi.core" version="6.0.0" match="compatible"/>
-      <import plugin="org.eclipse.cdt.debug.ui" version="6.0.0" match="compatible"/>
+      <import plugin="org.eclipse.cdt.debug.mi.core" version="7.0.0" match="compatible"/>
+      <import plugin="org.eclipse.cdt.debug.ui" version="7.0.0" match="compatible"/>
       <import plugin="org.eclipse.cdt.ui" version="5.0.0" match="compatible"/>
       <import plugin="org.eclipse.debug.ui" version="3.2.0" match="compatible"/>
       <import plugin="org.eclipse.ui.console" version="3.1.100" match="compatible"/>
@@ -48,11 +48,10 @@
       <import plugin="org.eclipse.debug.core" version="3.4.0" match="compatible"/>
       <import plugin="org.eclipse.ui.views" version="3.2.0" match="compatible"/>
       <import plugin="org.eclipse.core.expressions"/>
-      <import plugin="org.eclipse.cdt.managedbuilder.core" version="6.0.0" match="compatible"/>
+      <import plugin="org.eclipse.cdt.managedbuilder.core" version="7.0.0" match="compatible"/>
       <import plugin="org.eclipse.help" version="3.2.0" match="compatible"/>
       <import plugin="org.eclipse.ui.intro.universal"/>
-      <import plugin="org.eclipse.jface.text" version="3.4.0" match="compatible"/>
-      <import plugin="org.eclipse.cdt.make.core" version="6.0.0" match="compatible"/>
+      <import plugin="org.eclipse.cdt.make.core" version="7.0.0" match="compatible"/>
       <import plugin="org.eclipse.compare" version="3.3.0" match="compatible"/>
       <import plugin="org.eclipse.ui.ide" version="3.3.0" match="compatible"/>
       <import plugin="org.eclipse.jface.text" version="3.4.0" match="compatible"/>
@@ -64,6 +63,9 @@
       <import plugin="org.eclipse.ui.navigator" version="3.2.0" match="compatible"/>
       <import plugin="org.eclipse.ltk.ui.refactoring" version="3.4.0" match="greaterOrEqual"/>
       <import plugin="org.eclipse.ui.navigator.resources" version="3.3.100" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.cdt.gdb" version="7.0.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.jface.text" version="3.5.0" match="compatible"/>
+      <import plugin="org.eclipse.cdt.core" version="5.2.0" match="compatible"/>
    </requires>
 
    <plugin
@@ -86,13 +88,6 @@
          install-size="0"
          version="0.0.0"
          unpack="false"/>
-
-   <plugin
-         id="org.eclipse.cdt.core.win32"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         fragment="true"/>
 
    <plugin
          id="org.eclipse.cdt.debug.mi.core"
@@ -131,13 +126,6 @@
 
    <plugin
          id="org.eclipse.cdt.managedbuilder.gnu.ui"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="org.eclipse.cdt.doc.isv"
          download-size="0"
          install-size="0"
          version="0.0.0"

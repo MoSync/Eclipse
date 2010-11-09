@@ -13,8 +13,9 @@
 # CUSTOM MOSYNC STUFF
 #####################
 
-equinoxLauncherPluginVersion=1.0.200.v20090520
-pdeBuildPluginVersion=3.5.0.v20090527-1800
+#equinoxLauncherPluginVersion=1.0.200.v20090520
+equinoxLauncherPluginVersion=1.1.0.v20100507
+pdeBuildPluginVersion=3.6.1.R36x_v20100823
 #eclipse.pdebuild.scripts=%%target-platform%%/eclipse/plugins/org.eclipse.pde.build_${pdeBuildPluginVersion}/scripts
 #eclipse.pdebuild.templates=%%target-platform%%/eclipse/plugins/org.eclipse.pde.build_${pdeBuildPluginVersion}/templates
 
