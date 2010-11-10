@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section.Entry;
 
 /**
@@ -269,6 +270,10 @@ public class SectionedPropertiesFile {
 	 */
 	public Section getDefaultSection() {
 		return getFirstSection(null);
+	}
+
+	public List<Section> getSections() {
+		return sections;
 	}
 
 }

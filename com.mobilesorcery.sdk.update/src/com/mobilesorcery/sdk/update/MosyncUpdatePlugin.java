@@ -31,6 +31,7 @@ import org.osgi.framework.BundleContext;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IUpdater;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.update.internal.DefaultUpdater2;
 import com.mobilesorcery.sdk.update.internal.RegistrationPartListener;
 
 /**
@@ -75,6 +76,13 @@ public class MosyncUpdatePlugin extends AbstractUIPlugin {
 	 */
 	public static MosyncUpdatePlugin getDefault() {
 		return plugin;
+	}
+	
+	public void tryToCloseRegistrationPerspective() {
+		IUpdater updater = CoreMoSyncPlugin.getDefault().getUpdater();
+		if (updater instanceof DefaultUpdater2) {
+			((DefaultUpdater2) updater).closeRegistrationPerspective();
+		}
 	}
 
 }

@@ -23,7 +23,7 @@ public class NameSpacePropertyOwnerTest {
 
 	@Test
 	public void testNameSpace() throws Exception {
-		MoSyncProject project = createTestProject("test");
+		MoSyncProject project = createTestProject("test2");
 		NameSpacePropertyOwner child = new NameSpacePropertyOwner(project, "a/b");
 		project.initProperty("p1", "v1");
 

@@ -155,6 +155,8 @@ public class FinalizerParser {
 					}
 				} catch (CoreException e) {
 					throw new InvocationTargetException(e, variant.getProfile() + ": " + e.getMessage()); //$NON-NLS-1$
+				} finally {
+					monitor.done();
 				}
 			}
 		};

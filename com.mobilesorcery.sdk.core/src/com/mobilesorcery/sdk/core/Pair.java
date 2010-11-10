@@ -39,4 +39,8 @@ public class Pair<S, T> {
 	public int hashCode() {
 		return first.hashCode() ^ second.hashCode();
 	}
+	
+	public String toString() {
+		return "{" + first + "," + second + "}";
+	}
 }

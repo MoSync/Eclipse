@@ -19,6 +19,7 @@ import java.text.MessageFormat;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
@@ -27,7 +28,9 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
@@ -63,6 +66,7 @@ import com.mobilesorcery.sdk.profiles.ui.DeviceFilterComposite;
 import com.mobilesorcery.sdk.profiles.ui.DeviceViewerFilter;
 import com.mobilesorcery.sdk.profiles.ui.ProfileContentProvider;
 import com.mobilesorcery.sdk.profiles.ui.ProfileLabelProvider;
+import com.mobilesorcery.sdk.profiles.ui.internal.ProfilesView.InternalSelectionProvider;
 import com.mobilesorcery.sdk.profiles.ui.internal.actions.FinalizeForProfileAction;
 import com.mobilesorcery.sdk.profiles.ui.internal.actions.SetTargetProfileAction;
 import com.mobilesorcery.sdk.profiles.ui.internal.actions.ShowProfileInfoAction;
@@ -70,6 +74,35 @@ import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
 public class ProfilesView extends ViewPart implements PropertyChangeListener {
 
+	class InternalSelectionProvider implements ISelectionProvider {
+		// The class is a fix for bug #917 -- if useful for other plugins please refactor
+		ListenerList listeners = new ListenerList();
+		private ISelection selection = new StructuredSelection();
+		
+		public void addSelectionChangedListener(
+				ISelectionChangedListener listener) {
+			listeners.add(listener);
+		}
+
+		public ISelection getSelection() {
+			return selection;
+		}
+
+		public void removeSelectionChangedListener(
+				ISelectionChangedListener listener) {
+			listeners.remove(listener);
+		}
+
+		public void setSelection(ISelection selection) {
+			this.selection = selection;
+			for (Object listener : listeners.getListeners()) {
+				SelectionChangedEvent event = new SelectionChangedEvent(this, selection);
+				((ISelectionChangedListener) listener).selectionChanged(event);
+			}
+		}
+		
+	}
+	
     private SetTargetProfileAction setTargetAction = new SetTargetProfileAction();
     private ShowProfileInfoAction showProfileInfo = new ShowProfileInfoAction();
     private FinalizeForProfileAction buildForProfile = new FinalizeForProfileAction();
@@ -85,6 +118,7 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
     private Link errorMessage;
 	private MoSyncProject currentProject;
     private Link currentTarget;
+	private InternalSelectionProvider selectionProvider;
 
     public ProfilesView() {
     }
@@ -215,9 +249,11 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
         
         updateProfiles.setLayoutData(new GridData(SWT.RIGHT, SWT.BOTTOM, true, false));
 
-        getSite().setSelectionProvider(profileTree);
+        selectionProvider = new InternalSelectionProvider();
+        getSite().setSelectionProvider(selectionProvider);
         
         projectChanged(null, null);
+        currentProjectChanged();
     }
 
     private void initMenu(Control control) {
@@ -294,6 +330,8 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
                 updateTargetProfileLink(newProject != null ? newProject.getTargetProfile() : null);
             }
         });
+        
+        selectionProvider.setSelection(newProject == null ? new StructuredSelection() : new StructuredSelection(newProject.getWrappedProject()));
     }
 
     protected void updateProjectText(MoSyncProject project) {
@@ -324,6 +362,7 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
             
             updateTargetProfileLink(currentProject.getTargetProfile());
         } else if (event.getSource() instanceof IDeviceFilter) {
+        	deviceFilter.setDeviceFilter(currentProject.getDeviceFilter());
             profileTree.setFilters(new ViewerFilter[] { new DeviceViewerFilter(currentProject.getDeviceFilter()) });
             profileTree.setInput(currentProject == null ? MoSyncTool.getDefault().getVendors() : currentProject.getFilteredVendors());
         } else if (event.getPropertyName() == MoSyncTool.PROFILES_UPDATED) {

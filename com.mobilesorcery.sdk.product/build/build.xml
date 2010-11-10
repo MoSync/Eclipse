@@ -73,8 +73,10 @@
 				<include name="com.mobilesorcery.sdk.builder.*/**" />
 				<exclude name="com.mobilesorcery.sdk*.feature/**"/>
 				<include name="com.mobilesorcery.sdk.deployment/**" />
+				<include name="com.mobilesorcery.sdk.capabilities.core/**" />				
+				<include name="com.mobilesorcery.sdk.capabilities.ui/**" />				
 				<include name="com.mobilesorcery.sdk.core/**" />
-				<include name="com.mobilesorcery.sdk.core.templates/**" />
+			    <include name="com.mobilesorcery.sdk.core.templates/**" />
 				<include name="com.mobilesorcery.sdk.docs/**" />
 				<include name="com.mobilesorcery.sdk.finalizer.core/**" />
 				<include name="com.mobilesorcery.sdk.finalizer.ui/**" />
