@@ -290,7 +290,7 @@ public class MoSyncBuilder extends ACBuilder {
     }
 
     protected IProject[] build(int kind, Map args, IProgressMonitor monitor) throws CoreException {
-        IProject project = getProject();
+            IProject project = getProject();
 
         if (MoSyncProject.NULL_DEPENDENCY_STRATEGY == PropertyUtil.getInteger(MoSyncProject.create(project), MoSyncProject.DEPENDENCY_STRATEGY,
                 MoSyncProject.GCC_DEPENDENCY_STRATEGY)) {

@@ -91,7 +91,7 @@ public class NameSpacePropertyOwner implements IPropertyOwner {
 		String[] fullKeys = assembleFullKeys(key);
 		for (int i = 0; i < levels + 1; i++) {
 			String prop = parent.getProperty(fullKeys[levels - i]);
-			if (!Util.isEmpty(prop)) {
+			if (prop != null) {
 				return prop;
 			}
 		}		

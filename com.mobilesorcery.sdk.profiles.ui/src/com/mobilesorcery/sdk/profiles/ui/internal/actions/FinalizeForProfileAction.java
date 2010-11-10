@@ -18,7 +18,6 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 
-import com.mobilesorcery.sdk.core.FinalizerBuildJob;
 import com.mobilesorcery.sdk.core.BuildVariant;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;

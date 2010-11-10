@@ -19,16 +19,15 @@ import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.eclipse.cdt.internal.ui.text.doctools.Messages;
-import org.eclipse.cdt.utils.Platform;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -44,10 +43,13 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.ISafeRunnable;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.debug.core.ILaunchConfiguration;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.TreePath;
@@ -64,6 +66,9 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.activities.ICategory;
+import org.eclipse.ui.activities.ICategoryActivityBinding;
+import org.eclipse.ui.activities.IWorkbenchActivitySupport;
 import org.eclipse.ui.ide.undo.CreateProjectOperation;
 import org.eclipse.ui.intro.IIntroManager;
 import org.eclipse.ui.intro.IIntroPart;
@@ -77,7 +82,6 @@ import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
-import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section.Entry;
 import com.mobilesorcery.sdk.ui.internal.console.IDEProcessConsole;
 import com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator;
 
@@ -133,6 +137,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         listeners = new PropertyChangeSupport(this);
         CoreMoSyncPlugin.getDefault().setIDEProcessConsoleProvider(this);
         registerGlobalProjectListener();
+        initializeCustomActivities();
     }
 
     public boolean isExampleWorkspace() {
@@ -494,6 +499,27 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         addHalfHash(params);
         params.put("hhash", getUserHalfHash());
         return params;
+    }
+    
+    private void initializeCustomActivities() {
+    	boolean enable = Arrays.asList(Platform.getApplicationArgs()).contains("-experimental:enable");
+    	boolean disable = Arrays.asList(Platform.getApplicationArgs()).contains("-experimental:disable");
+    	
+    	if (enable || disable) {
+	    	IWorkbenchActivitySupport activitySupport = PlatformUI.getWorkbench().getActivitySupport();
+	    	ICategory category = activitySupport.getActivityManager().getCategory("com.mobilesorcery.activities.experimental");
+	    	if (category != null) {
+	    		HashSet<String> activityIds = new HashSet<String>(activitySupport.createWorkingCopy().getEnabledActivityIds());
+	    		for (Object binding : category.getCategoryActivityBindings()) {
+	    			if (enable) {
+	    				activityIds.add(((ICategoryActivityBinding) binding).getActivityId());
+	    			} else {
+	    				activityIds.remove(((ICategoryActivityBinding) binding).getActivityId());
+	    			}
+	    		}
+	    		activitySupport.setEnabledActivityIds(activityIds);	
+	    	}
+    	}
     }
     
 

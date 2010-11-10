@@ -261,7 +261,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
             }
         }
 
-        return "";
+        return null;
     }
 
     private void initReIndexerListener() {
@@ -664,5 +664,25 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     public IApplicationPermissions getDefaultPermissions(MoSyncProject project) {
         return ApplicationPermissions.getDefaultPermissions(project);
     }
-	
+
+    /**
+     * Logs a specified method ONCE
+     * @param e
+     * @param token Used to distinguish the source of log messages
+     */
+    /*
+    public void logOnce(Exception e, String token) {
+        Integer logCount = logCounts.get(token);
+        if (logCount == null) {
+            logCount = 0;
+        }
+        
+        if (logCount < 1) {
+            log(e);
+        }
+        
+        logCount++;
+        logCounts.put(token, logCount);
+    }
+    */	
 }

@@ -39,6 +39,7 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
@@ -62,7 +63,8 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 		try {
 			//session = MIPlugin.getDefault().createSession( getSessionType( config ), gdbPath.toOSString(), factory, executable, extraArgs, usePty, monitor );
 			IProject project = EmulatorLaunchConfigurationDelegate.getProject(launch.getLaunchConfiguration());
-			session = createSession(getSessionType(config), gdbPath.toOSString(), factory, executable, extraArgs, usePty, project, monitor);
+			IBuildVariant variant = EmulatorLaunchConfigurationDelegate.getVariant(config, "debug");
+			session = createSession(variant, getSessionType(config), gdbPath.toOSString(), factory, executable, extraArgs, usePty, project, monitor);
 			ICDISessionConfiguration sessionConfig = getSessionConfiguration( session );
 			if ( sessionConfig != null ) {
 				session.setConfiguration( sessionConfig );
@@ -81,11 +83,11 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 	}
 
 	// Copied 'n' modified from MIPlugin
-	protected Session createSession(int sessionType, String gdb, CommandFactory factory, File program, String[] extraArgs, boolean usePty, IProgressMonitor monitor) throws IOException, MIException {
-		return createSession(sessionType, gdb, factory, program, extraArgs, usePty, null, monitor);
+	protected Session createSession(IBuildVariant variant, int sessionType, String gdb, CommandFactory factory, File program, String[] extraArgs, boolean usePty, IProgressMonitor monitor) throws IOException, MIException {
+		return createSession(variant, sessionType, gdb, factory, program, extraArgs, usePty, null, monitor);
 	}
 	
-	protected Session createSession(int sessionType, String gdb, CommandFactory factory, File program, String[] extraArgs, boolean usePty, IProject project, IProgressMonitor monitor) throws IOException, MIException {
+	protected Session createSession(IBuildVariant variant, int sessionType, String gdb, CommandFactory factory, File program, String[] extraArgs, boolean usePty, IProject project, IProgressMonitor monitor) throws IOException, MIException {
 		if (monitor == null) {
 			monitor = new NullProgressMonitor();
 		}
@@ -110,7 +112,7 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 		
 		if (project != null) {
 			MoSyncProject mosyncProject = MoSyncProject.create(project);
-			IBuildConfiguration buildConfiguration = mosyncProject.getActiveBuildConfiguration();
+			IBuildConfiguration buildConfiguration = mosyncProject.getBuildConfiguration(variant.getConfigurationId());
 			IPath sldPath = mosyncProject.getSLD(buildConfiguration).getSLDPath();
 
 			if (program != null) {

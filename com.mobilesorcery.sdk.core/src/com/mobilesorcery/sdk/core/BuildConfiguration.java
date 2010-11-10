@@ -101,4 +101,7 @@ public class BuildConfiguration implements IBuildConfiguration, IAdaptable {
         this.types = new HashSet<String>(types);
     }
 
+    public String toString() {
+    	return id;
+    }
 }

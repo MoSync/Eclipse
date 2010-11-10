@@ -425,7 +425,9 @@ public class BuildState implements IBuildState {
         for (Map.Entry<String, String> entry : currentBuildProperties.entrySet()) {
             String key = entry.getKey();
             String currentValue = entry.getValue();
-            if (!currentValue.equals(properties.get(key))) {
+            String oldValue = project.getProperty(key);
+            boolean bothEmpty = Util.isEmpty(currentValue) && Util.isEmpty(oldValue);
+            if (!bothEmpty && !currentValue.equals(oldValue)) {
                 changed.add(key);
             }
         }

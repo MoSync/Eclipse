@@ -14,6 +14,9 @@
 package com.mobilesorcery.sdk.ui;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.FileLocator;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -42,6 +45,7 @@ import org.eclipse.ui.progress.WorkbenchJob;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.ui.internal.console.PathLink;
 
 public class UIUtils {
 
@@ -103,6 +107,16 @@ public class UIUtils {
 
     public static void openResource(IWorkbench workbench, IFile file) {
         openResource(workbench.getActiveWorkbenchWindow(), file);
+    }
+    
+    public static void openResource(IPath path, int lineNumber) {
+    	// Minor hack :)
+        IFile[] files = ResourcesPlugin.getWorkspace().getRoot().findFilesForLocation(path);
+    	if (files.length > 0) {
+            new PathLink(files[0], null, -1, -1, lineNumber).linkActivated();
+    	} else {
+    		new PathLink(path, null, -1, -1, lineNumber).linkActivated();
+    	}
     }
     
     public static void setTransparency(ImageData data, int alpha) {
