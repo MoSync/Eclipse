@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin
+   id="com.mobilesorcery.sdk.help.cdt"
+   name="CDT Help plugin"
+   version="1.0.0"
+   provider-name="MOBILESORCERY">
+   <extension
+         point="org.eclipse.cdt.ui.HelpInfo">
+      <helpInfo
+            file="docs/apireference.xml"
+            format="1">
+      </helpInfo>
+   </extension>
+
+</plugin>
