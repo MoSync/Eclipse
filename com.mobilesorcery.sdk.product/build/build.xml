@@ -91,6 +91,7 @@
 				<include name="com.mobilesorcery.sdk.profiling.ui/**" />
 				<include name="com.mobilesorcery.sdk.testing/**" />
 				<include name="com.mobilesorcery.sdk.ui/**" />
+				<include name="com.mobilesorcery.sdk.ui.cdt/**" />
 				<include name="com.mobilesorcery.sdk.ui.editors.resources/**" />
 				<include name="com.mobilesorcery.sdk.ui.targetphone/**" />
 				<include name="com.mobilesorcery.sdk.ui.targetphone.android/**" />
