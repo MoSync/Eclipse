@@ -8,5 +8,12 @@
             primary="true">
       </toc>
    </extension>
+   <extension
+         point="org.eclipse.cdt.ui.HelpInfo">
+      <helpInfo
+            file="docs/apireference.xml"
+            format="1">
+      </helpInfo>
+   </extension>
 
 </plugin>
