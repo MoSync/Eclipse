@@ -399,7 +399,8 @@ extends AbstractPackager
 			+"\tandroid:versionName=\"" + version.toString() + "\">\n"
 			+"\t<application android:icon=\"@drawable/icon\" android:label=\"@string/app_name\">\n"
 				+"\t\t<activity android:name=\".MoSync\"\n"
-					// Don't use fixed orientation as default. +"\t\t\tandroid:screenOrientation=\"portrait\"\n"
+					// Use portrait orientation as default. 
+					+"\t\t\tandroid:screenOrientation=\"portrait\"\n"
 					+"\t\t\tandroid:configChanges=\"keyboardHidden|orientation\"\n"
 					+"\t\t\tandroid:label=\"@string/app_name\">\n"
 					+"\t\t\t<intent-filter>\n"
