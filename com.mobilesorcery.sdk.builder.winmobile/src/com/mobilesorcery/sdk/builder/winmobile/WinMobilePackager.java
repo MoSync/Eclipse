@@ -121,7 +121,7 @@ extends AbstractPackager
             			"-s",
             			"%win-package-output-dir%",
             			"-a",
-            			"%project-name%",
+            			"%app-name%",
             			"-p",
             			"%app-vendor%",
             			confFile.getAbsolutePath( ) ,

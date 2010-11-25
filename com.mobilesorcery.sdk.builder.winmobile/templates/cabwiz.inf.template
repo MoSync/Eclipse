@@ -4,7 +4,7 @@ Provider="%app-vendor%"
 CESignature="$Windows CE$"
 
 [CEStrings]
-AppName="%project-name%"
+AppName="%app-name%"
 InstallDir=%CE1%\%AppName%
 
 [Strings]
