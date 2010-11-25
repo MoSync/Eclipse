@@ -407,15 +407,16 @@ extends AbstractPackager
 						+"\t\t\t\t<category android:name=\"android.intent.category.LAUNCHER\" />\n"
 					+"\t\t\t</intent-filter>\n"
 				+"\t\t</activity>\n"
-				+"<activity android:name=\".MoSyncPanicDialog\"\n"
+				+"\t\t<activity android:name=\".MoSyncPanicDialog\"\n"
 					+"android:label=\"@string/app_name\">\n"
-				+"</activity>\n"
-				+"<activity android:name=\".TextBox\"\n"
-	                  +"android:label=\"@string/app_name\">\n"
-	        	+"</activity>\n"
-//				+"<activity android:name=\".WebViewActivity\"\n"
-//                	+"android:label=\"@string/app_name\">\n"
-//				+"</activity>\n"
+				+"\t\t</activity>\n"
+				+"\t\t<activity android:name=\".TextBox\"\n"
+	                  +"\t\t\tandroid:label=\"@string/app_name\">\n"
+	        	+"\t\t</activity>\n"
+//				+"\t\t<activity android:name=\".WebViewActivity\"\n"
+//                	+"\t\t\tandroid:label=\"@string/app_name\">\n"
+//				+"\t\t</activity>\n"
+				+"\t\t<service android:name=\".MoSyncService\"/>\n"
 			+"\t</application>\n"
 			+"\t<uses-sdk android:minSdkVersion=\"3\" />\n";
 		
@@ -440,8 +441,11 @@ if(m_AndroidVersion >= 4) // Adding the support-screens for cupcake will lead to
      * @return			A string containing all the persmissions
      */
     private String createPermissionXML(MoSyncProject project) {
+	
         StringBuffer result = new StringBuffer();
+		
         IApplicationPermissions permissions = project.getPermissions();
+		
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.VIBRATE), "android.permission.VIBRATE");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.INTERNET), "android.permission.INTERNET");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.LOCATION_COARSE), "android.permission.ACCESS_COARSE_LOCATION");
@@ -455,14 +459,21 @@ if(m_AndroidVersion >= 4) // Adding the support-screens for cupcake will lead to
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.SMS_SEND), "android.permission.SEND_SMS");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.SMS_RECEIVE), "android.permission.RECEIVE_SMS");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.CAMERA), "android.permission.CAMERA");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.FILE_STORAGE_WRITE), "android.permission.WRITE_EXTERNAL_STORAGE");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "android.permission.GET_TASKS");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "android.permission.SET_WALLPAPER");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "android.permission.SET_WALLPAPER_HINTS");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "com.android.launcher.permission.INSTALL_SHORTCUT");
+
         if(m_AndroidVersion >= 7) // Only add this for android 2.0 and higher
         {
         	addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH");
         	addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH_ADMIN");
         }
-        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.FILE_STORAGE_WRITE), "android.permission.WRITE_EXTERNAL_STORAGE");
+
         // Always add this.
         addPermission(result, true, "android.permission.READ_PHONE_STATE");
+		
         return result.toString();
     }
     

@@ -49,6 +49,8 @@ public interface ICommonPermissions {
     public final static String SMS_READ = SMS + "/Read";
     
     public final static String VIBRATE = "Vibrate";
+	
+    public final static String HOMESCREEN = "Home Screen and Wallpaper Access";
     
     public final static String[] ALL_PERMISSIONS = new String[] { 
         BLUETOOTH,
@@ -60,7 +62,8 @@ public interface ICommonPermissions {
         LOCATION, LOCATION_FINE, LOCATION_COARSE,
         POWER_MANAGEMENT,
         SMS, SMS_SEND, SMS_RECEIVE, SMS_READ,
-        VIBRATE
+        VIBRATE,
+		HOMESCREEN
     };
     
 }
