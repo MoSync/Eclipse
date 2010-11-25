@@ -109,8 +109,7 @@ extends AbstractPackager
                 File f;
                 File outDir = new File( intern.resolve( "%compile-output-dir%" ) );            	
 	            icon = new IconManager( intern,
-	            						project.getWrappedProject( )
-	            						.getLocation( ).toFile( ) );            
+	            						project );            
 	            
 	            // Set SVG icon
 	            if ( icon.hasIcon( "svg" ) == true )

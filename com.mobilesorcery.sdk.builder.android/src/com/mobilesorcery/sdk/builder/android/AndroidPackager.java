@@ -136,8 +136,7 @@ extends AbstractPackager
                 File f;
                 File outDir = new File( internal.resolve( "%compile-output-dir%" ) );            	
                 IconManager iconManager = new IconManager( internal,
-	            						project.getWrappedProject( )
-	            						.getLocation( ).toFile( ) );
+	            						project );
           
                 // Get the correct icon size
                 // TODO: Make it better since this is quite the hack

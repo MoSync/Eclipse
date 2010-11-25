@@ -139,8 +139,7 @@ extends AbstractPackager
             {
                 File f;            	
 	            icon = new IconManager( intern,
-	            						project.getWrappedProject( )
-	            						.getLocation( ).toFile( ) );            
+	            						project );            
 	            
 	            
 	            // Set PNG icons

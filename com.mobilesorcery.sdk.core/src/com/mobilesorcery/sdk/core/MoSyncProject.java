@@ -34,7 +34,9 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Map.Entry;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -1061,7 +1063,10 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 				File iconFile = findIconFile(child);
 				if(iconFile != null)
 				{
-					return iconFile;
+					IFile[] iconResource = getWrappedProject().getWorkspace().getRoot().findFilesForLocationURI(iconFile.toURI());
+					if (iconResource.length > 0 && getExclusionFilter(this, true).accept(iconResource[0])) {
+						return iconFile;
+					}
 				}
 			}
 			return null;
