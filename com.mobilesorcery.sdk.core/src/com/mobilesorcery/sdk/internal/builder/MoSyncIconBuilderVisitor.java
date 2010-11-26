@@ -23,6 +23,7 @@ import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
 public class MoSyncIconBuilderVisitor extends IncrementalBuilderVisitor {
@@ -42,7 +43,7 @@ public class MoSyncIconBuilderVisitor extends IncrementalBuilderVisitor {
 
 	public boolean doesAffectBuild(IResource resource) {
 		if (resource.getType() == IResource.FILE) {
-			return resource.getName().endsWith(".icon") && super.doesAffectBuild(resource);
+			return resource.getName().endsWith(MoSyncProject.ICON_FILE_EXTENSION) && super.doesAffectBuild(resource);
 		}
     	return false;
     }

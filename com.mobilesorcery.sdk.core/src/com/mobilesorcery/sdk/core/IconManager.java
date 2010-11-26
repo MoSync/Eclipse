@@ -117,30 +117,7 @@ public class IconManager
 			return m_path.getName( ).endsWith( ".svg" );
 		}
 	}	
-
-	/**
-	 * Recursive search for a file that ends '.icon' 
-	 * 
-	 * @param f The intial directory to search in
-	 * 
-	 * @return a file on success and null if no such file was found.
-	 */
-	public final File findIconFile( final File f ) throws Exception
-	{		
-		if (f.isDirectory()) {
-			final File[] childs = f.listFiles();
-			for( File child : childs ) {
-				File b = findIconFile(child);
-				if(null != b) return b;
-			}
-			return null;
-		}
-		if ( f.getName( ).endsWith( ".icon" ) == true ) return f;
-		return null;
-	}
-
-	
-	
+		
 	private Map<String, List<Icon>>	m_iconMap;
 	private DefaultPackager			m_internal;
 	
@@ -156,13 +133,13 @@ public class IconManager
 	 * @throws CoreException 
 	 */
 	public IconManager ( DefaultPackager p,
-						 File b )
+						 MoSyncProject b )
 	throws Exception, CoreException
 	{
 		m_internal = p;
 		m_iconMap  = new HashMap<String, List<Icon>>( );
 		
-		File iconXML = findIconFile(b);
+		File iconXML = b.getIconFile();
 		
 		if(null != iconXML) loadIconMetaData(iconXML);
 
