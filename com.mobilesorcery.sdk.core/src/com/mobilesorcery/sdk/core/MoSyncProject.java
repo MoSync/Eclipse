@@ -230,7 +230,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
     private HashMap<IPropertyOwner, PathExclusionFilter> excludes = new HashMap<IPropertyOwner, PathExclusionFilter>();
 
-    private IApplicationPermissions permissions;
+    private ApplicationPermissions permissions;
     
     private Version formatVersion = CURRENT_VERSION;
     
@@ -301,8 +301,17 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     		sharedProperties = properties;
     	}
     	this.properties = new CascadingProperties(new Map[] { sharedProperties, localProperties });
+    	invalidatePropertyDependentObjects();
     }
     
+	// Makes sure that objects that are directly dependent
+	// on properties are invalidated and re-initialized
+	private void invalidatePropertyDependentObjects() {
+		if (permissions != null) {
+			permissions.refresh();
+		}
+	}
+
 	private void initActiveBuildConfiguration(XMLMemento memento) {
 		IMemento activeCfg = memento.getChild(ACTIVE_BUILD_CONFIG);
 		if (activeCfg != null) {
@@ -854,6 +863,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     public void setProperties(Map<String, String> properties) {
         sharedProperties.putAll(properties);
         updateProjectSpec();
+        invalidatePropertyDependentObjects();
     }
     
     /**

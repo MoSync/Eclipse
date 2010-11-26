@@ -53,7 +53,15 @@ public class ApplicationPermissions implements IApplicationPermissions {
             addAvailablePermission(ICommonPermissions.ALL_PERMISSIONS[i]);
         }
         
-        init(project.getProperty(APPLICATION_PERMISSIONS_PROP));
+        refresh();
+    }
+    
+    /**
+     * Refreshes this applicatoin permission object using
+     * the associated project's properties.
+     */
+    public void refresh() {
+        init(project.getProperty(APPLICATION_PERMISSIONS_PROP));    	
     }
     
     private void init(String applicationPermissionProperty) {
