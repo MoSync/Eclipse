@@ -50,7 +50,7 @@ public interface ICommonPermissions {
     
     public final static String VIBRATE = "Vibrate";
 	
-    public final static String HOMESCREEN = "Home Screen and Wallpaper Access";
+    public final static String HOMESCREEN = "Home Screen";
     
     public final static String[] ALL_PERMISSIONS = new String[] { 
         BLUETOOTH,
