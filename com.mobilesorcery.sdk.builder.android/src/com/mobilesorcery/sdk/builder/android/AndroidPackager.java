@@ -465,6 +465,7 @@ if(m_AndroidVersion >= 4) // Adding the support-screens for cupcake will lead to
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "android.permission.SET_WALLPAPER");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "android.permission.SET_WALLPAPER_HINTS");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "com.android.launcher.permission.INSTALL_SHORTCUT");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "com.android.launcher.permission.UNINSTALL_SHORTCUT");
 
         if(m_AndroidVersion >= 7) // Only add this for android 2.0 and higher
         {
