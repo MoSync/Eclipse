@@ -389,7 +389,11 @@ extends AbstractPackager
      * @param manifest			The file handle to which the manifest will be written to
      * @throws IOException
      */
-    private void createManifest(MoSyncProject project, Version version, String packageName, File manifest) throws IOException {
+    private void createManifest(
+    		MoSyncProject project, 
+    		Version version, 
+    		String packageName, 
+    		File manifest) throws IOException {
 		manifest.getParentFile().mkdirs();
 		String manifest_string = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 		+"<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\n"
@@ -418,20 +422,22 @@ extends AbstractPackager
 //                	+"\t\t\tandroid:label=\"@string/app_name\">\n"
 //				+"\t\t</activity>\n"
 				+"\t\t<service android:name=\".MoSyncService\"/>\n"
+				+createAutoStartXML(project)
 			+"\t</application>\n"
 			+"\t<uses-sdk android:minSdkVersion=\"3\" />\n";
 		
-if(m_AndroidVersion >= 4) // Adding the support-screens for cupcake will lead to problems
-{
+		// Adding the support-screens tag for cupcake will lead to problems.
+		if(m_AndroidVersion >= 4) 
+		{
 			manifest_string += "\t<supports-screens"
 				+"\t\tandroid:largeScreens=\"true\""
 				+"\t\tandroid:normalScreens=\"true\""
 				+"\t\tandroid:smallScreens=\"true\""
 				+"\t\tandroid:anyDensity=\"true\" />";
-}
+		}
 
-			manifest_string += createPermissionXML(project)
-		+"</manifest>\n";
+		manifest_string += createPermissionXML(project);
+		manifest_string += "</manifest>\n";
 		DefaultPackager.writeFile(manifest, manifest_string);
 	}
     
@@ -466,6 +472,7 @@ if(m_AndroidVersion >= 4) // Adding the support-screens for cupcake will lead to
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "android.permission.SET_WALLPAPER_HINTS");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "com.android.launcher.permission.INSTALL_SHORTCUT");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "com.android.launcher.permission.UNINSTALL_SHORTCUT");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.AUTOSTART), "android.permission.RECEIVE_BOOT_COMPLETED");
 
         if(m_AndroidVersion >= 7) // Only add this for android 2.0 and higher
         {
@@ -479,6 +486,35 @@ if(m_AndroidVersion >= 4) // Adding the support-screens for cupcake will lead to
         return result.toString();
     }
     
+    /**
+     * Create XML definition for a BroadcastReceiver that is used to autostart
+     * the application.
+     * 
+     * @param project	The project file object.
+     * @return			A string with the BroadcastReceiver XML definition.
+     */
+    private String createAutoStartXML(MoSyncProject project) 
+    {
+        // Check if the auto start permission is set, if not, return an empty string.
+        IApplicationPermissions permissions = project.getPermissions();
+        if (!permissions.isPermissionRequested(ICommonPermissions.AUTOSTART))
+        {
+        	return "";
+        }
+        
+        // Create the auto start definition.
+		String autoStartXML = 
+			"\t\t<receiver android:enabled=\"true\"\n" +
+			"\t\t\tandroid:name=\".MoSyncAutoStart\"\n" +
+			"\t\t\tandroid:permission=\"android.permission.RECEIVE_BOOT_COMPLETED\">\n" +
+			"\t\t\t<intent-filter>\n" +
+			"\t\t\t\t<action android:name=\"android.intent.action.BOOT_COMPLETED\" />\n" +
+			"\t\t\t\t<category android:name=\"android.intent.category.DEFAULT\" />\n" +
+			"\t\t\t</intent-filter>\n" +
+			"\t\t</receiver>\n";
+		
+		return autoStartXML;
+    }
     
     private void addPermission(StringBuffer result, boolean condition, String... androidPermissions) {
         if (condition) {

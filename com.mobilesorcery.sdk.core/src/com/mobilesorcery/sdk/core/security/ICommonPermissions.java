@@ -17,7 +17,7 @@ public interface ICommonPermissions {
 
     final static String READ = "/Read";
     final static String WRITE = "/Write";
-              
+    
     public final static String BLUETOOTH = "Bluetooth";
     
     public final static String CALENDAR = "Calendar";
@@ -52,6 +52,8 @@ public interface ICommonPermissions {
 	
     public final static String HOMESCREEN = "Home Screen";
     
+    public final static String AUTOSTART = "Auto Start";
+    
     public final static String[] ALL_PERMISSIONS = new String[] { 
         BLUETOOTH,
         CALENDAR, CALENDAR_READ, CALENDAR_WRITE,
@@ -63,7 +65,7 @@ public interface ICommonPermissions {
         POWER_MANAGEMENT,
         SMS, SMS_SEND, SMS_RECEIVE, SMS_READ,
         VIBRATE,
-		HOMESCREEN
+		HOMESCREEN,
+		AUTOSTART
     };
-    
 }
