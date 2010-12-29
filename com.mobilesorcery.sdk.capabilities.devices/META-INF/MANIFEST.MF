@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Devices
+Bundle-SymbolicName: com.mobilesorcery.sdk.capabilities.devices;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.mobilesorcery.sdk.capabilities.devices.DeviceCapabilitesPlugin
+Bundle-Vendor: MOBILESORCERY
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ com.mobilesorcery.sdk.core;bundle-version="1.0.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy
+Import-Package: com.mobilesorcery.sdk.capabilities.core
