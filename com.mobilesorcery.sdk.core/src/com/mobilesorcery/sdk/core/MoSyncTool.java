@@ -258,6 +258,10 @@ public class MoSyncTool {
 
 	public IProfile[] getProfiles(IDeviceFilter filter) {
 		IProfile[] profiles = getProfiles();
+		return filterProfiles(profiles, filter);
+	}
+	
+	public IProfile[] filterProfiles(IProfile[] profiles, IDeviceFilter filter) {
 		if (filter != null) {
 			ArrayList<IProfile> filtered = new ArrayList<IProfile>();
 			for (int i = 0; i < profiles.length; i++) {
@@ -608,9 +612,12 @@ public class MoSyncTool {
 	}
 
 	public IPath getRuntimePath(IProfile targetProfile) {
+		return getRuntimePath(targetProfile.getPlatform());
+	}
+	
+	public IPath getRuntimePath(String platform) {
 		init();
 		// The platform is always a /-separated path
-		String platform = targetProfile.getPlatform();
 		return getMoSyncHome().append(platform);
 	}
 

@@ -60,6 +60,7 @@ import com.mobilesorcery.sdk.internal.builder.MoSyncBuilderVisitor;
 import com.mobilesorcery.sdk.internal.builder.MoSyncResourceBuilderVisitor;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.profiles.IProfile;
+import com.mobilesorcery.sdk.profiles.Profile;
 
 /**
  * The main builder. This builder extends ACBuilder for its implementation of
@@ -70,7 +71,11 @@ import com.mobilesorcery.sdk.profiles.IProfile;
  */
 public class MoSyncBuilder extends ACBuilder {
 
-    public final static String ID = CoreMoSyncPlugin.PLUGIN_ID + ".builder";
+    public static final String OUTPUT = "Output";
+
+	public static final String FINAL_OUTPUT = "FinalOutput";
+
+	public final static String ID = CoreMoSyncPlugin.PLUGIN_ID + ".builder";
 
     public static final String COMPATIBLE_ID = "com.mobilesorcery.sdk.builder.builder";
 
@@ -219,7 +224,7 @@ public class MoSyncBuilder extends ACBuilder {
             throw new IllegalArgumentException("No output path specified");
         }
 
-        return toAbsolute(project.getLocation().append("Output"), outputPath);
+        return toAbsolute(project.getLocation().append(OUTPUT), outputPath);
     }
     
     /**
@@ -230,7 +235,7 @@ public class MoSyncBuilder extends ACBuilder {
      */
     public static boolean isInOutput(IProject project, IResource res) {
     	IPath projectRelativePath = res.getProjectRelativePath();
-    	return new Path("FinalOutput").isPrefixOf(projectRelativePath) || new Path("Output").isPrefixOf(projectRelativePath);
+    	return new Path(FINAL_OUTPUT).isPrefixOf(projectRelativePath) || new Path(OUTPUT).isPrefixOf(projectRelativePath);
     }
 
     /**
@@ -255,7 +260,7 @@ public class MoSyncBuilder extends ACBuilder {
             throw new IllegalArgumentException("No output path specified");
         }
 
-        return toAbsolute(project.getLocation().append("FinalOutput"), outputPath).append(targetProfile.getVendor().getName()).append(targetProfile.getName());
+        return toAbsolute(project.getLocation().append(FINAL_OUTPUT), outputPath).append(targetProfile.getVendor().getName()).append(targetProfile.getName());
     }
 
     public static IPath getOutputPath(IProject project, IBuildVariant variant) {
@@ -278,14 +283,8 @@ public class MoSyncBuilder extends ACBuilder {
         if (variant.isFinalizerBuild()) {
             return getFinalOutputPath(project, variant).append("package");
         } else {
-            return getOutputPath(project, variant).append(getAbbreviatedPlatform(variant.getProfile()));
+            return getOutputPath(project, variant).append(Profile.getAbbreviatedPlatform(variant.getProfile()));
         }
-    }
-
-    public static String getAbbreviatedPlatform(IProfile targetProfile) {
-        String platform = targetProfile.getPlatform();
-        String abbrPlatform = platform.substring("profiles\\runtime\\".length() + 1, platform.length());
-        return abbrPlatform;
     }
 
     protected IProject[] build(int kind, Map args, IProgressMonitor monitor) throws CoreException {
@@ -456,6 +455,8 @@ public class MoSyncBuilder extends ACBuilder {
         MoSyncProject mosyncProject = MoSyncProject.create(project);
         IBuildState buildState = mosyncProject.getBuildState(variant);
         
+        ParameterResolver resolver = createParameterResolver(mosyncProject, variant);
+        
         ensureOutputIsMarkedDerived(project, variant);
 
         ErrorParserManager epm = createErrorParserManager(project);
@@ -579,7 +580,7 @@ public class MoSyncBuilder extends ACBuilder {
                 pipeTool.setMode( pipeToolMode );
                 IPath libraryOutput = computeLibraryOutput(mosyncProject, buildProperties);
                 pipeTool.setOutputFile(isLib ? libraryOutput : program);
-                pipeTool.setLibraryPaths(getLibraryPaths(project, buildProperties));
+                pipeTool.setLibraryPaths(resolvePaths(getLibraryPaths(project, buildProperties), resolver));
                 pipeTool.setLibraries(getLibraries(buildProperties));
                 boolean elim = !isLib && PropertyUtil.getBoolean(buildProperties, DEAD_CODE_ELIMINATION);
                 pipeTool.setDeadCodeElimination(elim);
@@ -646,9 +647,9 @@ public class MoSyncBuilder extends ACBuilder {
                 packager.createPackage(mosyncProject, variant, buildResult);
 
                 if (buildResult.getBuildResult() == null || !buildResult.getBuildResult().exists()) {
-                    throw new IOException(MessageFormat.format("Failed to create package for {0} (platform: {1})", targetProfile, getAbbreviatedPlatform(targetProfile)));
+                    throw new IOException(MessageFormat.format("Failed to create package for {0} (platform: {1})", targetProfile, Profile.getAbbreviatedPlatform(targetProfile)));
                 } else {
-                    console.addMessage(MessageFormat.format("Created package: {0} (platform: {1})", buildResult.getBuildResult(), getAbbreviatedPlatform(targetProfile)));
+                    console.addMessage(MessageFormat.format("Created package: {0} (platform: {1})", buildResult.getBuildResult(), Profile.getAbbreviatedPlatform(targetProfile)));
                 }
             }
 
@@ -681,7 +682,22 @@ public class MoSyncBuilder extends ACBuilder {
         }
     }
 
-    private String getCurrentAppCode(IBuildSession session) {
+    private static ParameterResolver createParameterResolver(
+			MoSyncProject project, IBuildVariant variant) {
+    	// We re-use the default packager; it really should NOT be here -- but hey, it works :)
+    	return new MoSyncProjectParameterResolver(project, new DefaultPackager(project, variant));
+	}
+
+	private static IPath[] resolvePaths(IPath[] paths, ParameterResolver resolver) throws ParameterResolverException {
+		// TODO: Consider moving this method
+		IPath[] result = new IPath[paths.length];
+    	for (int i = 0; i < paths.length; i++) {
+			result[i] = Path.fromPortableString(Util.replace(paths[i].toPortableString(), resolver));
+		}
+    	return result;
+	}
+
+	private String getCurrentAppCode(IBuildSession session) {
         // TODO: This will result in *most* equivalent apps to share
         // app code across devices; in particular finalization will always
         // share app code.
@@ -737,8 +753,8 @@ public class MoSyncBuilder extends ACBuilder {
     }
 
     private void ensureOutputIsMarkedDerived(IProject project, IBuildVariant variant) throws CoreException {
-        ensureFolderIsMarkedDerived(project.getFolder("FinalOutput"));
-        ensureFolderIsMarkedDerived(project.getFolder("Output"));
+        ensureFolderIsMarkedDerived(project.getFolder(FINAL_OUTPUT));
+        ensureFolderIsMarkedDerived(project.getFolder(OUTPUT));
         
         IPath outputPath = getOutputPath(project, variant);
         IContainer[] outputFolder = project.getWorkspace().getRoot().findContainersForLocation(outputPath);
@@ -857,7 +873,7 @@ public class MoSyncBuilder extends ACBuilder {
             throw new IllegalArgumentException("Library path is not specified");
         }
 
-        return toAbsolute(mosyncProject.getWrappedProject().getLocation().append("Output"), outputPath);
+        return toAbsolute(mosyncProject.getWrappedProject().getLocation().append(OUTPUT), outputPath);
     }
 
     /**
@@ -908,7 +924,7 @@ public class MoSyncBuilder extends ACBuilder {
         }
     }
 
-    public static IPath[] getBaseIncludePaths(MoSyncProject project, IBuildVariant variant) {
+    public static IPath[] getBaseIncludePaths(MoSyncProject project, IBuildVariant variant) throws ParameterResolverException {
         IPropertyOwner buildProperties = getPropertyOwner(project, variant.getConfigurationId());
         
         ArrayList<IPath> result = new ArrayList<IPath>();
@@ -933,7 +949,7 @@ public class MoSyncBuilder extends ACBuilder {
             result.addAll(Arrays.asList(additionalIncludePaths));
         }
 
-        return result.toArray(new IPath[0]);
+        return resolvePaths(result.toArray(new IPath[0]), createParameterResolver(project, variant));
     }
 
     public static IPath[] getProfileIncludes(IProfile profile) {

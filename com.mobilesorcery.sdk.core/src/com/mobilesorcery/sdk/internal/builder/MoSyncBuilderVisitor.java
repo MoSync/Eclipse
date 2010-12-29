@@ -36,6 +36,7 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.internal.dependencies.CompoundDependencyProvider;
@@ -105,8 +106,9 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
      * have been visited by this visitor (visit method)
      * @param monitor 
      * @throws CoreException
+     * @throws ParameterResolverException 
      */
-    public void incrementalCompile(IProgressMonitor monitor, DependencyManager<IResource> dependencies) throws CoreException {
+    public void incrementalCompile(IProgressMonitor monitor, DependencyManager<IResource> dependencies) throws CoreException, ParameterResolverException {
     	Set<IResource> recompileThese = computeResourcesToRebuild(dependencies);
     	
         IResource[] deletedResources = this.deletedResources.toArray(new IResource[0]);
@@ -193,7 +195,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
         return false;
     }
     
-    public void compile(IResource resource, DependencyManager<IResource> dependencies) throws CoreException {
+    public void compile(IResource resource, DependencyManager<IResource> dependencies) throws CoreException, ParameterResolverException {
     	if (!CoreMoSyncPlugin.isHeadless()) {
     		MoSyncBuilder.clearCMarkers(resource);
             //clearCMarkers(resource.getProject());
