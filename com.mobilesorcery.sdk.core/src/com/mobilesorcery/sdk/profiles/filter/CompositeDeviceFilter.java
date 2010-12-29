@@ -44,7 +44,7 @@ public class CompositeDeviceFilter extends AbstractDeviceFilter implements IComp
 
     }
 
-    public CompositeDeviceFilter(IDeviceFilter[] filters) {
+    public CompositeDeviceFilter(IDeviceFilter... filters) {
         this.filters.addAll(Arrays.asList(filters));
     }
 

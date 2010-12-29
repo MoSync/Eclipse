@@ -94,4 +94,10 @@ public class Profile implements IProfile, Comparable<IProfile> {
     public boolean isEmulator() {
     	return "MoSync/Emulator".equals(toString()); 
     }
+    
+    public static String getAbbreviatedPlatform(IProfile targetProfile) {
+        String platform = targetProfile.getPlatform();
+        String abbrPlatform = platform.substring("profiles\\runtime\\".length() + 1, platform.length());
+        return abbrPlatform;
+    }
 }

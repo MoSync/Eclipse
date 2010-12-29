@@ -6,6 +6,7 @@ public abstract class AbstractChangeRequest implements IChangeRequest {
 
 	private MoSyncProject project;
 	private CompoundChangeRequest parent;
+	private boolean preferredApplyState = true;
 
 	public AbstractChangeRequest(MoSyncProject project) {
 		this.project = project;
@@ -22,6 +23,14 @@ public abstract class AbstractChangeRequest implements IChangeRequest {
 	
 	public CompoundChangeRequest getParent() {
 		return parent;
+	}
+
+	public void setPreferredApplyState(boolean preferredApplyState) {
+		this.preferredApplyState = preferredApplyState;
+	}
+	
+	public boolean getPreferredApplyState() {
+		return preferredApplyState;
 	}
 
 }

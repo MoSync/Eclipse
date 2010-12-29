@@ -41,6 +41,7 @@ public class JavaMEOpCertCapabilitiesMatcher implements ICapabilitiesMatcher {
 			if (!filter.accept(profile)) {
 				AddDeviceFilterChangeRequest changeRequest = new AddDeviceFilterChangeRequest(project, filter);
 				changeRequest.setMessage("Remove {0} JavaME profiles that might require operator certificates");
+				changeRequest.setPreferredApplyState(false);
 				return changeRequest;
 			}
 		}

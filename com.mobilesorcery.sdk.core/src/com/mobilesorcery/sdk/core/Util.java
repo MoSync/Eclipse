@@ -38,6 +38,7 @@ import java.util.zip.ZipInputStream;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 
 import com.mobilesorcery.sdk.internal.ReverseComparator;
 
@@ -118,6 +119,26 @@ public class Util {
 		return str;
 	}
 
+	public static String trimQuotes(Object str) {
+		return trim(str, '\"');
+	}
+
+	static String trim(Object str, char ch) {
+		if (str == null) {
+			return null;
+		}
+		
+		String result = str.toString();
+		if (result.length() > 0 && result.charAt(0) == ch) {
+			result = result.substring(1);
+		}
+		if (result.length() > 0 && result.charAt(result.length() - 1) == ch) {
+			result = result.substring(0, result.length() - 1);
+		}
+		
+		return result;
+	}
+	
 	public static String fill(char c, int length) {
 		char[] result = new char[length];
 		Arrays.fill(result, c);
@@ -573,10 +594,27 @@ public class Util {
 	 * @return
 	 */
     public static String replace(String input, Map<String, String> map) {
-        return innerReplace(input, map, 0).toString();
+        try {
+			return innerReplace(input, new DefaultParameterResolver(map), 0).toString();
+		} catch (ParameterResolverException e) {
+			// The default should never throw this exception
+			throw new RuntimeException(e);
+		}
     }
     
-    private static StringBuffer innerReplace(String input, Map<String, String> map, int depth) {
+	/**
+	 * Replaces parameters tagged with <code>%</code>s and returns
+	 * the resolved string.
+	 * @param input
+	 * @param map
+	 * @return
+	 * @throws ParameterResolverException 
+	 */
+    public static String replace(String input, ParameterResolver resolver) throws ParameterResolverException {
+        return innerReplace(input, resolver, 0).toString();
+    }
+    
+    private static StringBuffer innerReplace(String input, ParameterResolver map, int depth) throws ParameterResolverException {
         if (depth > 12) {
             throw new IllegalArgumentException("Cyclic parameters"); //$NON-NLS-1$
         }
@@ -646,6 +684,17 @@ public class Util {
 
     public static <T> Comparator<T> reverseComparator(Comparator<T> original) {
         return new ReverseComparator<T>(original);
+    }
+
+    /**
+     * Returns a 'parent' key of a key using path separators. So, if the input key is A/B/C, this 
+     * method returns A/B
+     * @param key
+     * @return <code>null</code> if <code>key</code> has no path separator
+     */
+    public static String getParentKey(String key) {
+        Path permissionPath = new Path(key);
+        return permissionPath.segmentCount() > 1 ? permissionPath.removeLastSegments(1).toPortableString() : null;
     }
 	
 }
