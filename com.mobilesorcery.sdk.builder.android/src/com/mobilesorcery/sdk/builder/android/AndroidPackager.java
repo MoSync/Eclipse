@@ -406,7 +406,7 @@ extends AbstractPackager
 					+"\t\t\tandroid:screenOrientation=\"portrait\"\n"
 					+"\t\t\tandroid:configChanges=\"keyboardHidden|orientation\"\n"
 					+"\t\t\tandroid:launchMode=\"singleTask\"\n"
-					+"\t\t\tandroid:label=\"@string/app_name\">\n"
+					+"\t\t\tandroid:label=\"@string/app_name\" >\n"
 					+"\t\t\t<intent-filter>\n"
 						+"\t\t\t\t<action android:name=\"android.intent.action.MAIN\" />\n"
 						+"\t\t\t\t<category android:name=\"android.intent.category.LAUNCHER\" />\n"
@@ -424,7 +424,7 @@ extends AbstractPackager
 				+"\t\t<service android:name=\".MoSyncService\"/>\n"
 				+createAutoStartXML(project)
 			+"\t</application>\n"
-			+"\t<uses-sdk android:minSdkVersion=\"3\" />\n";
+			+"\t<uses-sdk android:minSdkVersion=\"3\" android:targetSdkVersion=\"7\" />\n";
 		
 		// Adding the support-screens tag for cupcake will lead to problems.
 		if(m_AndroidVersion >= 4) 
