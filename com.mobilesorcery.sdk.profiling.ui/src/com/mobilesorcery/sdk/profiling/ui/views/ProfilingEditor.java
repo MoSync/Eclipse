@@ -38,7 +38,10 @@ import org.eclipse.ui.editors.text.ILocationProvider;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.statushandlers.StatusManager;
 
+import com.mobilesorcery.sdk.core.IFilter;
+import com.mobilesorcery.sdk.core.ParseException;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.IProfilingListener;
 import com.mobilesorcery.sdk.profiling.IProfilingSession;
 import com.mobilesorcery.sdk.profiling.ProfilingPlugin;
@@ -157,9 +160,14 @@ public class ProfilingEditor extends EditorPart {
 
 	    filter.addListener(SWT.Modify, new Listener() {
 			public void handleEvent(Event event) {
-				NameFilter nameFilter = new NameFilter(filterDescription.getText(), NameFilter.Type.CONTAINS);
-				hotspotProfilingComposite.setFilter(nameFilter, false);
-				callTreeProfilingComposite.setFilter(nameFilter, true);
+				IFilter<IInvocation> nameFilter;
+				try {
+					nameFilter = NameFilter.create(filterDescription.getText(), NameFilter.Criteria.NAME, NameFilter.MatchType.CONTAINS, true);
+					hotspotProfilingComposite.setFilter(nameFilter, false);
+					callTreeProfilingComposite.setFilter(nameFilter, true);
+				} catch (ParseException e) {
+					// TODO: Flag in ui!??
+				}
 			}	    	
 	    });
 	    

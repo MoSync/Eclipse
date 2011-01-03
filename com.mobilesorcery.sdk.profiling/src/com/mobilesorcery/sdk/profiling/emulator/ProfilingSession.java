@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Calendar;
 
 import com.mobilesorcery.sdk.core.IFilter;
+import com.mobilesorcery.sdk.core.MergeFilter;
 import com.mobilesorcery.sdk.core.SLD;
 import com.mobilesorcery.sdk.profiling.IInvocation;
 import com.mobilesorcery.sdk.profiling.ILocationProvider;
@@ -56,7 +57,10 @@ public class ProfilingSession implements IProfilingSession {
     public IFilter<IInvocation> getFilter() {
         return filter;
     }
-
+    
+    public void setFilter(IFilter<IInvocation> filter) {
+		this.filter = filter;
+	}
 	public void setSLD(SLD sld) {
 		this.sld = sld;
 	}
@@ -79,4 +83,5 @@ public class ProfilingSession implements IProfilingSession {
 	public File getProfilingFile() {
 		return profilingFile;
 	}
+
 }
