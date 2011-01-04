@@ -74,6 +74,8 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.SpawnedProcess;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
+import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.internal.BuildSession;
 import com.mobilesorcery.sdk.internal.EmulatorOutputParser;
 import com.mobilesorcery.sdk.internal.OSPipeInputStream;
@@ -83,7 +85,9 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDelegate implements ILaunchConfigurationDelegate2 {
 
-    private static int GLOBAL_ID = 1;
+    private static final String LAUNCH_DELEGATE_ID = "launch.delegate";
+    
+	private static int GLOBAL_ID = 1;
 
     public void launch(final ILaunchConfiguration launchConfig, final String mode, final ILaunch launch,
             final IProgressMonitor monitor) throws CoreException {
@@ -179,12 +183,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     }
     
     public void launchSync(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor)
-            throws CoreException {
-    	boolean debug = "debug".equals(mode);
-    	
-    	String width = launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_WIDTH, "176");
-        String height = launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, "220");
-        
+    throws CoreException {
         IProject project = getProject(launchConfig);
         IBuildVariant variant = getVariant(launchConfig, mode);
         
@@ -207,98 +206,26 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
                     "Cannot execute a library; please compile as application"));
         }
         
-
-    	IBuildConfiguration buildConfiguration = mosyncProject.getBuildConfiguration(variant.getConfigurationId());
-    	
-        if (launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_OF_TARGET, true)) {
-            IProfile profile = mosyncProject.getTargetProfile();
-            if (profile != null) {
-                Object profileWidth = profile.getProperties().get(IProfile.SCREEN_SIZE_X);
-                Object profileHeight = profile.getProperties().get(IProfile.SCREEN_SIZE_Y);
-                if (profileWidth instanceof Number && profileHeight instanceof Number) {
-                    width = "" + profileWidth;
-                    height = "" + profileHeight;
-                }
-            }
-        }
+        launchDelegate(launchConfig, mode, launch, emulatorId, monitor);
         
-        IProcessUtil pu = CoreMoSyncPlugin.getDefault().getProcessUtil();
-        int fds[] = new int[2];
-        pu.pipe_create(fds);
-        int readFd = fds[0];
-        int writeFd = fds[1];
-        int dupWriteFd = pu.pipe_dup(writeFd);
-        pu.pipe_close(writeFd);
-
-        String[] cmdline = getCommandLine(project, variant, width, height, dupWriteFd, emulatorId, debug);
-
-        final EmulatorParseEventHandler handler = new EmulatorParseEventHandler(mosyncProject, buildConfiguration);
-        PipedOutputStream messageOutputStream = new PipedOutputStream();
-        PipedInputStream messageInputStream = null;
-
-        try {
-            messageInputStream = new PipedInputStream(messageOutputStream) {
-            	public int read() throws IOException {
-            		return super.read();
-            	}
-            };
-        } catch (IOException e) {
-            throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage()));
-        }
-
-        handler.setMessageOutputStream(messageOutputStream);
-        handler.setEmulatorId(emulatorId);
-
-        if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-        	CoreMoSyncPlugin.trace("Emulator command line:\n    " + Util.join(Util.ensureQuoted(cmdline), " "));
-        }
-
-        IPath outputPath = getLaunchDir(mosyncProject, variant);
-        File dir = outputPath.toFile();
-        
-        String command = Util.join(Util.ensureQuoted(cmdline), " ");
-        final SpawnedProcess process = new SpawnedProcess(getMoREExe(), command, dir);
-
-        final EmulatorOutputParser parser = new EmulatorOutputParser(emulatorId, handler);
-        startEmulatorListener(process, parser, readFd, dupWriteFd);
-        
-        process.setInputStream(messageInputStream);
-
-    	process.setShutdownHook(new Runnable() {
-			public void run() {
-				parser.awaitParseEventsToBeHandled(2000);
-			}    		
-    	});
-
-        try {
-            process.start();
-			CoreMoSyncPlugin.getDefault().getEmulatorProcessManager().processStarted(emulatorId);
-
-            IProcess p = DebugPlugin.newProcess(launch, process, project.getName());
-     
-            IPath program = outputPath.append("program");
-            
-            if (debug) {
-            	attachDebugger(launch, p, program);
-            }
-
-            try {
-                int errcode = process.waitFor();
-                if (errcode != 0) {
-                    handler.setExitMessage(getErrorMessage(errcode));
-                }                
-            } catch (InterruptedException e) {
-                CoreMoSyncPlugin.getDefault().log(e);
-            } finally {
-				CoreMoSyncPlugin.getDefault().getEmulatorProcessManager().processStopped(emulatorId);
-            }
-        } catch (Exception e) {
-           throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
-        }
-
-        pu.pipe_close(dupWriteFd);
     }
 
+    public void launchDelegate(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor)
+            throws CoreException {
+    	String delegateId = launchConfig.getAttribute(LAUNCH_DELEGATE_ID, MoReLauncher.ID);
+    	IEmulatorLauncher launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(delegateId);
+    	launcher.launch(launchConfig, mode, launch, emulatorId, monitor);
+    }
+    
+	/**
+     * Returns the launch directory of this launch.
+     * @param project
+     * @return
+     */
+    public static IPath getLaunchDir(MoSyncProject project, IBuildVariant variant) {
+        return MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant);
+    }
+    
     public static IBuildVariant getVariant(ILaunchConfiguration launchConfig, String mode) throws CoreException {
 		IProject project = getProject(launchConfig);
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
@@ -306,102 +233,10 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 		return new BuildVariant(mosyncProject.getTargetProfile(), cfg, false);
 	}
 
-
-	/**
-     * Returns the launch directory of this launch.
-     * @param project
-     * @return
-     */
-    protected IPath getLaunchDir(MoSyncProject project, IBuildVariant variant) {
-        return MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant);
-    }
-
-    private void attachDebugger(ILaunch launch, IProcess process, IPath program) throws CoreException {
-    	IFile[] programFiles = ResourcesPlugin.getWorkspace().getRoot().findFilesForLocation(program);
-    	IProject project = getProject(launch.getLaunchConfiguration());
-    	IFile programFile = null;
-    	for (int i = 0; programFile == null && i < programFiles.length; i++) {
-    		if (programFiles[i].getProject().equals(project)) {
-    			programFile = programFiles[i];
-    		}
-    	}
-
-    	MoSyncDebugger dbg = new MoSyncDebugger();
-    	ICDISession targetSession = dbg.createSession(launch, program.toFile(), new NullProgressMonitor());
-    	IBinaryObject binaryFile = (IBinaryObject) CModelManager.getDefault().createBinaryFile(programFile);    	
-    	//IDebugTarget debugTarget = CDIDebugModel.newDebugTarget(launch, project, targetSession.getTargets()[0], launch.getLaunchConfiguration().getName(), process, binaryFile, true, false, true);
-    	IDebugTarget debugTarget = MoSyncCDebugTarget.newDebugTarget(launch, project, targetSession.getTargets()[0], launch.getLaunchConfiguration().getName(), process, binaryFile, true, false, null, true);
-	}
-    
-    private void addBinaryParser(IProject project) throws CoreException {
-    	  ICDescriptor cDescriptor = CCorePlugin.getDefault().getCDescriptorManager().getDescriptor(project);
-    	  cDescriptor.create("org.eclipse.cdt.core.BinaryParser", "org.eclipse.cdt.core.ELF");
-    }
-
 	public static IProject getProject(ILaunchConfiguration launchConfig) throws CoreException {
 		return MoSyncBuilder.getProject(launchConfig);
     }
 	
-	private ICProject getCProject(IProject project) {
-		return CModelManager.getDefault().getCModel().findCProject(project);
-	}
-
-    private String getErrorMessage(int errcode) throws IOException {
-        String msg = MessageFormat.format("Exited with error code {0}: {1}", errcode, findErrorMessage(errcode));
-        return msg;
-    }
-
-    private String findErrorMessage(int errcode) {
-        String panicMessage = CoreMoSyncPlugin.getDefault().getPanicMessage(errcode);
-        return panicMessage == null ? "<No error message>" : panicMessage;
-    }
-
-    private void startEmulatorListener(SpawnedProcess process, final EmulatorOutputParser parser, final int readFd, final int writeFd) {
-    	final OSPipeInputStream input = new OSPipeInputStream(readFd);
-        Runnable emulatorListener = new Runnable() {
-            public void run() {                
-                try {
-                    parser.parse(input);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    input.close();
-                }
-            }
-        };
-
-        Thread thread = new Thread(emulatorListener, "Reading from pipe");
-        thread.setDaemon(true);
-        thread.start();        
-    }
-
-    private String[] getCommandLine(IProject project, IBuildVariant variant, String width, String height, int fd, int id, boolean debug) throws CoreException {
-        IPath outputPath = getLaunchDir(MoSyncProject.create(project), variant);
-        IPath program = outputPath.append("program");
-        IPath resources = outputPath.append("resources");
-         
-        if (!program.toFile().exists()) {
-            throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could find no executable - please rebuild"));
-        }
-        
-        ArrayList<String> args = new ArrayList<String>();
-        
-        args.addAll(Arrays.asList(new String[] { getMoREExe(), "-program", program.toOSString(), "-resource", resources.toOSString(),
-                "-resolution", "" + width, "" + height, "-fd", Integer.toString(fd), "-id", Integer.toString(id)
-                /*,"-icon", outputPath.append("more.png").toOSString()*/
-        }));
-        
-        if (debug) {
-        	args.add("-gdb");
-        }
-
-        return args.toArray(new String[args.size()]);
-    }
-    
-    private String getMoREExe() {
-    	return MoSyncTool.getDefault().getBinary("MoRE").toOSString();
-    }
-
     private int getNextId() {
         synchronized (EmulatorLaunchConfigurationDelegate.class) {
             GLOBAL_ID %= 256;
@@ -484,7 +319,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         return mosyncProject.getActiveBuildConfiguration();
     }
         
-    private static boolean isDebugMode(String mode) {
+    public static boolean isDebugMode(String mode) {
         boolean isDebugMode = "debug".equals(mode);
         return isDebugMode;
 	}

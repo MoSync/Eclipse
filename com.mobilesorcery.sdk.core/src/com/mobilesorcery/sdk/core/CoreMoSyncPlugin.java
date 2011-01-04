@@ -48,6 +48,8 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
+import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.ErrorPackager;
 import com.mobilesorcery.sdk.internal.PID;
@@ -58,6 +60,7 @@ import com.mobilesorcery.sdk.internal.RebuildListener;
 import com.mobilesorcery.sdk.internal.ReindexListener;
 import com.mobilesorcery.sdk.internal.debug.MoSyncBreakpointSynchronizer;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
+import com.mobilesorcery.sdk.internal.launch.EmulatorLauncherProxy;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 import com.mobilesorcery.sdk.lib.JNALibInitializer;
 import com.mobilesorcery.sdk.profiles.filter.DeviceFilterFactoryProxy;
@@ -83,6 +86,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     private ArrayList<IPackager> packagers = new ArrayList<IPackager>();
 
     private Map<String, Map<String, IPropertyInitializer>> propertyInitializers = new HashMap<String, Map<String, IPropertyInitializer>>();
+
+	private HashMap<String, IEmulatorLauncher> launchers = new HashMap<String, IEmulatorLauncher>();
 
 	private DependencyManager<IProject> projectDependencyManager;
 
@@ -132,11 +137,23 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         installBreakpointHack();
         installResourceListener();
         initBuildConfigurationTypes();
+        initLaunchers();
 		getPreferenceStore().addPropertyChangeListener(this); 
 		initializeOnSeparateThread();
     }
     
-    private void initBuildConfigurationTypes() {
+    private void initLaunchers() {
+    	IConfigurationElement[] launchers = Platform.getExtensionRegistry().getConfigurationElementsFor(IEmulatorLauncher.EXTENSION_POINT_ID);
+    	for (int i = 0; i < launchers.length; i++) {
+    		IConfigurationElement launcher = launchers[i];
+    		String id = launcher.getAttribute("id");
+    		this.launchers.put(id, new EmulatorLauncherProxy(launcher));
+    	}
+    	// Default always present
+    	this.launchers.put(MoReLauncher.ID, new MoReLauncher());
+ 	}
+
+	private void initBuildConfigurationTypes() {
         IConfigurationElement[] types = Platform.getExtensionRegistry().getConfigurationElementsFor(
                 BuildConfiguration.TYPE_EXTENSION_POINT);
         ArrayList<String> buildConfigurationTypes = new ArrayList<String>();
@@ -157,6 +174,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     }
 
     void initializeOnSeparateThread() {
+    	// I think we should move this to the UI plugin!
     	Thread initializerThread = new Thread(new Runnable() {
 			public void run() {
 				checkAutoUpdate();
@@ -505,6 +523,10 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		}
 	}
 		
+	public IEmulatorLauncher getEmulatorLauncher(String launcherId) {
+		return launchers.get(launcherId);
+	}
+	
 	public IUpdater getUpdater() {
 		if (!updaterInitialized) {
 			IExtensionRegistry registry = Platform.getExtensionRegistry();
@@ -698,5 +720,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         logCount++;
         logCounts.put(token, logCount);
     }
+
 	
 }
