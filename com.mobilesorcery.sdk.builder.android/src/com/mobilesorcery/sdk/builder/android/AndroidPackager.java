@@ -423,17 +423,32 @@ extends AbstractPackager
 //				+"\t\t</activity>\n"
 				+"\t\t<service android:name=\".MoSyncService\"/>\n"
 				+createAutoStartXML(project)
-			+"\t</application>\n"
-			+"\t<uses-sdk android:minSdkVersion=\"3\" android:targetSdkVersion=\"7\" />\n";
-		
-		// Adding the support-screens tag for cupcake will lead to problems.
-		if(m_AndroidVersion >= 4) 
+			+"\t</application>\n";
+			
+		// Attribute targetSdkVersion is supported only 
+		// on Android API level 4 and above.
+		if (m_AndroidVersion >= 4) 
 		{
-			manifest_string += "\t<supports-screens"
-				+"\t\tandroid:largeScreens=\"true\""
-				+"\t\tandroid:normalScreens=\"true\""
-				+"\t\tandroid:smallScreens=\"true\""
-				+"\t\tandroid:anyDensity=\"true\" />";
+			manifest_string += 
+				"\t<uses-sdk android:minSdkVersion=\"3\" "
+				+ "android:targetSdkVersion=\"7\" />\n";
+		}
+		else
+		{
+			manifest_string += 
+				"\t<uses-sdk android:minSdkVersion=\"3\" />\n";
+		}
+		
+		// The support-screens tag is supported only 
+		// on Android API level 4 and above
+		if (m_AndroidVersion >= 4) 
+		{
+			manifest_string += 
+				"\t<supports-screens"
+				+ "\t\tandroid:largeScreens=\"true\""
+				+ "\t\tandroid:normalScreens=\"true\""
+				+ "\t\tandroid:smallScreens=\"true\""
+				+ "\t\tandroid:anyDensity=\"true\" />";
 		}
 
 		manifest_string += createPermissionXML(project);
