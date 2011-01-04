@@ -17,11 +17,13 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
@@ -525,6 +527,10 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		
 	public IEmulatorLauncher getEmulatorLauncher(String launcherId) {
 		return launchers.get(launcherId);
+	}
+	
+	public Set<String> getEmulatorLauncherIds() {
+		return Collections.unmodifiableSet(launchers.keySet());
 	}
 	
 	public IUpdater getUpdater() {

@@ -85,9 +85,7 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDelegate implements ILaunchConfigurationDelegate2 {
 
-    private static final String LAUNCH_DELEGATE_ID = "launch.delegate";
-    
-	private static int GLOBAL_ID = 1;
+    private static int GLOBAL_ID = 1;
 
     public void launch(final ILaunchConfiguration launchConfig, final String mode, final ILaunch launch,
             final IProgressMonitor monitor) throws CoreException {
@@ -212,9 +210,14 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 
     public void launchDelegate(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor)
             throws CoreException {
-    	String delegateId = launchConfig.getAttribute(LAUNCH_DELEGATE_ID, MoReLauncher.ID);
+    	String delegateId = getLaunchDelegateId(launchConfig);
     	IEmulatorLauncher launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(delegateId);
     	launcher.launch(launchConfig, mode, launch, emulatorId, monitor);
+    }
+    
+    protected String getLaunchDelegateId(ILaunchConfiguration launchConfig) throws CoreException {
+    	String delegateId = launchConfig.getAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, MoReLauncher.ID);
+    	return delegateId;
     }
     
 	/**

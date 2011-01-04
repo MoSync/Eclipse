@@ -32,4 +32,6 @@ public interface IEmulatorLauncher {
 
 	public void launch(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor) throws CoreException;
 
+	public String getName();
+
 }

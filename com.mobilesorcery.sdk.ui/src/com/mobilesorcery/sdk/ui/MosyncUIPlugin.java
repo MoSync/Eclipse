@@ -38,6 +38,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.ISafeRunnable;
 import org.eclipse.core.runtime.IStatus;
@@ -78,8 +79,14 @@ import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
+import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
+import com.mobilesorcery.sdk.core.launch.MoReLauncher;
+import com.mobilesorcery.sdk.internal.launch.EmulatorLauncherProxy;
 import com.mobilesorcery.sdk.ui.internal.console.IDEProcessConsole;
 import com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator;
+import com.mobilesorcery.sdk.ui.internal.launch.EmulatorLaunchConfigurationPartProxy;
+import com.mobilesorcery.sdk.ui.internal.launch.MoreLauncherPart;
+import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -118,6 +125,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 
     private PropertyChangeListener globalListener;
 
+	private HashMap<String, IEmulatorLaunchConfigurationPart> launcherParts = new HashMap<String, IEmulatorLaunchConfigurationPart>();
+
     /**
      * The constructor
      */
@@ -139,9 +148,21 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         CoreMoSyncPlugin.getDefault().setIDEProcessConsoleProvider(this);
         registerGlobalProjectListener();
         initializeCustomActivities();
+        initializeLauncherParts();
     }
 
-    public boolean isExampleWorkspace() {
+    private void initializeLauncherParts() {
+    	IConfigurationElement[] launcherParts = Platform.getExtensionRegistry().getConfigurationElementsFor(IEmulatorLaunchConfigurationPart.EXTENSION_POINT_ID);
+    	for (int i = 0; i < launcherParts.length; i++) {
+    		IConfigurationElement launcherPart = launcherParts[i];
+    		String id = launcherPart.getAttribute("id");
+    		this.launcherParts.put(id, new EmulatorLaunchConfigurationPartProxy(launcherPart));
+    	}
+    	// Default always present
+    	this.launcherParts.put(MoReLauncher.ID, new MoreLauncherPart());
+	}
+
+	public boolean isExampleWorkspace() {
         IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
         File wsFile = wsRoot.getLocation().toFile();
         File exampleWSPath = MoSyncTool.getDefault().getMoSyncExamplesWorkspace().toFile();
@@ -523,6 +544,10 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 	    	}
     	}
     }
+
+	public IEmulatorLaunchConfigurationPart getEmulatorLauncherPart(String id) {
+		return launcherParts.get(id);
+	}
     
 
 }

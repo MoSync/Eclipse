@@ -251,6 +251,11 @@ public class MoReLauncher implements IEmulatorLauncher{
     	return MoSyncTool.getDefault().getBinary("MoRE").toOSString();
     }
 
+	@Override
+	public String getName() {
+		return "MoRe Emulator";
+	}
+
 
 
 }

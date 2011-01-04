@@ -39,4 +39,10 @@ public class EmulatorLauncherProxy implements IEmulatorLauncher {
 		
 	}
 
+	@Override
+	public String getName() {
+		initDelegate();
+		return delegate.getName();
+	}
+
 }
