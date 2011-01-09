@@ -155,7 +155,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
     	IConfigurationElement[] launcherParts = Platform.getExtensionRegistry().getConfigurationElementsFor(IEmulatorLaunchConfigurationPart.EXTENSION_POINT_ID);
     	for (int i = 0; i < launcherParts.length; i++) {
     		IConfigurationElement launcherPart = launcherParts[i];
-    		String id = launcherPart.getAttribute("id");
+    		String id = launcherPart.getAttribute("launcher");
     		this.launcherParts.put(id, new EmulatorLaunchConfigurationPartProxy(launcherPart));
     	}
     	// Default always present

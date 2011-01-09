@@ -699,9 +699,10 @@ public class MoSyncTool {
 	}
 	
 	/**
-	 * Returns the extension of executables on the current platform.
+	 * Returns the extension of executables on the current platform,
+	 * including the period sign (.) if applicable.
 	 */
-	private String getBinExtension()
+	public static String getBinExtension()
 	{
 		String extension = "";
 		

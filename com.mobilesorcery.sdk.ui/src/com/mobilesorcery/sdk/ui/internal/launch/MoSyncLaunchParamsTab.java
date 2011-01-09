@@ -14,6 +14,7 @@
 package com.mobilesorcery.sdk.ui.internal.launch;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
@@ -103,6 +104,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 	private HashMap<String, Composite> delegateComposites = new HashMap<String, Composite>();
 	private ILaunchConfiguration config;
 	private HashMap<String, IEmulatorLaunchConfigurationPart> launcherParts = new HashMap<String, IEmulatorLaunchConfigurationPart>();
+	private HashSet<IEmulatorLaunchConfigurationPart> initedParts = new HashSet<IEmulatorLaunchConfigurationPart>();
 
 	public void createControl(Composite parent) {
 		Composite control = new Composite(parent, SWT.NONE);
@@ -120,6 +122,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 		
 		if (ids.size() > 1) {
 			Group launchDelegateGroup = new Group(control, SWT.NONE);
+			launchDelegateGroup.setLayoutData(new GridData(GridData.FILL_BOTH));
 			launchDelegateGroup.setText("&Emulator");
 			launchDelegateGroup.setLayout(new GridLayout(1, false));
 			launchDelegateList = new ComboViewer(launchDelegateGroup);
@@ -142,8 +145,6 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 						}
 					});
 			
-			launchDelegateList.setSelection(new StructuredSelection(
-					MoReLauncher.ID));
 			launchDelegateHolderParent = launchDelegateGroup;
 		} 
 		
@@ -151,6 +152,8 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 		launchDelegateHolder.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		launchDelegateHolderLayout = new StackLayout();
 		launchDelegateHolder.setLayout(launchDelegateHolderLayout);
+
+		switchDelegate(MoReLauncher.ID);
 	}
 
 	protected void switchDelegate(String id) {
@@ -158,22 +161,39 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 		if (delegateComposite == null) {
 			delegateComposite = createDelegateComposite(id,
 					launchDelegateHolder);
+			delegateComposites.put(id, delegateComposite);
 		}
 
+		initLauncherPart(id);
+		
 		launchDelegateHolderLayout.topControl = delegateComposite;
 		launchDelegateHolder.layout();
+	}
+
+	private void initLauncherPart(String id) {
+		IEmulatorLaunchConfigurationPart launcherPart = launcherParts.get(id);
+		try {
+			if (config != null && launcherPart != null && !initedParts.contains(launcherPart)) {
+				launcherPart.init(config);
+			}
+		} catch (CoreException e) {
+			CoreMoSyncPlugin.getDefault().log(e);
+		} finally {
+			if (launcherPart != null) {
+				initedParts.add(launcherPart);
+			}
+		}
 	}
 
 	private Composite createDelegateComposite(String id, Composite parent) {
 		IEmulatorLaunchConfigurationPart launcherPart = MosyncUIPlugin
 				.getDefault().getEmulatorLauncherPart(id);
+		if (launcherPart == null) {
+			return new Composite(parent, SWT.NONE);
+		}
 		launcherParts.put(id, launcherPart);
 		Composite control = launcherPart.createControl(parent);
-		try {
-			launcherPart.init(config);
-		} catch (CoreException e) {
-			CoreMoSyncPlugin.getDefault().log(e);
-		}
+		control.setLayoutData(new GridData(GridData.FILL_BOTH));
 		return control;
 	}
 
@@ -270,7 +290,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 					""));
 			initializeBuildConfigurationOptions(config);
 			updateLaunchConfigurationDialog();
-			switchDelegate(config.getAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, MoReLauncher.ID));
+			launchDelegateList.setSelection(new StructuredSelection(config.getAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, MoReLauncher.ID)));
 		} catch (Exception e) {
 			e.printStackTrace();
 			// Ignore.

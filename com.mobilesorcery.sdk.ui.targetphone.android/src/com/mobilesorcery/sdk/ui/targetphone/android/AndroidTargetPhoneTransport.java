@@ -28,7 +28,9 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.dialogs.ListDialog;
 
+import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
+import com.mobilesorcery.sdk.builder.android.launch.ADB;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -76,7 +78,7 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 	}
 
 	public ITargetPhone scan(IShellProvider shellProvider, IProgressMonitor monitor) throws CoreException {
-		final List<String> devices = ADB.getDefault().listDeviceSerialNumbers();
+		final List<String> devices = ADB.getDefault().listDeviceSerialNumbers(true);
 		if (devices.size() == 0) {
 			throw new CoreException(new Status(IStatus.ERROR, TargetPhonePlugin.PLUGIN_ID, "No android devices connected"));
 		}
@@ -111,18 +113,11 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 			AndroidTargetPhone androidPhone = (AndroidTargetPhone) phone;
 			String serialNumberOfDevice = androidPhone.getSerialNumber();
 			ADB.getDefault().install(packageToSend, serialNumberOfDevice);
-			String androidComponent = getAndroidComponentName(project);
+			String androidComponent = Activator.getAndroidComponentName(project);
 			ADB.getDefault().launch(androidComponent, serialNumberOfDevice);
 		} else {
 			throw new CoreException(new Status(IStatus.ERROR, TargetPhonePlugin.PLUGIN_ID, "Can only send to android phones"));
 		}
-	}
-	
-	public static String getAndroidComponentName(MoSyncProject project) {
-		String packageName = project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME);
-		String activityName = packageName + ".MoSync";
-		String androidComponent = packageName + "/" + activityName;
-		return androidComponent;
 	}
 
 	public String getDescription(String context) {

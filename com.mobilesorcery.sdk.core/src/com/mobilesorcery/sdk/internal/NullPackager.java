@@ -38,6 +38,11 @@ public class NullPackager implements IPackager {
 
 	public void setParameter(String param, String value) {
         // Do nothing - at this point, anyhoo.
+	}
+
+	@Override
+	public String getId() {
+		return "***null***";
 	}    
 
 }

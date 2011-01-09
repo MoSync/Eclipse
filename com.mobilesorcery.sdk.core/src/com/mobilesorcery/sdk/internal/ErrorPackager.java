@@ -35,7 +35,7 @@ import com.mobilesorcery.sdk.profiles.IProfile;
  * @author Mattias Bybro, mattias.bybro@purplescout.se
  *
  */
-public class ErrorPackager extends AbstractPackager {
+public class ErrorPackager extends AbstractPackager implements IPackager {
 
     private static IPackager instance = new ErrorPackager();
 
@@ -53,5 +53,10 @@ public class ErrorPackager extends AbstractPackager {
         console.addMessage(errorMsg);
         buildResult.addError(errorMsg);
     }
+
+	@Override
+	public String getId() {
+		return "***error***";
+	}
 
 }

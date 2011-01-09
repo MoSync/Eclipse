@@ -154,7 +154,15 @@ public class CommandLineExecutor {
 		return cmdarray.toArray( new String[0] );
 	}
 	
+	public void fork() throws IOException {
+		execute(true);
+	}
+	
 	public int execute() throws IOException {
+		return execute(false);
+	}
+	
+	private int execute(boolean fork) throws IOException {
 		IProcessConsole console = createConsole();
 
 		int result = -1;
@@ -185,7 +193,7 @@ public class CommandLineExecutor {
 			
 			console.attachProcess(currentProcess, stdoutHandler, stderrHandler);
 			try {
-				result = currentProcess.waitFor();
+				result = fork ? 0 : currentProcess.waitFor();
 			} catch (InterruptedException e) {
 				throw new IOException("Process interrupted.");
 			}

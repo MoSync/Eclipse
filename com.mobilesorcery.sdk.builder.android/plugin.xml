@@ -5,7 +5,8 @@
          point="com.mobilesorcery.core.packagers">
                <packager
             implementation="com.mobilesorcery.sdk.builder.android.AndroidPackager"
-            pattern="^profiles[/|\\]runtimes[/|\\]android.*">
+            pattern="^profiles[/|\\]runtimes[/|\\]android.*"
+            id="com.mobilesorcery.sdk.build.android.packager">
       </packager>
    </extension>
           <extension
@@ -54,6 +55,12 @@
             id="com.mobilesorcery.sdk.builder.android.preferences"
             name="Android Signing">
       </page>
+            <page
+            category="com.mobilesorcery.sdk.preferences.main"
+            class="com.mobilesorcery.sdk.builder.android.ui.preferences.AndroidSDKPreferencePage"
+            id="com.mobilesorcery.sdk.builder.android.preferences.sdk"
+            name="Android SDK">
+      </page>
    </extension>
       <extension
          point="org.eclipse.core.runtime.preferences">
@@ -61,4 +68,18 @@
             class="com.mobilesorcery.sdk.builder.android.PropertyInitializer">
       </initializer>
    </extension>
+      <extension
+            point="com.mobilesorcery.sdk.ui.launcher">
+         <launcherpart
+               launcher="com.mobilesorcery.sdk.builder.android.launcher"
+               part="com.mobilesorcery.sdk.builder.android.launch.AndroidEmulatorLauncherPart">
+         </launcherpart>
+      </extension>
+      <extension
+            point="com.mobilesorcery.core.launcher">
+         <launcher
+               id="com.mobilesorcery.sdk.builder.android.launcher"
+               implementation="com.mobilesorcery.sdk.builder.android.launch.AndroidEmulatorLauncher">
+         </launcher>
+      </extension>
 </plugin>
