@@ -11,6 +11,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.ui.IMemento;
 
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
@@ -34,8 +35,19 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class LinkBuildStep extends AbstractBuildStep {
 
+	public static class Factory extends AbstractBuildStepFactory {
+
+		@Override
+		public IBuildStep create() {
+			return new LinkBuildStep();
+		}
+
+	}
+
+	public static final String ID = "link";
+
 	public LinkBuildStep() {
-		setId("link");
+		setId(ID);
 		setName("Link");
 	}
 	
@@ -155,10 +167,15 @@ public class LinkBuildStep extends AbstractBuildStep {
         long programCombTouched = programComb.toFile().exists() ? programComb.toFile().lastModified() : Long.MAX_VALUE;
         return librariesTouched > programCombTouched;
     }
-
+	
 	@Override
-	public boolean shouldBuild(MoSyncProject project, IBuildSession session, IBuildResult buildResult) {
-		return super.shouldBuild(project, session, buildResult) && session.doLink();
+	public boolean shouldAdd(IBuildSession session) {
+		return session.doLink();
+	}
+	
+	@Override
+	public String[] getDependees() {
+		return new String[] { CompileBuildStep.ID };
 	}
 
 }

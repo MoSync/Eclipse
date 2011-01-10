@@ -5,6 +5,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.ui.IMemento;
 
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
@@ -18,10 +19,21 @@ import com.mobilesorcery.sdk.internal.builder.MoSyncResourceBuilderVisitor;
 
 public class ResourceBuildStep extends AbstractBuildStep {
 
+	public static final String ID = "resource";
 	public static final String RESOURCE_FILES = ResourceBuildStep.class.getName() + "resource.files";
-	
+
+	public static class Factory extends AbstractBuildStepFactory {
+
+		@Override
+		public IBuildStep create() {
+			return new ResourceBuildStep();
+		}
+
+
+	}
+
 	public ResourceBuildStep() {
-		setId("resource");
+		setId(ID);
 		setName("Build Resources");
 	}
 	
@@ -48,8 +60,8 @@ public class ResourceBuildStep extends AbstractBuildStep {
 	}
 
 	@Override
-	public boolean shouldBuild(MoSyncProject project, IBuildSession session, IBuildResult buildResult) {
-		return super.shouldBuild(project, session, buildResult) && session.doBuildResources();
+	public boolean shouldAdd(IBuildSession session) {
+		return session.doBuildResources();
 	}
 
 }

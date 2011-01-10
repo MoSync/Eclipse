@@ -1,11 +1,17 @@
 package com.mobilesorcery.sdk.internal;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.build.CompileBuildStep;
+import com.mobilesorcery.sdk.core.build.IBuildStep;
+import com.mobilesorcery.sdk.core.build.LinkBuildStep;
+import com.mobilesorcery.sdk.core.build.PackBuildStep;
+import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 
 public class BuildSession implements IBuildSession {
 

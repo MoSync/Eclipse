@@ -1,7 +1,14 @@
 package com.mobilesorcery.sdk.core;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import com.mobilesorcery.sdk.core.build.CompileBuildStep;
+import com.mobilesorcery.sdk.core.build.IBuildStep;
+import com.mobilesorcery.sdk.core.build.LinkBuildStep;
+import com.mobilesorcery.sdk.core.build.PackBuildStep;
+import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 
 /**
  * Represents one build execution, but may span several individual build variants.
@@ -54,7 +61,5 @@ public interface IBuildSession {
      * @deprecated Not really deprecated, but move this method
      */
     public boolean doSaveDirtyEditors();
-    
-    
     
 }

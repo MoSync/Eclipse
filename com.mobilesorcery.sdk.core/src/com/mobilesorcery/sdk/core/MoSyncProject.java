@@ -43,6 +43,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.XMLMemento;
 
+import com.mobilesorcery.sdk.core.build.IBuildSequence;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
@@ -1097,5 +1098,6 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     public Version getFormatVersion() {
         return formatVersion;
     }
+
 
 }

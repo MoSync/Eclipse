@@ -9,6 +9,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.ui.IMemento;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
@@ -28,10 +29,21 @@ import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
 public class CompileBuildStep extends AbstractBuildStep {
 
+	public static class Factory extends AbstractBuildStepFactory {
+
+		@Override
+		public IBuildStep create() {
+			return new CompileBuildStep();
+		}
+
+	}
+
 	public static final String OBJECT_FILES = CompileBuildStep.class.getName() + "obj.files";
 
+	public static final String ID = "compile";
+
 	public CompileBuildStep() {
-		setId("compile");
+		setId(ID);
 		setName("Compile");
 	}
 	

@@ -8,20 +8,16 @@ import java.util.Set;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildState;
-import com.mobilesorcery.sdk.core.IBuildVariant;
-import com.mobilesorcery.sdk.core.IFileTreeDiff;
-import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
-import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
@@ -106,10 +102,22 @@ public abstract class AbstractBuildStep implements IBuildStep {
 
 	/**
 	 * The default implementation returns <code>true</code> if
-	 * the current build has no errors from previous build steps.
+	 * the current build has no errors from previous build steps
+	 * and if this step should be added (as per {@link #shouldAdd(IBuildSession)})
 	 */
+	@Override
 	public boolean shouldBuild(MoSyncProject project, IBuildSession session, IBuildResult buildResult) {
-		return buildResult.getErrors().isEmpty();
+		return shouldAdd(session) && buildResult.getErrors().isEmpty();
+	}
+	
+	@Override
+	public boolean shouldAdd(IBuildSession session) {
+		return true;
+	}
+	
+	@Override
+	public String[] getDependees() {
+		return null;
 	}
 
     protected Set<IProject> computeProjectDependencies(IProgressMonitor monitor, MoSyncProject mosyncProject, IBuildState buildState, IResource[] allAffectedResources) {
@@ -135,5 +143,8 @@ public abstract class AbstractBuildStep implements IBuildStep {
         return allProjectDependencies;
     }
 
+    public String toString() {
+    	return getId();
+    }
 
 }

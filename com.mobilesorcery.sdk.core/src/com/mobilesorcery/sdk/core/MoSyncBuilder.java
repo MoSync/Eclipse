@@ -54,7 +54,9 @@ import org.eclipse.ui.actions.BuildAction;
 import org.eclipse.ui.ide.IDE;
 
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.build.BuildSequence;
 import com.mobilesorcery.sdk.core.build.CompileBuildStep;
+import com.mobilesorcery.sdk.core.build.IBuildSequence;
 import com.mobilesorcery.sdk.core.build.IBuildStep;
 import com.mobilesorcery.sdk.core.build.LinkBuildStep;
 import com.mobilesorcery.sdk.core.build.PackBuildStep;
@@ -513,12 +515,18 @@ public class MoSyncBuilder extends ACBuilder {
             
             IDependencyProvider<IResource> dependencyProvider = createDependencyProvider(mosyncProject, variant);
             
-            List<IBuildStep> buildSteps = getBuildSteps();
+            BuildSequence sequence = new BuildSequence(mosyncProject);
+            
+            List<IBuildStep> buildSteps = sequence.getBuildSteps(session);
             monitor.beginTask("Build", buildSteps.size());
+
+            sequence.assertValid(session);
+            
             for (IBuildStep buildStep : buildSteps) {
             	if (monitor.isCanceled()) {
             		return buildResult;
             	}
+            	
             	if (buildStep.shouldBuild(mosyncProject, session, buildResult)) {
 	            	buildStep.initConsole(console);
 	            	buildStep.initBuildProperties(buildProperties);
@@ -559,22 +567,13 @@ public class MoSyncBuilder extends ACBuilder {
         }
     }
 
-    private IDependencyProvider<IResource> createDependencyProvider(
+	private IDependencyProvider<IResource> createDependencyProvider(
 			MoSyncProject mosyncProject, IBuildVariant variant) {
 		CompoundDependencyProvider<IResource> dependencyProvider = new CompoundDependencyProvider<IResource>(new GCCDependencyProvider(mosyncProject, variant),
         																	   new ProjectResourceDependencyProvider(mosyncProject.getWrappedProject(), variant),
         																	   new ResourceFileDependencyProvider());
         	
     	return dependencyProvider; 
-	}
-
-	private List<IBuildStep> getBuildSteps() {
-		ArrayList<IBuildStep> buildSteps = new ArrayList<IBuildStep>();
-		buildSteps.add(new CompileBuildStep());
-		buildSteps.add(new ResourceBuildStep());
-		buildSteps.add(new LinkBuildStep());
-		buildSteps.add(new PackBuildStep());
-		return buildSteps;
 	}
 
     public static ParameterResolver createParameterResolver(

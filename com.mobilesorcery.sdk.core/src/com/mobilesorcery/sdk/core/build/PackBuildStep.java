@@ -6,6 +6,7 @@ import java.text.MessageFormat;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.ui.IMemento;
 
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
@@ -26,8 +27,19 @@ import com.mobilesorcery.sdk.profiles.Profile;
 
 public class PackBuildStep extends AbstractBuildStep {
 
+	public static class Factory extends AbstractBuildStepFactory {
+
+		@Override
+		public IBuildStep create() {
+			return new PackBuildStep();
+		}
+
+	}
+
+	public static final String ID = "pack";
+
 	public PackBuildStep() {
-		setId("pack");
+		setId(ID);
 		setName("Pack");
 	}
 	
@@ -57,6 +69,16 @@ public class PackBuildStep extends AbstractBuildStep {
 
 	@Override
 	public boolean shouldBuild(MoSyncProject project, IBuildSession session, IBuildResult buildResult) {
-		return super.shouldBuild(project, session, buildResult) && session.doPack() && !MoSyncBuilder.isLib(project);
+		return super.shouldBuild(project, session, buildResult) && !MoSyncBuilder.isLib(project);
+	}
+	
+	@Override
+	public boolean shouldAdd(IBuildSession session) {
+		return session.doPack();
+	}
+	
+	@Override
+	public String[] getDependees() {
+		return new String[] { LinkBuildStep.ID };
 	}
 }
