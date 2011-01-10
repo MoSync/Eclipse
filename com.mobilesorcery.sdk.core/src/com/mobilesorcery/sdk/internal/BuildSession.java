@@ -17,7 +17,7 @@ public class BuildSession implements IBuildSession {
     public static final int ALL = DO_PACK | DO_CLEAN | DO_LINK | DO_BUILD_RESOURCES | DO_SAVE_DIRTY_EDITORS;
     
     private List<IBuildVariant> variants;
-    private Map<String, String> properties = new HashMap<String, String>();
+    private Map<String, Object> properties = new HashMap<String, Object>();
     private int flags;
 
     public BuildSession(List<IBuildVariant> variants, int flags) {
@@ -29,7 +29,7 @@ public class BuildSession implements IBuildSession {
         return variants;
     }
 
-    public Map<String, String> getProperties() {
+    public Map<String, Object> getProperties() {
         return properties;
     }
 

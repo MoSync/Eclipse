@@ -15,6 +15,7 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.core.resources.IProject;
 
@@ -33,6 +34,11 @@ public class BuildResult implements IBuildResult {
 
     public void addError(String errorMsg) {
         this.errors.add(errorMsg);
+    }
+    
+    @Override
+	public List<String> getErrors() {
+    	return errors;
     }
     
     public File getBuildResult() {

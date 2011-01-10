@@ -19,10 +19,10 @@ public interface IBuildSession {
     /**
      * Returns a <emph>modifiable</emph> set of properties for
      * this build session. The intention of this method is to provide
-     * a means to share data that last only during the session
+     * a means to share data that last only during the session.
      * @return
      */
-    public Map<String, String> getProperties();
+    public Map<String, Object> getProperties();
     
     /**
      * Returns <code>true</code> if a clean should be performed before

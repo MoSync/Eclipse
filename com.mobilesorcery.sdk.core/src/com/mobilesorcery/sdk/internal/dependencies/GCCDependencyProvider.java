@@ -28,6 +28,9 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.builder.MoSyncBuilderVisitor;
 
 /**
@@ -40,16 +43,17 @@ import com.mobilesorcery.sdk.internal.builder.MoSyncBuilderVisitor;
 public class GCCDependencyProvider implements IDependencyProvider<IResource> {
 
 	private static final Map<IResource, Collection<IResource>> EMPTY = new HashMap<IResource, Collection<IResource>>();
+	private MoSyncProject project;
+	private IBuildVariant variant;
 	
-	private MoSyncBuilderVisitor builder;
-
 	/**
 	 * 
 	 * @param moSyncBuilderVisitor 
 	 * @param mmdFile The gcc dependency file to scan for dependencies
 	 */
-	public GCCDependencyProvider(MoSyncBuilderVisitor builder) {
-		this.builder = builder;
+	public GCCDependencyProvider(MoSyncProject project, IBuildVariant variant) {
+		this.project = project;
+		this.variant = variant;
 	}
 	
 	public Map<IResource, Collection<IResource>> computeDependenciesOf(IResource resource) throws CoreException {
@@ -60,7 +64,7 @@ public class GCCDependencyProvider implements IDependencyProvider<IResource> {
 		IPath output = null;
 		
 		if (resource.getType() == IResource.FILE) {
-			output = builder.mapFileToOutput((IFile) resource);
+			output = MoSyncBuilderVisitor.mapFileToOutput((IFile) resource, MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant));
 		}
 		
 		try {

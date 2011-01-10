@@ -310,9 +310,13 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     }
 
     public IPath mapFileToOutput(IResource file) {
+    	return mapFileToOutput(file, outputPath);
+    }
+    
+    public static IPath mapFileToOutput(IResource file, IPath outputPath) {
         String name = file.getName();
         String newName = Util.replaceExtension(name, "s");
-        return outputPath.append(newName);
+        return outputPath.append(newName);    	
     }
 
     public String[] getObjectFilesForProject(IProject project) throws CoreException {
@@ -347,17 +351,6 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
     public void setGCCWarnings(int gccWarnings) {
         this.gccWarnings = gccWarnings;
-    }
- 
-    public IDependencyProvider<IResource> getDependencyProvider() {
-    	if (dependencyProvider == null) {
-    		//dependencyProvider = new CompoundDependencyProvider<IResource>(new CResourceDependencyProvider(), new ProjectResourceDependencyProvider());
-    		dependencyProvider = new CompoundDependencyProvider<IResource>(new GCCDependencyProvider(this),
-    																	   new ProjectResourceDependencyProvider(getProject(), getVariant()),
-    																	   new ResourceFileDependencyProvider());
-    	}
-    	
-    	return dependencyProvider;
     }
 
 	protected String getName() {

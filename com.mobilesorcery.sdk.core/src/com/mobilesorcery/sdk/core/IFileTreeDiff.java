@@ -24,4 +24,6 @@ public interface IFileTreeDiff {
     public List<IPath> getChanged();
     
     public List<IPath> getRemoved();
+    
+    public boolean isEmpty();
 }
