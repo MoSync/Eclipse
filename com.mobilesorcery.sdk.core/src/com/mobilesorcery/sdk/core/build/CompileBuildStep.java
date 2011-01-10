@@ -86,5 +86,10 @@ public class CompileBuildStep extends AbstractBuildStep {
         // TODO: Better way to transport this stuff?
         session.getProperties().put(OBJECT_FILES, compilerVisitor.getObjectFilesForProject(project));
 	}
+	
+	@Override
+	public String[] getDependees() {
+		return new String[] { ResourceBuildStep.ID };
+	}
 
 }

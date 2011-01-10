@@ -30,8 +30,8 @@ public class BuildSequence implements IBuildSequence {
 	}
 	
 	private void initDefaultFactories() {
-		addStandardFactory(CompileBuildStep.ID);
 		addStandardFactory(ResourceBuildStep.ID);
+		addStandardFactory(CompileBuildStep.ID);
 		addStandardFactory(LinkBuildStep.ID);
 		addStandardFactory(PackBuildStep.ID);
 	}
