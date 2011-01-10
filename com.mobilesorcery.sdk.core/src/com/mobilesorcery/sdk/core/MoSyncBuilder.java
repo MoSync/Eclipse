@@ -532,6 +532,7 @@ public class MoSyncBuilder extends ACBuilder {
 	            	buildStep.initBuildProperties(buildProperties);
 	            	buildStep.initBuildState(buildState);
 	            	buildStep.initPipeTool(pipeTool);
+	            	buildStep.initParameterResolver(resolver);
 	            	buildStep.initDefaultLineHandler(linehandler);
 	            	buildStep.initDependencyProvider(dependencyProvider);
 	            	buildStep.incrementalBuild(mosyncProject, session, buildState, variant, diff, buildResult, resourceFilter, monitor);

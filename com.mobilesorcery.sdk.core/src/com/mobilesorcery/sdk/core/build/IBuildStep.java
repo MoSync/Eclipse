@@ -16,6 +16,7 @@ import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
 
@@ -91,5 +92,7 @@ public interface IBuildStep {
 	void initDefaultLineHandler(ILineHandler linehandler);
 
 	void initDependencyProvider(IDependencyProvider<IResource> dependencyProvider);
+
+	void initParameterResolver(ParameterResolver resolver);
 
 }

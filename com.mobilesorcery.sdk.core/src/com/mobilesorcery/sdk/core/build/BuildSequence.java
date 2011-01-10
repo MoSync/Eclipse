@@ -3,7 +3,6 @@ package com.mobilesorcery.sdk.core.build;
 import java.io.FileReader;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
@@ -18,32 +17,45 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
-import com.mobilesorcery.sdk.core.build.CompileBuildStep.Factory;
 
 public class BuildSequence implements IBuildSequence {
 
 	private MoSyncProject project;
 	private ArrayList<IBuildStepFactory> buildStepFactories = new ArrayList<IBuildStepFactory>();
-	private HashMap<String, IBuildStepFactory> factories = new HashMap<String, IBuildStepFactory>();
 	private ArrayList<IBuildStep> buildSteps;
 
 	public BuildSequence(MoSyncProject project) {
 		this.project = project;
-		initFactories();
 		load();
 	}
 	
-	private void initFactories() {
-		// TODO: We may want to allow for extension points
-		addStandardFactory(CompileBuildStep.ID, new CompileBuildStep.Factory());
-		addStandardFactory(ResourceBuildStep.ID, new ResourceBuildStep.Factory());
-		addStandardFactory(LinkBuildStep.ID, new LinkBuildStep.Factory());
-		addStandardFactory(PackBuildStep.ID, new PackBuildStep.Factory());
+	private void initDefaultFactories() {
+		addStandardFactory(CompileBuildStep.ID);
+		addStandardFactory(ResourceBuildStep.ID);
+		addStandardFactory(LinkBuildStep.ID);
+		addStandardFactory(PackBuildStep.ID);
 	}
 	
-	private void addStandardFactory(String id, IBuildStepFactory factory) {
-		factories.put(id, factory);
+	private void addStandardFactory(String id) {
+		IBuildStepFactory factory = createFactory(id);
 		buildStepFactories.add(factory);
+	}
+
+	private IBuildStepFactory createFactory(String id) {
+		// TODO: We may want to allow for extension points
+		if (CompileBuildStep.ID.equals(id)) {
+			return new CompileBuildStep.Factory();
+		} else if (ResourceBuildStep.ID.equals(id)) {
+			return new ResourceBuildStep.Factory();
+		} else if (LinkBuildStep.ID.equals(id)) {
+			return new LinkBuildStep.Factory();
+		} else if (PackBuildStep.ID.equals(id)) {
+			return new PackBuildStep.Factory();
+		} else if (CommandLineBuildStep.ID.equals(id)) {
+			return new CommandLineBuildStep.Factory();
+		}
+		
+		return null;
 	}
 
 	private void load() {
@@ -59,7 +71,7 @@ public class BuildSequence implements IBuildSequence {
                 for (int i = 0; i < buildSteps.length; i++) {
                 	IMemento buildStep = buildSteps[i];
                 	String buildStepId = buildStep.getString("type");
-                	IBuildStepFactory factory = factories.get(buildStepId);
+                	IBuildStepFactory factory = createFactory(buildStepId);
                 	if (factory != null) {
                 		factory.load(buildStep);
                 		this.buildStepFactories.add(factory);
@@ -67,6 +79,8 @@ public class BuildSequence implements IBuildSequence {
                 		CoreMoSyncPlugin.getDefault().getLog().log(new Status(IStatus.INFO, CoreMoSyncPlugin.PLUGIN_ID, MessageFormat.format("Build step factory {0} missing", buildStepId)));
                 	}
                 }
+            } else {
+            	initDefaultFactories();
             }
         } catch (Exception e) {
         	CoreMoSyncPlugin.getDefault().log(e);

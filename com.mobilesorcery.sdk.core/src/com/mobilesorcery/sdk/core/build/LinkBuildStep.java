@@ -63,7 +63,7 @@ public class LinkBuildStep extends AbstractBuildStep {
 		IProject project = mosyncProject.getWrappedProject();
 		IProfile targetProfile = variant.getProfile();
 		IPath resource = MoSyncBuilder.getResourceOutputPath(project, variant);
-		ParameterResolver resolver = MoSyncBuilder.createParameterResolver(mosyncProject, variant);
+		ParameterResolver resolver = getParameterResolver();
 
 		IPath program = MoSyncBuilder.getProgramOutputPath(project, variant);
         IPath programComb = MoSyncBuilder.getProgramCombOutputPath(project, variant);

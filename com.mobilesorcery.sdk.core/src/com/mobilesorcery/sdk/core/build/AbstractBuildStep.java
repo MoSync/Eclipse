@@ -16,6 +16,7 @@ import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildState;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
+import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.PipeTool;
@@ -32,6 +33,7 @@ public abstract class AbstractBuildStep implements IBuildStep {
 	private IDependencyProvider<IResource> dependencyProvider;
 	private String id;
 	private String name;
+	private ParameterResolver resolver;
 
 	public String getId() {
 		return id;
@@ -98,6 +100,14 @@ public abstract class AbstractBuildStep implements IBuildStep {
 	
 	protected IDependencyProvider<IResource> getDependencyProvider() {
 		return dependencyProvider;
+	}
+
+	public void initParameterResolver(ParameterResolver resolver) {
+		this.resolver = resolver;
+	}
+	
+	protected ParameterResolver getParameterResolver() {
+		return resolver;
 	}
 
 	/**
