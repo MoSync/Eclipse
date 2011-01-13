@@ -468,6 +468,7 @@ extends AbstractPackager
 		
         IApplicationPermissions permissions = project.getPermissions();
 		
+		// Add permissions depending on project settings.
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.VIBRATE), "android.permission.VIBRATE");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.INTERNET), "android.permission.INTERNET");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.LOCATION_COARSE), "android.permission.ACCESS_COARSE_LOCATION");
@@ -481,7 +482,6 @@ extends AbstractPackager
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.SMS_SEND), "android.permission.SEND_SMS");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.SMS_RECEIVE), "android.permission.RECEIVE_SMS");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.CAMERA), "android.permission.CAMERA");
-        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.FILE_STORAGE_WRITE), "android.permission.WRITE_EXTERNAL_STORAGE");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "android.permission.GET_TASKS");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "android.permission.SET_WALLPAPER");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "android.permission.SET_WALLPAPER_HINTS");
@@ -489,10 +489,23 @@ extends AbstractPackager
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.HOMESCREEN), "com.android.launcher.permission.UNINSTALL_SHORTCUT");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.AUTOSTART), "android.permission.RECEIVE_BOOT_COMPLETED");
 
-        if(m_AndroidVersion >= 7) // Only add this for android 2.0 and higher
+		// Only add this for android 1.6 and higher.
+        if (m_AndroidVersion >= 4) 
         {
-        	addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH");
-        	addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH_ADMIN");
+			addPermission(result, 
+				permissions.isPermissionRequested(ICommonPermissions.FILE_STORAGE_WRITE), 
+				"android.permission.WRITE_EXTERNAL_STORAGE");
+        }
+		
+		// Only add this for android 2.0 and higher.
+        if (m_AndroidVersion >= 7) 
+        {
+        	addPermission(result, 
+				permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), 
+				"android.permission.BLUETOOTH");
+        	addPermission(result, 
+				permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), 
+				"android.permission.BLUETOOTH_ADMIN");
         }
 
         // Always add this.
