@@ -28,7 +28,7 @@ package com.mobilesorcery.sdk.core;
  * @author Mattias Bybro, mattias.bybro@purplescout.se
  *
  */
-public class Version {
+public class Version implements Comparable<Version> {
 
     public static final int UNDEFINED = -1;
     
@@ -145,10 +145,14 @@ public class Version {
     }
     
     public boolean equals(Version v) {
-        return getMajor() == v.getMajor() &&
-               getMinor() == v.getMinor() &&
-               getMicro() == v.getMicro() &&
-               Util.equals(getQualifier(), v.getQualifier());
+        return equals(v, QUALIFIER);
+    }
+    
+    public boolean equals(Version v, int level) {
+        return getMajor() == v.getMajor()&&
+	        (getMinor() == v.getMinor() || level < MINOR) &&
+	        (getMicro() == v.getMicro() || level < MICRO) &&
+	        (Util.equals(getQualifier(), v.getQualifier()) || level < QUALIFIER);    	
     }
     
     /**
@@ -200,5 +204,17 @@ public class Version {
         
         return false;
     }
+
+	@Override
+	public int compareTo(Version version) {
+		if (equals(version, MICRO)) {
+			return Util.compare(getQualifier(), version.getQualifier());
+		} else if (isNewer(version)) {
+			return +1;
+		} else {
+			return -1;
+		}
+	}
+
 
 }
