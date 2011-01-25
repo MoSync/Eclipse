@@ -1,18 +1,30 @@
-package com.mobilesorcery.sdk.builder.android.launch;
+package com.mobilesorcery.sdk.core;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.LineReader.LineAdapter;
 
-public class CollectingLineHandler implements ILineHandler {
+
+public class CollectingLineHandler extends LineAdapter {
 
 	ArrayList<String> lines = new ArrayList<String>();
 	private boolean stopped;
+	private int maxLines;
 
+	public CollectingLineHandler() {
+		this(1024);
+	}
+	
+	public CollectingLineHandler(int maxLines) {
+		this.maxLines = maxLines;
+	}
+	
 	public void newLine(String line) {
-		lines.add(line);
+		if (lines.size() <= maxLines) {
+			lines.add(line);
+		}
 		System.out.println(line);
 	}
 
