@@ -54,7 +54,6 @@ public class CompileFilesHandler extends MoSyncCommandHandler {
 
 		public void setResources(List<IResource> resources) {
 			this.resources = resources;
-			setRule(MultiRule.combine(resources.toArray(new ISchedulingRule[resources.size()])));
 		}
 
 		protected IStatus run(IProgressMonitor monitor) {
