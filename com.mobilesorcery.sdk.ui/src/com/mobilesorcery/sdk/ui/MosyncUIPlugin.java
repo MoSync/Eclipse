@@ -35,6 +35,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.AssertionFailedException;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IAdaptable;
@@ -47,10 +48,15 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontData;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
@@ -111,6 +117,11 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
     
     static final String EXPAND_ALL = "expand.all";
 
+	public static final String FONT_INFO_TEXT = "font.instr";
+
+	public static final String FONT_DEFAULT_BOLD = "b";
+	
+	public static final String FONT_DEFAULT_ITALIC = "i";
 
     // The shared instance
     private static MosyncUIPlugin plugin;
@@ -126,6 +137,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
     private PropertyChangeListener globalListener;
 
 	private HashMap<String, IEmulatorLaunchConfigurationPart> launcherParts = new HashMap<String, IEmulatorLaunchConfigurationPart>();
+
+	private HashMap<Display, FontRegistry> fontRegistries = new HashMap<Display, FontRegistry>();
 
     /**
      * The constructor
@@ -549,5 +562,34 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 		return launcherParts.get(id);
 	}
     
+	/**
+	 * <p>Returns a standard font used throughtout the MoSync IDE.
+	 * Clients should <b>not</b> dispose these fonts.</p>
+	 * @param fontId
+	 * @return
+	 */
+	public Font getFont(String fontId) {
+		if (Display.getCurrent() == null) {
+			throw new AssertionFailedException("Must be called from UI thread");
+		}
+		return getFontRegistry(Display.getCurrent()).get(fontId);
+	}
+
+	private synchronized FontRegistry getFontRegistry(Display current) {
+		FontRegistry registry = fontRegistries.get(current);
+		if (registry == null) {
+			registry = new FontRegistry(current);
+			fontRegistries.put(current, registry);
+			initRegistry(registry);
+		}
+		
+		return registry;
+	}
+
+	private void initRegistry(FontRegistry registry) {
+		registry.put(FONT_INFO_TEXT, UIUtils.modifyFont((FontData[]) null, SWT.DEFAULT, -1));
+		registry.put(FONT_DEFAULT_BOLD, UIUtils.modifyFont((FontData[]) null, SWT.BOLD, 0));
+		registry.put(FONT_DEFAULT_ITALIC, UIUtils.modifyFont((FontData[]) null, SWT.ITALIC, 0));
+	}
 
 }

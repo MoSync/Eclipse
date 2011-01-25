@@ -31,7 +31,9 @@ import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.IWorkbench;
@@ -287,5 +289,18 @@ public class UIUtils {
             }
         }
     }
+
+    /**
+     * Returns a default layout for preference/property pages
+     * (no margins)
+     * @param i
+     * @return
+     */
+	public static GridLayout newPrefsLayout(int columns) {
+		GridLayout result = new GridLayout(columns, false);
+		result.marginWidth = 0;
+		result.marginHeight = 0;
+		return result;
+	}
     
 }
