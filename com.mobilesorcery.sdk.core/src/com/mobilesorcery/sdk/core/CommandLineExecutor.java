@@ -192,6 +192,11 @@ public class CommandLineExecutor {
 			}
 			
 			console.attachProcess(currentProcess, stdoutHandler, stderrHandler);
+			
+			// Ok, we're up and running
+			if (stdoutHandler != null) { stdoutHandler.start(currentProcess); }
+			if (stderrHandler != null) { stderrHandler.start(currentProcess); }
+			
 			try {
 				result = fork ? 0 : currentProcess.waitFor();
 			} catch (InterruptedException e) {

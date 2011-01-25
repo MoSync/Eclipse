@@ -50,6 +50,10 @@ public class Version implements Comparable<Version> {
         this.version = version;
         parse(version);
     }
+    
+    public Version truncate(int level) {
+    	return new Version(asCanonicalString(level));
+    }
 
     private void parse(String version) {
         String[] components = version.split("\\.", 4);

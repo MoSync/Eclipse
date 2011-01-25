@@ -32,9 +32,14 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
+import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -68,6 +73,8 @@ public class Util {
 			"{0,number,#.0} {1}");
 
 	private static final int MAX_DEPTH = 8;
+
+	public static final int INFINITE_DEPTH = Short.MAX_VALUE;
 
 	public static String join(String[] s, String delim) {
 		StringBuffer result = new StringBuffer();
@@ -145,8 +152,16 @@ public class Util {
 		return new String(result);
 	}
 
+	public static void unjar(File jar, File targetDir) throws IOException {
+		unzip(jar, targetDir, true);
+	}
+
 	public static void unzip(File zip, File targetDir) throws IOException {
-		ZipInputStream input = new ZipInputStream(new FileInputStream(zip));
+		unzip(zip, targetDir, false);
+	}
+	
+	private static void unzip(File zip, File targetDir, boolean isJar) throws IOException {
+		ZipInputStream input = createZipInputStream(new FileInputStream(zip), isJar);
 		OutputStream currentOutput = null;
 		targetDir.mkdirs();
 		try {
@@ -154,21 +169,15 @@ public class Util {
 					.getNextEntry()) {
 				File currentFile = new File(targetDir, entry.getName());
 				if (!entry.isDirectory()) {
-					long size = entry.getSize();
 					int readBytes = 0;
 					byte[] buffer = new byte[512];
 					currentFile.getParentFile().mkdirs();
 
 					currentOutput = new FileOutputStream(currentFile);
-					int maxRead = Math.min(buffer.length, (int) size
-							- readBytes);
-					for (int read = input.read(buffer, 0, maxRead); maxRead > 0
-							&& read != -1; read = input
-							.read(buffer, 0, maxRead)) {
+					for (int read = input.read(buffer, 0, buffer.length); read != -1; read = input
+							.read(buffer, 0, buffer.length)) {
 						currentOutput.write(buffer, 0, read);
 						readBytes += read;
-						maxRead = Math.min(buffer.length, (int) size
-								- readBytes);
 					}
 
 					currentOutput.close();
@@ -179,14 +188,68 @@ public class Util {
 				currentFile.setLastModified(entry.getTime());
 			}
 		} finally {
-			if (input != null) {
-				input.close();
-			}
-			if (currentOutput != null) {
-				currentOutput.close();
-			}
+			Util.safeClose(input);
+			Util.safeClose(currentOutput);
 		}
 
+	}
+	
+	private static void zip(File sourceDir, File targetZip, boolean isJar) throws IOException {
+		ZipOutputStream output = createZipOutputStream(new FileOutputStream(targetZip), isJar);
+		try {
+			for (File file : listFiles(sourceDir, true)) {
+				String relativePath = file.getAbsolutePath().substring(sourceDir.getAbsolutePath().length());
+				ZipEntry entry = createZipEntry(relativePath, isJar);
+				output.putNextEntry(entry);
+				if (!file.isDirectory()) {
+					FileInputStream fileInput = new FileInputStream(file);
+					try {
+						transfer(fileInput, output);
+					} finally {
+						Util.safeClose(fileInput);
+					}
+				}
+				output.closeEntry();
+			}
+		} finally {
+			Util.safeClose(output);
+		}
+	}
+	
+	private static ZipOutputStream createZipOutputStream(OutputStream output, boolean isJar) throws IOException {
+		return isJar ? new JarOutputStream(output) : new ZipOutputStream(output);
+	}
+	
+	private static ZipInputStream createZipInputStream(InputStream input, boolean isJar) throws IOException {
+		return isJar ? new JarInputStream(input) : new ZipInputStream(input);
+	}
+
+	private static ZipEntry createZipEntry(String relativePath, boolean isJar) {
+		return isJar ? new JarEntry(relativePath) : new ZipEntry(relativePath);
+	}
+
+	public static void jar(File sourceDir, File targetZip) throws IOException {
+		zip(sourceDir, targetZip, true);
+	}
+	
+	public static void zip(File sourceDir, File targetZip) throws IOException {
+		zip(sourceDir, targetZip, false);
+	}
+
+	public static File[] listFiles(File directory, boolean recursive) {
+		ArrayList<File> result = new ArrayList<File>();
+		innerListFiles(directory, result, recursive);
+		return result.toArray(new File[result.size()]);
+	}
+	
+	private static void innerListFiles(File directory, ArrayList<File> result, boolean recursive) {
+		File[] files = directory.listFiles();
+		for (File file : files) {
+			result.add(file);
+			if (recursive && file.isDirectory()) {
+				innerListFiles(file, result, true);
+			}
+		}
 	}
 
 	public static String[] parseCommandLine(String command) {
@@ -257,16 +320,20 @@ public class Util {
 					.getName()));
 			FileInputStream input = new FileInputStream(src[i]);
 			try {
-				byte[] buffer = new byte[65536];
-				for (int read = input.read(buffer); read != -1; read = input
-						.read(buffer)) {
-					output.write(buffer, 0, read);
-				}
+				transfer(input, output);
 			} finally {
 				input.close();
 			}
 			monitor.worked(1);
 		}
+	}
+	
+	public static void transfer(InputStream src, OutputStream dest) throws IOException {
+		byte[] buffer = new byte[65536];
+		for (int read = src.read(buffer); read != -1; read = src
+				.read(buffer)) {
+			dest.write(buffer, 0, read);
+		}		
 	}
 	
 	public static void copy(IProgressMonitor monitor, File src, File dest, FileFilter filter) throws IOException {
@@ -585,6 +652,24 @@ public class Util {
 		
 		return o1.equals(o2);
 	}
+
+	/**
+	 * A utility method for handling <code>compareTo</code> of
+	 * <code>null</code> objects. <code>null</code> is always considered
+	 * "less than" and will return <code>-1</code>
+	 * @param o1
+	 * @param o2
+	 */
+	public static int compare(Comparable c1, Comparable c2) {
+		if (c1 == null) {
+			return c2 == null ? 0 : -1;
+		}
+		if (c2 == null) {
+			return +1;
+		}
+		
+		return c1.compareTo(c2);
+	}
 	
 	/**
 	 * Replaces parameters tagged with <code>%</code>s and returns
@@ -696,5 +781,6 @@ public class Util {
         Path permissionPath = new Path(key);
         return permissionPath.segmentCount() > 1 ? permissionPath.removeLastSegments(1).toPortableString() : null;
     }
+
 	
 }

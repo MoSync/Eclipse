@@ -53,18 +53,11 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.BuildAction;
 import org.eclipse.ui.ide.IDE;
 
-import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.LineReader.LineAdapter;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
-import com.mobilesorcery.sdk.core.build.CompileBuildStep;
-import com.mobilesorcery.sdk.core.build.IBuildSequence;
 import com.mobilesorcery.sdk.core.build.IBuildStep;
-import com.mobilesorcery.sdk.core.build.LinkBuildStep;
-import com.mobilesorcery.sdk.core.build.PackBuildStep;
-import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 import com.mobilesorcery.sdk.internal.BuildSession;
 import com.mobilesorcery.sdk.internal.PipeTool;
-import com.mobilesorcery.sdk.internal.builder.MoSyncBuilderVisitor;
-import com.mobilesorcery.sdk.internal.builder.MoSyncResourceBuilderVisitor;
 import com.mobilesorcery.sdk.internal.dependencies.CompoundDependencyProvider;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.internal.dependencies.GCCDependencyProvider;
@@ -156,7 +149,7 @@ public class MoSyncBuilder extends ACBuilder {
 
     public static final int GCC_WERROR = 1 << 3;
 
-    public final class GCCLineHandler implements ILineHandler {
+    public final class GCCLineHandler extends LineAdapter {
 
         private ErrorParserManager epm;
 

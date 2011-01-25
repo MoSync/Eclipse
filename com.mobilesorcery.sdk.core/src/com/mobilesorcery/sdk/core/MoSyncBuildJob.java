@@ -33,7 +33,7 @@ public class MoSyncBuildJob extends Job {
         this.session = session;
         this.variant = variant;
         this.project = project;
-        setSystem(true);
+        setUser(true);
         setRule(project.getWrappedProject().getWorkspace().getRoot());
     }
 
