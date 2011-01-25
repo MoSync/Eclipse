@@ -27,6 +27,7 @@ import org.eclipse.core.runtime.Status;
 import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.core.CommandLineExecutor;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.CollectingLineHandler;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;

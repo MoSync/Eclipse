@@ -1,6 +1,5 @@
 package com.mobilesorcery.sdk.builder.android.launch;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,11 +10,11 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 
 import com.mobilesorcery.sdk.builder.android.Activator;
-import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.LineReader.LineAdapter;
 
 public class Android extends AndroidTool {
 
-	private static class AVDHandler implements ILineHandler {
+	private static class AVDHandler extends LineAdapter {
 
 		private final static Pattern NAME_PATTERN = Pattern.compile("\\s*Name:\\s*(.*)\\s*");
 		private List<String> avds = new ArrayList<String>();
@@ -27,11 +26,6 @@ public class Android extends AndroidTool {
 				String avdName = matcher.group(1);
 				avds.add(avdName);
 			}
-		}
-
-		@Override
-		public void stop(IOException e) {
-			
 		}
 
 		public List<String> getAVDs() {

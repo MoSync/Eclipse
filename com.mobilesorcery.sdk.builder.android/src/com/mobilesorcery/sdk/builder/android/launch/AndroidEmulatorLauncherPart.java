@@ -18,6 +18,8 @@ import org.eclipse.swt.widgets.Text;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.SimpleQueue;
+import com.mobilesorcery.sdk.ui.UpdateListener;
+import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
 
 public class AndroidEmulatorLauncherPart implements
@@ -37,7 +39,7 @@ public class AndroidEmulatorLauncherPart implements
 	}
 
 	@Override
-	public Composite createControl(Composite parent) {
+	public Composite createControl(Composite parent, IUpdatableControl updatable) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(3, false));
 		Label avdLabel = new Label(main, SWT.NONE);
@@ -58,6 +60,8 @@ public class AndroidEmulatorLauncherPart implements
 		});
 		
 		updateAVDs();
+		
+		avd.addListener(SWT.Modify, new UpdateListener(updatable));
 		return main;
 	}
 
