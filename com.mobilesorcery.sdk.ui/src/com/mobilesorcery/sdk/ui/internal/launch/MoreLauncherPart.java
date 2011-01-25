@@ -13,6 +13,8 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 import com.mobilesorcery.sdk.core.ILaunchConstants;
+import com.mobilesorcery.sdk.ui.UpdateListener;
+import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
 
 public class MoreLauncherPart implements IEmulatorLaunchConfigurationPart {
@@ -33,12 +35,12 @@ public class MoreLauncherPart implements IEmulatorLaunchConfigurationPart {
 	}
 
 	@Override
-	public Composite createControl(Composite parent) {
-		createResolutionEditor(parent);
+	public Composite createControl(Composite parent, IUpdatableControl updatable) {
+		createResolutionEditor(parent, updatable);
 		return screenSizeGroup;
 	}
 
-	private void createResolutionEditor(Composite control) {
+	private void createResolutionEditor(Composite control, IUpdatableControl updatable) {
 		screenSizeGroup = new Group(control, SWT.NONE);
 		screenSizeGroup.setText("Screen Size");
 		screenSizeGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -63,8 +65,10 @@ public class MoreLauncherPart implements IEmulatorLaunchConfigurationPart {
 		widthText.setLayoutData(new GridData(110, SWT.DEFAULT));
 		heightText.setLayoutData(new GridData(110, SWT.DEFAULT));
 
-		//widthText.addModifyListener(listener);
-		//heightText.addModifyListener(listener);
+		UpdateListener listener = new UpdateListener(updatable);
+		widthText.addListener(SWT.Modify, listener);
+		heightText.addListener(SWT.Modify, listener);
+		useTargetProfile.addListener(SWT.Selection, listener);
 	}
 
 	@Override

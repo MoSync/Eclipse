@@ -18,6 +18,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
+import com.mobilesorcery.sdk.core.MoSyncProject;
+
 /**
  * <p>An interface for launching mobile apps on different platforms (such as the MoRe
  * emulator, the Android emulator, etc).</p>
@@ -34,4 +36,9 @@ public interface IEmulatorLauncher {
 
 	public String getName();
 
+	/**
+	 * Returns <code>true</code> if this launcher is available for a certain launch configuration
+	 * @return
+	 */
+	public boolean isAvailable(MoSyncProject project, String mode);
 }

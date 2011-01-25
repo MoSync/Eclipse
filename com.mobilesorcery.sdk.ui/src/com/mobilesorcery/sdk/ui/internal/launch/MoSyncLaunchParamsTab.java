@@ -43,15 +43,14 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
-import com.mobilesorcery.sdk.core.IEmulatorProcessListener;
 import com.mobilesorcery.sdk.core.ILaunchConstants;
 import com.mobilesorcery.sdk.core.MoSyncNature;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
@@ -59,9 +58,10 @@ import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
 import com.mobilesorcery.sdk.ui.MoSyncProjectSelectionDialog;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
+import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
 
-public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
+public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implements IUpdatableControl {
 
 	private class TabListener implements ModifyListener, SelectionListener {
 
@@ -76,6 +76,9 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 			Object source = e.getSource();
 			if (source == projectButton) {
 				handleProjectButtonSelected();
+			} else if (source == projectText) { 
+				updateLaunchDelegateList();
+				updateLaunchConfigurationDialog();
 			} else {
 				updateLaunchConfigurationDialog();
 			}
@@ -105,6 +108,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 	private ILaunchConfiguration config;
 	private HashMap<String, IEmulatorLaunchConfigurationPart> launcherParts = new HashMap<String, IEmulatorLaunchConfigurationPart>();
 	private HashSet<IEmulatorLaunchConfigurationPart> initedParts = new HashSet<IEmulatorLaunchConfigurationPart>();
+	private Composite launchDelegateHolderParent;
 
 	public void createControl(Composite parent) {
 		Composite control = new Composite(parent, SWT.NONE);
@@ -118,7 +122,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 	private void createLaunchDelegateEditor(Composite control) {
 		Set<String> ids = CoreMoSyncPlugin.getDefault()
 				.getEmulatorLauncherIds();
-		Composite launchDelegateHolderParent = control;
+		launchDelegateHolderParent = control;
 		
 		if (ids.size() > 1) {
 			Group launchDelegateGroup = new Group(control, SWT.NONE);
@@ -127,7 +131,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 			launchDelegateGroup.setLayout(new GridLayout(1, false));
 			launchDelegateList = new ComboViewer(launchDelegateGroup);
 			launchDelegateList.setContentProvider(new ArrayContentProvider());
-			launchDelegateList.setInput(ids.toArray());
+			launchDelegateList.setInput(filterLaunchDelegateIds(ids, project, mode).toArray());
 			launchDelegateList.setLabelProvider(new LabelProvider() {
 				public String getText(Object element) {
 					return CoreMoSyncPlugin.getDefault()
@@ -144,7 +148,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 							switchDelegate(id);
 						}
 					});
-			
+			launchDelegateList.getCombo().addModifyListener(listener);
 			launchDelegateHolderParent = launchDelegateGroup;
 		} 
 		
@@ -192,7 +196,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 			return new Composite(parent, SWT.NONE);
 		}
 		launcherParts.put(id, launcherPart);
-		Composite control = launcherPart.createControl(parent);
+		Composite control = launcherPart.createControl(parent, this);
 		control.setLayoutData(new GridData(GridData.FILL_BOTH));
 		return control;
 	}
@@ -235,6 +239,26 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 							project));
 			configurations.setInput(project);
 		}
+	}
+
+	private void updateLaunchDelegateList() {
+		if (launchDelegateList != null) {
+			Set<String> ids = filterLaunchDelegateIds(CoreMoSyncPlugin.getDefault().getEmulatorLauncherIds(), getProject(), mode);
+			launchDelegateList.setInput(ids.toArray());
+		}
+	}
+
+	private Set<String> filterLaunchDelegateIds(Set<String> emulatorLauncherIds, IProject project, String mode) {
+		HashSet<String> result = new HashSet<String>();
+		for (String id  : emulatorLauncherIds) {
+			IEmulatorLauncher launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(id);
+			if (launcher != null) {
+				if (launcher.isAvailable(MoSyncProject.create(project), mode)) {
+					result.add(id);
+				}
+			}
+		}
+		return result;
 	}
 
 	public void setBuildConfigurationTypes(boolean isDebug, String... types) {
@@ -375,21 +399,31 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab {
 		configurations.getControl().setEnabled(comboEnabled);
 		configurationGroup.setVisible(configurationsVisible);
 
+		launchDelegateHolderParent.setVisible(project != null);
+		
 		super.updateLaunchConfigurationDialog();
 	}
 
 	private MoSyncProject selectedProject() {
+		MoSyncProject newProject = null;
 		try {
 			IProject project = getWorkspaceRoot().getProject(
 					projectText.getText().trim());
 			if (project != null && project.exists() && project.isOpen()
 					&& project.hasNature(MoSyncNature.ID)) {
-				return MoSyncProject.create(project);
+				newProject = MoSyncProject.create(project);
 			}
+
 		} catch (Exception e) {
 			// Ignore.
 		}
+		
+		return newProject;
+	}
 
-		return null;
+	@Override
+	public void updateUI() {
+		updateConfigurations();
+		updateLaunchConfigurationDialog();
 	}
 }

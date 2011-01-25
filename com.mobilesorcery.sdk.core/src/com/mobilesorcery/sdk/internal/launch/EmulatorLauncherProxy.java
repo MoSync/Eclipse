@@ -7,6 +7,7 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 
 public class EmulatorLauncherProxy implements IEmulatorLauncher {
@@ -43,6 +44,12 @@ public class EmulatorLauncherProxy implements IEmulatorLauncher {
 	public String getName() {
 		initDelegate();
 		return delegate.getName();
+	}
+
+	@Override
+	public boolean isAvailable(MoSyncProject project, String mode) {
+		initDelegate();
+		return delegate.isAvailable(project, mode);
 	}
 
 }

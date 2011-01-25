@@ -7,6 +7,7 @@ import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.swt.widgets.Composite;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
 
 public class EmulatorLaunchConfigurationPartProxy implements IEmulatorLaunchConfigurationPart {
@@ -25,9 +26,9 @@ public class EmulatorLaunchConfigurationPartProxy implements IEmulatorLaunchConf
 	}
 
 	@Override
-	public Composite createControl(Composite parent) {
+	public Composite createControl(Composite parent, IUpdatableControl updatable) {
 		initDelegate();
-		return delegate.createControl(parent);
+		return delegate.createControl(parent, updatable);
 	}
 	
 	@Override

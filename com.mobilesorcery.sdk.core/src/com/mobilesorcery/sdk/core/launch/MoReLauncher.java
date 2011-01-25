@@ -256,6 +256,11 @@ public class MoReLauncher implements IEmulatorLauncher{
 		return "MoRe Emulator";
 	}
 
+	@Override
+	public boolean isAvailable(MoSyncProject project, String mode) {
+		return true;
+	}
+
 
 
 }
