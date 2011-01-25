@@ -26,7 +26,9 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.handlers.HandlerUtil;
 
@@ -47,10 +49,12 @@ public class CompileFilesHandler extends MoSyncCommandHandler {
 
 		public CompileFilesJob() {
 			super("Quick Compile");
+			setUser(true);
 		}
 
 		public void setResources(List<IResource> resources) {
 			this.resources = resources;
+			setRule(MultiRule.combine(resources.toArray(new ISchedulingRule[resources.size()])));
 		}
 
 		protected IStatus run(IProgressMonitor monitor) {
