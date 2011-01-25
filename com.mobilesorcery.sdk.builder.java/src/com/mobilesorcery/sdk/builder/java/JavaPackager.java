@@ -56,6 +56,10 @@ public class JavaPackager extends AbstractPackager {
     }
 
     public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+    	createPackage(project, variant, buildResult, true);
+    }
+
+    public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult, boolean doSign) throws CoreException {
         DefaultPackager internal = new DefaultPackager(project, variant);
         IProfile targetProfile = variant.getProfile();
         File runtimeDir = internal.resolveFile("%runtime-dir%");
