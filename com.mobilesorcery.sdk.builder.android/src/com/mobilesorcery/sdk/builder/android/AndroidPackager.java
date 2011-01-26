@@ -494,6 +494,12 @@ extends AbstractPackager
         	addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH");
         	addPermission(result, permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), "android.permission.BLUETOOTH_ADMIN");
         }
+        
+        // Required to be able to log in debug runtime
+        if(shouldUseDebugRuntimes() && !permissions.isPermissionRequested(ICommonPermissions.FILE_STORAGE_WRITE))
+        {
+        	addPermission(result, true, "android.permission.WRITE_EXTERNAL_STORAGE");
+        }
 
         // Always add this.
         addPermission(result, true, "android.permission.READ_PHONE_STATE");
