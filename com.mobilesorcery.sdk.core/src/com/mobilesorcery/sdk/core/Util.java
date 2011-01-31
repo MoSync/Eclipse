@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -198,18 +199,18 @@ public class Util {
 		ZipOutputStream output = createZipOutputStream(new FileOutputStream(targetZip), isJar);
 		try {
 			for (File file : listFiles(sourceDir, true)) {
-				String relativePath = file.getAbsolutePath().substring(sourceDir.getAbsolutePath().length());
-				ZipEntry entry = createZipEntry(relativePath, isJar);
-				output.putNextEntry(entry);
 				if (!file.isDirectory()) {
+					String relativePath = file.getAbsolutePath().substring(sourceDir.getAbsolutePath().length());
+					ZipEntry entry = createZipEntry(relativePath, isJar);
+					output.putNextEntry(entry);
 					FileInputStream fileInput = new FileInputStream(file);
 					try {
 						transfer(fileInput, output);
 					} finally {
 						Util.safeClose(fileInput);
+						output.closeEntry();
 					}
 				}
-				output.closeEntry();
 			}
 		} finally {
 			Util.safeClose(output);
@@ -221,10 +222,16 @@ public class Util {
 	}
 	
 	private static ZipInputStream createZipInputStream(InputStream input, boolean isJar) throws IOException {
-		return isJar ? new JarInputStream(input) : new ZipInputStream(input);
+		//return isJar ? new JarInputStream(input) : new ZipInputStream(input);
+		// We usually want to unjar the manifest as well
+		return new ZipInputStream(input);
 	}
 
 	private static ZipEntry createZipEntry(String relativePath, boolean isJar) {
+		relativePath = relativePath.replace('\\', '/');
+		if (relativePath.length() > 0 && relativePath.charAt(0) == '/') {
+			relativePath = relativePath.substring(1);
+		}
 		return isJar ? new JarEntry(relativePath) : new ZipEntry(relativePath);
 	}
 
