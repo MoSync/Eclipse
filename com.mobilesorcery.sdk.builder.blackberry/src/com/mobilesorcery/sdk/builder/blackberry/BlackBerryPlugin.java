@@ -44,8 +44,8 @@ public class BlackBerryPlugin extends AbstractUIPlugin {
 	 */
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
-		initJDEs();
 		plugin = this;
+		initJDEs();
 	}
 
 	/*
