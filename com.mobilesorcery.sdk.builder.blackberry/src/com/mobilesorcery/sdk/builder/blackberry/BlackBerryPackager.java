@@ -28,6 +28,10 @@ public class BlackBerryPackager extends JavaPackager {
 			throws CoreException {
 		// Create a MIDlet
 		super.createPackage(project, variant, buildResult, false);
+		File jar = buildResult.getBuildResult();
+		// We null the build result in case of error
+		buildResult.setBuildResult(null);
+		
 		// Convert the MIDlet to a cod file
 		String platform = variant.getProfile().getPlatform();
 		JDE jde = matchingJDE(platform);
@@ -35,7 +39,6 @@ public class BlackBerryPackager extends JavaPackager {
 			throw new CoreException(new Status(IStatus.ERROR, BlackBerryPlugin.PLUGIN_ID, "Found no matching JDE for Blackberry platform " + platform));
 		}
 		
-		File jar = buildResult.getBuildResult();
 		// We'll just replace the original jar
 		File preverifiedJar = jar;
 		try {
@@ -67,6 +70,8 @@ public class BlackBerryPackager extends JavaPackager {
 				throw new CoreException(new Status(IStatus.ERROR, BlackBerryPlugin.PLUGIN_ID, "Could not sign BlackBerry app", e));			
 			}
 		}
+		
+		buildResult.setBuildResult(finalOutput);
 	}
 
 	private boolean shouldSign(MoSyncProject project) {
