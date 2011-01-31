@@ -216,8 +216,19 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     }
     
     protected String getLaunchDelegateId(ILaunchConfiguration launchConfig) throws CoreException {
-    	String delegateId = launchConfig.getAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, MoReLauncher.ID);
+    	String delegateId = allowsExternalEmulators() ? 
+    			launchConfig.getAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, MoReLauncher.ID) :
+    			MoReLauncher.ID;
     	return delegateId;
+    }
+    
+    /**
+     * Returns whether this launch configuration allows other emulators
+     * than the default. Clients may override.
+     * @return
+     */
+    protected boolean allowsExternalEmulators() {
+    	return true;
     }
     
 	/**

@@ -109,6 +109,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 	private HashMap<String, IEmulatorLaunchConfigurationPart> launcherParts = new HashMap<String, IEmulatorLaunchConfigurationPart>();
 	private HashSet<IEmulatorLaunchConfigurationPart> initedParts = new HashSet<IEmulatorLaunchConfigurationPart>();
 	private Composite launchDelegateHolderParent;
+	private boolean allowsExternalEmulators;
 
 	public void createControl(Composite parent) {
 		Composite control = new Composite(parent, SWT.NONE);
@@ -124,7 +125,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 				.getEmulatorLauncherIds();
 		launchDelegateHolderParent = control;
 		
-		if (ids.size() > 1) {
+		if (allowsExternalEmulators && ids.size() > 1) {
 			Group launchDelegateGroup = new Group(control, SWT.NONE);
 			launchDelegateGroup.setLayoutData(new GridData(GridData.FILL_BOTH));
 			launchDelegateGroup.setText("&Emulator");
@@ -425,5 +426,9 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 	public void updateUI() {
 		updateConfigurations();
 		updateLaunchConfigurationDialog();
+	}
+
+	public void setAllowExternalEmulators(boolean allowsExternalEmulators) {
+		this.allowsExternalEmulators = allowsExternalEmulators;
 	}
 }

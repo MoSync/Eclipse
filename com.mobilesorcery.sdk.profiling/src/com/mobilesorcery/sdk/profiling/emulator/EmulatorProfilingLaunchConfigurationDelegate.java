@@ -92,4 +92,9 @@ public class EmulatorProfilingLaunchConfigurationDelegate extends EmulatorLaunch
 		return new ReverseFilter<IInvocation>(new MergeFilter<IInvocation>(MergeFilter.AND, funcFilter, fileFilter));
 	}
     
+	@Override
+	public boolean allowsExternalEmulators() {
+		return false;
+	}
+	
 }

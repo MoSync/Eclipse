@@ -28,4 +28,9 @@ public class EmulatorProfilingLaunchConfigurationTabGroup extends EmulatorLaunch
 		newTabs[newTabs.length - 1] = new EmulatorProfilingLaunchConfigurationTab();
 		setTabs(newTabs);
 	}
+	
+	@Override
+    protected boolean allowsExternalEmulators() {
+    	return false;
+    }
 }
