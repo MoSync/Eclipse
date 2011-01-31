@@ -537,10 +537,31 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         return params;
     }
     
-    private void initializeCustomActivities() {
-    	boolean enable = Arrays.asList(Platform.getApplicationArgs()).contains("-experimental:enable");
-    	boolean disable = Arrays.asList(Platform.getApplicationArgs()).contains("-experimental:disable");
+    /**
+     * <p>For development & debugging purposes.</p>
+     * <p>Returns how this product's
+     * experimental mode was changed at startup (using the
+     * <code>-experimental:enable</code> or
+     * <code>-experimental:disable</code>
+     * command line arguments).
+     * @return <code>Boolean.TRUE</code> if experimental mode
+     * was enabled at startup, <code>Boolean.FALSE</code> if
+     * it was disabled, <code>null</code> if neither.
+     */
+    public Boolean switchedToExperimental() {
+    	if (Arrays.asList(Platform.getApplicationArgs()).contains("-experimental:enable")) {
+    		return true;
+    	}
+    	if (Arrays.asList(Platform.getApplicationArgs()).contains("-experimental:disable")) {
+    		return false;
+    	}
     	
+    	return null;
+    }
+    
+    private void initializeCustomActivities() {
+    	boolean enable = Boolean.TRUE.equals(switchedToExperimental());
+    	boolean disable = Boolean.FALSE.equals(switchedToExperimental());
     	if (enable || disable) {
 	    	IWorkbenchActivitySupport activitySupport = PlatformUI.getWorkbench().getActivitySupport();
 	    	ICategory category = activitySupport.getActivityManager().getCategory("com.mobilesorcery.activities.experimental");

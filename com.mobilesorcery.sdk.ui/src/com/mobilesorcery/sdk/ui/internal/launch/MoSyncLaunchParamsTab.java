@@ -125,7 +125,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 				.getEmulatorLauncherIds();
 		launchDelegateHolderParent = control;
 		
-		if (allowsExternalEmulators && ids.size() > 1) {
+		if (Boolean.TRUE.equals(MosyncUIPlugin.getDefault().switchedToExperimental()) && allowsExternalEmulators && ids.size() > 1) {
 			Group launchDelegateGroup = new Group(control, SWT.NONE);
 			launchDelegateGroup.setLayoutData(new GridData(GridData.FILL_BOTH));
 			launchDelegateGroup.setText("&Emulator");
