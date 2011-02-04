@@ -116,6 +116,8 @@ public class JavaPackager extends AbstractPackager {
                     String sizeStr = ((Long) xObj) + "x" + ((Long) yObj); //$NON-NLS-1$
                     internal.runCommandLine(m_iconInjectorLoc, "-src", iconFiles[0].getLocation().toOSString(), "-size", sizeStr, "-platform", "j2me", "-dst",
                             projectJar.getAbsolutePath());
+                } else {
+                	internal.getConsole().addMessage("Unable to build icon; profile has no icon information (MA_PROF_CONST_ICONSIZE_X, MA_PROF_CONST_ICONSIZE_Y");
                 }
             }
 
