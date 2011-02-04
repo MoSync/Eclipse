@@ -3,9 +3,11 @@ package com.mobilesorcery.sdk.ui;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.ListViewer;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -34,11 +36,11 @@ import org.eclipse.swt.widgets.Widget;
 public class SimpleListEditor<T> extends Composite {
 
 	private ListViewer list;
-    private Button add;
-	private Button edit;
-	private Button remove;
-	private Button up;
-	private Button down;
+	protected Button add;
+	protected Button edit;
+	protected Button remove;
+	protected Button up;
+	protected Button down;
 	private ArrayList<T> input;
 	private boolean editAfterAdd = true;
 	private Listener buttonListener;
@@ -47,7 +49,7 @@ public class SimpleListEditor<T> extends Composite {
 	 * A style constant for a rearrangeable list (ie up/down buttons
 	 * are added if {@link #createButtons(Composite)} is not overridden).
 	 */
-	public final static int REARRANGEABLE = 0xffff;
+	public final static int REARRANGEABLE = SWT.UP | SWT.DOWN;
 	
 	public SimpleListEditor(Composite parent, int style) {
 		super(parent, style);
@@ -121,8 +123,12 @@ public class SimpleListEditor<T> extends Composite {
 	}
 
 	protected void buttonPressed(Widget widget) {
+		ISelection selection = getSelection();
 		if (widget == add) {
-			add();
+			T added = add(getSelection().getFirstElement());
+			if (added != null) {
+				selection = new StructuredSelection(added);
+			}
 		} else if (widget == edit) {
 			edit(getSelection().getFirstElement(), false);
 		} else if (widget == remove) {
@@ -132,7 +138,9 @@ public class SimpleListEditor<T> extends Composite {
 		} else if (widget == down) {
 			down(getSelection());
 		}
-		list.refresh();
+		list.setInput(input);
+		list.setSelection(selection);
+		updateButtons(getSelection());
 	}
 	
 	private IStructuredSelection getSelection() {
@@ -140,11 +148,33 @@ public class SimpleListEditor<T> extends Composite {
 	}
 	
 	protected void updateButtons(IStructuredSelection selection) {
-		boolean enabled = !selection.isEmpty();
-		enable(edit, enabled);
-		enable(remove, enabled);	
-		enable(up, enabled);
-		enable(down, enabled);
+		boolean enabled = selection.size() == 1;
+		Object object = selection.getFirstElement();
+		enable(edit, enabled && canEdit(object));
+		enable(remove, enabled && canRemove(object));	
+		enable(up, enabled && !isFirst(object) && canMoveUp(object));
+		enable(down, enabled && !isLast(object) && canMoveDown(object));
+		enable(add, canAdd(object));
+	}
+
+	protected boolean canAdd(Object object) {
+		return true;
+	}
+
+	protected boolean canMoveDown(Object object) {
+		return true;
+	}
+
+	protected boolean canMoveUp(Object object) {
+		return true;
+	}
+
+	protected boolean canRemove(Object object) {
+		return true;
+	}
+
+	protected boolean canEdit(Object object) {
+		return true;
 	}
 
 	private void enable(Control control, boolean enabled) {
@@ -159,16 +189,34 @@ public class SimpleListEditor<T> extends Composite {
 	 * @param selection
 	 */
 	protected void up(IStructuredSelection selection) {
-		throw new UnsupportedOperationException("TBD");
+		Object first = selection.getFirstElement();
+		int ix = input.indexOf(first);
+		if (ix != -1 && !isFirst(first)) {
+			input.remove(ix);
+			input.add(ix - 1, (T) first);
+		}
 	}
 	
 	/**
-	 * Moves the current selection up. Clients may override,
+	 * Moves the current selection down. Clients may override,
 	 * but in general should not need to.
 	 * @param selection
 	 */
 	protected void down(IStructuredSelection selection) {
-		throw new UnsupportedOperationException("TBD");
+		Object first = selection.getFirstElement();
+		int ix = input.indexOf(first);
+		if (ix != -1 && !isLast(first)) {
+			input.remove(ix);
+			input.add(ix + 1, (T) first);
+		}
+	}
+	
+	private boolean isLast(Object element) {
+		return !input.isEmpty() && input.get(input.size() - 1) == element;
+	}
+	
+	private boolean isFirst(Object element) {
+		return !input.isEmpty() && input.get(0) == element;		
 	}
 
 	/**
@@ -180,7 +228,6 @@ public class SimpleListEditor<T> extends Composite {
 		for (Object element : selection.toArray()) {
 			input.remove(element);
 		}
-		list.refresh();
 	}
 
 	/**
@@ -197,21 +244,33 @@ public class SimpleListEditor<T> extends Composite {
 	 * Adds an element to the list. Clients may override,
 	 * but in general should not need to. Instead, override
 	 * the {@link #createObject()} method.
+	 * @param nextObject The object this object should be inserted before,
+	 * or <code>null</code> if it should be added to the end of the list
 	 */
-	protected void add() {
+	protected T add(Object nextObject) {
 		T newObject = createObject();
 		boolean doAdd = newObject != null;
 		if (editAfterAdd) {
 			doAdd = edit(newObject, true);
 		}
 		if (doAdd) {
-			input.add(newObject);
+			int ix = nextObject == null ? -1 : input.indexOf(nextObject);
+			if (ix == -1) {
+				input.add(newObject);
+			} else {
+				input.add(ix, newObject);
+			}
+			return newObject;
 		}
-		list.setInput(input);
+		return null;
 	}
 	
 	protected T createObject() {
 		return null;
+	}
+	
+	protected ListViewer getList() {
+		return list;
 	}
 
 }

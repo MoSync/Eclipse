@@ -41,6 +41,16 @@ public class LinkBuildStep extends AbstractBuildStep {
 		public IBuildStep create() {
 			return new LinkBuildStep();
 		}
+		
+		@Override
+		public String getId() {
+			return ID;
+		}
+
+		@Override
+		public String getName() {
+			return "Link";
+		}
 
 	}
 

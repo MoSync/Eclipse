@@ -36,6 +36,15 @@ public class CompileBuildStep extends AbstractBuildStep {
 			return new CompileBuildStep();
 		}
 
+		@Override
+		public String getId() {
+			return ID;
+		}
+		
+		@Override
+		public String getName() {
+			return "Compile";
+		}
 	}
 
 	public static final String OBJECT_FILES = CompileBuildStep.class.getName() + "obj.files";

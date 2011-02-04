@@ -10,5 +10,8 @@ public interface IBuildStepFactory {
 	
 	public IBuildStep create();
 	
+	public String getId();
+	
+	public String getName();
 }
 

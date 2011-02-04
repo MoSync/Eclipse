@@ -128,6 +128,19 @@ icon="icons/launchshortcut.png">
                          property="com.mobilesorcery.sdk.testers.hasMoreNature">
                    </test>
                 </enabledWhen>
+          </page>         
+           <page
+                class="com.mobilesorcery.sdk.ui.internal.properties.BuildStepsPropertyPage"
+                id="com.mobilesorcery.sdk.ui.properties.build.steps"
+                name="Build Steps"
+                objectClass="org.eclipse.core.resources.IProject"
+                category="com.mobilesorcery.sdk.ui.properties.project">
+                <enabledWhen>
+                   <test
+                         forcePluginActivation="true"
+                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                   </test>
+                </enabledWhen>
           </page>
        </extension>
       

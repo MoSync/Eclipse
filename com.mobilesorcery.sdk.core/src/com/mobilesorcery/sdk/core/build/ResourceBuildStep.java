@@ -29,7 +29,15 @@ public class ResourceBuildStep extends AbstractBuildStep {
 			return new ResourceBuildStep();
 		}
 
-
+		@Override
+		public String getId() {
+			return ID;
+		}
+		
+		@Override
+		public String getName() {
+			return "Compile resources";
+		}
 	}
 
 	public ResourceBuildStep() {

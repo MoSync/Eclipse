@@ -34,6 +34,15 @@ public class PackBuildStep extends AbstractBuildStep {
 			return new PackBuildStep();
 		}
 
+		@Override
+		public String getId() {
+			return ID;
+		}
+		
+		@Override
+		public String getName() {
+			return "Package";
+		}
 	}
 
 	public static final String ID = "pack";
