@@ -77,7 +77,6 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 			if (source == projectButton) {
 				handleProjectButtonSelected();
 			} else if (source == projectText) { 
-				updateLaunchDelegateList();
 				updateLaunchConfigurationDialog();
 			} else {
 				updateLaunchConfigurationDialog();
@@ -88,6 +87,9 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 	private class UpdateConfigurationListener implements ModifyListener {
 		public void modifyText(ModifyEvent e) {
 			updateConfigurations();
+			if (e.getSource() == projectText) {
+				updateLaunchDelegateList();
+			}
 		}
 	}
 
@@ -146,7 +148,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 							IStructuredSelection selection = (IStructuredSelection) event
 									.getSelection();
 							String id = (String) selection.getFirstElement();
-							switchDelegate(id);
+							switchDelegate(id, false);
 						}
 					});
 			launchDelegateList.getCombo().addModifyListener(listener);
@@ -158,10 +160,10 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		launchDelegateHolderLayout = new StackLayout();
 		launchDelegateHolder.setLayout(launchDelegateHolderLayout);
 
-		switchDelegate(MoReLauncher.ID);
+		switchDelegate(MoReLauncher.ID, true);
 	}
 
-	protected void switchDelegate(String id) {
+	protected void switchDelegate(String id, boolean updateCombo) {
 		Composite delegateComposite = delegateComposites.get(id);
 		if (delegateComposite == null) {
 			delegateComposite = createDelegateComposite(id,
@@ -170,22 +172,24 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		}
 
 		initLauncherPart(id);
-		
+		if (updateCombo) {
+			this.launchDelegateList.setSelection(new StructuredSelection(id));
+		}
 		launchDelegateHolderLayout.topControl = delegateComposite;
 		launchDelegateHolder.layout();
 	}
 
 	private void initLauncherPart(String id) {
 		IEmulatorLaunchConfigurationPart launcherPart = launcherParts.get(id);
-		try {
-			if (config != null && launcherPart != null && !initedParts.contains(launcherPart)) {
+		if (config != null && launcherPart != null && !initedParts.contains(launcherPart)) {
+			try {
 				launcherPart.init(config);
-			}
-		} catch (CoreException e) {
-			CoreMoSyncPlugin.getDefault().log(e);
-		} finally {
-			if (launcherPart != null) {
-				initedParts.add(launcherPart);
+			} catch (CoreException e) {
+				CoreMoSyncPlugin.getDefault().log(e);
+			} finally {
+				if (launcherPart != null) {
+					initedParts.add(launcherPart);
+				}
 			}
 		}
 	}
@@ -392,6 +396,9 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 	}
 
 	public void updateLaunchConfigurationDialog() {
+		if (changeConfiguration == null) {
+			return;
+		}
 		MoSyncProject project = selectedProject();
 		boolean configurationsVisible = project != null
 				&& project.areBuildConfigurationsSupported();
@@ -408,7 +415,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 	private MoSyncProject selectedProject() {
 		MoSyncProject newProject = null;
 		try {
-			IProject project = getWorkspaceRoot().getProject(
+			project = getWorkspaceRoot().getProject(
 					projectText.getText().trim());
 			if (project != null && project.exists() && project.isOpen()
 					&& project.hasNature(MoSyncNature.ID)) {
