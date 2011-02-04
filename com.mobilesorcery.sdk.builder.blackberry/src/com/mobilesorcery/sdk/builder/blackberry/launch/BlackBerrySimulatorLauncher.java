@@ -62,7 +62,7 @@ public class BlackBerrySimulatorLauncher extends AbstractEmulatorLauncher {
 			throw new CoreException(new Status(IStatus.ERROR, BlackBerryPlugin.PLUGIN_ID, "BlackBerry Simulator launches are only supported on Windows"));
 		}
 
-		IPath fc = getSDKPath().append("fledgecontroller.exe");
+		IPath fc = getSDKPath(launchConfig).append("fledgecontroller.exe");
 
 		final File packageToInstall = getPackageToInstall(launchConfig);
 		CommandLineExecutor executor = new CommandLineExecutor(MoSyncBuilder.CONSOLE_ID);
@@ -79,9 +79,8 @@ public class BlackBerrySimulatorLauncher extends AbstractEmulatorLauncher {
 		}
 	}
 
-	private IPath getSDKPath() {
-		// TODO: Take a wild guess what needs to be done here
-		return new Path("C:/Program/Research In Motion/BlackBerry Smartphone Simulators 6.0.0/6.0.0.141 (9800)");
+	private IPath getSDKPath(ILaunchConfiguration launchConfig) throws CoreException {
+		return new Path(launchConfig.getAttribute(BlackBerryPlugin.SDK_PATH, ""));
 	}
 	
 	@Override

@@ -27,6 +27,8 @@ public class BlackBerryPlugin extends AbstractUIPlugin {
 
 	public static final String PROPERTY_SHOULD_SIGN = PLUGIN_ID + "do.sign";
 
+	public static final String SDK_PATH = PLUGIN_ID + "sdk.path";
+
 	// The shared instance
 	private static BlackBerryPlugin plugin;
 
