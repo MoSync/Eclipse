@@ -66,6 +66,23 @@ import com.mobilesorcery.sdk.profiles.filter.CompositeDeviceFilter;
  */
 public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
+	/**
+	 * An interface for converting older {@link MoSyncProject}s into a newer
+	 * format.
+	 * @author Mattias Bybro
+	 *
+	 */
+	public interface IConverter {
+
+		/**
+		 * Converts an older project into a newer format.
+		 * @param project
+		 * @return May modify and return the project used as input
+		 */
+		public MoSyncProject convert(MoSyncProject project);
+
+	}
+
 	public final static Comparator<MoSyncProject> NAME_COMPARATOR = new Comparator<MoSyncProject>() {
 
 		@Override
@@ -186,8 +203,12 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 * The format version currently used to store projects.
 	 * @see MoSyncProject#getFormatVersion()
 	 */
-	public static final Version CURRENT_VERSION = new Version("1.1");
+	public static final Version CURRENT_VERSION = new Version("1.2");
 
+	private static final Version VERSION_1_0 = new Version("1");
+	
+	private static final Version VERSION_1_1 = new Version("1.1");
+	
 	/**
 	 * The name of the file where this project's <b>shared</b> meta data is located.
 	 */
@@ -494,13 +515,22 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         MoSyncProject result = projects.get(project);
         if (result == null) {
             result = new MoSyncProject(project);
+            if (!CURRENT_VERSION.equals(result.getFormatVersion())) {
+            	result = upgrade(result);
+            }
             projects.put(project, result);
         }
 
         return result;
     }
     
-    /**
+    private static MoSyncProject upgrade(MoSyncProject project) {
+    	// TODO: Whenever the need arises we may want to fix something smarter
+    	return MoSyncProjectConverter1_2.getInstance().convert(project);
+	}
+
+
+	/**
      * Disposes of this mosyncproject, so subsequent calls
      * to <code>MoSyncProject.create(IProject)</code> will
      * return another <code>MoSyncProject</code> object.
