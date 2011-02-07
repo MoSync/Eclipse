@@ -16,7 +16,9 @@ package com.mobilesorcery.sdk.core;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -28,7 +30,7 @@ import com.mobilesorcery.sdk.profiles.Profile;
  * @author Mattias Bybro, mattias@bybro.com/mattias.bybro@purplescout.se
  * 
  */
-public class DefaultPackager implements ParameterResolver {
+public class DefaultPackager extends ParameterResolver {
 
     public final static String APP_VENDOR_NAME_BUILD_PROP = MoSyncBuilder.BUILD_PREFS_PREFIX + "app.vendor";
     
@@ -196,6 +198,11 @@ public class DefaultPackager implements ParameterResolver {
 	public String get(String key) throws ParameterResolverException {
 		String result = parameters.get(key);
 		return result;
+	}
+
+	@Override
+	public List<String> listPrefixes() {
+		return new ArrayList<String>(parameters.keySet());
 	}
 
 }

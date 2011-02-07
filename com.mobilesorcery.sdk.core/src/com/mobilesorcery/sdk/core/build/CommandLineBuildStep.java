@@ -1,6 +1,7 @@
 package com.mobilesorcery.sdk.core.build;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.IResource;
@@ -115,7 +116,7 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 
 	}
 
-	private final class BuildStepParameterResolver implements ParameterResolver {
+	public static final class BuildStepParameterResolver extends ParameterResolver {
 
 		private IResource currentResource;
 		private ParameterResolver fallback;
@@ -149,6 +150,19 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 	            ix++;
 			}
 		}
+
+		@Override
+		public List<String> listPrefixes() {
+			ArrayList<String> result = new ArrayList<String>();
+			if (fallback != null) {
+				result.addAll(fallback.listPrefixes());
+			}
+
+			// TODO: Ehm... context sensitive perhaps!?
+			result.add("file");
+			result.add("@files");
+			return result;
+		}
 	}
 
 	private Factory prototype;
@@ -177,8 +191,7 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 
 		public void executeScript() throws IOException, ParameterResolverException {
 			// TODO: Refactor this!?
-			BuildStepParameterResolver resolver = new BuildStepParameterResolver(
-					getParameterResolver());
+			BuildStepParameterResolver resolver = (BuildStepParameterResolver) getParameterResolver();
 			resolver.setAllFiles(changedOrAddedResources);
 
 			if (runPerFile) {
@@ -190,8 +203,14 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 				CommandLineBuildStep.this.executeScript(resolver);
 			}
 		}
+		
+		@Override
+		public ParameterResolver getParameterResolver() {
+			BuildStepParameterResolver resolver = createParameterResolver(super.getParameterResolver());
+			return resolver;
+		}
 	}
-
+	
 	@Override
 	public void incrementalBuild(MoSyncProject project, IBuildSession session,
 			IBuildState buildState, IBuildVariant variant, IFileTreeDiff diff,
@@ -219,4 +238,7 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 		}
 	}
 
+	public static BuildStepParameterResolver createParameterResolver(ParameterResolver fallback) {
+		return new BuildStepParameterResolver(fallback);
+	}
 }

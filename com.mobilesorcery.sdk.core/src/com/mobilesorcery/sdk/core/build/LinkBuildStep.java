@@ -69,6 +69,7 @@ public class LinkBuildStep extends AbstractBuildStep {
 		IProcessConsole console = getConsole();
 		IPropertyOwner buildProperties = getBuildProperties();
 		PipeTool pipeTool = getPipeTool();
+		pipeTool.setParameterResolver(getParameterResolver());
 		ILineHandler lineHandler = getDefaultLineHandler();
 		IProject project = mosyncProject.getWrappedProject();
 		IProfile targetProfile = variant.getProfile();

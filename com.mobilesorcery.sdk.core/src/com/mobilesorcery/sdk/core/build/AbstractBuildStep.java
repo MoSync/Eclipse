@@ -106,7 +106,7 @@ public abstract class AbstractBuildStep implements IBuildStep {
 		this.resolver = resolver;
 	}
 	
-	protected ParameterResolver getParameterResolver() {
+	public ParameterResolver getParameterResolver() {
 		return resolver;
 	}
 

@@ -26,6 +26,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
+import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
@@ -87,7 +88,12 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 			pipeTool.setMode(PipeTool.BUILD_RESOURCES_MODE);
 			pipeTool.setInputFiles(getResourceFiles());
 			pipeTool.setOutputFile(outputFile);
-			pipeTool.run();
+			pipeTool.setParameterResolver(getParameterResolver());
+			try {
+				pipeTool.run();
+			} catch (ParameterResolverException e) {
+				throw ParameterResolverException.toCoreException(e);
+			}
 			
 			// Explicitly add dependencies for the pipetool output file -- TODO:
 			// outputfile must equal getresourceoutput; remove one.

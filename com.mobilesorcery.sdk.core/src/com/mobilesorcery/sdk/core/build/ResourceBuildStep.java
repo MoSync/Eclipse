@@ -55,6 +55,7 @@ public class ResourceBuildStep extends AbstractBuildStep {
         resourceVisitor.setProject(project);
         resourceVisitor.setVariant(variant);
         resourceVisitor.setPipeTool(getPipeTool());
+        resourceVisitor.setParameterResolver(getParameterResolver());
         IPath resource = MoSyncBuilder.getResourceOutputPath(project, variant);
         resourceVisitor.setOutputFile(resource);
         resourceVisitor.setDependencyProvider(getDependencyProvider());

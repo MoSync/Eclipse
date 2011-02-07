@@ -233,7 +233,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             
             addGccWarnings(args);
             args.add("-DMAPIP");
-            String[] extra = extraSwitches == null ? new String[0] : Util.parseCommandLine(extraSwitches);
+            String[] extra = extraSwitches == null ? new String[0] : Util.parseCommandLine(resolve(extraSwitches));
             args.addAll(Arrays.asList(extra));
             args.add(cFile.getLocation().toOSString());
             args.addAll(Arrays.asList(includeStr));

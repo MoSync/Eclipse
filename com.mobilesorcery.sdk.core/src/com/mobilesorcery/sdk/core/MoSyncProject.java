@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -1098,6 +1099,32 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
     public Version getFormatVersion() {
         return formatVersion;
     }
+
+    /**
+     * Returns a list of the names of all open projects that are
+     * compatible {@link MoSyncProject}s
+     * @see {@link MoSyncNature#isCompatible(IProject)}
+     * @return
+     * @throws CoreException 
+     */
+	public static List<String> listAllProjects() {
+		ArrayList<String> result = new ArrayList<String>();
+		IProject[] allProjects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
+		for (IProject project : allProjects) {
+			try {
+				if (project.isOpen() && MoSyncNature.isCompatible(project)) {
+					result.add(project.getName());
+				}
+			} catch (CoreException e) {
+				// Should only happen if project is not open
+				// and we already check for this - hence this is
+				// a runtime exception
+				throw new RuntimeException(e);
+			}
+		}
+		
+		return result;
+	}
 
 
 }

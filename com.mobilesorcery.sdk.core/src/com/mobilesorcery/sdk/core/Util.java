@@ -706,6 +706,14 @@ public class Util {
         return innerReplace(input, resolver, 0).toString();
     }
     
+	public static String[] replace(String[] input, ParameterResolver resolver) throws ParameterResolverException {
+		String[] output = new String[input.length];
+		for (int i = 0; i < input.length; i++) {
+			output[i] = replace(input[i], resolver);
+		}
+		return output;
+	}
+    
     private static StringBuffer innerReplace(String input, ParameterResolver map, int depth) throws ParameterResolverException {
         if (depth > 12) {
             throw new IllegalArgumentException("Cyclic parameters"); //$NON-NLS-1$
@@ -788,6 +796,7 @@ public class Util {
         Path permissionPath = new Path(key);
         return permissionPath.segmentCount() > 1 ? permissionPath.removeLastSegments(1).toPortableString() : null;
     }
+
 
 	
 }

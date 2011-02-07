@@ -570,8 +570,18 @@ public class MoSyncBuilder extends ACBuilder {
     	return dependencyProvider; 
 	}
 
+	/**
+	 * Creates a {@link ParameterResolver} for a project
+	 * @param project
+	 * @param variant The variant to create the resolver for, or <code>null</code>
+	 * for the active, non-finalizing variant.
+	 * @return
+	 */
     public static ParameterResolver createParameterResolver(
 			MoSyncProject project, IBuildVariant variant) {
+    	if (variant == null) {
+    		variant = MoSyncBuilder.getActiveVariant(project, false);
+    	}
     	// We re-use the default packager; it really should NOT be here -- but hey, it works :)
     	return new MoSyncProjectParameterResolver(project, new DefaultPackager(project, variant));
 	}

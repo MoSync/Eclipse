@@ -80,6 +80,7 @@ public class CompileBuildStep extends AbstractBuildStep {
         compilerVisitor.setBuildResult(buildResult);
         compilerVisitor.setDiff(diff);
         compilerVisitor.setResourceFilter(resourceFilter);
+        compilerVisitor.setParameterResolver(getParameterResolver());
         try {
 			compilerVisitor.incrementalCompile(monitor, getBuildState().getDependencyManager());
 		} catch (ParameterResolverException e) {

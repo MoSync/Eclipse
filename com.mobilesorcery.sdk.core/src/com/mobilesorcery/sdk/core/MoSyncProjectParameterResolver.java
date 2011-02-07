@@ -1,8 +1,11 @@
 package com.mobilesorcery.sdk.core;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.core.resources.IProject;
 
-public class MoSyncProjectParameterResolver implements ParameterResolver {
+public class MoSyncProjectParameterResolver extends ParameterResolver {
 
 	//TODO: Variable support?
 	//TODO: Support for general split at colon
@@ -19,8 +22,8 @@ public class MoSyncProjectParameterResolver implements ParameterResolver {
 
 	@Override
 	public String get(String key) throws ParameterResolverException {
-		if (key.startsWith(PROJECT_ROOT)) {
-			String projectName = key.substring(PROJECT_ROOT.length());
+		if (PROJECT_ROOT.equals(getPrefix(key))) {
+			String projectName = getParameter(key);
 			IProject referencedProject = project.getWrappedProject().getWorkspace().getRoot().getProject(projectName);
 			if (referencedProject == null || !referencedProject.exists()) {
 				throw new ParameterResolverException(PROJECT_ROOT, String.format("No project with name %s", projectName));
@@ -29,6 +32,26 @@ public class MoSyncProjectParameterResolver implements ParameterResolver {
 		}
 		
 		return fallbackResolver == null ? null : fallbackResolver.get(key);
+	}
+
+	@Override
+	public List<String> listPrefixes() {
+		ArrayList<String> result = new ArrayList<String>();
+		if (fallbackResolver != null) {
+			result.addAll(fallbackResolver.listPrefixes());
+		}
+		
+		result.add(PROJECT_ROOT);
+		return result;
+	}
+	
+	@Override
+	public List<String> listAvailableParameters(String prefix) {
+		if (PROJECT_ROOT.equals(prefix)) {
+			return MoSyncProject.listAllProjects();
+		}
+		
+		return null;
 	}
 
 }

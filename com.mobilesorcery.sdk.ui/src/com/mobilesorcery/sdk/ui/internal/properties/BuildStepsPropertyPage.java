@@ -4,9 +4,13 @@ import java.io.IOException;
 
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.bindings.keys.KeyStroke;
+import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.fieldassist.ContentProposalAdapter;
+import org.eclipse.jface.fieldassist.SimpleContentProposalProvider;
+import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.util.Policy;
-import org.eclipse.jface.util.StatusHandler;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -18,12 +22,17 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import com.mobilesorcery.sdk.core.DefaultParameterResolver;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
+import com.mobilesorcery.sdk.core.MoSyncProjectParameterResolver;
+import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
 import com.mobilesorcery.sdk.core.build.CommandLineBuildStep;
 import com.mobilesorcery.sdk.core.build.CommandLineBuildStep.Factory;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
+import com.mobilesorcery.sdk.ui.ParameterResolverContentProvider;
 import com.mobilesorcery.sdk.ui.SimpleListEditor;
 import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.ui.UpdateListener;
@@ -82,6 +91,11 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 			failOnError = new Button(main, SWT.CHECK);
 			failOnError.setText("&Fail on build error");
 			failOnError.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false, 2, 1));
+			
+			ParameterResolver resolver = CommandLineBuildStep.createParameterResolver(
+					MoSyncBuilder.createParameterResolver(getProject(), null));
+			ParameterResolverContentProvider.createProposalProvider(script, resolver);
+
 			return main;
 		}
 		

@@ -45,6 +45,8 @@ import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncProjectParameterResolver;
+import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.PropertyOwnerWorkingCopy;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
@@ -54,6 +56,7 @@ import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
 import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
+import com.mobilesorcery.sdk.ui.ParameterResolverContentProvider;
 import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.ui.UpdateListener;
 
@@ -116,7 +119,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private Text vendor;
     private Text version;
     private Text appName;
-
+	
     protected Control createContents(Composite parent) {
         placeHolder = new Composite(parent, SWT.NONE);
         FillLayout placeHolderLayout = new FillLayout();
@@ -238,17 +241,20 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         gccFlagsLabel.setText("Additional GCC &Switches:");
         gccFlags = new Text(compilerFlags, SWT.BORDER | SWT.SINGLE);
         gccFlags.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        addContentAssist(gccFlags);
 
         Label extraResLabel = new Label(compilerFlags, SWT.NONE);
         extraResLabel.setText("Extra &Resource Compiler Switches:");
         extraRes = new Text(compilerFlags, SWT.BORDER | SWT.SINGLE);
         extraRes.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        addContentAssist(extraRes);
 
         Label extraLinkLabel = new Label(compilerFlags, SWT.NONE);
         extraLinkLabel.setText("Extra &Linker Switches:");
         extraLink = new Text(compilerFlags, SWT.BORDER | SWT.SINGLE);
         extraLink.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
+        addContentAssist(extraLink);
+        
         Label gccWarningsLabel = new Label(compilerFlags, SWT.NONE);
         gccWarningsLabel.setText("GCC &Warnings:");
         gccWarningsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 1, 3));
@@ -290,7 +296,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         kb3.setText("kb");
     }
 
-    private void createPackagingTab(TabFolder tabs) {
+	private void createPackagingTab(TabFolder tabs) {
         TabItem packagingTab = new TabItem(tabs, SWT.NONE);
         packagingTab.setText("&Packaging");
 
@@ -339,7 +345,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         additionalIncludePathsText = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
         additionalIncludePathsText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
+        addContentAssist(additionalIncludePathsText);
+        
         ignoreDefaultIncludePaths = new Button(buildPaths, SWT.CHECK);
         ignoreDefaultIncludePaths.setText("Ignore &Default");
 
@@ -349,7 +356,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         additionalLibraryPathsText = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
         additionalLibraryPathsText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
+        addContentAssist(additionalLibraryPathsText);
+        
         ignoreDefaultLibraryPaths = new Button(buildPaths, SWT.CHECK);
         ignoreDefaultLibraryPaths.setText("Ignore De&fault");
 
@@ -360,7 +368,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         additionalLibrariesText = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
         additionalLibrariesText.setText("Additional L&ibraries");
         additionalLibrariesText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
+        
         ignoreDefaultLibraries = new Button(buildPaths, SWT.CHECK);
         ignoreDefaultLibraries.setText("I&gnore Default");
 
