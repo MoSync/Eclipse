@@ -173,6 +173,11 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 			result.add("@files");
 			return result;
 		}
+		
+		@Override
+		public List<String> listAvailableParameters(String prefix) {
+			return fallback.listAvailableParameters(prefix);
+		}
 	}
 
 	private Factory prototype;
@@ -228,6 +233,7 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 			IProgressMonitor monitor) throws Exception {
 		PrivilegedAccess.getInstance().assertAccess(project);
 		Visitor visitor = new Visitor(prototype.filePattern, prototype.runPerFile);
+		visitor.setParameterResolver(getParameterResolver());
 		project.getWrappedProject().accept(visitor);
 		visitor.executeScript();
 	}
