@@ -44,6 +44,12 @@ icon="icons/launchshortcut.png">
                class="com.mobilesorcery.sdk.ui.internal.preferences.MainPreferencePage"
                id="com.mobilesorcery.sdk.preferences.main"
                name="MoSync Tool">
+         </page>      
+         <page
+               category="com.mobilesorcery.sdk.preferences.main"
+               class="com.mobilesorcery.sdk.ui.internal.preferences.PrivilegedAccessPreferencePage"
+               id="com.mobilesorcery.sdk.preferences.access"
+               name="Scripts">
          </page>
       </extension> 
       

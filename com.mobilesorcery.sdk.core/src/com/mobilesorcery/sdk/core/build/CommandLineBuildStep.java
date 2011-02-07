@@ -5,10 +5,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.IMemento;
 
 import com.mobilesorcery.sdk.core.CommandLineExecutor;
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildState;
@@ -20,6 +24,7 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PathExclusionFilter;
+import com.mobilesorcery.sdk.core.PrivilegedAccess;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.internal.builder.IncrementalBuilderVisitor;
 
@@ -112,6 +117,11 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 
 		public void setName(String name) {
 			this.name = name;
+		}
+
+		@Override
+		public boolean requiresPrivilegedAccess() {
+			return true;
 		}
 
 	}
@@ -216,6 +226,7 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 			IBuildState buildState, IBuildVariant variant, IFileTreeDiff diff,
 			IBuildResult result, IFilter<IResource> resourceFilter,
 			IProgressMonitor monitor) throws Exception {
+		PrivilegedAccess.getInstance().assertAccess(project);
 		Visitor visitor = new Visitor(prototype.filePattern, prototype.runPerFile);
 		project.getWrappedProject().accept(visitor);
 		visitor.executeScript();

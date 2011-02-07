@@ -660,6 +660,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 			if (mosyncProject != null) {
 			    // So we do not keep any old references to this project
 			    mosyncProject.dispose();
+			    // And we make sure to clear the privileged access state
+			    PrivilegedAccess.getInstance().grantAccess(mosyncProject, false);
 			}
 		} else if (event.getType() == IResourceChangeEvent.PRE_BUILD && event.getBuildKind() != IncrementalProjectBuilder.CLEAN_BUILD && event.getBuildKind() != IncrementalProjectBuilder.AUTO_BUILD) {
 		    Object source = event.getSource();

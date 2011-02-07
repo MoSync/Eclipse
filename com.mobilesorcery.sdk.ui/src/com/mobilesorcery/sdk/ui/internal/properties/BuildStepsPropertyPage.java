@@ -26,6 +26,7 @@ import com.mobilesorcery.sdk.core.DefaultParameterResolver;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProjectParameterResolver;
 import com.mobilesorcery.sdk.core.ParameterResolver;
+import com.mobilesorcery.sdk.core.PrivilegedAccess;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
 import com.mobilesorcery.sdk.core.build.CommandLineBuildStep;
 import com.mobilesorcery.sdk.core.build.CommandLineBuildStep.Factory;
@@ -142,7 +143,11 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 			CommandLineBuildStepEditor editor = new CommandLineBuildStepEditor(getParent().getShell());
 			if (selection instanceof CommandLineBuildStep.Factory) {
 				editor.setBuildStepFactory((Factory) selection);
-				return CommandLineBuildStepEditor.OK == editor.open();
+				boolean doAdd = CommandLineBuildStepEditor.OK == editor.open();
+				if (doAdd) {
+					
+				}
+				return doAdd;
 			} 
 			
 			return false;
@@ -174,7 +179,7 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 	}
 
 	private BuildStepListEditor steps;
-
+	
 	@Override
 	protected Control createContents(Composite parent) {
 		steps = new BuildStepListEditor(parent, SimpleListEditor.REARRANGEABLE);
@@ -188,6 +193,9 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 		BuildSequence newSequence = new BuildSequence(getProject());
 		try {
 			newSequence.apply(steps.getEditedInput());
+			boolean requiresPrivilegedAccess = MoSyncBuilder.requiresPrivilegedAccess(newSequence);
+			// We always auto-grant access for the user
+			PrivilegedAccess.getInstance().grantAccess(getProject(), requiresPrivilegedAccess);
 		} catch (IOException e) {
 			Policy.getStatusHandler().show(new Status(IStatus.ERROR, MosyncUIPlugin.PLUGIN_ID, e.getMessage(), e), "Could not save build step info");
 			return false;

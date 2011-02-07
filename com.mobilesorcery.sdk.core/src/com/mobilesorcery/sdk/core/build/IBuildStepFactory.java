@@ -13,5 +13,7 @@ public interface IBuildStepFactory {
 	public String getId();
 	
 	public String getName();
+	
+	public boolean requiresPrivilegedAccess();
 }
 

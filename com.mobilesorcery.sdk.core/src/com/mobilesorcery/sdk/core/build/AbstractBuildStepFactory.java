@@ -16,5 +16,8 @@ public abstract class AbstractBuildStepFactory implements IBuildStepFactory {
 		
 	}
 
-
+	@Override
+	public boolean requiresPrivilegedAccess() {
+		return false;
+	}
 }

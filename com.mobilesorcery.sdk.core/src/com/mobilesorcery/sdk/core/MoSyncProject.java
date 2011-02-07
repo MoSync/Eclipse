@@ -24,6 +24,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -65,6 +66,15 @@ import com.mobilesorcery.sdk.profiles.filter.CompositeDeviceFilter;
  */
 public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
+	public final static Comparator<MoSyncProject> NAME_COMPARATOR = new Comparator<MoSyncProject>() {
+
+		@Override
+		public int compare(MoSyncProject p1, MoSyncProject p2) {
+			return p1.getName().compareTo(p2.getName());
+		}
+		
+	};
+	
     private final class DeviceFilterListener implements PropertyChangeListener {
         public void propertyChange(PropertyChangeEvent event) {
             updateProjectSpec();
@@ -373,6 +383,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
             }
         }
     }
+    
     protected void updateProjectSpec() {
     	updateProjectSpec(SHARED_PROPERTY);
     	updateProjectSpec(LOCAL_PROPERTY);
@@ -531,6 +542,15 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         return result;
     }
     
+    /**
+     * <p>Returns a (shared) instance of a MoSyncProject that has
+     * a given name, or <code>null</code> if no such project exists.</p>
+     */
+	public static MoSyncProject create(String name) {
+		IProject project = ResourcesPlugin.getPlugin().getWorkspace().getRoot().getProject(name);
+		return project == null ? null : create(project);
+	}
+	
     /**
      * <p>Returns the current target profile of this MoSync project.</p>
      * <p>If none is set, a default target profile is returned.</p>
@@ -761,7 +781,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 * @param value If <code>null</code>, then the entry is removed  
 	 */
 	public void initProperty(String key, String value) {
-		initProperty(key, value, SHARED_PROPERTY);
+		initProperty(key, value, SHARED_PROPERTY, false);
 	}
 	
 	/**
@@ -772,12 +792,15 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 * @param store The store that this key should be set in, ie LOCAL
 	 * or SHARED
 	 */
-	public void initProperty(String key, String value, int store) {
+	public void initProperty(String key, String value, int store, boolean save) {
 		if (value == null) {
 			getProperties(store).remove(key);
 		} else {
 			getProperties(store).put(key, value);
-		}		
+		}
+		if (save) {
+			updateProjectSpec(store);
+		}
 	}
 	
 	private Map<String, String> getProperties(int store) {
@@ -1125,6 +1148,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		
 		return result;
 	}
+	
 
 
 }

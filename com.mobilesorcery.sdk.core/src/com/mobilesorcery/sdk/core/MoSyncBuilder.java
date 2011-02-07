@@ -56,6 +56,7 @@ import org.eclipse.ui.ide.IDE;
 import com.mobilesorcery.sdk.core.LineReader.LineAdapter;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
 import com.mobilesorcery.sdk.core.build.IBuildStep;
+import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.internal.BuildSession;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.dependencies.CompoundDependencyProvider;
@@ -508,9 +509,14 @@ public class MoSyncBuilder extends ACBuilder {
             
             IDependencyProvider<IResource> dependencyProvider = createDependencyProvider(mosyncProject, variant);
             
-            BuildSequence sequence = new BuildSequence(mosyncProject);
+            boolean requiresPrivilegedAccess = requiresPrivilegedAccess(mosyncProject);
+            if (requiresPrivilegedAccess) {
+            	PrivilegedAccess.getInstance().assertAccess(mosyncProject);
+            }
             
+            BuildSequence sequence = new BuildSequence(mosyncProject);
             List<IBuildStep> buildSteps = sequence.getBuildSteps(session);
+
             monitor.beginTask("Build", buildSteps.size());
 
             sequence.assertValid(session);
@@ -560,6 +566,22 @@ public class MoSyncBuilder extends ACBuilder {
             saveBuildState(buildState, mosyncProject, buildResult);
         }
     }
+
+	public static boolean requiresPrivilegedAccess(MoSyncProject mosyncProject) {
+		BuildSequence seq = new BuildSequence(mosyncProject);
+		return requiresPrivilegedAccess(seq);
+	}
+	
+	public static boolean requiresPrivilegedAccess(BuildSequence seq) {
+		List<IBuildStepFactory> factories = seq.getBuildStepFactories();
+		for (IBuildStepFactory factory : factories) {
+			if (factory.requiresPrivilegedAccess()) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
 
 	private IDependencyProvider<IResource> createDependencyProvider(
 			MoSyncProject mosyncProject, IBuildVariant variant) {
