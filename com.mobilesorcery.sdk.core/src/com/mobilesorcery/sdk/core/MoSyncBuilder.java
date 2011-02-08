@@ -289,7 +289,8 @@ public class MoSyncBuilder extends ACBuilder {
         if (variant.isFinalizerBuild()) {
             return getFinalOutputPath(project, variant).append("package");
         } else {
-            return getOutputPath(project, variant).append(Profile.getAbbreviatedPlatform(variant.getProfile()));
+        	IProfile profile = variant.getProfile() == null ? MoSyncProject.create(project).getTargetProfile() : variant.getProfile();
+            return getOutputPath(project, variant).append(Profile.getAbbreviatedPlatform(profile));
         }
     }
 
@@ -601,11 +602,7 @@ public class MoSyncBuilder extends ACBuilder {
 	 */
     public static ParameterResolver createParameterResolver(
 			MoSyncProject project, IBuildVariant variant) {
-    	if (variant == null) {
-    		variant = MoSyncBuilder.getActiveVariant(project, false);
-    	}
-    	// We re-use the default packager; it really should NOT be here -- but hey, it works :)
-    	return new MoSyncProjectParameterResolver(project, new DefaultPackager(project, variant));
+    	return MoSyncProjectParameterResolver.create(project, variant);
 	}
 
 	public static IPath[] resolvePaths(IPath[] paths, ParameterResolver resolver) throws ParameterResolverException {

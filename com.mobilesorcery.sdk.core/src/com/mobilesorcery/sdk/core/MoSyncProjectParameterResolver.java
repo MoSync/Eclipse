@@ -15,7 +15,7 @@ public class MoSyncProjectParameterResolver extends ParameterResolver {
 
 	private ParameterResolver fallbackResolver;
 
-	public MoSyncProjectParameterResolver(MoSyncProject project, ParameterResolver fallbackResolver) {
+	private MoSyncProjectParameterResolver(MoSyncProject project, ParameterResolver fallbackResolver) {
 		this.project = project;
 		this.fallbackResolver = fallbackResolver;
 	}
@@ -52,6 +52,22 @@ public class MoSyncProjectParameterResolver extends ParameterResolver {
 		}
 		
 		return null;
+	}
+
+	/**
+	 * Creates a {@link MoSyncProjectParameterResolver} for a project
+	 * @param project
+	 * @param variant The variant to create the resolver for, or <code>null</code>
+	 * for the active, non-finalizing variant.
+	 * @return
+	 */
+	public static MoSyncProjectParameterResolver create(MoSyncProject project,
+			IBuildVariant variant) {
+    	if (variant == null) {
+    		variant = MoSyncBuilder.getActiveVariant(project, false);
+    	}
+    	// We re-use the default packager; it really should NOT be here -- but hey, it works :)
+    	return new MoSyncProjectParameterResolver(project, new DefaultPackager(project, variant));
 	}
 
 }

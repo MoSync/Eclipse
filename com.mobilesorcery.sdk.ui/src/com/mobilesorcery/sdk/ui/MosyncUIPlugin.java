@@ -228,27 +228,10 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
      * @param monitor
      * @return
      * @throws CoreException
+     * @deprecated Use {@link MoSyncProject#createNewProject(IProject, URI, IProgressMonitor)} instead.
      */
     public static MoSyncProject createProject(IProject project, URI location, IProgressMonitor monitor) throws CoreException {
-        IWorkspace workspace = ResourcesPlugin.getWorkspace();
-        IProjectDescription description = workspace.newProjectDescription(project.getName());
-        description.setLocationURI(location);
-
-        CreateProjectOperation op = new CreateProjectOperation(description, "Create Project");
-        try {
-            op.execute(monitor, null);
-        } catch (ExecutionException e) {
-            if (e.getCause() instanceof CoreException) {
-                throw (CoreException) e.getCause();
-            } else {
-                throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
-            }
-        }
-
-        MoSyncProject.addNatureToProject(project);
-        MoSyncProject result = MoSyncProject.create(project);
-        result.activateBuildConfigurations();
-        return result;
+    	return MoSyncProject.createNewProject(project, location, monitor);
     }
 
     private void initProjectChangeListener() {
