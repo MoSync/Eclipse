@@ -331,8 +331,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 			input = new FileReader(projectMetaDataPath.toFile());
 			XMLMemento memento = XMLMemento.createReadRoot(input);
 			String formatVersionStr = memento.getString(VERSION_KEY);
-			formatVersion = formatVersionStr == null ? CURRENT_VERSION
-					: new Version(formatVersionStr);
+			formatVersion = formatVersionStr == null ? VERSION_1_0 : new Version(formatVersionStr);
 
 			initTargetProfileFromProjectMetaData(memento);
 			// Special case; device filters are always shared.
