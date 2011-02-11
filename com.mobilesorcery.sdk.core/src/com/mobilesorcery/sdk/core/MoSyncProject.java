@@ -967,6 +967,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	public String getDefaultProperty(String key) {
 		return CoreMoSyncPlugin.getDefault().getDefaultValue(this, key);
 	}
+	
+	@Override
+	public boolean isDefault(String key) {
+		return properties.get(key) == null;
+	}
 
 	/**
 	 * <p>

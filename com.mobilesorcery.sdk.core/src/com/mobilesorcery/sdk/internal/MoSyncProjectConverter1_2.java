@@ -38,11 +38,12 @@ public class MoSyncProjectConverter1_2 implements MoSyncProject.IConverter {
     		Version projectVersion = project.getFormatVersion();
 	    	if (VERSION.isNewer(projectVersion)) {
 	    		// Default libs are now newlib so we need to convert
-	    		convertToNewlib(project, project, null);
 	    		Set<String> cfgs = project.getBuildConfigurations();
 	    		for (String cfg : cfgs) {
 	    			convertToNewlib(project, project.getBuildConfiguration(cfg).getProperties(), cfg);
 	    		}
+	    	    // Order is important here ...
+	    		convertToNewlib(project, project, null);
 	    		project.setFormatVersion(VERSION);
 	    	}
 			return project;
@@ -54,16 +55,16 @@ public class MoSyncProjectConverter1_2 implements MoSyncProject.IConverter {
     private void convertToNewlib(MoSyncProject project, IPropertyOwner properties, String id) throws ParameterResolverException {
     	// TODO: What about removing the default include, lib & lib paths soon?
     	// We just replace default paths with whatever it was at that time...
-    	if (!PropertyUtil.getBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS)) {
+    	if (!getBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS, false)) {
     		prependPaths(project, id, MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS, new IPath[] { new Path("%mosync-home%/include") });
     	}
 		
-		if (!PropertyUtil.getBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES)) {
+		if (!getBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES, false)) {
         	IPath stdLib = IBuildConfiguration.DEBUG_ID.equals(id) ? new Path("mastdD.lib") : new Path("mastd.lib");
     		prependPaths(project, id, MoSyncBuilder.ADDITIONAL_LIBRARIES, new IPath[] { stdLib });        	
     	}
 		
-		if (!PropertyUtil.getBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS)) {
+		if (!getBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS, false)) {
     		prependPaths(project, id, MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS, new IPath[] { new Path("%mosync-home%/lib/pipe") });    		
     	}
 		
@@ -71,7 +72,20 @@ public class MoSyncProjectConverter1_2 implements MoSyncProject.IConverter {
 		PropertyUtil.setBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS, true);
 		PropertyUtil.setBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES, true);
 		PropertyUtil.setBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS, true);
+    
+		// DCE should be disabled for old projects unless they say they want it
+		if (!getBoolean(properties, MoSyncBuilder.DEAD_CODE_ELIMINATION, false)) {
+			PropertyUtil.setBoolean(properties, MoSyncBuilder.DEAD_CODE_ELIMINATION, false);
+		}
     }
+
+	private static boolean getBoolean(IPropertyOwner properties, String key, boolean overrideDefault) {
+		if (properties.isDefault(key)) {
+			return overrideDefault;
+		}
+		
+		return PropertyUtil.getBoolean(properties, key);
+	}
 
 	private void prependPaths(MoSyncProject project, String cfgId, String key, IPath[] prepended) throws ParameterResolverException {
 		IBuildConfiguration cfg = project.getBuildConfiguration(cfgId);
