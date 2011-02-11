@@ -154,7 +154,7 @@ public class SplashHandler extends AbstractSplashHandler {
 	public void init(Shell splash) {
 		super.init(splash);
 		
-		if (Boolean.TRUE.equals(MosyncUIPlugin.getDefault().switchedToExperimental())) {
+		if (!Boolean.TRUE.equals(MosyncUIPlugin.getDefault().switchedToExperimental())) {
 			return;
 		}
 		
