@@ -160,8 +160,13 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         listeners = new PropertyChangeSupport(this);
         CoreMoSyncPlugin.getDefault().setIDEProcessConsoleProvider(this);
         registerGlobalProjectListener();
-        initializeCustomActivities();
-        initializeLauncherParts();
+        UIUtils.awaitWorkbenchStartup(new IWorkbenchStartupListener() {
+			@Override
+			public void started() {
+		        initializeCustomActivities();	
+		        initializeLauncherParts();
+			}
+		});
     }
 
     private void initializeLauncherParts() {

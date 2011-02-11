@@ -13,12 +13,14 @@
 */
 package com.mobilesorcery.sdk.ui;
 
+import org.eclipse.cdt.internal.core.model.CreateWorkingCopyOperation;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
@@ -37,6 +39,7 @@ import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchListener;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
@@ -51,7 +54,31 @@ import com.mobilesorcery.sdk.ui.internal.console.PathLink;
 
 public class UIUtils {
 
-    public static void setDefaultShellBounds(Shell shell) {
+	private static final class AwaitWorkbenchJobRunnable implements Runnable {
+		private final Job workbenchStartupJob;
+		private final IWorkbenchStartupListener listener;
+
+		private AwaitWorkbenchJobRunnable(Job workbenchStartupJob,
+				IWorkbenchStartupListener listener) {
+			this.workbenchStartupJob = workbenchStartupJob;
+			this.listener = listener;
+		}
+
+		@Override
+		public void run() {
+			try {
+				workbenchStartupJob.join();
+				if (listener != null) {
+					listener.started();
+				}
+			} catch (InterruptedException e) {
+		        // Ignore.
+		    	Thread.currentThread().interrupt();
+		    }            		
+		}
+	}
+
+	public static void setDefaultShellBounds(Shell shell) {
         Rectangle displayBounds = shell.getDisplay().getBounds();
         shell.setSize(320, 480);
         
@@ -248,23 +275,30 @@ public class UIUtils {
         return fd;
     }
     
-    public static void awaitWorkbenchStartup() {
-        if (!PlatformUI.isWorkbenchRunning()) {
-            WorkbenchJob job = new WorkbenchJob("Awaiting workbench") {
-                public IStatus runInUIThread(IProgressMonitor monitor) {
-                    // Do nothing; actually we'll never get here.
-                    return Status.OK_STATUS;
-                }
-            };
-            job.setSystem(true);
-            job.schedule();
-            try {
-                job.join();
-            } catch (InterruptedException e) {
-                // Ignore.
-                CoreMoSyncPlugin.getDefault().log(e);
+    /**
+     * <p>Waits for the workbench to startup (if <code>null</code> is passed
+     * as the listener) or asynchronously sends a message to the listener
+     * once it's started.</p>
+     * @param listener The listener to receive events, or <code>null</code> if this
+     * method should block until the workbench has started.
+     */
+    public synchronized static void awaitWorkbenchStartup(IWorkbenchStartupListener listener) {
+    	final WorkbenchJob workbenchStartupJob = new WorkbenchJob("Awaiting workbench") {
+            public IStatus runInUIThread(IProgressMonitor monitor) {
+                // Do nothing; actually we'll never get here.
+                return Status.OK_STATUS;
             }
-        }
+        };
+        workbenchStartupJob.setSystem(true);
+        workbenchStartupJob.schedule();
+        
+        Runnable awaitWorkbenchRunnable = new AwaitWorkbenchJobRunnable(workbenchStartupJob, listener);
+    	if (listener == null) {
+    		awaitWorkbenchRunnable.run();
+    	} else {
+    		Thread t = new Thread(awaitWorkbenchRunnable);
+    		t.start();
+    	}
     }
 
     public static void main(String[] args) {
