@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.docs;
+package com.mobilesorcery.sdk.help;
 
 import org.eclipse.core.runtime.Plugin;
 import org.osgi.framework.BundleContext;
