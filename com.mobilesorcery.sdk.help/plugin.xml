@@ -15,5 +15,14 @@
             format="1">
       </helpInfo>
    </extension>
+   <extension
+         point="org.eclipse.help.base.searchParticipant">
+      <searchParticipant
+            icon="icons/searchparticipant.png"
+            id="com.mobilesorcery.sdk.help.searchParticipant"
+            name="MoSync API Documentation and User Guide"
+            participant="com.mobilesorcery.sdk.help.MoSyncDocsSearchParticipant">
+      </searchParticipant>
+   </extension>
 
 </plugin>
