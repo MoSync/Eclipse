@@ -24,8 +24,6 @@ import com.mobilesorcery.sdk.core.Util;
 
 /**
  * Class that parses binary data from the emulator.
- * 
- * @author fmattias
  */
 public class EmulatorOutputParser {
 
@@ -164,16 +162,29 @@ public class EmulatorOutputParser {
 		handlerQueue.awaitShutdown(timeout);
 	}
 
+	/**
+	 * Reads a single integer from the given input stream.
+	 * 
+	 * Note: This method will always read 4 bytes from the
+	 * input stream.
+	 * 
+	 * @param input The input stream to read from.
+	 * 
+	 * @return The integer that was read.
+	 * 
+	 * @throws IOException
+	 */
 	private int readInt(InputStream input) throws IOException {
 		return Util.readInt(input);
 	}
 	
 	/**
-	 * Blocks until the specified number of bytes has been read.
+	 * Reads from the given input stream and blocks until the
+	 * specified number of bytes has been read.
 	 * 
 	 * @param input       The input stream to read from.
 	 * @param buffer      The buffer that will contain the read data.
-	 * @param bytesToRead The total number of bytes to read.
+	 * @param bytesToRead The number of bytes to read.
 	 * 
 	 * @throws IOException If an internal error occurs.
 	 */
