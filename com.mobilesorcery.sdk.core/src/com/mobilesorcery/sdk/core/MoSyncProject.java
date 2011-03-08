@@ -49,6 +49,8 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.equinox.security.storage.SecurePreferencesFactory;
+import org.eclipse.equinox.security.storage.StorageException;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.XMLMemento;
 import org.eclipse.ui.ide.undo.CreateProjectOperation;
@@ -872,6 +874,22 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		}
 
 		return property;
+	}
+	
+	/**
+	 * <p>Returns a secure property of this project. If not running
+	 * in headless mode, this may entail launching [master] password dialogs, etc.</p>
+	 * <p>This method makes use of the internal eclipse secure storage.
+	 * @param key
+	 * @return
+	 * @throws StorageException 
+	 */
+	public String getSecureProperty(String key, String def) throws StorageException {
+		return CoreMoSyncPlugin.getDefault().getSecureProperty(getName() + "/" + key, def);
+	}
+	
+	public void setSecureProperty(String key, String value) throws StorageException {
+		CoreMoSyncPlugin.getDefault().setSecureProperty(getName() + "/" + key, value);
 	}
 
 	/**

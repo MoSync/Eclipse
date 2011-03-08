@@ -43,6 +43,8 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.equinox.security.storage.SecurePreferencesFactory;
+import org.eclipse.equinox.security.storage.StorageException;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -79,6 +81,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	
     // The plug-in ID
     public static final String PLUGIN_ID = "com.mobilesorcery.sdk.core";
+
+	private static final String SECURE_ROOT_NODE = "mosync.com";
 
     // The shared instance
     private static CoreMoSyncPlugin plugin;
@@ -728,6 +732,22 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         logCount++;
         logCounts.put(token, logCount);
     }
+
+	/**
+	 * <p>Returns a secure property. If not running
+	 * in headless mode, this may entail launching [master] password dialogs, etc.</p>
+	 * <p>This method makes use of the internal eclipse secure storage.
+	 * @param key
+	 * @return
+	 * @throws StorageException 
+	 */
+	public String getSecureProperty(String key, String def) throws StorageException {
+		return SecurePreferencesFactory.getDefault().node(SECURE_ROOT_NODE).get(key, def);
+	}
+
+	public void setSecureProperty(String key, String value) throws StorageException {
+		SecurePreferencesFactory.getDefault().node(SECURE_ROOT_NODE).put(key, value, true);
+	}
 
 	
 }
