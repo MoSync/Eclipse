@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
+   <extension-point id="com.mobilesorcery.sdk.ui.launcher" name="Launcher UI" schema="schema/com.mobilesorcery.sdk.ui.launcher.exsd"/>
    
 
    <extension point="org.eclipse.debug.ui.launchShortcuts">
@@ -43,6 +44,12 @@ icon="icons/launchshortcut.png">
                class="com.mobilesorcery.sdk.ui.internal.preferences.MainPreferencePage"
                id="com.mobilesorcery.sdk.preferences.main"
                name="MoSync Tool">
+         </page>      
+         <page
+               category="com.mobilesorcery.sdk.preferences.main"
+               class="com.mobilesorcery.sdk.ui.internal.preferences.PrivilegedAccessPreferencePage"
+               id="com.mobilesorcery.sdk.preferences.access"
+               name="Scripts">
          </page>
       </extension> 
       
@@ -119,6 +126,19 @@ icon="icons/launchshortcut.png">
                 class="com.mobilesorcery.sdk.ui.internal.properties.PermissionsPropertyPage"
                 id="com.mobilesorcery.sdk.ui.properties.permissions"
                 name="Application Permissions"
+                objectClass="org.eclipse.core.resources.IProject"
+                category="com.mobilesorcery.sdk.ui.properties.project">
+                <enabledWhen>
+                   <test
+                         forcePluginActivation="true"
+                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                   </test>
+                </enabledWhen>
+          </page>         
+           <page
+                class="com.mobilesorcery.sdk.ui.internal.properties.BuildStepsPropertyPage"
+                id="com.mobilesorcery.sdk.ui.properties.build.steps"
+                name="Build Steps"
                 objectClass="org.eclipse.core.resources.IProject"
                 category="com.mobilesorcery.sdk.ui.properties.project">
                 <enabledWhen>

@@ -17,11 +17,13 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
@@ -41,6 +43,8 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.equinox.security.storage.SecurePreferencesFactory;
+import org.eclipse.equinox.security.storage.StorageException;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -48,6 +52,8 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
+import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.ErrorPackager;
 import com.mobilesorcery.sdk.internal.PID;
@@ -58,6 +64,7 @@ import com.mobilesorcery.sdk.internal.RebuildListener;
 import com.mobilesorcery.sdk.internal.ReindexListener;
 import com.mobilesorcery.sdk.internal.debug.MoSyncBreakpointSynchronizer;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
+import com.mobilesorcery.sdk.internal.launch.EmulatorLauncherProxy;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 import com.mobilesorcery.sdk.lib.JNALibInitializer;
 import com.mobilesorcery.sdk.profiles.filter.DeviceFilterFactoryProxy;
@@ -75,6 +82,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     // The plug-in ID
     public static final String PLUGIN_ID = "com.mobilesorcery.sdk.core";
 
+	private static final String SECURE_ROOT_NODE = "mosync.com";
+
     // The shared instance
     private static CoreMoSyncPlugin plugin;
 
@@ -83,6 +92,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     private ArrayList<IPackager> packagers = new ArrayList<IPackager>();
 
     private Map<String, Map<String, IPropertyInitializer>> propertyInitializers = new HashMap<String, Map<String, IPropertyInitializer>>();
+
+	private HashMap<String, IEmulatorLauncher> launchers = new HashMap<String, IEmulatorLauncher>();
 
 	private DependencyManager<IProject> projectDependencyManager;
 
@@ -132,11 +143,23 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         installBreakpointHack();
         installResourceListener();
         initBuildConfigurationTypes();
+        initLaunchers();
 		getPreferenceStore().addPropertyChangeListener(this); 
 		initializeOnSeparateThread();
     }
     
-    private void initBuildConfigurationTypes() {
+    private void initLaunchers() {
+    	IConfigurationElement[] launchers = Platform.getExtensionRegistry().getConfigurationElementsFor(IEmulatorLauncher.EXTENSION_POINT_ID);
+    	for (int i = 0; i < launchers.length; i++) {
+    		IConfigurationElement launcher = launchers[i];
+    		String id = launcher.getAttribute("id");
+    		this.launchers.put(id, new EmulatorLauncherProxy(launcher));
+    	}
+    	// Default always present
+    	this.launchers.put(MoReLauncher.ID, new MoReLauncher());
+ 	}
+
+	private void initBuildConfigurationTypes() {
         IConfigurationElement[] types = Platform.getExtensionRegistry().getConfigurationElementsFor(
                 BuildConfiguration.TYPE_EXTENSION_POINT);
         ArrayList<String> buildConfigurationTypes = new ArrayList<String>();
@@ -157,6 +180,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     }
 
     void initializeOnSeparateThread() {
+    	// I think we should move this to the UI plugin!
     	Thread initializerThread = new Thread(new Runnable() {
 			public void run() {
 				checkAutoUpdate();
@@ -505,6 +529,14 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		}
 	}
 		
+	public IEmulatorLauncher getEmulatorLauncher(String launcherId) {
+		return launchers.get(launcherId);
+	}
+	
+	public Set<String> getEmulatorLauncherIds() {
+		return Collections.unmodifiableSet(launchers.keySet());
+	}
+	
 	public IUpdater getUpdater() {
 		if (!updaterInitialized) {
 			IExtensionRegistry registry = Platform.getExtensionRegistry();
@@ -632,6 +664,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 			if (mosyncProject != null) {
 			    // So we do not keep any old references to this project
 			    mosyncProject.dispose();
+			    // And we make sure to clear the privileged access state
+			    PrivilegedAccess.getInstance().grantAccess(mosyncProject, false);
 			}
 		} else if (event.getType() == IResourceChangeEvent.PRE_BUILD && event.getBuildKind() != IncrementalProjectBuilder.CLEAN_BUILD && event.getBuildKind() != IncrementalProjectBuilder.AUTO_BUILD) {
 		    Object source = event.getSource();
@@ -698,5 +732,22 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         logCount++;
         logCounts.put(token, logCount);
     }
+
+	/**
+	 * <p>Returns a secure property. If not running
+	 * in headless mode, this may entail launching [master] password dialogs, etc.</p>
+	 * <p>This method makes use of the internal eclipse secure storage.
+	 * @param key
+	 * @return
+	 * @throws StorageException 
+	 */
+	public String getSecureProperty(String key, String def) throws StorageException {
+		return SecurePreferencesFactory.getDefault().node(SECURE_ROOT_NODE).get(key, def);
+	}
+
+	public void setSecureProperty(String key, String value) throws StorageException {
+		SecurePreferencesFactory.getDefault().node(SECURE_ROOT_NODE).put(key, value, true);
+	}
+
 	
 }

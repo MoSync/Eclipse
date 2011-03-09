@@ -16,10 +16,13 @@ package com.mobilesorcery.sdk.core;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.mobilesorcery.sdk.profiles.IProfile;
+import com.mobilesorcery.sdk.profiles.Profile;
 
 /**
  * A 'default' packager, with an appropriate set of convenience methods.
@@ -27,7 +30,7 @@ import com.mobilesorcery.sdk.profiles.IProfile;
  * @author Mattias Bybro, mattias@bybro.com/mattias.bybro@purplescout.se
  * 
  */
-public class DefaultPackager {
+public class DefaultPackager extends ParameterResolver {
 
     public final static String APP_VENDOR_NAME_BUILD_PROP = MoSyncBuilder.BUILD_PREFS_PREFIX + "app.vendor";
     
@@ -107,7 +110,7 @@ public class DefaultPackager {
 		defaultParameters.put(VENDOR_NAME, targetProfile.getVendor().getName());
 		defaultParameters.put(RUNTIME_DIR, MoSyncTool.getDefault().getRuntimePath(targetProfile).toOSString());
 		defaultParameters.put(PROJECT_NAME, project.getName());
-		defaultParameters.put(PLATFORM_ID, MoSyncBuilder.getAbbreviatedPlatform(targetProfile));
+		defaultParameters.put(PLATFORM_ID, Profile.getAbbreviatedPlatform(targetProfile));
 		
 		defaultParameters.put(COMPILE_OUTPUT_DIR, MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant).toOSString());
         defaultParameters.put(PROGRAM_OUTPUT, MoSyncBuilder.getProgramOutputPath(project.getWrappedProject(), variant).toOSString());
@@ -191,5 +194,15 @@ public class DefaultPackager {
     public File resolveFile(String path) {
         return new File(resolve(path));
     }
+
+	public String get(String key) throws ParameterResolverException {
+		String result = parameters.get(key);
+		return result;
+	}
+
+	@Override
+	public List<String> listPrefixes() {
+		return new ArrayList<String>(parameters.keySet());
+	}
 
 }

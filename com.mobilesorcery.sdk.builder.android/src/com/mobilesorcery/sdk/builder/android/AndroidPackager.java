@@ -49,6 +49,8 @@ import com.mobilesorcery.sdk.ui.UIUtils;
 public class AndroidPackager 
 extends AbstractPackager 
 {
+	public final static String ID = "com.mobilesorcery.sdk.build.android.packager";
+	
 	String m_aaptLoc;
 	String m_unzipLoc;
 	String m_iconInjecLoc;

@@ -13,8 +13,12 @@
 */
 package com.mobilesorcery.sdk.builder.android;
 
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
+
+import com.mobilesorcery.sdk.core.MoSyncProject;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -23,6 +27,8 @@ public class Activator extends AbstractUIPlugin {
 
     // The plug-in ID
     public static final String PLUGIN_ID = "com.mobilesorcery.sdk.builder.android"; //$NON-NLS-1$
+
+	public static final String EXTERNAL_SDK_PATH = "android.sdk";
 
     // The shared instance
     private static Activator plugin;
@@ -60,4 +66,15 @@ public class Activator extends AbstractUIPlugin {
         return plugin;
     }
 
+    public IPath getExternalAndroidSDKPath() {
+    	String sdkPath = getPreferenceStore().getString(EXTERNAL_SDK_PATH);
+    	return sdkPath == null ? null : new Path(sdkPath);
+    }
+    
+	public static String getAndroidComponentName(MoSyncProject project) {
+		String packageName = project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME);
+		String activityName = packageName + ".MoSync";
+		String androidComponent = packageName + "/" + activityName;
+		return androidComponent;
+	}
 }

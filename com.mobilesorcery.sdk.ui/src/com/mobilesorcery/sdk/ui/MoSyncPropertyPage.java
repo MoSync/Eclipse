@@ -22,7 +22,9 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbenchPropertyPage;
 import org.eclipse.ui.dialogs.PropertyPage;
 
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 
@@ -33,6 +35,8 @@ import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
  *
  */
 public abstract class MoSyncPropertyPage extends PropertyPage implements IWorkbenchPropertyPage, IUpdatableControl {
+
+	private ParameterResolver resolver;
 
     /**
      * Returns the project currently being edited
@@ -93,6 +97,13 @@ public abstract class MoSyncPropertyPage extends PropertyPage implements IWorkbe
         setMessage(messageStr, messageType);
         setValid(DefaultMessageProvider.isEmpty(message) || message.getMessageType() != IMessageProvider.ERROR);
     }
+    
+    protected void addContentAssist(Text text) {
+    	if (resolver == null) {
+            resolver = MoSyncBuilder.createParameterResolver(getProject(), null);
+    	}
+		ParameterResolverContentProvider.createProposalProvider(text, resolver);
+	}
     
     public void updateUI() {
         validate();

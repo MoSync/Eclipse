@@ -24,5 +24,6 @@ public interface IChangeRequest {
 	 * @return
 	 */
 	public MoSyncProject getProject();
+
 	
 }

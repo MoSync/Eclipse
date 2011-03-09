@@ -90,4 +90,9 @@ public class PropertyOwnerWorkingCopy implements IWorkingCopy {
 		return result;
 	}
 
+	@Override
+	public boolean isDefault(String key) {
+		return !deferredMap.containsKey(key) && original.isDefault(key);
+	}
+
 }

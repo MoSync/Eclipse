@@ -74,6 +74,11 @@ public class BuildState implements IBuildState {
                    "CHANGED:      " + changed + "\n" +
                    "REMOVED:      " + removed;
         }
+
+		@Override
+		public boolean isEmpty() {
+			return added.isEmpty() && changed.isEmpty() && removed.isEmpty();
+		}
     }
     
     class FileInfoTree implements IResourceVisitor {

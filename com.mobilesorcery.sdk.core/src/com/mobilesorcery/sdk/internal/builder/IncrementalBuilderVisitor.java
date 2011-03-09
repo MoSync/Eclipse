@@ -33,7 +33,11 @@ import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.ParameterResolver;
+import com.mobilesorcery.sdk.core.ParameterResolverException;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
+import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
 
 /**
  * <p>
@@ -54,6 +58,8 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	protected IProcessConsole console;
 	private IFilter<IResource> resourceFilter;
     private IBuildVariant variant;
+	private IDependencyProvider<IResource> dependencyProvider;
+	private ParameterResolver resolver;
 
 	public boolean visit(IResource resource) throws CoreException {
 		if (doesAffectBuild(resource)) {
@@ -249,5 +255,29 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	
 	public void setResourceFilter(IFilter<IResource> resourceFilter) {
 		this.resourceFilter = resourceFilter;
+	}
+	
+	public void setDependencyProvider(IDependencyProvider<IResource> dependencyProvider) {
+		this.dependencyProvider = dependencyProvider;
+	}
+	
+	public IDependencyProvider<IResource> getDependencyProvider() {
+		return dependencyProvider;
+	}
+	
+	public void setParameterResolver(ParameterResolver resolver) {
+		this.resolver = resolver;
+	}
+	
+	protected ParameterResolver getParameterResolver() {
+		return resolver;
+	}
+	
+	protected void resolvePaths(IPath[] paths) throws ParameterResolverException {
+		MoSyncBuilder.resolvePaths(paths, resolver);
+	}
+	
+	protected String resolve(String value) throws ParameterResolverException {
+		return Util.replace(value, resolver);
 	}
 }

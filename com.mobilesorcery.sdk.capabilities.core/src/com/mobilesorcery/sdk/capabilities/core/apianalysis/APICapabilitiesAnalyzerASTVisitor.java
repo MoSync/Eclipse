@@ -55,10 +55,9 @@ public class APICapabilitiesAnalyzerASTVisitor extends ASTVisitor implements
 	private IProgressMonitor monitor;
 	
 	public APICapabilitiesAnalyzerASTVisitor(IProject project, APICapabilitiesMap capabilitiesMap) {
+		super(true);
 		this.project = project;
 		this.capabilitesMap = capabilitiesMap;
-		shouldVisitNames = true;
-		shouldVisitDeclarations = true;
 	}
 
 	public void setIndex(IIndex index) {
@@ -117,8 +116,8 @@ public class APICapabilitiesAnalyzerASTVisitor extends ASTVisitor implements
 	}
 
 	public int visit(IASTDeclaration declaration) {
-		return (declaration instanceof ICPPASTLinkageSpecification) ? PROCESS_SKIP
-				: PROCESS_CONTINUE;
+		return PROCESS_CONTINUE; /*(declaration instanceof ICPPASTLinkageSpecification) ? PROCESS_SKIP
+				: PROCESS_CONTINUE;*/
 	}
 
 	public ICapabilities getCapabilities() {
@@ -139,10 +138,9 @@ public class APICapabilitiesAnalyzerASTVisitor extends ASTVisitor implements
 			if (shouldVisit) {
 				IASTTranslationUnit ast = tu.getAST(index, ITranslationUnit.AST_SKIP_ALL_HEADERS);
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-					CoreMoSyncPlugin.getDefault().trace("Parsing translation unit {0}", ast.getFilePath());
+					CoreMoSyncPlugin.trace("Parsing translation unit {0}", ast.getFilePath());
 				}
-				// System.out.println(ast == null || ast.getComments() == null ?
-				// "" : Arrays.asList(ast.getComments()));
+						
 				if (ast != null) {
 					ast.accept(this);
 				}

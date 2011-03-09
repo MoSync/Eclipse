@@ -13,10 +13,24 @@
 */
 package com.mobilesorcery.sdk.profiling.emulator;
 
+import org.eclipse.debug.ui.ILaunchConfigurationDialog;
+import org.eclipse.debug.ui.ILaunchConfigurationTab;
+
 import com.mobilesorcery.sdk.ui.internal.launch.EmulatorLaunchConfigurationTabGroup;
 
 public class EmulatorProfilingLaunchConfigurationTabGroup extends EmulatorLaunchConfigurationTabGroup {
 
-    // Empty for now
-    
+	public void createTabs(ILaunchConfigurationDialog dialog, String mode) {
+		super.createTabs(dialog, mode);
+		ILaunchConfigurationTab[] originalTabs = getTabs();
+		ILaunchConfigurationTab[] newTabs = new ILaunchConfigurationTab[originalTabs.length + 1];
+		System.arraycopy(originalTabs, 0, newTabs, 0, originalTabs.length);
+		newTabs[newTabs.length - 1] = new EmulatorProfilingLaunchConfigurationTab();
+		setTabs(newTabs);
+	}
+	
+	@Override
+    protected boolean allowsExternalEmulators() {
+    	return false;
+    }
 }

@@ -11,7 +11,7 @@
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
  */
-package com.mobilesorcery.sdk.ui.targetphone.android;
+package com.mobilesorcery.sdk.builder.android.launch;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,12 +24,13 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
+import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.core.CommandLineExecutor;
+import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.CollectingLineHandler;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
-import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
-import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 
 /**
  * A class representing the Android Debug Bridge.
@@ -37,45 +38,25 @@ import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
  * @author Mattias Bybro
  * 
  */
-public class ADB {
-
-	public class CollectingLineHandler implements ILineHandler {
-
-		ArrayList<String> lines = new ArrayList<String>();
-
-		public void newLine(String line) {
-			lines.add(line);
-			System.out.println(line);
-		}
-
-		public void stop(IOException e) {
-		}
-
-		public List<String> getLines() {
-			return lines;
-		}
-
-	}
+public class ADB extends AndroidTool {
 
 	private static ADB instance = new ADB();
-	private IPath pathToADB;
-	private boolean valid;
-
+	
 	private ADB() {
 		this(MoSyncTool.getDefault().getBinary("android/adb"));
 	}
 
 	public ADB(IPath pathToADB) {
-		this.pathToADB = pathToADB;
-		valid = pathToADB.toFile().exists();
-	}
-
-	public boolean isValid() {
-		return valid;
+		super(pathToADB);
 	}
 	
 	public static ADB getDefault() {
 		return instance;
+	}
+	
+	public static ADB getExternal() {
+		IPath sdkPath = Activator.getDefault().getExternalAndroidSDKPath();
+		return new ADB(sdkPath == null ? null : sdkPath.append("platform-tools/adb" + MoSyncTool.getBinExtension()));
 	}
 	
 	/**
@@ -84,11 +65,24 @@ public class ADB {
 	 * @throws CoreException
 	 */
 
-	public List<String> listDeviceSerialNumbers() throws CoreException {
+	public List<String> listDeviceSerialNumbers(boolean useConsole) throws CoreException {
+		return listDevices(false, true, useConsole);
+	}
+	
+	/**
+	 * Returns a list of all online android emulators (no real devices)
+	 * @return
+	 * @throws CoreException
+	 */
+	public List<String> listEmulators(boolean useConsole) throws CoreException {
+		return listDevices(true, false, useConsole);
+	}
+	
+	private List<String> listDevices(boolean emulators, boolean realDevices, boolean useConsole) throws CoreException {
 		CollectingLineHandler collectingLineHandler = new CollectingLineHandler();
 		execute(
-				new String[] { pathToADB.toFile().getAbsolutePath(), "devices" },
-				collectingLineHandler, collectingLineHandler);
+				new String[] { getToolPath().getAbsolutePath(), "devices" },
+				collectingLineHandler, collectingLineHandler, false);
 		ArrayList<String> result = new ArrayList<String>();
 		for (String line : collectingLineHandler.getLines()) {
 			line = line.trim();
@@ -99,9 +93,12 @@ public class ADB {
 					if (device.length > 1) {
 						String serialNumber = device[0];
 						String state = device[device.length - 1];
-						if ("device".equals(state) && !serialNumber.startsWith("emulator-")) {
-							// Only include online devices and no emulators
-							result.add(serialNumber);
+						if ("device".equals(state)) {
+							boolean isEmulator = serialNumber.startsWith("emulator-");
+							if ((realDevices && !isEmulator) || (emulators && isEmulator)) {
+								// Only include online devices and no emulators
+								result.add(serialNumber);
+							}
 						}
 					}
 				}
@@ -114,13 +111,13 @@ public class ADB {
 	public void install(File packageToInstall, String serialNumberOfDevice) throws CoreException {
 		CollectingLineHandler collectingLineHandler = new CollectingLineHandler();
 		CollectingLineHandler errorLineHandler = new CollectingLineHandler();
-		int errorCode = execute(new String[] { pathToADB.toFile().getAbsolutePath(),
+		int errorCode = execute(new String[] { getToolPath().getAbsolutePath(),
 				"-s",
 				serialNumberOfDevice,
 				"install",
 				"-r",
 				packageToInstall.getAbsolutePath()
-		}, collectingLineHandler, errorLineHandler);
+		}, collectingLineHandler, errorLineHandler, false);
 		
 		String errorMsg = null;
 		for (String line : collectingLineHandler.getLines()) {
@@ -139,7 +136,7 @@ public class ADB {
 		}
 		
 		if (errorCode != 0 && errorMsg != null) {
-			throw new CoreException(new Status(IStatus.ERROR, TargetPhonePlugin.PLUGIN_ID,
+			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID,
 					MessageFormat.format("Could not install on device: {0}", errorMsg)));
 		}
 	}
@@ -147,7 +144,7 @@ public class ADB {
 	public void launch(String activityName, String serialNumberOfDevice) throws CoreException {
 		CollectingLineHandler collectingLineHandler = new CollectingLineHandler();
 		CollectingLineHandler errorLineHandler = new CollectingLineHandler();
-		int errorCode = execute(new String[] { pathToADB.toFile().getAbsolutePath(),
+		int errorCode = execute(new String[] { getToolPath().getAbsolutePath(),
 				"-s",
 				serialNumberOfDevice,
 				"shell",
@@ -155,40 +152,12 @@ public class ADB {
 				"start",
 				"-n",
 				activityName
-		}, collectingLineHandler, errorLineHandler);
+		}, collectingLineHandler, errorLineHandler, false);
 		
 	}
 
-	private int execute(String[] commandLine, ILineHandler stdoutLineHandler, ILineHandler stderrLineHandler)
-			throws CoreException {
-		try {
-			CommandLineExecutor executor = new CommandLineExecutor(MoSyncBuilder.CONSOLE_ID);
-			executor.setLineHandlers(stdoutLineHandler, stderrLineHandler);
-			executor.addCommandLine(commandLine);
-			return executor.execute();
-			/*Process process = createProcess(commandLine);
-			final InputStream input = process.getInputStream();
-			final InputStream error = process.getErrorStream();
-
-			Reader inputReader = new InputStreamReader(input);
-			Reader errorReader = new InputStreamReader(error);
-
-			LineReader inputPump = new LineReader(inputReader,
-					stdoutLineHandler);
-			LineReader errorPump = new LineReader(errorReader, stderrLineHandler);
-
-			inputPump.start();
-			errorPump.start();
-
-			return process.waitFor();*/
-		} catch (Exception e) {
-			throw new CoreException(new Status(IStatus.ERROR,
-					"com.mobilesorcery.sdk.ui.targetphone.android", e
-							.getMessage(), e));
-		}
-	}
-
-	private Process createProcess(String[] commandLine) throws IOException {
-		return Runtime.getRuntime().exec(commandLine);
+	@Override
+	protected String getToolName() {
+		return "ADB";
 	}
 }

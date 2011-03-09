@@ -36,6 +36,7 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.internal.dependencies.CompoundDependencyProvider;
@@ -105,8 +106,9 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
      * have been visited by this visitor (visit method)
      * @param monitor 
      * @throws CoreException
+     * @throws ParameterResolverException 
      */
-    public void incrementalCompile(IProgressMonitor monitor, DependencyManager<IResource> dependencies) throws CoreException {
+    public void incrementalCompile(IProgressMonitor monitor, DependencyManager<IResource> dependencies) throws CoreException, ParameterResolverException {
     	Set<IResource> recompileThese = computeResourcesToRebuild(dependencies);
     	
         IResource[] deletedResources = this.deletedResources.toArray(new IResource[0]);
@@ -193,7 +195,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
         return false;
     }
     
-    public void compile(IResource resource, DependencyManager<IResource> dependencies) throws CoreException {
+    public void compile(IResource resource, DependencyManager<IResource> dependencies) throws CoreException, ParameterResolverException {
     	if (!CoreMoSyncPlugin.isHeadless()) {
     		MoSyncBuilder.clearCMarkers(resource);
             //clearCMarkers(resource.getProject());
@@ -231,7 +233,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             
             addGccWarnings(args);
             args.add("-DMAPIP");
-            String[] extra = extraSwitches == null ? new String[0] : Util.parseCommandLine(extraSwitches);
+            String[] extra = extraSwitches == null ? new String[0] : Util.parseCommandLine(resolve(extraSwitches));
             args.addAll(Arrays.asList(extra));
             args.add(cFile.getLocation().toOSString());
             args.addAll(Arrays.asList(includeStr));
@@ -308,9 +310,13 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     }
 
     public IPath mapFileToOutput(IResource file) {
+    	return mapFileToOutput(file, outputPath);
+    }
+    
+    public static IPath mapFileToOutput(IResource file, IPath outputPath) {
         String name = file.getName();
         String newName = Util.replaceExtension(name, "s");
-        return outputPath.append(newName);
+        return outputPath.append(newName);    	
     }
 
     public String[] getObjectFilesForProject(IProject project) throws CoreException {
@@ -345,17 +351,6 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
     public void setGCCWarnings(int gccWarnings) {
         this.gccWarnings = gccWarnings;
-    }
- 
-    public IDependencyProvider<IResource> getDependencyProvider() {
-    	if (dependencyProvider == null) {
-    		//dependencyProvider = new CompoundDependencyProvider<IResource>(new CResourceDependencyProvider(), new ProjectResourceDependencyProvider());
-    		dependencyProvider = new CompoundDependencyProvider<IResource>(new GCCDependencyProvider(this),
-    																	   new ProjectResourceDependencyProvider(getProject(), getVariant()),
-    																	   new ResourceFileDependencyProvider());
-    	}
-    	
-    	return dependencyProvider;
     }
 
 	protected String getName() {

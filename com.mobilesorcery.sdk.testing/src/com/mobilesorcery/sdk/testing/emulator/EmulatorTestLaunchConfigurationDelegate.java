@@ -64,6 +64,11 @@ public class EmulatorTestLaunchConfigurationDelegate extends
 	    return result;
 	}
 	
+	@Override
+	public boolean allowsExternalEmulators() {
+		return false;
+	}
+	
 	// Ensures there is an IDE listener built with the project.
 	/*private boolean ensureIDEListenerAdded() {
 	    

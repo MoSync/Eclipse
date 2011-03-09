@@ -58,8 +58,12 @@ public class PropertyUtil {
     public static void setPaths(IPropertyOwner p, String key, IPath[] paths) {
         p.setProperty(key, fromPaths(paths));
     }
-    
+
     public static IPath[] toPaths(String value) {
+    	return toPaths(value, true);
+    }
+    
+    public static IPath[] toPaths(String value, boolean trimQuotes) {
 		if (value == null) {
 			return new IPath[0];
 		}
@@ -70,6 +74,7 @@ public class PropertyUtil {
     	
     	for (int i = 0; i < pathsArray.length; i++) {
     	    String trimmed = pathsArray[i].trim();
+    	    trimmed = Util.trimQuotes(trimmed);
     	    if (!existingPaths.contains(trimmed) && trimmed.length() > 0) {
     	        paths.add(new Path(trimmed));
     	        existingPaths.add(trimmed);
@@ -191,7 +196,6 @@ public class PropertyUtil {
             return value.toString();
         }
     }
-
 
 }
 

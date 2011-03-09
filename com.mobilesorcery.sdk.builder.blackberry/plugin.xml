@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         point="com.mobilesorcery.core.packagers">
+      <packager
+            implementation="com.mobilesorcery.sdk.builder.blackberry.BlackBerryPackager"
+            pattern="^profiles[/|\\]runtimes[/|\\]rim[/|\\].*">
+      </packager>
+   </extension>
+      <extension
+            point="com.mobilesorcery.core.launcher">
+         <launcher
+               id="com.mobilesorcery.sdk.builder.blackberry.launcher"
+               implementation="com.mobilesorcery.sdk.builder.blackberry.launch.BlackBerrySimulatorLauncher">
+         </launcher>
+      </extension>
+                <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            category="com.mobilesorcery.sdk.preferences.main"
+            class="com.mobilesorcery.sdk.builder.blackberry.ui.preferences.JDEPreferencePage"
+            id="com.mobilesorcery.sdk.builder.blackberry.jde.preferences"
+            name="BlackBerry JDE">
+        </page>
+        </extension>
+                 <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            category="com.mobilesorcery.sdk.builder.blackberry.jde.preferences"
+            class="com.mobilesorcery.sdk.builder.blackberry.ui.preferences.BlackBerrySigningPreferencePage"
+            id="com.mobilesorcery.sdk.builder.blackberry.preferences"
+            name="BlackBerry Signing">
+      </page>
+   </extension>
+                    <extension
+             point="org.eclipse.ui.propertyPages">
+          <page
+                category="com.mobilesorcery.sdk.ui.properties.project"
+                class="com.mobilesorcery.sdk.builder.java.ui.properties.BlackBerrySigningPropertyPage"
+                id="com.mobilesorcery.sdk.ui.properties.blackberry.signing"
+                objectClass="org.eclipse.core.resources.IProject"
+                name="BlackBerry Signing">
+                                <enabledWhen>
+                                   <test
+                                         forcePluginActivation="true"
+                                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                                   </test>
+                                </enabledWhen>                
+          </page>          
+       </extension>
+         <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="com.mobilesorcery.sdk.builder.blackberry.PropertyInitializer">
+      </initializer>
+   </extension>
+   
+</plugin>

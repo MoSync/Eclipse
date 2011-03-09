@@ -23,4 +23,9 @@ public class EmulatorTestLaunchConfigurationTabGroup extends
         return new String[] { TestPlugin.TEST_BUILD_CONFIGURATION_TYPE };
     }
     
+    @Override
+    protected boolean allowsExternalEmulators() {
+    	return false;
+    }
+    
 }

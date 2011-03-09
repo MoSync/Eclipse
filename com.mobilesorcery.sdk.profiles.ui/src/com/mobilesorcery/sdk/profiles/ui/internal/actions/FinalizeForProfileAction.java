@@ -14,10 +14,18 @@
 package com.mobilesorcery.sdk.profiles.ui.internal.actions;
 
 
+import java.util.Arrays;
+
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 
+import com.mobilesorcery.sdk.core.BuildVariant;
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
+import com.mobilesorcery.sdk.core.IBuildSession;
+import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.MoSyncBuildJob;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.ui.Activator;
@@ -37,12 +45,11 @@ public class FinalizeForProfileAction extends Action {
             if (selected instanceof IProfile && project != null) {
                 //FinalizerParser.autoSwitchConfiguration(project);
                 IProfile profile = (IProfile) selected;
-                // Temporary bug fix
-                project.setTargetProfile(profile);
-                /*IBuildConfiguration cfg = project.getActiveBuildConfiguration();
-                BuildVariant variant = new BuildVariant(profile, cfg == null ? null : cfg.getId(), true);
-                FinalizerBuildJob job = new FinalizerBuildJob(project, variant);
-                job.schedule();*/
+                IBuildConfiguration cfg = project.getActiveBuildConfiguration();
+                IBuildVariant variant = new BuildVariant(profile, cfg == null ? null : cfg.getId(), true);
+                IBuildSession session = MoSyncBuilder.createFinalizerBuildSession(Arrays.asList(variant));
+                MoSyncBuildJob job = new MoSyncBuildJob(project, session, variant);
+                job.schedule();
             }
         }
     }

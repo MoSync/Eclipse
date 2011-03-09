@@ -33,6 +33,8 @@ import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.ParameterResolver;
+import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
@@ -82,6 +84,7 @@ public class PipeTool {
 	private boolean collectStabs;
 	private String appCode;
 	private IPropertyOwner argumentMap;
+	private ParameterResolver resolver;
 
     public PipeTool() {
 
@@ -122,7 +125,7 @@ public class PipeTool {
     	this.argumentMap = argumentMap;
     }
     
-    public void run() throws CoreException {
+    public void run() throws CoreException, ParameterResolverException {
     	IPath pipeTool = MoSyncTool.getDefault().getBinary("pipe-tool");
 
         ArrayList<String> args = new ArrayList<String>();
@@ -130,7 +133,7 @@ public class PipeTool {
         args.add(pipeTool.toOSString());
 
         if (extra != null && Util.join(extra, "").trim().length() > 0) {
-            args.addAll(Arrays.asList(extra));
+            args.addAll(Arrays.asList(Util.replace(extra, resolver)));
         }
         
         if (appCode != null) {
@@ -192,7 +195,7 @@ public class PipeTool {
              BUILD_GEN_JAVA_MODE == mode ) 
         {
             for (int i = 0; libraries != null && i < libraries.length; i++) {
-                args.add(libraries[i].toOSString());
+                args.add(Util.replace(libraries[i].toOSString(), resolver));
             }
         }
 
@@ -284,10 +287,10 @@ public class PipeTool {
     	return MoSyncBuilder.getOutputPath(project, MoSyncBuilder.getActiveVariant(MoSyncProject.create(project), false)).append(RESOURCE_DEPENDENCY_FILE_NAME);
     }
 
-	private String[] assembleLibraryPathArgs(IPath[] libraryPaths) {
+	private String[] assembleLibraryPathArgs(IPath[] libraryPaths) throws ParameterResolverException {
         String[] result = new String[libraryPaths.length];
         for (int i = 0; i < result.length; i++) {
-            result[i] = Util.ensureQuoted("-s" + libraryPaths[i].toOSString());
+            result[i] = Util.ensureQuoted("-s" + Util.replace(libraryPaths[i].toOSString(), resolver));
         }
 
         return result;
@@ -330,5 +333,9 @@ public class PipeTool {
 
 	public void setCollectStabs(boolean collectStabs) {
 		this.collectStabs = collectStabs;
+	}
+
+	public void setParameterResolver(ParameterResolver resolver) {
+		this.resolver = resolver;
 	}
 }

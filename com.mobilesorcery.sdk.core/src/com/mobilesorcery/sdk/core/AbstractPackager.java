@@ -18,7 +18,7 @@ import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 
-public abstract class AbstractPackager implements IPackager {
+public abstract class AbstractPackager implements IPackagerDelegate {
 
 	private Map<String, String> parameters = new HashMap<String, String>();
 

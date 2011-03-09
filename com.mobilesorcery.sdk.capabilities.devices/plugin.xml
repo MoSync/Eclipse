@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+     <extension
+           point="com.mobilesorcery.sdk.capabilities.matchers">
+        <matcher
+              class="com.mobilesorcery.sdk.capabilities.devices.DeviceCapabilitiesMatcher">
+        </matcher>
+     </extension>
+                 <extension
+                       point="com.mobilesorcery.sdk.core.filter.factories">
+                     <filter
+                           id="com.mobilesorcery.sdk.capabilities.devices.elementfactory"
+                           class="com.mobilesorcery.sdk.capabilities.devices.DeviceCapabilitiesFilterFactory"> 
+                     </filter>
+                 </extension>
+
+</plugin>

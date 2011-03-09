@@ -30,6 +30,7 @@ public class EmulatorLaunchConfigurationTabGroup extends AbstractLaunchConfigura
     	launchTab.setMode(mode);
     	launchTab.setBuildConfigurationTypes(true, getBuildConfigurationTypes(true));
     	launchTab.setBuildConfigurationTypes(false, getBuildConfigurationTypes(false));
+    	launchTab.setAllowExternalEmulators(allowsExternalEmulators());
     	SourceLookupTab sourceLookup = new SourceLookupTab();
     	
         ILaunchConfigurationTab[] tabs = new ILaunchConfigurationTab[] { launchTab, sourceLookup };
@@ -49,6 +50,15 @@ public class EmulatorLaunchConfigurationTabGroup extends AbstractLaunchConfigura
      */
     protected String[] getBuildConfigurationTypes(boolean isDebug) {
         return null;
+    }
+    
+    /**
+     * Returns whether this launch configuration UI allows other emulators
+     * than the default. Clients may override.
+     * @return
+     */
+    protected boolean allowsExternalEmulators() {
+    	return true;
     }
 
 }
