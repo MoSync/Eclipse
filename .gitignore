@@ -1,0 +1,8 @@
+com.mobilesorcery.sdk.*/bin/*
+com.mobilesorcery.sdk.product/build/target-platform*
+com.mobilesorcery.sdk.product/build/build.properties
+com.mobilesorcery.sdk.product/build/build.properties.gen
+com.mobilesorcery.sdk.product/build/buildresult
+com.mobilesorcery.sdk.product.customization/replacements/org.eclipse.cdt.ui/tmp-jar/
+native/pid2/build
+win32/pipelib/build
