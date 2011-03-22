@@ -33,7 +33,7 @@ public class MoSyncProjectConverter1_2 implements MoSyncProject.IConverter {
 	}
 	
 	@Override
-	public MoSyncProject convert(MoSyncProject project) throws CoreException {
+	public void convert(MoSyncProject project) throws CoreException {
     	try {
     		Version projectVersion = project.getFormatVersion();
 	    	if (VERSION.isNewer(projectVersion)) {
@@ -46,7 +46,6 @@ public class MoSyncProjectConverter1_2 implements MoSyncProject.IConverter {
 	    		convertToNewlib(project, project, null);
 	    		project.setFormatVersion(VERSION);
 	    	}
-			return project;
     	} catch (ParameterResolverException e) {
     		throw ParameterResolverException.toCoreException(e);
     	}

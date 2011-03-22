@@ -20,23 +20,17 @@ import java.util.List;
 import org.eclipse.cdt.core.model.CoreModel;
 import org.eclipse.cdt.core.model.ICProject;
 import org.eclipse.cdt.core.model.IMacroEntry;
-import org.eclipse.cdt.core.model.IOutputEntry;
 import org.eclipse.cdt.core.model.IPathEntry;
 import org.eclipse.cdt.core.model.IPathEntryContainer;
 import org.eclipse.cdt.core.model.ISourceEntry;
 import org.eclipse.cdt.core.model.ISourceRoot;
-import org.eclipse.cdt.core.settings.model.CSourceEntry;
 import org.eclipse.cdt.core.settings.model.ICConfigurationDescription;
 import org.eclipse.cdt.core.settings.model.ICProjectDescription;
-import org.eclipse.cdt.core.settings.model.ICSourceEntry;
-import org.eclipse.cdt.core.settings.model.WriteAccessException;
-import org.eclipse.cdt.internal.core.model.CProject;
 import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -45,7 +39,6 @@ import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.Util;
-import com.mobilesorcery.sdk.internal.IsExcludableFromBuildTester;
 
 public class MoSyncIncludePathContainer implements IPathEntryContainer {
 
@@ -137,16 +130,18 @@ public class MoSyncIncludePathContainer implements IPathEntryContainer {
     }
     
     private static List<ISourceEntry> createOutputEntries(IProject project) {
-    	IPath outputPath = project.getFullPath().append(new Path(MoSyncBuilder.OUTPUT));
-    	IPath finalPath = project.getFullPath().append(new Path(MoSyncBuilder.FINAL_OUTPUT));
+    	// This one seems to be a bit prototype-ish, feel free to rip it out and replace it with something useful
+    	// Note that the original intent of this was to make sure that the indexer does not index the large
+    	// generated XCode files for the iPhone.
+    	IFolder outputPath = project.getFolder(new Path(MoSyncBuilder.OUTPUT));
+    	IFolder finalPath = project.getFolder(new Path(MoSyncBuilder.FINAL_OUTPUT));
     	
     	IPath[] exclusionPattern = new IPath[] { new Path("am*.c") };
     	
-    	List<ISourceEntry> result = Arrays.asList(
-    			CoreModel.newSourceEntry(outputPath, exclusionPattern),
-    			CoreModel.newSourceEntry(finalPath, exclusionPattern));
-    	CSourceEntry outputSourceEntry = new CSourceEntry(outputPath, exclusionPattern, 0);
-    	CSourceEntry finalOutputSourceEntry = new CSourceEntry(outputPath, exclusionPattern, 0);
+    	List<ISourceEntry> result = new ArrayList<ISourceEntry>();
+    	//addAsSourceEntryIfExists(result, outputPath, exclusionPattern);
+    	//addAsSourceEntryIfExists(result, finalPath, exclusionPattern);
+    	
     	ICProjectDescription projDesc = CoreModel.getDefault().getProjectDescription(project);
     	ICConfigurationDescription cfg = projDesc.getConfiguration();
     	try {
@@ -155,7 +150,7 @@ public class MoSyncIncludePathContainer implements IPathEntryContainer {
         		IPathEntry[] rpe = cProject.getRawPathEntries();
         	ArrayList<IPathEntry> newEntries = new ArrayList<IPathEntry>();
         	newEntries.addAll(Arrays.asList(rpe));
-        	newEntries.addAll(result);
+        	//newEntries.addAll(result);
         		//cProject.setRawPathEntries(newEntries.toArray(new IPathEntry[0]), new NullProgressMonitor());
         		//cfg.setSourceEntries(new ICSourceEntry[] { outputSourceEntry, finalOutputSourceEntry });
 		} catch (Exception e) {
@@ -165,4 +160,11 @@ public class MoSyncIncludePathContainer implements IPathEntryContainer {
     	
     	return result;
     }
+
+	private static void addAsSourceEntryIfExists(List<ISourceEntry> result,
+			IFolder sourceFolder, IPath[] exclusionPattern) {
+		if (sourceFolder.exists()) {
+    		result.add(CoreModel.newSourceEntry(sourceFolder.getFullPath(), exclusionPattern));
+    	}
+	}
 }

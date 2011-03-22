@@ -91,10 +91,9 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		 * Converts an older project into a newer format.
 		 * 
 		 * @param project
-		 * @return May modify and return the project used as input
 		 * @throws CoreException
 		 */
-		public MoSyncProject convert(MoSyncProject project)
+		public void convert(MoSyncProject project)
 				throws CoreException;
 
 	}
@@ -553,30 +552,38 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 *            wrap
 	 * @return
 	 */
-	public synchronized static MoSyncProject create(IProject project) {
+	public static MoSyncProject create(IProject project) {
 		try {
 			if (!MoSyncNature.isCompatible(project)) {
 				return null;
 			}
 
-			MoSyncProject result = projects.get(project);
-			if (result == null) {
-				result = new MoSyncProject(project);
-				projects.put(project, result);
-				if (!CURRENT_VERSION.equals(result.getFormatVersion())) {
-					result = upgrade(result);
+			boolean upgrade = false;
+			MoSyncProject result = null;
+		
+			synchronized (projects) {
+				result = projects.get(project);
+				if (result == null) {
+					result = new MoSyncProject(project);
+					projects.put(project, result);
+					upgrade = !CURRENT_VERSION.equals(result.getFormatVersion());
 				}
 			}
+			
+			if (upgrade) {
+				upgrade(result);
+			}
+			
 			return result;
 		} catch (CoreException e) {
 			return null;
 		}
 	}
 
-	private static MoSyncProject upgrade(MoSyncProject project)
+	private static void upgrade(MoSyncProject project)
 			throws CoreException {
 		// TODO: Whenever the need arises we may want to fix something smarter
-		return MoSyncProjectConverter1_2.getInstance().convert(project);
+		MoSyncProjectConverter1_2.getInstance().convert(project);
 	}
 
     /**
