@@ -17,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -148,15 +149,41 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		initializeOnSeparateThread();
     }
     
-    private void initLaunchers() {
-    	IConfigurationElement[] launchers = Platform.getExtensionRegistry().getConfigurationElementsFor(IEmulatorLauncher.EXTENSION_POINT_ID);
-    	for (int i = 0; i < launchers.length; i++) {
-    		IConfigurationElement launcher = launchers[i];
-    		String id = launcher.getAttribute("id");
-    		this.launchers.put(id, new EmulatorLauncherProxy(launcher));
+    /**
+     * <p>For development & debugging purposes.</p>
+     * <p>Returns how this product's
+     * experimental mode was changed at startup (using the
+     * <code>-experimental:enable</code> or
+     * <code>-experimental:disable</code>
+     * command line arguments).
+     * @return <code>Boolean.TRUE</code> if experimental mode
+     * was enabled at startup, <code>Boolean.FALSE</code> if
+     * it was disabled, <code>null</code> if neither.
+     */
+    public Boolean switchedToExperimental() {
+    	if (Arrays.asList(Platform.getApplicationArgs()).contains("-experimental:enable")) {
+    		return true;
     	}
+    	if (Arrays.asList(Platform.getApplicationArgs()).contains("-experimental:disable")) {
+    		return false;
+    	}
+    	
+    	return null;
+    }
+    
+    private void initLaunchers() {
     	// Default always present
     	this.launchers.put(MoReLauncher.ID, new MoReLauncher());
+    	
+    	// External emulators are only allowed in experimental mode
+    	if(Boolean.TRUE.equals(switchedToExperimental())) {
+	    	IConfigurationElement[] launchers = Platform.getExtensionRegistry().getConfigurationElementsFor(IEmulatorLauncher.EXTENSION_POINT_ID);
+	    	for (int i = 0; i < launchers.length; i++) {
+	    		IConfigurationElement launcher = launchers[i];
+	    		String id = launcher.getAttribute("id");
+	    		this.launchers.put(id, new EmulatorLauncherProxy(launcher));
+	    	}
+    	}
  	}
 
 	private void initBuildConfigurationTypes() {
