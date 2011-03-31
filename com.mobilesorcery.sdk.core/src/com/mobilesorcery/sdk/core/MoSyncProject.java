@@ -625,7 +625,10 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 * operations on a disposed mosyncproject.
 	 */
 	public void dispose() {
-		projects.remove(this);
+		synchronized (projects) {
+			projects.remove(this);
+		}
+
 		disposed = true;
 	}
 
