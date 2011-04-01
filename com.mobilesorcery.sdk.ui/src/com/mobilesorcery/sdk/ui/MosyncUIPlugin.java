@@ -19,7 +19,6 @@ import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -27,12 +26,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.AssertionFailedException;
@@ -72,7 +68,6 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.activities.ICategory;
 import org.eclipse.ui.activities.ICategoryActivityBinding;
 import org.eclipse.ui.activities.IWorkbenchActivitySupport;
-import org.eclipse.ui.ide.undo.CreateProjectOperation;
 import org.eclipse.ui.intro.IIntroManager;
 import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -81,13 +76,12 @@ import org.osgi.framework.BundleContext;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IProvider;
+import com.mobilesorcery.sdk.core.IsExperimentalTester;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
-import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
-import com.mobilesorcery.sdk.internal.launch.EmulatorLauncherProxy;
 import com.mobilesorcery.sdk.ui.internal.console.IDEProcessConsole;
 import com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator;
 import com.mobilesorcery.sdk.ui.internal.launch.EmulatorLaunchConfigurationPartProxy;
@@ -526,8 +520,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
     }
     
     private void initializeCustomActivities() {
-    	boolean enable = Boolean.TRUE.equals(CoreMoSyncPlugin.getDefault().switchedToExperimental());
-    	boolean disable = Boolean.FALSE.equals(CoreMoSyncPlugin.getDefault().switchedToExperimental());
+    	boolean enable = Boolean.TRUE.equals(IsExperimentalTester.isExperimental());
+    	boolean disable = Boolean.FALSE.equals(IsExperimentalTester.isExperimental());
     	if (enable || disable) {
 	    	IWorkbenchActivitySupport activitySupport = PlatformUI.getWorkbench().getActivitySupport();
 	    	ICategory category = activitySupport.getActivityManager().getCategory("com.mobilesorcery.activities.experimental");

@@ -142,10 +142,16 @@ icon="icons/launchshortcut.png">
                 objectClass="org.eclipse.core.resources.IProject"
                 category="com.mobilesorcery.sdk.ui.properties.project">
                 <enabledWhen>
-                   <test
-                         forcePluginActivation="true"
-                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
-                   </test>
+                   <and>
+                      <test
+                            forcePluginActivation="true"
+                            property="com.mobilesorcery.sdk.testers.isExperimental">
+                      </test>
+                      <test
+                            forcePluginActivation="true"
+                            property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                      </test>
+                   </and>
                 </enabledWhen>
           </page>
        </extension>
