@@ -15,7 +15,6 @@ package com.mobilesorcery.sdk.internal;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.lang.reflect.InvocationTargetException;
 
 import org.eclipse.cdt.core.CCorePlugin;
 import org.eclipse.cdt.core.model.CoreModel;
@@ -23,11 +22,12 @@ import org.eclipse.cdt.core.model.ICProject;
 import org.eclipse.cdt.core.model.IContainerEntry;
 import org.eclipse.cdt.core.model.IPathEntry;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.actions.WorkspaceModifyOperation;
-import org.eclipse.ui.progress.IProgressService;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -46,7 +46,7 @@ public class ReindexListener implements PropertyChangeListener
 	 * 
 	 * @author fmattias
 	 */
-	public class UpdateAndIndexIncludePathsJob extends WorkspaceModifyOperation
+	public class UpdateAndIndexIncludePathsJob extends WorkspaceJob
 	{
 		/**
 		 * The project to index the include paths for.
@@ -66,6 +66,8 @@ public class ReindexListener implements PropertyChangeListener
 		 */
 		public UpdateAndIndexIncludePathsJob(ICProject cProject, IPathEntry[] includePaths)
 		{
+			super("Updating includes for: " + cProject.getElementName());
+			
 			m_cProject = cProject;
 			m_includePaths = includePaths;
 		}
@@ -74,14 +76,16 @@ public class ReindexListener implements PropertyChangeListener
 		 * Update and reindex include paths.
 		 */
 		@Override
-		protected void execute(IProgressMonitor monitor) throws CoreException,
-				InvocationTargetException, InterruptedException
+		public IStatus runInWorkspace(IProgressMonitor monitor)
+				throws CoreException
 		{
-			CoreModel.setRawPathEntries(m_cProject, m_includePaths, monitor);
+			CoreModel.setRawPathEntries(m_cProject, m_includePaths, null);
 
 			// The indexing can be long running, but it will be performed in
 			// the background by the index manager
 			CCorePlugin.getIndexManager().reindex(m_cProject);
+
+			return Status.OK_STATUS;
 		}
 	}
 
@@ -108,20 +112,10 @@ public class ReindexListener implements PropertyChangeListener
 		UpdateAndIndexIncludePathsJob job = 
 			new UpdateAndIndexIncludePathsJob(cProject,  new IPathEntry[] { includePaths });
 
-		// Run the operation
-		IProgressService service = PlatformUI.getWorkbench().getProgressService();
-		try
-		{
-			service.run(false, false, job);
-		}
-		catch (InvocationTargetException e)
-		{
-		    // Operation was canceled
-		}
-		catch (InterruptedException e)
-		{
-		    // Handle the wrapped exception
-		}
+		// CDT locks the whole workspace when updating the includes, and since
+		// it is running in our job the scope must be at least as big.
+		job.setRule(ResourcesPlugin.getWorkspace().getRoot());
+		job.schedule();
 	}
 
 	/**

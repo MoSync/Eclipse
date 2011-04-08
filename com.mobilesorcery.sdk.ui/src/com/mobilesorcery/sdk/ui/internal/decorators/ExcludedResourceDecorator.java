@@ -14,6 +14,7 @@
 package com.mobilesorcery.sdk.ui.internal.decorators;
 
 import org.eclipse.cdt.debug.internal.ui.OverlayImageDescriptor;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -60,6 +61,11 @@ public class ExcludedResourceDecorator extends LabelProvider implements
 	boolean isExcluded(Object element) {
 		if (element instanceof IAdaptable) {
 			element = ((IAdaptable) element).getAdapter(IResource.class);
+		}
+		
+		// Projects cannot be excluded
+		if (element instanceof IProject) {
+			return false;
 		}
 
 		if (element instanceof IResource) {
