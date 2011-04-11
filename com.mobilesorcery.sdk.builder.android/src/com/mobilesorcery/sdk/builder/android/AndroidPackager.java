@@ -471,6 +471,7 @@ extends AbstractPackager
 		// Add permissions depending on project settings.
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.VIBRATE), "android.permission.VIBRATE");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.INTERNET), "android.permission.INTERNET");
+        addPermission(result, permissions.isPermissionRequested(ICommonPermissions.INTERNET), "android.permission.ACCESS_NETWORK_STATE");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.LOCATION_COARSE), "android.permission.ACCESS_COARSE_LOCATION");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.LOCATION_FINE), "android.permission.ACCESS_FINE_LOCATION");
         addPermission(result, permissions.isPermissionRequested(ICommonPermissions.POWER_MANAGEMENT), "android.permission.BATTERY_STATS");
