@@ -25,6 +25,7 @@ import org.eclipse.core.runtime.Path;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 
@@ -40,7 +41,6 @@ public class ApplicationPermissions implements IApplicationPermissions {
 
     private final static String ROOT = "__root";
     
-    private TreeSet<String> availablePermissions = new TreeSet<String>();
     private TreeMap<String, Set<String>> availablePermissionLookup = new TreeMap<String, Set<String>>();
     private TreeSet<String> requestedPermissions;
     private MoSyncProject project;
@@ -57,7 +57,7 @@ public class ApplicationPermissions implements IApplicationPermissions {
     }
     
     /**
-     * Refreshes this applicatoin permission object using
+     * Refreshes this application permission object using
      * the associated project's properties.
      */
     public void refresh() {
@@ -69,7 +69,7 @@ public class ApplicationPermissions implements IApplicationPermissions {
     }
     
     private void addAvailablePermission(String permission) {
-        String parent = getParentPermission(permission);
+        String parent = Util.getParentKey(permission);
         if (parent == null) {
             parent = ROOT;
         }
@@ -120,7 +120,7 @@ public class ApplicationPermissions implements IApplicationPermissions {
             }
         }
         
-        String parentPermission = getParentPermission(requested);
+        String parentPermission = Util.getParentKey(requested);
         setRequestedPermission(parentPermission, allSubPermissionsSet(parentPermission), false);
         save();
     }
@@ -155,17 +155,12 @@ public class ApplicationPermissions implements IApplicationPermissions {
         return result;
     }
     
-    public static String getParentPermission(String key) {
-        Path permissionPath = new Path(key);
-        return permissionPath.segmentCount() > 1 ? permissionPath.removeLastSegments(1).toPortableString() : null;
-    }
-    
     public boolean isPermissionRequested(String key) {
         if (key == null) {
             return false;
         }
         
-        return requestedPermissions.contains(key) || isPermissionRequested(getParentPermission(key));
+        return requestedPermissions.contains(key) || isPermissionRequested(Util.getParentKey(key));
     }
 
     public IApplicationPermissions createWorkingCopy() {

@@ -84,7 +84,12 @@ public class BinaryBMFontParser {
 		case INFO_TYPE:
 		case COMMON_TYPE:
 		case CHARS_TYPE:
-			input.skip(blockSize - 4);
+			int bytesToSkip = blockSize - 4;
+			if(info.getVersion() == 3) {
+				// In version 3 the space for the block size is not included
+				bytesToSkip = blockSize;
+			}
+			input.skip(bytesToSkip);
 			break;
 		case PAGES_TYPE:
 			parsePagesBlock(block, input);

@@ -14,6 +14,7 @@
 package com.mobilesorcery.sdk.core;
 
 import java.io.File;
+import java.util.List;
 
 public interface IBuildResult {
 
@@ -29,6 +30,12 @@ public interface IBuildResult {
 	 * that occurred.
 	 */
     public abstract void addError(String errorMsg);
+
+    /**
+     * Returns the list of error messages.
+     * @return
+     */
+    public abstract List<String> getErrors();
 
     /**
      * Returns a single file representing

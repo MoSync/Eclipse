@@ -52,7 +52,15 @@ public interface IPropertyOwner {
     public String getProperty(String key);
     
     public String getDefaultProperty(String key);
-        
+    
+    /**
+     * Returns <code>true</code> if the default value
+     * will be returned for this key.
+     * @param key
+     * @return
+     */
+    public boolean isDefault(String key);
+    
     /**
      * See IPropertyInitializer.
      * @return

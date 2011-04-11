@@ -49,6 +49,8 @@ import com.mobilesorcery.sdk.ui.UIUtils;
 public class AndroidPackager 
 extends AbstractPackager 
 {
+	public final static String ID = "com.mobilesorcery.sdk.build.android.packager";
+	
 	String m_aaptLoc;
 	String m_unzipLoc;
 	String m_iconInjecLoc;
@@ -507,6 +509,12 @@ extends AbstractPackager
         	addPermission(result, 
 				permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH), 
 				"android.permission.BLUETOOTH_ADMIN");
+        }
+        
+        // Required to be able to log in debug runtime
+        if(shouldUseDebugRuntimes() && !permissions.isPermissionRequested(ICommonPermissions.FILE_STORAGE_WRITE))
+        {
+        	addPermission(result, true, "android.permission.WRITE_EXTERNAL_STORAGE");
         }
 
         // Always add this.

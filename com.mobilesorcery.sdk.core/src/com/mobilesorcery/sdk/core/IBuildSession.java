@@ -1,7 +1,14 @@
 package com.mobilesorcery.sdk.core;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import com.mobilesorcery.sdk.core.build.CompileBuildStep;
+import com.mobilesorcery.sdk.core.build.IBuildStep;
+import com.mobilesorcery.sdk.core.build.LinkBuildStep;
+import com.mobilesorcery.sdk.core.build.PackBuildStep;
+import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 
 /**
  * Represents one build execution, but may span several individual build variants.
@@ -19,10 +26,10 @@ public interface IBuildSession {
     /**
      * Returns a <emph>modifiable</emph> set of properties for
      * this build session. The intention of this method is to provide
-     * a means to share data that last only during the session
+     * a means to share data that last only during the session.
      * @return
      */
-    public Map<String, String> getProperties();
+    public Map<String, Object> getProperties();
     
     /**
      * Returns <code>true</code> if a clean should be performed before
@@ -54,7 +61,5 @@ public interface IBuildSession {
      * @deprecated Not really deprecated, but move this method
      */
     public boolean doSaveDirtyEditors();
-    
-    
     
 }

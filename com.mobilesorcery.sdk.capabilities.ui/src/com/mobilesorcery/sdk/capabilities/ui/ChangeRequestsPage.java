@@ -21,8 +21,6 @@ import org.eclipse.swt.widgets.Label;
 import com.mobilesorcery.sdk.capabilities.core.AbstractChangeRequest;
 import com.mobilesorcery.sdk.capabilities.core.CompoundChangeRequest;
 import com.mobilesorcery.sdk.capabilities.core.IChangeRequest;
-import com.mobilesorcery.sdk.capabilities.ui.ChangeRequestsPage.ChangeRequestContentProvider;
-import com.mobilesorcery.sdk.core.MoSyncProject;
 
 public class ChangeRequestsPage extends WizardPage {
 
@@ -35,6 +33,9 @@ public class ChangeRequestsPage extends WizardPage {
 		}
 		
 		public boolean isChecked(Object element) {
+			if (isGrayed(element)) {
+				return false;
+			}
 			if (element instanceof IProject) {
 				IChangeRequest changeRequest = changeRequests.get(element);
 				return isChecked(changeRequest);
@@ -46,10 +47,9 @@ public class ChangeRequestsPage extends WizardPage {
 					}
 					return true;
 				}
-			} else if (element instanceof IChangeRequest) {
-				IChangeRequest changeRequest = (IChangeRequest) element;
-				MoSyncProject project = changeRequest.getProject();
-				CompoundChangeRequest changeRequestParent = (CompoundChangeRequest) changeRequests.get(project.getWrappedProject());
+			} else if (element instanceof AbstractChangeRequest) {
+				AbstractChangeRequest changeRequest = (AbstractChangeRequest) element;
+				CompoundChangeRequest changeRequestParent = changeRequest.getParent();
 				return changeRequestParent != null && changeRequestParent.shouldApply(changeRequest);
 			}
 			
@@ -65,7 +65,7 @@ public class ChangeRequestsPage extends WizardPage {
 				IChangeRequest[] changeRequests = compoundChangeRequest.getChangeRequests();
 				int checkedCount = 0;
 				for (IChangeRequest changeRequest : changeRequests) {
-					if (isChecked(changeRequest)) {
+					if (isChecked(changeRequest) || isGrayed(changeRequest)) {
 						checkedCount++;
 					}
 				}
@@ -150,12 +150,23 @@ public class ChangeRequestsPage extends WizardPage {
 		changeRequestsTree.setInput(changeRequests);
 		changeRequestsTree.addCheckStateListener(new ICheckStateListener() {
 			public void checkStateChanged(CheckStateChangedEvent event) {
-				Object parent = contentProvider.getParent(event.getElement());
+				Object element = event.getElement();
+				Object parent = contentProvider.getParent(element);
 				if (parent instanceof CompoundChangeRequest) {
 					CompoundChangeRequest changeRequest = (CompoundChangeRequest) parent;
-					changeRequest.setShouldApply((IChangeRequest) event.getElement(), event.getChecked());
-					changeRequestsTree.refresh(true);
+					IChangeRequest child = (IChangeRequest) event.getElement();
+					changeRequest.setShouldApply(child, event.getChecked());
+					if (child instanceof CompoundChangeRequest) {
+						((CompoundChangeRequest) child).setAllShouldApply(event.getChecked(), true);
+					}
 				}
+				if (parent == null && element instanceof IProject) {
+					IChangeRequest child = changeRequests.get((IProject) element);
+					if (child instanceof CompoundChangeRequest) {
+						((CompoundChangeRequest) child).setAllShouldApply(event.getChecked(), true);
+					}
+				}
+				changeRequestsTree.refresh(true);
 			}
 		});
 		changeRequestsTree.getTree().setLayoutData(new GridData(GridData.FILL_BOTH));

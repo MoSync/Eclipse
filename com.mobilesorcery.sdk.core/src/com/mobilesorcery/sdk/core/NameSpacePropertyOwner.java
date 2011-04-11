@@ -82,7 +82,7 @@ public class NameSpacePropertyOwner implements IPropertyOwner {
 			if (prop != null) {
 				return prop;
 			}
-		}		
+		}
 		
 		return null;
 	}
@@ -185,6 +185,18 @@ public class NameSpacePropertyOwner implements IPropertyOwner {
 		for (String key : properties.keySet()) {
 			setProperty(key, null);
 		}
+	}
+
+	@Override
+	public boolean isDefault(String key) {
+		String[] fullKeys = assembleFullKeys(key);
+		for (int i = 0; i < levels + 1; i++) {
+			boolean isDefault = parent.isDefault(fullKeys[levels - i]);
+			if (!isDefault) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 }

@@ -170,7 +170,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
         }
 
         public void run() {
-            UIUtils.awaitWorkbenchStartup();
+            UIUtils.awaitWorkbenchStartup(null);
             String userKey = MoSyncTool.getDefault().getProperty(MoSyncTool.USER_HASH_PROP_2);
 
             try {

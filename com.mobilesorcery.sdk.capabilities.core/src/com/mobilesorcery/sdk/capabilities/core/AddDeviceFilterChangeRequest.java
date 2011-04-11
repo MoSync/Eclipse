@@ -5,6 +5,7 @@ import java.text.MessageFormat;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
+import com.mobilesorcery.sdk.profiles.filter.CompositeDeviceFilter;
 
 public class AddDeviceFilterChangeRequest extends AbstractChangeRequest {
 
@@ -30,10 +31,23 @@ public class AddDeviceFilterChangeRequest extends AbstractChangeRequest {
 		getProject().getDeviceFilter().addFilter(filter);
 	}
 	
-	public String toString() {
-		int filterCount = MoSyncTool.getDefault().getProfiles(filter).length;
-		int totalProfileCount = MoSyncTool.getDefault().getProfiles().length;
+	public IDeviceFilter getFilter() {
+		return filter;
+	}
+	
+	public boolean isApplicable() {
+		return getRemovedCount() > 0;
+	}
+	
+	private int getRemovedCount() {
+		int filterCount = MoSyncTool.getDefault().filterProfiles(getProject().getFilteredProfiles(), filter).length;
+		int totalProfileCount = getProject().getFilteredProfiles().length;
 		int removedCount = totalProfileCount - filterCount;
+		return removedCount;
+	}
+	
+	public String toString() {
+		int removedCount = getRemovedCount();
 		return MessageFormat.format(message, removedCount);
 	}
 

@@ -44,9 +44,9 @@ import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile;
-import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section.Entry;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
 
@@ -74,6 +74,11 @@ public class BuildState implements IBuildState {
                    "CHANGED:      " + changed + "\n" +
                    "REMOVED:      " + removed;
         }
+
+		@Override
+		public boolean isEmpty() {
+			return added.isEmpty() && changed.isEmpty() && removed.isEmpty();
+		}
     }
     
     class FileInfoTree implements IResourceVisitor {
@@ -116,14 +121,25 @@ public class BuildState implements IBuildState {
         }
         
         private void internalUpdateResource(IResource resource) {
-            if (resource.getType() == IResource.FILE || resource.getType() == IResource.FOLDER) {
+            if (resource.getType() == IResource.FILE) {
                 internalUpdateState(resource.getProjectRelativePath());
             }
         }
 
         private void internalUpdateState(IPath path) {
-            IPath fullpath = project.getWrappedProject().findMember(path).getLocation();//getModificationStamp();
-            long newTimestamp = fullpath.toFile().lastModified();
+        	IResource projectResource = project.getWrappedProject().findMember(path);
+ 
+        	/**
+        	 * Ignore virtual folders since they do not have a timestamp and
+        	 * getLocation always returns null for them.
+        	 */
+          	if(projectResource.isVirtual()) {
+        		return;
+        	}
+        	
+        	IPath fullpath = projectResource.getLocation();    	
+        	File file = fullpath.toFile();
+            long newTimestamp = file.lastModified();
             timestampMap.put(path, newTimestamp);
         }
 

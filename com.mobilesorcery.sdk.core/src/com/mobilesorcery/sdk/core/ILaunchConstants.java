@@ -55,5 +55,12 @@ public interface ILaunchConstants {
 	 * to before a <i>debug</i> launch
 	 */
 	String BUILD_CONFIG_DEBUG= BUILD_CONFIG + ".debug";
+	
+	/**
+	 * The id of the launch delegate that should launch the app
+	 */
+	String LAUNCH_DELEGATE_ID = "launch.delegate";
+    
+	
 
 }

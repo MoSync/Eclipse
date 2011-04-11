@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.mobilesorcery.sdk.core.Util;
+
 public class Capabilities implements ICapabilities {
 
 	public static class MergeCapabilities implements ICapabilities {
@@ -54,7 +56,7 @@ public class Capabilities implements ICapabilities {
 		setCapability(capability, Boolean.TRUE);
 	}
 	
-	void setCapability(String capability, Object value) {
+	public void setCapability(String capability, Object value) {
 		capabilites.put(capability, value);
 	}
 
@@ -64,8 +66,9 @@ public class Capabilities implements ICapabilities {
 	
 	public void copyMerge(ICapabilities other) {
 		for (String capability : other.listCapabilities()) {
-			// TODO: Conflicting values?
-			setCapability(capability, other.getCapabilityValue(capability));
+			if (!hasCapability(capability)) {
+				setCapability(capability, other.getCapabilityValue(capability));
+			}
 		}
 	}
 	
@@ -78,7 +81,12 @@ public class Capabilities implements ICapabilities {
 	}
 
 	public Object getCapabilityValue(String capability) {
-		return capabilites.get(capability);
+		Object result = capabilites.get(capability);
+		if (result == null) {
+			return capability == null ? null : getCapabilityValue(Util.getParentKey(capability));
+		} else {
+			return result;
+		}
 	}
 
 	public String toString() {

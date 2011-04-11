@@ -28,9 +28,9 @@ import org.eclipse.core.runtime.jobs.Job;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IProcessConsole;
+import com.mobilesorcery.sdk.core.LineReader.LineAdapter;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
-import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 
 public class DefaultKeyInitializer implements PropertyChangeListener {
 
@@ -40,7 +40,7 @@ public class DefaultKeyInitializer implements PropertyChangeListener {
 	
 	public static final String DEFAULT_PASS_KEY = "default"; //$NON-NLS-1$
 
-	public class PipeToFile implements ILineHandler {
+	public class PipeToFile extends LineAdapter {
 		private Writer output = null;
 		private boolean stoppedwriting = false;
 		

@@ -17,6 +17,8 @@ import org.eclipse.swt.widgets.Text;
 
 import com.mobilesorcery.sdk.testing.project.MoSyncProjectTestManager;
 import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
+import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class TestingPropertyPage extends MoSyncPropertyPage {
 
@@ -40,19 +42,7 @@ public class TestingPropertyPage extends MoSyncPropertyPage {
         Label spacer = new Label(main, SWT.NONE);
         Label infoLabel = new Label(main, SWT.WRAP);
         infoLabel.setText("These folders will by default be excluded from non-testing build configurations");
-        // Move to UIUtils
-        FontData[] infoLabelFontData = infoLabel.getFont().getFontData();
-        for (int i = 0; i < infoLabelFontData.length; i++) {
-            infoLabelFontData[i].setHeight(infoLabelFontData[i].getHeight() - 1);
-            //infoLabelFontData[i].setStyle(SWT.ITALIC);
-        }
-        final Font infoLabelFont = new Font(infoLabel.getDisplay(), infoLabelFontData);
-        infoLabel.setFont(infoLabelFont);
-        infoLabel.addDisposeListener(new DisposeListener() {
-            public void widgetDisposed(DisposeEvent event) {
-                infoLabelFont.dispose();
-            }
-        });
+        infoLabel.setFont(MosyncUIPlugin.getDefault().getFont(MosyncUIPlugin.FONT_INFO_TEXT));
         
         validate();
         

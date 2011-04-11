@@ -20,21 +20,26 @@ import java.io.Reader;
 public class LineReader implements Runnable {
 
     public interface ILineHandler {
+    	public void start(Process process);
         public void newLine(String line);
-        public void stop(IOException e);
-    }
-    
-    public static class LineAdapter implements ILineHandler {
-		public void newLine(String line) {
-		}
-
 		/**
 		 * <p>Is called upon when either<p>
 		 * <ul>
 		 * <li>An exception occurs, or
 		 * <li>EOF
 		 * </ul>
+		 * @param e The exception that caused this process to exit (or not start), or <code>null</code> if EOF.
 		 */
+        public void stop(IOException e);
+    }
+    
+    public static class LineAdapter implements ILineHandler {
+    	public void start(Process process) {
+    		
+    	}
+		public void newLine(String line) {
+		}
+
 		public void stop(IOException e) {
 		}    	
     }

@@ -1,11 +1,17 @@
 package com.mobilesorcery.sdk.internal;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.build.CompileBuildStep;
+import com.mobilesorcery.sdk.core.build.IBuildStep;
+import com.mobilesorcery.sdk.core.build.LinkBuildStep;
+import com.mobilesorcery.sdk.core.build.PackBuildStep;
+import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 
 public class BuildSession implements IBuildSession {
 
@@ -17,7 +23,7 @@ public class BuildSession implements IBuildSession {
     public static final int ALL = DO_PACK | DO_CLEAN | DO_LINK | DO_BUILD_RESOURCES | DO_SAVE_DIRTY_EDITORS;
     
     private List<IBuildVariant> variants;
-    private Map<String, String> properties = new HashMap<String, String>();
+    private Map<String, Object> properties = new HashMap<String, Object>();
     private int flags;
 
     public BuildSession(List<IBuildVariant> variants, int flags) {
@@ -29,7 +35,7 @@ public class BuildSession implements IBuildSession {
         return variants;
     }
 
-    public Map<String, String> getProperties() {
+    public Map<String, Object> getProperties() {
         return properties;
     }
 

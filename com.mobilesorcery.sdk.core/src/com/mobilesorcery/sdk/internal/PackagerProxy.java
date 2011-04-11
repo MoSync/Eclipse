@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IPackager;
+import com.mobilesorcery.sdk.core.IPackagerDelegate;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 
 public class PackagerProxy implements IPackager {
@@ -27,15 +28,17 @@ public class PackagerProxy implements IPackager {
     public final static String CLASS = "implementation";
     
     private IConfigurationElement element;
-    private IPackager delegate;
+    private IPackagerDelegate delegate;
+	private String id;
     
     public PackagerProxy(IConfigurationElement element) {
         this.element = element;
+        this.id = element.getAttribute("id");
     }
     
     private void initDelegate() throws CoreException {
         if (delegate == null) {
-            delegate = (IPackager) element.createExecutableExtension(CLASS);
+            delegate = (IPackagerDelegate) element.createExecutableExtension(CLASS);
         }
     }
 
@@ -47,6 +50,11 @@ public class PackagerProxy implements IPackager {
 	public void setParameter(String param, String value) throws CoreException {
 		initDelegate();
 		delegate.setParameter(param, value);
+	}
+
+	@Override
+	public String getId() {
+		return id;
 	}
 
 }

@@ -19,7 +19,6 @@ import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -27,17 +26,16 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.AssertionFailedException;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.ISafeRunnable;
 import org.eclipse.core.runtime.IStatus;
@@ -46,10 +44,15 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontData;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
@@ -65,7 +68,6 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.activities.ICategory;
 import org.eclipse.ui.activities.ICategoryActivityBinding;
 import org.eclipse.ui.activities.IWorkbenchActivitySupport;
-import org.eclipse.ui.ide.undo.CreateProjectOperation;
 import org.eclipse.ui.intro.IIntroManager;
 import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -74,12 +76,17 @@ import org.osgi.framework.BundleContext;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IProvider;
+import com.mobilesorcery.sdk.core.IsExperimentalTester;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
+import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.ui.internal.console.IDEProcessConsole;
 import com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator;
+import com.mobilesorcery.sdk.ui.internal.launch.EmulatorLaunchConfigurationPartProxy;
+import com.mobilesorcery.sdk.ui.internal.launch.MoreLauncherPart;
+import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -104,6 +111,11 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
     
     static final String EXPAND_ALL = "expand.all";
 
+	public static final String FONT_INFO_TEXT = "font.instr";
+
+	public static final String FONT_DEFAULT_BOLD = "b";
+	
+	public static final String FONT_DEFAULT_ITALIC = "i";
 
     // The shared instance
     private static MosyncUIPlugin plugin;
@@ -117,6 +129,10 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
     private IdentityHashMap<IWorkbenchWindow, IProject> currentProjects = new IdentityHashMap<IWorkbenchWindow, IProject>();
 
     private PropertyChangeListener globalListener;
+
+	private HashMap<String, IEmulatorLaunchConfigurationPart> launcherParts = new HashMap<String, IEmulatorLaunchConfigurationPart>();
+
+	private HashMap<Display, FontRegistry> fontRegistries = new HashMap<Display, FontRegistry>();
 
     /**
      * The constructor
@@ -138,10 +154,27 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         listeners = new PropertyChangeSupport(this);
         CoreMoSyncPlugin.getDefault().setIDEProcessConsoleProvider(this);
         registerGlobalProjectListener();
-        initializeCustomActivities();
+        UIUtils.awaitWorkbenchStartup(new IWorkbenchStartupListener() {
+			@Override
+			public void started() {
+		        initializeCustomActivities();	
+		        initializeLauncherParts();
+			}
+		});
     }
 
-    public boolean isExampleWorkspace() {
+    private void initializeLauncherParts() {
+    	IConfigurationElement[] launcherParts = Platform.getExtensionRegistry().getConfigurationElementsFor(IEmulatorLaunchConfigurationPart.EXTENSION_POINT_ID);
+    	for (int i = 0; i < launcherParts.length; i++) {
+    		IConfigurationElement launcherPart = launcherParts[i];
+    		String id = launcherPart.getAttribute("launcher");
+    		this.launcherParts.put(id, new EmulatorLaunchConfigurationPartProxy(launcherPart));
+    	}
+    	// Default always present
+    	this.launcherParts.put(MoReLauncher.ID, new MoreLauncherPart());
+	}
+
+	public boolean isExampleWorkspace() {
         IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
         File wsFile = wsRoot.getLocation().toFile();
         File exampleWSPath = MoSyncTool.getDefault().getMoSyncExamplesWorkspace().toFile();
@@ -194,27 +227,10 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
      * @param monitor
      * @return
      * @throws CoreException
+     * @deprecated Use {@link MoSyncProject#createNewProject(IProject, URI, IProgressMonitor)} instead.
      */
     public static MoSyncProject createProject(IProject project, URI location, IProgressMonitor monitor) throws CoreException {
-        IWorkspace workspace = ResourcesPlugin.getWorkspace();
-        IProjectDescription description = workspace.newProjectDescription(project.getName());
-        description.setLocationURI(location);
-
-        CreateProjectOperation op = new CreateProjectOperation(description, "Create Project");
-        try {
-            op.execute(monitor, null);
-        } catch (ExecutionException e) {
-            if (e.getCause() instanceof CoreException) {
-                throw (CoreException) e.getCause();
-            } else {
-                throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
-            }
-        }
-
-        MoSyncProject.addNatureToProject(project);
-        MoSyncProject result = MoSyncProject.create(project);
-        result.activateBuildConfigurations();
-        return result;
+    	return MoSyncProject.createNewProject(project, location, monitor);
     }
 
     private void initProjectChangeListener() {
@@ -504,9 +520,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
     }
     
     private void initializeCustomActivities() {
-    	boolean enable = Arrays.asList(Platform.getApplicationArgs()).contains("-experimental:enable");
-    	boolean disable = Arrays.asList(Platform.getApplicationArgs()).contains("-experimental:disable");
-    	
+    	boolean enable = Boolean.TRUE.equals(IsExperimentalTester.isExperimental());
+    	boolean disable = Boolean.FALSE.equals(IsExperimentalTester.isExperimental());
     	if (enable || disable) {
 	    	IWorkbenchActivitySupport activitySupport = PlatformUI.getWorkbench().getActivitySupport();
 	    	ICategory category = activitySupport.getActivityManager().getCategory("com.mobilesorcery.activities.experimental");
@@ -523,6 +538,39 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 	    	}
     	}
     }
+
+	public IEmulatorLaunchConfigurationPart getEmulatorLauncherPart(String id) {
+		return launcherParts.get(id);
+	}
     
+	/**
+	 * <p>Returns a standard font used throughtout the MoSync IDE.
+	 * Clients should <b>not</b> dispose these fonts.</p>
+	 * @param fontId
+	 * @return
+	 */
+	public Font getFont(String fontId) {
+		if (Display.getCurrent() == null) {
+			throw new AssertionFailedException("Must be called from UI thread");
+		}
+		return getFontRegistry(Display.getCurrent()).get(fontId);
+	}
+
+	private synchronized FontRegistry getFontRegistry(Display current) {
+		FontRegistry registry = fontRegistries.get(current);
+		if (registry == null) {
+			registry = new FontRegistry(current);
+			fontRegistries.put(current, registry);
+			initRegistry(registry);
+		}
+		
+		return registry;
+	}
+
+	private void initRegistry(FontRegistry registry) {
+		registry.put(FONT_INFO_TEXT, UIUtils.modifyFont((FontData[]) null, SWT.DEFAULT, -1));
+		registry.put(FONT_DEFAULT_BOLD, UIUtils.modifyFont((FontData[]) null, SWT.BOLD, 0));
+		registry.put(FONT_DEFAULT_ITALIC, UIUtils.modifyFont((FontData[]) null, SWT.ITALIC, 0));
+	}
 
 }

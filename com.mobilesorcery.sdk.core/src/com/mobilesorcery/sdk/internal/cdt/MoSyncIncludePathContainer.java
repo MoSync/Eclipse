@@ -18,10 +18,16 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.cdt.core.model.CoreModel;
+import org.eclipse.cdt.core.model.ICProject;
 import org.eclipse.cdt.core.model.IMacroEntry;
 import org.eclipse.cdt.core.model.IPathEntry;
 import org.eclipse.cdt.core.model.IPathEntryContainer;
+import org.eclipse.cdt.core.model.ISourceEntry;
+import org.eclipse.cdt.core.model.ISourceRoot;
+import org.eclipse.cdt.core.settings.model.ICConfigurationDescription;
+import org.eclipse.cdt.core.settings.model.ICProjectDescription;
 import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
@@ -31,6 +37,7 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.Util;
 
 public class MoSyncIncludePathContainer implements IPathEntryContainer {
@@ -56,14 +63,21 @@ public class MoSyncIncludePathContainer implements IPathEntryContainer {
         MoSyncProject project = MoSyncProject.create(this.project);
         if (project != null) {
             IBuildVariant variant = MoSyncBuilder.getActiveVariant(project, false);
-        	IPath[] includePaths = MoSyncBuilder.getBaseIncludePaths(project, variant);
-        	for (int i = 0; i < includePaths.length; i++) {
-        		IContainer[] includePathInWorkspace = ResourcesPlugin.getWorkspace().getRoot().findContainersForLocation(includePaths[i]);
-        		IPath resourcePath = includePathInWorkspace.length > 0 ? includePathInWorkspace[0].getProjectRelativePath() : Path.EMPTY;
-        		entries.add(CoreModel.newIncludeEntry(resourcePath, Path.EMPTY, includePaths[i], true));
-        	}
+        	try {
+        		IPath[] includePaths = MoSyncBuilder.getBaseIncludePaths(project, variant);
+	        	for (int i = 0; i < includePaths.length; i++) {
+	        		IContainer[] includePathInWorkspace = ResourcesPlugin.getWorkspace().getRoot().findContainersForLocation(includePaths[i]);
+	        		IPath resourcePath = includePathInWorkspace.length > 0 ? includePathInWorkspace[0].getProjectRelativePath() : Path.EMPTY;
+	        		entries.add(CoreModel.newIncludeEntry(resourcePath, Path.EMPTY, includePaths[i], true));
+	        	}
+			} catch (ParameterResolverException e) {
+				// TODO: Error marker?
+				CoreMoSyncPlugin.getDefault().log(e);
+			}
         }
         entries.addAll(Arrays.asList(createCompilerSymbols()));
+        entries.addAll(createOutputEntries(project.getWrappedProject()));
+        
         if (CoreMoSyncPlugin.getDefault().isDebugging()) {
         	CoreMoSyncPlugin.trace(entries);
         }
@@ -114,4 +128,43 @@ public class MoSyncIncludePathContainer implements IPathEntryContainer {
     	
     	return compilerSymbols;
     }
+    
+    private static List<ISourceEntry> createOutputEntries(IProject project) {
+    	// This one seems to be a bit prototype-ish, feel free to rip it out and replace it with something useful
+    	// Note that the original intent of this was to make sure that the indexer does not index the large
+    	// generated XCode files for the iPhone.
+    	IFolder outputPath = project.getFolder(new Path(MoSyncBuilder.OUTPUT));
+    	IFolder finalPath = project.getFolder(new Path(MoSyncBuilder.FINAL_OUTPUT));
+    	
+    	IPath[] exclusionPattern = new IPath[] { new Path("am*.c") };
+    	
+    	List<ISourceEntry> result = new ArrayList<ISourceEntry>();
+    	//addAsSourceEntryIfExists(result, outputPath, exclusionPattern);
+    	//addAsSourceEntryIfExists(result, finalPath, exclusionPattern);
+    	
+    	ICProjectDescription projDesc = CoreModel.getDefault().getProjectDescription(project);
+    	ICConfigurationDescription cfg = projDesc.getConfiguration();
+    	try {
+    		ICProject cProject = CoreModel.getDefault().create(project);
+    		ISourceRoot root = cProject.findSourceRoot(finalPath);
+        		IPathEntry[] rpe = cProject.getRawPathEntries();
+        	ArrayList<IPathEntry> newEntries = new ArrayList<IPathEntry>();
+        	newEntries.addAll(Arrays.asList(rpe));
+        	//newEntries.addAll(result);
+        		//cProject.setRawPathEntries(newEntries.toArray(new IPathEntry[0]), new NullProgressMonitor());
+        		//cfg.setSourceEntries(new ICSourceEntry[] { outputSourceEntry, finalOutputSourceEntry });
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+    	
+    	return result;
+    }
+
+	private static void addAsSourceEntryIfExists(List<ISourceEntry> result,
+			IFolder sourceFolder, IPath[] exclusionPattern) {
+		if (sourceFolder.exists()) {
+    		result.add(CoreModel.newSourceEntry(sourceFolder.getFullPath(), exclusionPattern));
+    	}
+	}
 }

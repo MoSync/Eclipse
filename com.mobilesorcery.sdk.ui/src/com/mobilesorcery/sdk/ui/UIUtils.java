@@ -13,12 +13,14 @@
 */
 package com.mobilesorcery.sdk.ui;
 
+import org.eclipse.cdt.internal.core.model.CreateWorkingCopyOperation;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
@@ -31,10 +33,13 @@ import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchListener;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
@@ -49,7 +54,31 @@ import com.mobilesorcery.sdk.ui.internal.console.PathLink;
 
 public class UIUtils {
 
-    public static void setDefaultShellBounds(Shell shell) {
+	private static final class AwaitWorkbenchJobRunnable implements Runnable {
+		private final Job workbenchStartupJob;
+		private final IWorkbenchStartupListener listener;
+
+		private AwaitWorkbenchJobRunnable(Job workbenchStartupJob,
+				IWorkbenchStartupListener listener) {
+			this.workbenchStartupJob = workbenchStartupJob;
+			this.listener = listener;
+		}
+
+		@Override
+		public void run() {
+			try {
+				workbenchStartupJob.join();
+				if (listener != null) {
+					listener.started();
+				}
+			} catch (InterruptedException e) {
+		        // Ignore.
+		    	Thread.currentThread().interrupt();
+		    }            		
+		}
+	}
+
+	public static void setDefaultShellBounds(Shell shell) {
         Rectangle displayBounds = shell.getDisplay().getBounds();
         shell.setSize(320, 480);
         
@@ -191,35 +220,85 @@ public class UIUtils {
         }
     }
 
-    public static Font modifyFont(Font original, int style) {
+    /**
+     * <p>Creates a new {@link Font} based on a prototype font.</p>
+     * <p>Clients must dispose of the new font.</p>
+     * @param original
+     * @param style The style(ie <code>SWT.BOLD</code>) to apply to
+     * the new font, or <code>SWT.DEFAULT</code> if the current style should be kept
+     * @return
+     */
+    public static Font modifyFont(Font original, int style)  {
+    	return modifyFont(original, style, 0);
+    }
+    
+    /**
+     * <p>Creates a new {@link Font} based on a prototype font.</p>
+     * <p>Clients must dispose of the new font.</p>
+     * @param original
+     * @param style The style(ie <code>SWT.BOLD</code>) to apply to
+     * the new font, or <code>SWT.DEFAULT</code> if the current style should be kept
+     * @param relativeHeight
+     * @return
+     */
+    public static Font modifyFont(Font original, int style, int relativeHeight) {
         if (original == null) {
             original = JFaceResources.getDefaultFont();
         }
         
         FontData[] fd = original.getFontData();
-        for (int i = 0; i < fd.length; i++) {
-            fd[i].setStyle(style);
-        }
+        fd = modifyFont(fd, style, relativeHeight);
         return new Font(original.getDevice(), fd);
     }
     
-    public static void awaitWorkbenchStartup() {
-        if (!PlatformUI.isWorkbenchRunning()) {
-            WorkbenchJob job = new WorkbenchJob("Awaiting workbench") {
-                public IStatus runInUIThread(IProgressMonitor monitor) {
-                    // Do nothing; actually we'll never get here.
-                    return Status.OK_STATUS;
-                }
-            };
-            job.setSystem(true);
-            job.schedule();
-            try {
-                job.join();
-            } catch (InterruptedException e) {
-                // Ignore.
-                CoreMoSyncPlugin.getDefault().log(e);
-            }
+    /**
+     * <p>Modifies an array of {@link FontData} based on a new style and relative height.</p>
+     * @param original 
+     * @param style The style(ie <code>SWT.BOLD</code>) to apply to
+     * the new font, or <code>SWT.DEFAULT</code> if the current style should be kept
+     * @param relativeHeight
+     * @return The modified array, always the same as the input value unless the input value is <code>null</code>
+     * in which case a new array is created.
+     */
+    public static FontData[] modifyFont(FontData[] fd, int style, int relativeHeight) {
+        if (fd == null) {
+            fd = JFaceResources.getDefaultFont().getFontData();
         }
+        
+        for (int i = 0; i < fd.length; i++) {
+        	if (style != SWT.DEFAULT) {
+        		fd[i].setStyle(style);
+        	}
+            fd[i].setHeight(fd[i].getHeight() + relativeHeight);
+        }
+        
+        return fd;
+    }
+    
+    /**
+     * <p>Waits for the workbench to startup (if <code>null</code> is passed
+     * as the listener) or asynchronously sends a message to the listener
+     * once it's started.</p>
+     * @param listener The listener to receive events, or <code>null</code> if this
+     * method should block until the workbench has started.
+     */
+    public synchronized static void awaitWorkbenchStartup(IWorkbenchStartupListener listener) {
+    	final WorkbenchJob workbenchStartupJob = new WorkbenchJob("Awaiting workbench") {
+            public IStatus runInUIThread(IProgressMonitor monitor) {
+                // Do nothing; actually we'll never get here.
+                return Status.OK_STATUS;
+            }
+        };
+        workbenchStartupJob.setSystem(true);
+        workbenchStartupJob.schedule();
+        
+        Runnable awaitWorkbenchRunnable = new AwaitWorkbenchJobRunnable(workbenchStartupJob, listener);
+    	if (listener == null) {
+    		awaitWorkbenchRunnable.run();
+    	} else {
+    		Thread t = new Thread(awaitWorkbenchRunnable);
+    		t.start();
+    	}
     }
 
     public static void main(String[] args) {
@@ -244,5 +323,18 @@ public class UIUtils {
             }
         }
     }
+
+    /**
+     * Returns a default layout for preference/property pages
+     * (no margins)
+     * @param i
+     * @return
+     */
+	public static GridLayout newPrefsLayout(int columns) {
+		GridLayout result = new GridLayout(columns, false);
+		result.marginWidth = 0;
+		result.marginHeight = 0;
+		return result;
+	}
     
 }

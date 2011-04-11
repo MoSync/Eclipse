@@ -51,8 +51,14 @@ public abstract class AbstractProcessConsole implements IProcessConsole {
         Reader errorReader = new InputStreamReader(error);
 
         LineReader inputPump = new LineReader(inputReader, new ILineHandler() {
-            public void newLine(String line) {
-                if (stdoutDelegate != null) {
+        	public void start(Process process) {
+            	if (stdoutDelegate != null) {
+                	stdoutDelegate.start(process);
+                }
+            }
+            
+        	public void newLine(String line) {
+        		if (stdoutDelegate != null) {
                 	stdoutDelegate.newLine(line);
                 }
                 writeLine(OUT, line);
@@ -66,7 +72,13 @@ public abstract class AbstractProcessConsole implements IProcessConsole {
         });
         
         LineReader errorPump = new LineReader(errorReader, new ILineHandler() {
-            public void newLine(String line) {
+        	public void start(Process process) {
+            	if (stderrDelegate != null) {
+                	stderrDelegate.start(process);
+                }
+            }
+        	
+        	public void newLine(String line) {
                 if (stderrDelegate != null) {
                     stderrDelegate.newLine(line);
                 }

@@ -8,5 +8,4 @@
             class="com.mobilesorcery.sdk.capabilities.core.permissions.ApplicationPermissionsCapabilitesMatcher">
       </matcher>
    </extension>
-
 </plugin>

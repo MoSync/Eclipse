@@ -22,72 +22,130 @@ import org.eclipse.cdt.core.model.ICProject;
 import org.eclipse.cdt.core.model.IContainerEntry;
 import org.eclipse.cdt.core.model.IPathEntry;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IWorkspace;
-import org.eclipse.core.resources.IWorkspaceRunnable;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.cdt.MoSyncIncludePathContainer;
 
-public class ReindexListener implements PropertyChangeListener {
+/**
+ * Listens for changes in the include paths in a MoSync project,
+ * and updates them in the corresponding CDT project.
+ * 
+ * @author fmattias
+ */
+public class ReindexListener implements PropertyChangeListener
+{	
+	/**
+	 * Updates and reindexes the include paths for an underlying CDT-project.
+	 * 
+	 * @author fmattias
+	 */
+	public class UpdateAndIndexIncludePathsJob extends WorkspaceJob
+	{
+		/**
+		 * The project to index the include paths for.
+		 */
+		private ICProject m_cProject;
+		
+		/**
+		 * The new include paths to index.
+		 */
+		private IPathEntry[] m_includePaths;
+		
+		/**
+		 * Constructor.
+		 * 
+		 * @param cProject The project to update with new include paths.
+		 * @param includePaths The new include paths to set 
+		 */
+		public UpdateAndIndexIncludePathsJob(ICProject cProject, IPathEntry[] includePaths)
+		{
+			super("Updating includes for: " + cProject.getElementName());
+			
+			m_cProject = cProject;
+			m_includePaths = includePaths;
+		}
 
-	public class SetPathEntriesRunnable implements IWorkspaceRunnable {
+		/**
+		 * Update and reindex include paths.
+		 */
+		@Override
+		public IStatus runInWorkspace(IProgressMonitor monitor)
+				throws CoreException
+		{
+			CoreModel.setRawPathEntries(m_cProject, m_includePaths, null);
 
-		private ICProject cProject;
-		private IPathEntry[] includePaths;
+			// The indexing can be long running, but it will be performed in
+			// the background by the index manager
+			CCorePlugin.getIndexManager().reindex(m_cProject);
 
-		public void setRawPathEntries(ICProject cProject, IPathEntry[] includePaths ) {
-			this.cProject = cProject;
-			this.includePaths = includePaths;
+			return Status.OK_STATUS;
+		}
+	}
+
+	public void propertyChange(PropertyChangeEvent event)
+	{
+		// Ensure the event is sent from a MoSync project
+		if(!eventSourceIsFromMoSync(event.getSource()))
+		{
+			return;
 		}
 		
-		public void run(IProgressMonitor monitor) throws CoreException {
-			CoreModel.setRawPathEntries(cProject, includePaths, monitor);
-			CCorePlugin.getIndexManager().reindex(cProject);
-			
-			// TODO: A bit crude, but unless we do this the include paths & compiler symbols will
-			// not be updated in UI. (Should be enough with workspace op)
-			//cProject.getProject().close(monitor);
-			//cProject.getProject().open(monitor);
+		// Check that it is a property that affects the include paths
+		if (!needToUpdateIncludes(event.getPropertyName()))
+		{
+			return;
 		}
+		
+		MoSyncProject project = (MoSyncProject) event.getSource();
+		IProject wrappedProject = project.getWrappedProject();
+		ICProject cProject = CoreModel.getDefault().create(wrappedProject);
 
+		IContainerEntry includePaths = CoreModel
+				.newContainerEntry(MoSyncIncludePathContainer.CONTAINER_ID);
+		UpdateAndIndexIncludePathsJob job = 
+			new UpdateAndIndexIncludePathsJob(cProject,  new IPathEntry[] { includePaths });
+
+		// CDT locks the whole workspace when updating the includes, and since
+		// it is running in our job the scope must be at least as big.
+		job.setRule(ResourcesPlugin.getWorkspace().getRoot());
+		job.schedule();
 	}
 
-	public void propertyChange(PropertyChangeEvent event) {
-		try {
-			if (propertyIsApplicable(event.getPropertyName())) {
-				Object source = event.getSource();
-				if (source instanceof MoSyncProject) {
-					MoSyncProject project = (MoSyncProject) source;
-					IProject wrappedProject = project.getWrappedProject();
-					ICProject cProject = CoreModel.getDefault().create(
-							wrappedProject);
-
-					IContainerEntry includePaths = CoreModel
-							.newContainerEntry(MoSyncIncludePathContainer.CONTAINER_ID);
-					
-					IWorkspace ws = wrappedProject.getWorkspace();
-					SetPathEntriesRunnable setPathEntriesRunnable = new SetPathEntriesRunnable();
-					setPathEntriesRunnable.setRawPathEntries(cProject, new IPathEntry[] { includePaths });
-					
-					ws.run(setPathEntriesRunnable, ws.getRoot(), IWorkspace.AVOID_UPDATE, null);					
-					
-					// CCorePlugin.getIndexManager().joinIndexer(arg0, arg1);
-				}
-			} 
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
-		}
+	/**
+	 * Determines if the given property change, affects the include paths.
+	 * 
+	 * @param propertyName The name of the property.
+	 * 
+	 * @return true if the given property affects the include paths,
+	 *         false otherwise.
+	 */
+	private boolean needToUpdateIncludes(String propertyName)
+	{
+		// Using startsWith since each property can end with the configuration type
+		return propertyName.startsWith(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS)
+			|| propertyName.startsWith(MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS)
+			|| propertyName.startsWith(MoSyncBuilder.EXTRA_COMPILER_SWITCHES)
+			|| propertyName.startsWith(MoSyncProject.BUILD_CONFIGURATION_CHANGED)
+			|| propertyName.startsWith(MoSyncProject.BUILD_CONFIGURATION_SUPPORT_CHANGED);
 	}
-
-	private boolean propertyIsApplicable(String propertyName) {
-		return MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS == propertyName
-		|| MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS == propertyName
-		|| MoSyncBuilder.EXTRA_COMPILER_SWITCHES == propertyName
-		|| MoSyncProject.BUILD_CONFIGURATION_CHANGED == propertyName
-		|| MoSyncProject.BUILD_CONFIGURATION_SUPPORT_CHANGED == propertyName;
+	
+	/**
+	 * Determines if the event source is a mosync project.
+	 * 
+	 * @param eventSource The object that sent the event.
+	 * 
+	 * @return true if eventSource was a MoSync project,
+	 *         false otherwise.
+	 */
+	private boolean eventSourceIsFromMoSync(Object eventSource)
+	{
+		return eventSource instanceof MoSyncProject;
 	}
 }

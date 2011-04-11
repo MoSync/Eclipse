@@ -22,6 +22,9 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.SimpleQueue;
 import com.mobilesorcery.sdk.core.Util;
 
+/**
+ * Class that parses binary data from the emulator.
+ */
 public class EmulatorOutputParser {
 
 	public static class ParseEvent {
@@ -108,7 +111,11 @@ public class EmulatorOutputParser {
 		switch (opcode) {
 		case REPORT_STRING:
 		case REPORT_EXIT_STRING:
-			input.read(buffer, 0, size);
+			/* It is important to read the number of bytes specified in
+			 * the message. Otherwise, the pipe that we read from will 
+			 * be blocked by the remaining data and cause the writer to hang.
+			 */
+			readAllBytes(input, buffer, size);
 			CoreMoSyncPlugin.getDefault().getEmulatorProcessManager().dataStreamed(id, buffer, 0, size);
 			String message = new String(buffer, 0, size, "UTF8");
 			handle(new ParseEvent(opcode, message, -1, null));
@@ -155,8 +162,44 @@ public class EmulatorOutputParser {
 		handlerQueue.awaitShutdown(timeout);
 	}
 
+	/**
+	 * Reads a single integer from the given input stream.
+	 * 
+	 * Note: This method will always read 4 bytes from the
+	 * input stream.
+	 * 
+	 * @param input The input stream to read from.
+	 * 
+	 * @return The integer that was read.
+	 * 
+	 * @throws IOException
+	 */
 	private int readInt(InputStream input) throws IOException {
 		return Util.readInt(input);
+	}
+	
+	/**
+	 * Reads from the given input stream and blocks until the
+	 * specified number of bytes has been read.
+	 * 
+	 * @param input       The input stream to read from.
+	 * @param buffer      The buffer that will contain the read data.
+	 * @param bytesToRead The number of bytes to read.
+	 * 
+	 * @throws IOException If an internal error occurs.
+	 */
+	private void readAllBytes(InputStream input, byte[] buffer, int bytesToRead)
+		throws IOException {
+		int bytesLeft = bytesToRead;
+		int offset = 0;
+		
+		while(bytesLeft > 0) {
+			int bytesRead = input.read(buffer, offset, bytesLeft);
+			if(bytesRead > 0) {
+				bytesLeft -= bytesRead;
+				offset += bytesRead;
+			}
+		}
 	}
 
 	public static void main(String[] args) throws Exception {

@@ -42,7 +42,12 @@ public class CommandLineBuilder
 	 */
 	public CommandLineBuilder(String executable) 
 	{
-		if( ! (new File( executable )).exists( ) )
+		this(executable, false);
+	}
+	
+	public CommandLineBuilder(String executable, boolean lenient)  
+	{
+		if(!lenient && ! (new File( executable )).exists( ) )
 		{
 			throw new IllegalArgumentException( "Executable does not exist." );
 		}

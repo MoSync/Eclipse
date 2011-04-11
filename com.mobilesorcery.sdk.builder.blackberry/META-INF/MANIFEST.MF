@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Blackberry
+Bundle-SymbolicName: com.mobilesorcery.sdk.builder.blackberry;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.mobilesorcery.sdk.builder.blackberry.BlackBerryPlugin
+Bundle-Vendor: MOBILESORCERY
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ com.mobilesorcery.sdk.core;bundle-version="1.0.0",
+ org.eclipse.debug.core;bundle-version="3.6.0",
+ com.mobilesorcery.sdk.ui;bundle-version="1.0.0",
+ com.mobilesorcery.sdk.builder.java;bundle-version="1.0.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy

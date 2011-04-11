@@ -6,6 +6,7 @@
    <extension-point id="com.mobilesorcery.sdk.updater" name="Auto Updater" schema="schema/com.mobilesorcery.sdk.updater.exsd"/>
    <extension-point id="com.mobilesorcery.core.buildconfigurationtypes" name="Build Configuration Types" schema="schema/com.mobilesorcery.core.buildconfigurationtypes.exsd"/>
    <extension-point id="com.mobilesorcery.sdk.core.filter.factories" name="Device Filter Factories" schema="schema/com.mobilesorcery.sdk.core.filter.factories.exsd"/>
+   <extension-point id="com.mobilesorcery.core.launcher" name="Launcher" schema="schema/com.mobilesorcery.core.launcher.exsd"/>
 
    <extension
          id="builder"
@@ -64,6 +65,13 @@
             namespace="com.mobilesorcery.sdk.testers"
             properties="isExcludableFromBuild"
             type="java.lang.Object"/>
+       <propertyTester
+             class="com.mobilesorcery.sdk.core.IsExperimentalTester"
+             id="com.mobilesorcery.sdk.testers.isExperimental"
+             namespace="com.mobilesorcery.sdk.testers"
+             properties="isExperimental"
+             type="java.lang.Object">
+       </propertyTester>
    </extension>
    
 
