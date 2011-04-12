@@ -57,7 +57,7 @@ public class CompileBuildStep extends AbstractBuildStep {
 	}
 	
 	@Override
-	public void incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
+	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
 			IBuildState buildState, IBuildVariant variant, IFileTreeDiff diff,
 			IBuildResult buildResult, IFilter<IResource> resourceFilter,
 			IProgressMonitor monitor) throws CoreException {		
@@ -95,6 +95,8 @@ public class CompileBuildStep extends AbstractBuildStep {
         
         // TODO: Better way to transport this stuff?
         session.getProperties().put(OBJECT_FILES, compilerVisitor.getObjectFilesForProject(project));
+        
+        return CONTINUE;
 	}
 
 }

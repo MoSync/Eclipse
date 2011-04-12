@@ -62,10 +62,12 @@ public class LinkBuildStep extends AbstractBuildStep {
 	}
 	
 	@Override
-	public void incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
+	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
 			IBuildState buildState, IBuildVariant variant, IFileTreeDiff diff,
 			IBuildResult result, IFilter<IResource> resourceFilter,
 			IProgressMonitor monitor) throws Exception {
+		int continueFlag = IBuildStep.CONTINUE;
+		
 		IProcessConsole console = getConsole();
 		IPropertyOwner buildProperties = getBuildProperties();
 		PipeTool pipeTool = getPipeTool();
@@ -106,7 +108,8 @@ public class LinkBuildStep extends AbstractBuildStep {
             pipeTool.setExtraSwitches(extraLinkerSwitches);
 
             if (objectFiles.length > 0) {
-                pipeTool.run();
+            	// TODO: Dependencies?
+                continueFlag = (pipeTool.run() == PipeTool.SKIP_RETURN_CODE ? IBuildStep.SKIP : IBuildStep.CONTINUE);
                 
                 // If needed, run a second time to generate IL
                 if (isLib == false && pipeToolMode.equals(PipeTool.BUILD_C_MODE) == false) {
@@ -151,6 +154,8 @@ public class LinkBuildStep extends AbstractBuildStep {
                 Util.mergeFiles(new SubProgressMonitor(monitor, 1), parts.toArray(new File[parts.size()]), programComb.toFile());
             }
         }
+        
+        return continueFlag;
 	}
 	
     private String[] getResourceFiles(IBuildSession session) {

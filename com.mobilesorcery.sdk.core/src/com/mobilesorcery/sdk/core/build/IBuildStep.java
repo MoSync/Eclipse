@@ -1,9 +1,6 @@
 package com.mobilesorcery.sdk.core.build;
 
-import java.util.Set;
-
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 import com.mobilesorcery.sdk.core.IBuildResult;
@@ -20,8 +17,24 @@ import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
 
+/**
+ * <p>An interface representing a 'generic' buildstep, such as 'compile', 'link' or 'package'.</p>
+ * @author Mattias Bybro, mattias@bybro.com
+ *
+ */
 public interface IBuildStep {
 
+	/**
+	 * A hint to continue building after this build step.
+	 */
+	public int CONTINUE = 0;
+	
+	/**
+	 * A hint to skip the remaining build steps and accept
+	 * this build step as the final one.
+	 */
+	public int SKIP = 1;
+	
 	/**
 	 * Performs this build step.
 	 * @param project
@@ -33,8 +46,10 @@ public interface IBuildStep {
 	 * @param resourceFilter
 	 * @param monitor
 	 * @throws Exception
+	 * @return Either {@link #CONTINUE} or {@link #SKIP}. (The latter
+	 * will only be used under very special circumstances.)
 	 */
-    void incrementalBuild(MoSyncProject project, 
+    int incrementalBuild(MoSyncProject project, 
     		IBuildSession session, IBuildState buildState, IBuildVariant variant,
     		IFileTreeDiff diff,
     		IBuildResult result,

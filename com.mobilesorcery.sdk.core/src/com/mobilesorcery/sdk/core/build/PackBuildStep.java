@@ -53,7 +53,7 @@ public class PackBuildStep extends AbstractBuildStep {
 	}
 	
 	@Override
-	public void incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
+	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
 			IBuildState buildState, IBuildVariant variant, IFileTreeDiff diff,
 			IBuildResult buildResult, IFilter<IResource> resourceFilter,
 			IProgressMonitor monitor) throws Exception {
@@ -74,6 +74,8 @@ public class PackBuildStep extends AbstractBuildStep {
         } else {
             console.addMessage(MessageFormat.format("Created package: {0} (platform: {1})", buildResult.getBuildResult(), Profile.getAbbreviatedPlatform(targetProfile)));
         }
+        
+        return CONTINUE;
 	}
 
 	@Override

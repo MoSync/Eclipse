@@ -522,12 +522,14 @@ public class MoSyncBuilder extends ACBuilder {
 
             sequence.assertValid(session);
             
+            int continueFlag = IBuildStep.CONTINUE;
+            	
             for (IBuildStep buildStep : buildSteps) {
             	if (monitor.isCanceled()) {
             		return buildResult;
             	}
             	
-            	if (buildStep.shouldBuild(mosyncProject, session, buildResult)) {
+            	if (continueFlag != IBuildStep.SKIP && buildStep.shouldBuild(mosyncProject, session, buildResult)) {
 	            	buildStep.initConsole(console);
 	            	buildStep.initBuildProperties(buildProperties);
 	            	buildStep.initBuildState(buildState);
@@ -535,7 +537,10 @@ public class MoSyncBuilder extends ACBuilder {
 	            	buildStep.initParameterResolver(resolver);
 	            	buildStep.initDefaultLineHandler(linehandler);
 	            	buildStep.initDependencyProvider(dependencyProvider);
-	            	buildStep.incrementalBuild(mosyncProject, session, buildState, variant, diff, buildResult, resourceFilter, monitor);
+	            	continueFlag = buildStep.incrementalBuild(mosyncProject, session, buildState, variant, diff, buildResult, resourceFilter, monitor);
+	            	if (continueFlag == IBuildStep.SKIP) {
+	            		console.addMessage(MessageFormat.format("Was told by build step {0} to skip the remaining build steps. Build successful.", buildStep.getName()));
+	            	}
             	}
             	
             	monitor.worked(1);

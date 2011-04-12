@@ -227,7 +227,7 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 	}
 	
 	@Override
-	public void incrementalBuild(MoSyncProject project, IBuildSession session,
+	public int incrementalBuild(MoSyncProject project, IBuildSession session,
 			IBuildState buildState, IBuildVariant variant, IFileTreeDiff diff,
 			IBuildResult result, IFilter<IResource> resourceFilter,
 			IProgressMonitor monitor) throws Exception {
@@ -236,6 +236,8 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 		visitor.setParameterResolver(getParameterResolver());
 		project.getWrappedProject().accept(visitor);
 		visitor.executeScript();
+        
+        return CONTINUE;
 	}
 
 	public void executeScript(ParameterResolver resolver) throws IOException,

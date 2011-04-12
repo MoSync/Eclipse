@@ -46,7 +46,7 @@ public class ResourceBuildStep extends AbstractBuildStep {
 	}
 	
 	@Override
-	public void incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
+	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
 			IBuildState buildState, IBuildVariant variant, IFileTreeDiff diff,
 			IBuildResult result, IFilter<IResource> resourceFilter,
 			IProgressMonitor monitor) throws CoreException {
@@ -66,6 +66,8 @@ public class ResourceBuildStep extends AbstractBuildStep {
         resourceVisitor.incrementalCompile(monitor, buildState.getDependencyManager());
         
         session.getProperties().put(RESOURCE_FILES, resourceVisitor.getResourceFiles());
+        
+        return CONTINUE;
 	}
 
 	@Override

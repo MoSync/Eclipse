@@ -67,6 +67,12 @@ public class PipeTool {
     
 	private static final String RESOURCE_DEPENDENCY_FILE_NAME = "resources.deps";
 	private static final int MAX_PIPE_TOOL_ARG_LENGTH = 162;
+	
+    /**
+     *  A return code from pipe tool that instructs the builder to skip
+     *  any remaining build steps.
+	 */
+	public static final int SKIP_RETURN_CODE = -10000;
 
     private IPath outputFile;
     private String[] inputFiles;
@@ -125,7 +131,15 @@ public class PipeTool {
     	this.argumentMap = argumentMap;
     }
     
-    public void run() throws CoreException, ParameterResolverException {
+    /**
+     * <p>Runs pipetool and returns the error code
+     * if it is either <code>0</code> or {@link #SKIP_RETURN_CODE}
+     * (Otherwise it will throw an exception).</p>
+     * @return
+     * @throws CoreException
+     * @throws ParameterResolverException
+     */
+    public int run() throws CoreException, ParameterResolverException {
     	IPath pipeTool = MoSyncTool.getDefault().getBinary("pipe-tool");
 
         ArrayList<String> args = new ArrayList<String>();
@@ -222,10 +236,13 @@ public class PipeTool {
             
             console.attachProcess(process, linehandler);
             int result = process.waitFor();
-            if (result != 0) {
+            
+            if (result != 0 && result != SKIP_RETURN_CODE) {
                 throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
                         MessageFormat.format("Pipe tool failed. (See console for more information).\n Command line: {0}", cmdLine)));                
             }
+            
+            return result;
         } catch (CoreException e) {
             throw e;
         } catch (Exception e) {
