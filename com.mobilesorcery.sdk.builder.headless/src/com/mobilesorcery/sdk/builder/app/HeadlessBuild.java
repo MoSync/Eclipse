@@ -14,6 +14,7 @@
 package com.mobilesorcery.sdk.builder.app;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
@@ -97,6 +98,7 @@ public class HeadlessBuild implements IApplication {
 
 		String projectName = null;
 		String finalizerScript = null;
+		String cfgId = null;
 
 		while (i < args.length) {
 			String arg = args[i];
@@ -104,11 +106,15 @@ public class HeadlessBuild implements IApplication {
 
 			if ("-project".equals(arg)) { //$NON-NLS-1$
 				projectName = nextArg;
-				i += 2;
+				i++;
 			} else if ("-f".equals(arg)) { //$NON-NLS-1$
 				finalizerScript = nextArg;
-				i += 2;
+				i++;
+			} else if ("-cfg".equals(arg)) { //$NON-NLS-1$
+				cfgId = nextArg;
+				i++;
 			}
+			i++;
 		}
 
 		if (projectName == null) {
@@ -121,6 +127,13 @@ public class HeadlessBuild implements IApplication {
 			throw new IOException(Messages.HeadlessBuild_IllegalProjectState);
 		}
 
+		MoSyncProject mosyncProject = MoSyncProject.create(project);
+		
+		if (cfgId != null && mosyncProject.getBuildConfiguration(cfgId) == null) {
+			String availableCfgs = Util.join(mosyncProject.getBuildConfigurations().toArray(), ", ");
+			throw new IOException(MessageFormat.format("Unknown build configuration: {0}. Available configurations for this project are: {1}", cfgId, availableCfgs));
+		}
+		
 		String script = null;
 		if (finalizerScript != null) {
 			script = Util.readFile(finalizerScript);
@@ -128,11 +141,10 @@ public class HeadlessBuild implements IApplication {
 
 		FinalizerParser parser = new FinalizerParser(project);
 		if (script == null) {
-			script = parser.extractScriptFromProject(MoSyncProject
-					.create(project));
+			script = parser.extractScriptFromProject(mosyncProject);
 		}
 
-		FinalizeJob job = new FinalizeJob(MoSyncProject.create(project), script);
+		FinalizeJob job = new FinalizeJob(mosyncProject, script, cfgId);
 		job.setUser(true);
 		job.schedule();		
 		job.join();

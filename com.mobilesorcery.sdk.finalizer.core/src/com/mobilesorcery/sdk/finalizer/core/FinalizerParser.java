@@ -31,6 +31,7 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
@@ -63,8 +64,21 @@ public class FinalizerParser {
 
 	private IProject project;
 
-	public FinalizerParser(IProject project) {
+	private String cfgId;
+
+	/**
+	 * Creates a new parser
+	 * @param project
+	 * @param cfgId <code>null</code> if the project's active
+	 * build configuration should be used
+	 */
+	public FinalizerParser(IProject project, String cfgId) {
 		this.project = project;
+		this.cfgId = cfgId;
+	}
+
+	public FinalizerParser(IProject project) {
+		this(project, null);
 	}
 
 	public void execute(Reader script, IProgressMonitor monitor) throws IOException, ParseException, InvocationTargetException,
@@ -79,7 +93,8 @@ public class FinalizerParser {
 		for (String line = lines.readLine(); line != null; line = lines.readLine()) {
 			IProfile profileToBuild = parse(line, lineNo);
 			if (profileToBuild != null) {
-			    IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, profileToBuild);
+			    IBuildConfiguration cfg = this.cfgId == null ? project.getActiveBuildConfiguration() : project.getBuildConfiguration(cfgId);
+				IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, profileToBuild, cfg);
 			    variantsToBuild.add(variant);
 			}
 			lineNo++;

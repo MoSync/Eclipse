@@ -31,11 +31,17 @@ public final class FinalizeJob extends Job {
 
 	private String finalizerScript;
 	private MoSyncProject project;
+	private String cfgId;
 
 	public FinalizeJob(MoSyncProject project, String finalizerScript) {
+		this(project, finalizerScript, null);
+	}
+	
+	public FinalizeJob(MoSyncProject project, String finalizerScript, String cfgId) {
 		super(Messages.FinalizeJob_Finalize);
 		this.project = project;
 		this.finalizerScript = finalizerScript;
+		this.cfgId = cfgId;
 	}
 
 	protected IStatus run(final IProgressMonitor monitor) {
@@ -46,7 +52,7 @@ public final class FinalizeJob extends Job {
 
 		StringReader script = new StringReader(finalizerScript);
 		final FinalizerParser parser = new FinalizerParser(project
-				.getWrappedProject());
+				.getWrappedProject(), cfgId);
 		try {
 			parser.execute(script, monitor);
 			return Status.OK_STATUS;

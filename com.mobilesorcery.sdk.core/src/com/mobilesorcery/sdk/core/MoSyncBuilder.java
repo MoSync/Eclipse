@@ -969,13 +969,42 @@ public class MoSyncBuilder extends ACBuilder {
         return new BuildVariant(project.getTargetProfile(), cfgId, isFinalizerBuild);
     }
 
+    /**
+     * Creates a {@link IBuildVariant} for finalizing, based on a specified {@link IProfile}
+     * and the project's active build configuration.
+     * @param project
+     * @param profile
+     * @return The created {@link IBuildVariant}
+     */
     public static IBuildVariant getFinalizerVariant(MoSyncProject project, IProfile profile) {
-        // TODO: Per-profile finalizer cfg, now we just rely on the finalizer
-        // parser to
-        // change config before finalizing.
-        IBuildConfiguration cfg = project.getActiveBuildConfiguration();
+    	IBuildConfiguration cfg = project.getActiveBuildConfiguration();
+        return getFinalizerVariant(project, profile, cfg);
+    }
+    
+
+    /**
+     * Creates a {@link IBuildVariant} for finalizing, based on a specified {@link IProfile}
+     * and a specified {@link IBuildConfiguration} id.
+     * @param project
+     * @param profile
+     * @param cfg
+     * @return The created {@link IBuildVariant}
+     */
+    public static IBuildVariant getFinalizerVariant(MoSyncProject project, IProfile profile, String cfgId) {
+    	return new BuildVariant(profile, cfgId, true);
+    }
+   
+    /**
+     * Creates a {@link IBuildVariant} for finalizing, based on a specified {@link IProfile}
+     * and a specified {@link IBuildConfiguration}.
+     * @param project
+     * @param profile
+     * @param cfg
+     * @return The created {@link IBuildVariant}
+     */
+    public static IBuildVariant getFinalizerVariant(MoSyncProject project, IProfile profile, IBuildConfiguration cfg) {
         String cfgId = project.areBuildConfigurationsSupported() && cfg != null ? cfg.getId() : null;
-        return new BuildVariant(profile, cfgId, true);
+    	return new BuildVariant(profile, cfgId, true);
     }
     
     public static IBuildSession createFinalizerBuildSession(List<IBuildVariant> variants) {

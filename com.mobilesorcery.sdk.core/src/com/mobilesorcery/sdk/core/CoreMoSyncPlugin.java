@@ -52,6 +52,8 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import sun.security.action.GetLongAction;
+
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
@@ -130,7 +132,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     public void start(BundleContext context) throws Exception {
         super.start(context);
         plugin = this;
-        isHeadless = Boolean.TRUE.equals(System.getProperty("com.mobilesorcery.headless"));
+        isHeadless = Boolean.TRUE.toString().equals(System.getProperty("com.mobilesorcery.headless"));
         initReIndexerListener();
         initRebuildListener();
         initNativeLibs(context);
@@ -212,6 +214,9 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
      */
 	public static void setHeadless(boolean isHeadless) {
 		plugin.isHeadless = isHeadless;
+		if (isHeadless) {
+			getDefault().getLog().log(new Status(IStatus.INFO, PLUGIN_ID, "Entering headless mode"));
+		}
 	}
 
     private void installBreakpointHack() {    	
@@ -568,7 +573,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	}
 
 	private void checkAutoUpdate() {
-		if (CoreMoSyncPlugin.isHeadless()) {
+		if (isHeadless) {
 			return;
 		}
 		
