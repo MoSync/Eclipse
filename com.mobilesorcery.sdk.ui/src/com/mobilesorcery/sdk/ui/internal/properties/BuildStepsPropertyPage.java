@@ -72,6 +72,7 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 			runOnce = new Button(main, SWT.RADIO);
 			runOnce.setText("Run script &once");
 			runOnce.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false, 2, 1));
+			runOnce.setSelection(!factory.shouldRunPerFile());
 			runPerFile = new Button(main, SWT.RADIO);
 			runPerFile.setText("Run script for each file that matches:");
 			filePattern = new Text(main, SWT.BORDER | SWT.SINGLE);
