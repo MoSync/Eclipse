@@ -93,25 +93,12 @@ public class SymbianPropertyPage extends PropertyPage {
 	}
 	
     private String validate(String property, String uid) {
+    	//Validation of the range is not needed anymore, just checking for the format
     	if (uid != null && uid.length() >= 2 && uid.substring(0, 2).equalsIgnoreCase("0x")) { //$NON-NLS-1$
-        	try {
-        		long uidValue = Long.parseLong(uid.substring(2), 16);
-        		if (uidValue >= PropertyInitializer.getStartOfRange(property) &&
-        			uidValue <= PropertyInitializer.getStartOfRange(property) + PropertyInitializer.getLengthOfRange(property)) {
         			return null; // Ok.
-        		}
-        	} catch (Exception e) {
-        		// Just fall thru to error message
-        	}
     	} else {
     		return Messages.SymbianPropertyPage_UIDPrefixError;
-    	}
-        
-    	return MessageFormat.format(
-    			Messages.SymbianPropertyPage_UIDRangeError,
-    			getVersionString(property),
-    			Long.toHexString(PropertyInitializer.getStartOfRange(property)),
-    			Long.toHexString(PropertyInitializer.getStartOfRange(property) + PropertyInitializer.getLengthOfRange(property)));
+    	}    	
     }
 
     private Object getVersionString(String property) {
