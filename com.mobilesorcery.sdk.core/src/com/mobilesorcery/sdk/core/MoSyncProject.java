@@ -31,16 +31,18 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.resources.FileInfoMatcherDescription;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.resources.IResourceFilterDescription;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
@@ -48,14 +50,13 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.equinox.security.storage.SecurePreferencesFactory;
 import org.eclipse.equinox.security.storage.StorageException;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.XMLMemento;
 import org.eclipse.ui.ide.undo.CreateProjectOperation;
 
-import com.mobilesorcery.sdk.core.build.IBuildSequence;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.MoSyncProjectConverter1_2;
@@ -613,10 +614,19 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
         }
 
         addNatureToProject(project);
+        addDefaultResourceFilter(project, new NullProgressMonitor());
         MoSyncProject result = create(project);
         result.activateBuildConfigurations();
         return result;
     }
+
+	private static void addDefaultResourceFilter(IProject project, IProgressMonitor monitor) throws CoreException {
+		// TODO: Hmmm.... maybe we should consider filtering out output folders?
+		//FileInfoMatcherDescription filter = new FileInfoMatcherDescription("org.eclipse.core.resources.regexFilterMatcher", ".*rebuild.build.cpp");
+		// Very internal format, but the version number should help us be a bit future proof.
+		FileInfoMatcherDescription filter = new FileInfoMatcherDescription("org.eclipse.ui.ide.multiFilter", "1.0-name-matches-false-true-.*rebuild.build.cpp");
+		IResourceFilterDescription created = project.createFilter(IResourceFilterDescription.EXCLUDE_ALL | IResourceFilterDescription.FILES, filter, 0, monitor);
+	}
 
 	/**
 	 * Disposes of this mosyncproject, so subsequent calls to
