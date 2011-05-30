@@ -20,7 +20,7 @@ import java.util.TreeMap;
 import com.mobilesorcery.sdk.core.IPropertyOwner.IWorkingCopy;
 
 /**
- * A default implementation fot property owner working copies.
+ * A default implementation for property owner working copies.
  * @author Mattias Bybro
  *
  */

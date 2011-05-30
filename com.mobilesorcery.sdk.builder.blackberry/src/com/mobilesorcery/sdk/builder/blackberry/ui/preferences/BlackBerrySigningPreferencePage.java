@@ -1,7 +1,9 @@
 package com.mobilesorcery.sdk.builder.blackberry.ui.preferences;
 
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.preference.PreferencePage;
-import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.util.Policy;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
@@ -14,6 +16,8 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 import com.mobilesorcery.sdk.builder.blackberry.BlackBerryPlugin;
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.PreferenceStorePropertyOwner;
+import com.mobilesorcery.sdk.core.SecurePropertyException;
 import com.mobilesorcery.sdk.ui.PasswordTextFieldDecorator;
 import com.mobilesorcery.sdk.ui.UIUtils;
 
@@ -50,8 +54,11 @@ public class BlackBerrySigningPreferencePage extends PreferencePage implements
 	
 	private void init() {
 		try {
-			KeystoreCertificateInfo info = KeystoreCertificateInfo.parseOne(getPreferenceStore().getString(BlackBerryPlugin.BLACKBERRY_SIGNING_INFO));
-			password.setText(info.getKeyPassword());
+			KeystoreCertificateInfo info = KeystoreCertificateInfo.loadOne(
+					BlackBerryPlugin.BLACKBERRY_SIGNING_INFO,
+					new PreferenceStorePropertyOwner(getPreferenceStore()),
+					CoreMoSyncPlugin.getDefault().getSecureProperties());
+			password.setText(info == null ? "" : info.getKeyPassword());
 		} catch (Exception e) {
 			// Ok, just ignore + clear info.
 			CoreMoSyncPlugin.getDefault().log(e);
@@ -60,8 +67,15 @@ public class BlackBerrySigningPreferencePage extends PreferencePage implements
 	
 	@Override
 	public boolean performOk() {
-		KeystoreCertificateInfo info = new KeystoreCertificateInfo("", "", "", password.getText());
-		getPreferenceStore().setValue(BlackBerryPlugin.BLACKBERRY_SIGNING_INFO, KeystoreCertificateInfo.unparse(info));
+		KeystoreCertificateInfo info = new KeystoreCertificateInfo("", "", "", password.getText(), true);
+		try {
+			info.store(BlackBerryPlugin.BLACKBERRY_SIGNING_INFO,
+					new PreferenceStorePropertyOwner(getPreferenceStore()),
+					CoreMoSyncPlugin.getDefault().getSecureProperties());
+		} catch (SecurePropertyException e) {
+			Policy.getStatusHandler().show(new Status(IStatus.ERROR, BlackBerryPlugin.PLUGIN_ID, "Could not store encrypted password"), "Could not store encrypted password");
+			return false;
+		}
 		return super.performOk();
 	}
 

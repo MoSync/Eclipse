@@ -41,7 +41,6 @@ import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
-import com.mobilesorcery.sdk.ui.UIUtils;
 
 /*
 	Built on the JavaMe packager code
@@ -256,48 +255,45 @@ extends AbstractPackager
 									 new File( packageOutDir, "addlib" ).getAbsolutePath( ) );
 
 			// sign apk file using jarSigner
-			String keystoreCertInfoStr = project.getProperty(PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO);
-			KeystoreCertificateInfo keystoreCertInfo = null;
+            KeystoreCertificateInfo keystoreCertInfo = null;
+            
+            try {
+            	keystoreCertInfo = KeystoreCertificateInfo.loadOne(
+            			PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO,
+            			project, project.getSecurePropertyOwner());
+            } catch (Exception e) {
+                throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Invalid or missing certificate", e));
+            }
 
-			try {
-				keystoreCertInfo = KeystoreCertificateInfo.parseOne(keystoreCertInfoStr);
-
-			} catch (IllegalArgumentException e) {
-				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Invalid or missing certificate", e));
-			}
-
-			if (keystoreCertInfo != null) {
-				String keystore = keystoreCertInfo.getKeystoreLocation();
-				String alias = keystoreCertInfo.getAlias();
-				String storepass = keystoreCertInfo.getKeystorePassword();
-				if (Util.isEmpty(storepass)) {
-					throw new IllegalArgumentException("Keystore password missing");
-				}
-
-				String keypass = keystoreCertInfo.getKeyPassword();
-				if (Util.isEmpty(keypass)) {
-					throw new IllegalArgumentException("Keystore password missing");
-				}
-
-				String[] jarSignerCommandLine = new String[]
-				{
-					"java",
-					"-jar",
-					new File( mosyncBinDir, "android/tools-stripped.jar" ).getAbsolutePath( ),
-					"-keystore",
-					keystore,
-					"-storepass",
-					storepass,
-					"-keypass",
-					keypass,
-					"-signedjar",
-					internal.resolveFile( "%package-output-dir%/%app-name%.apk" ).getAbsolutePath( ),
-					internal.resolveFile( "%package-output-dir%/%app-name%_unsigned.apk" ).getAbsolutePath( ),
-					alias
-				};
-
-				internal.runCommandLine(jarSignerCommandLine, "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***");
-			}
+            if (keystoreCertInfo != null) {
+                String keystore = keystoreCertInfo.getKeystoreLocation();
+                String alias = keystoreCertInfo.getAlias();
+                String storepass = keystoreCertInfo.getKeystorePassword();
+                String keypass = keystoreCertInfo.getKeyPassword();
+                
+                if (!DefaultMessageProvider.isEmpty(keystoreCertInfo.validate())) {
+                	throw new CoreException(new Status(IStatus.OK, Activator.PLUGIN_ID, "No or invalid key/keystore password for android signing. Please note that for security reasons, passwords are locally stored. You may need to set the password in the Android preference page."));	
+                }
+				
+                String[] jarSignerCommandLine = new String[] 
+                {
+                    "java", 
+                    "-jar", 
+                    new File( mosyncBinDir, "android/tools-stripped.jar" ).getAbsolutePath( ),
+                    "-keystore", 
+                    keystore, 
+                    "-storepass", 
+                    storepass, 
+                    "-keypass", 
+                    keypass,
+                    "-signedjar", 
+                    internal.resolveFile( "%package-output-dir%/%app-name%.apk" ).getAbsolutePath( ),
+                    internal.resolveFile( "%package-output-dir%/%app-name%_unsigned.apk" ).getAbsolutePath( ), 
+                    alias
+                };
+                
+    			internal.runCommandLine(jarSignerCommandLine, "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***");
+            }
 			// Clean up!
 			recursiveDel( new File( packageOutDir, "classes" ) );
 			recursiveDel( new File( packageOutDir, "res" ) );
@@ -345,17 +341,6 @@ extends AbstractPackager
 		{
 
 		}
-	}
-
-	/**
-	 * Get the password
-	 *
-	 * @param project		The MoSync project
-	 * @param propertyKey	The property key
-	 * @return 				The password
-	 */
-	private String getPassword(MoSyncProject project, String propertyKey) {
-		return UIUtils.getPassword(project, propertyKey);
 	}
 
 	/**

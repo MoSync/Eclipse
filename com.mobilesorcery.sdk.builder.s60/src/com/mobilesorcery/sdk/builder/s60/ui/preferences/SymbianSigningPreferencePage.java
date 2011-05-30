@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.builder.s60.ui.preferences;
 
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.FileFieldEditor;
 import org.eclipse.jface.preference.StringFieldEditor;
@@ -16,6 +17,7 @@ public class SymbianSigningPreferencePage extends FieldEditorPreferencePage impl
     public SymbianSigningPreferencePage() {
         super(GRID);
         setPreferenceStore(Activator.getDefault().getPreferenceStore());
+        setMessage("The passkey will be stored as clear text", IMessageProvider.WARNING);
     }
     
     protected void createFieldEditors() {

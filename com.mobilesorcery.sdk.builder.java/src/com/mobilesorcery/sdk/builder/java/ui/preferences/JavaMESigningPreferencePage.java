@@ -2,6 +2,7 @@ package com.mobilesorcery.sdk.builder.java.ui.preferences;
 
 import java.util.ArrayList;
 
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Button;
@@ -14,6 +15,10 @@ import com.mobilesorcery.sdk.builder.java.Activator;
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.builder.java.PropertyInitializer;
 import com.mobilesorcery.sdk.builder.java.ui.KeystoreCertificateInfoEditor;
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.PreferenceStorePropertyOwner;
+import com.mobilesorcery.sdk.core.SecurePropertyException;
+import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 import com.mobilesorcery.sdk.ui.UpdateListener;
 import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 
@@ -33,8 +38,23 @@ public class JavaMESigningPreferencePage extends PreferencePage implements IWork
             infos.add(editor.getKeystoreCertInfo());
         }
         
-        getPreferenceStore().setValue(PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS, KeystoreCertificateInfo.unparse(infos));
+        try {
+			KeystoreCertificateInfo.store(infos, 
+					PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS, 
+					new PreferenceStorePropertyOwner(getPreferenceStore()),
+					CoreMoSyncPlugin.getDefault().getSecureProperties());
+		} catch (SecurePropertyException e) {
+			handleSecurePropertyException(e);
+		}
         return true;
+    }
+    
+    private void handleSecurePropertyException(SecurePropertyException e) {
+		setMessage(e.getMessage(), IMessageProvider.WARNING);
+	}
+    
+    private void setMessage(IMessageProvider message) {
+    	setMessage(message.getMessage(), message.getMessageType());
     }
     
     public void performDefaults() {
@@ -50,14 +70,13 @@ public class JavaMESigningPreferencePage extends PreferencePage implements IWork
         doSign.addListener(SWT.Selection, new UpdateListener(this));
         doSign.setText("&Sign application for JavaME platforms");
         editor = new KeystoreCertificateInfoEditor(parent, SWT.NONE);
-        String keystoreCertInfoStr = getPreferenceStore().getString(PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS);
-        try {
-            KeystoreCertificateInfo info = KeystoreCertificateInfo.parseOne(keystoreCertInfoStr);
-            editor.setKeystoreCertInfo(info);
-            doSign.setSelection(info != null);
-        } catch (IllegalArgumentException e) {
-            // Ignore.
-        }
+        KeystoreCertificateInfo info = KeystoreCertificateInfo.loadOne(
+        		PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS,
+        		new PreferenceStorePropertyOwner(getPreferenceStore()),
+        		CoreMoSyncPlugin.getDefault().getSecureProperties());
+        editor.setKeystoreCertInfo(info);
+        editor.setUpdatable(this);
+        doSign.setSelection(info != null);
         
         updateUI();
         return editor;
@@ -65,6 +84,8 @@ public class JavaMESigningPreferencePage extends PreferencePage implements IWork
 
     public void updateUI() {
         editor.setEnabled(doSign.getSelection());
+        KeystoreCertificateInfo info = editor.getKeystoreCertInfo();
+        setMessage((doSign.getSelection() && info != null) ? info.validate() : DefaultMessageProvider.EMPTY);
     }
 
 

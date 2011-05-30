@@ -15,10 +15,14 @@ package com.mobilesorcery.sdk.core;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Map;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 public class PropertyUtil {
 
@@ -186,7 +190,7 @@ public class PropertyUtil {
     public static boolean setInteger(IPropertyOwner p, String key, int value) {
         return p.setProperty(key, Integer.toString(value));
     }
-
+    
     public static String fromObject(Object value) {
         if (value == null) {
             return "";

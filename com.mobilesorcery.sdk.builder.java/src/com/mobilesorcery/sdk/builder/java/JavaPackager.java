@@ -19,9 +19,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -38,11 +38,13 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.SecurePropertyException;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.builder.MoSyncIconBuilderVisitor;
 import com.mobilesorcery.sdk.profiles.IProfile;
+import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 
 public class JavaPackager extends AbstractPackager {
     private String m_zipLoc;
@@ -124,45 +126,25 @@ public class JavaPackager extends AbstractPackager {
             signPackage(internal, project, projectJad, projectJar);
 
             buildResult.setBuildResult(projectJar);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new CoreException(new Status(IStatus.ERROR, "com.mobilesorcery.sdk.builder.java", Messages.JavaPackager_PackageError, e)); //$NON-NLS-1$
         }
     }
 
-    private void signPackage(DefaultPackager internal, MoSyncProject project, File projectJad, File projectJar) throws IOException {
-        List<KeystoreCertificateInfo> keystoreCertInfos = KeystoreCertificateInfo
-                .parseList(project.getProperty(PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS));
-        // sign jar file using jarSigner
-        // File unsignedProjectJar = new File(projectJar.getParentFile(),
-        // Util.getNameWithoutExtension(projectJar) + "_unsigned.jar");
-
+    private void signPackage(DefaultPackager internal, MoSyncProject project, File projectJad, File projectJar) throws IOException, SecurePropertyException, CoreException {
+        List<KeystoreCertificateInfo> keystoreCertInfos = KeystoreCertificateInfo.load(
+        		PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS,
+        		project, project.getSecurePropertyOwner());
+        
         for (KeystoreCertificateInfo keystoreCertInfo : keystoreCertInfos) {
             String keystore = keystoreCertInfo.getKeystoreLocation();
             String alias = keystoreCertInfo.getAlias();
             String storepass = keystoreCertInfo.getKeystorePassword();
-            if (Util.isEmpty(storepass)) {
-                throw new IllegalArgumentException("Keystore password missing");
-            }
-
             String keypass = keystoreCertInfo.getKeyPassword();
-            if (Util.isEmpty(keypass)) {
-                throw new IllegalArgumentException("Keystore password missing");
+
+            if (!DefaultMessageProvider.isEmpty(keystoreCertInfo.validate())) {
+            	throw new CoreException(new Status(IStatus.OK, Activator.PLUGIN_ID, "No or invalid key/keystore password for java signing. Please note that for security reasons, passwords are locally stored. You may need to set the password in the Java preference page."));	
             }
-
-            // Util.copyFile(new NullProgressMonitor(), projectJar,
-            // unsignedProjectJar);
-
-            /*
-             * String[] jarSignerCommandLine = new String[] { "java", "-jar",
-             * new File( mosyncBinDir, "android/tools-stripped.jar"
-             * ).getAbsolutePath( ), "-keystore", keystore, "-storepass",
-             * storepass, "-keypass", keypass, "-signedjar",
-             * projectJar.getAbsolutePath( ),
-             * unsignedProjectJar.getAbsolutePath( ), alias };
-             * 
-             * internal.runCommandLine(jarSignerCommandLine,
-             * "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***");
-             */
             
             MoSyncTool moSyncTool = MoSyncTool.getDefault();
             String javaPath = moSyncTool.getJava().toOSString();

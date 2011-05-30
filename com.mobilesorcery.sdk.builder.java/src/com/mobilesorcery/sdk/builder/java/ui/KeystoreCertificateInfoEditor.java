@@ -9,8 +9,10 @@ import org.eclipse.swt.widgets.Text;
 
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.ui.PasswordTextFieldDecorator;
+import com.mobilesorcery.sdk.ui.UpdateListener;
+import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 
-public class KeystoreCertificateInfoEditor extends Composite {
+public class KeystoreCertificateInfoEditor extends Composite implements IUpdatableControl {
 
     private FileFieldEditor keyStore;
     private Text passkey;
@@ -22,6 +24,9 @@ public class KeystoreCertificateInfoEditor extends Composite {
     private PasswordTextFieldDecorator storekeyDec;
     private PasswordTextFieldDecorator passkeyDec;
     private KeystoreCertificateInfo info;
+	private boolean dirty = false;
+	private IUpdatableControl updatable;
+	private UpdateListener listener;
 
     public KeystoreCertificateInfoEditor(Composite parent, int style) {
         super(parent, style);
@@ -54,6 +59,9 @@ public class KeystoreCertificateInfoEditor extends Composite {
         GridData passkeyData = new GridData(GridData.FILL_HORIZONTAL);
         passkeyData.horizontalSpan = 2;
         passkey.setLayoutData(passkeyData);
+        
+        listener = new UpdateListener(this);
+        listener.addTo(SWT.Modify, keyStore.getTextControl(this), storekey, alias, passkey);
     }
 
     public void setEnabled(boolean isEnabled) {
@@ -64,18 +72,22 @@ public class KeystoreCertificateInfoEditor extends Composite {
         alias.setEnabled(isEnabled);
         passkeyLabel.setEnabled(isEnabled);
         passkeyDec.setEnabled(isEnabled);
-        
     }
+    
     public void setKeystoreCertInfo(KeystoreCertificateInfo info) {
         this.info = info;
-        initUI();
+    	initUI();
     }
     
     public KeystoreCertificateInfo getKeystoreCertInfo() {
-        return new KeystoreCertificateInfo(keyStore.getStringValue(), alias.getText(), storekey.getText(), passkey.getText());
+    	if (dirty) {
+    		updateKeystoreCertInfo();
+    	}
+        return info;
     }
     
     private void initUI() {
+    	listener.setActive(false);
         String keyStorePath = info == null ? null : info.getKeystoreLocation();
         keyStore.setStringValue(keyStorePath == null ? "" : keyStorePath); //$NON-NLS-1$
         String storekeyValue = info == null ? null : info.getKeystorePassword();
@@ -84,5 +96,23 @@ public class KeystoreCertificateInfoEditor extends Composite {
         alias.setText(aliasValue == null ? "" : aliasValue);
         String passkeyValue = info == null ? null : info.getKeystorePassword();
         passkey.setText(passkeyValue == null ? "" : passkeyValue);        
+        listener.setActive(true);
     }
+    
+    void updateKeystoreCertInfo() {
+    	info = new KeystoreCertificateInfo(keyStore.getStringValue(), alias.getText(), storekey.getText(), passkey.getText(), true);
+    	dirty = false;
+    }
+
+	@Override
+	public void updateUI() {
+		this.dirty = true;
+		if (updatable != null) {
+			updatable.updateUI();
+		}
+	}
+	
+	public void setUpdatable(IUpdatableControl updatable) {
+		this.updatable = updatable;
+	}
 }

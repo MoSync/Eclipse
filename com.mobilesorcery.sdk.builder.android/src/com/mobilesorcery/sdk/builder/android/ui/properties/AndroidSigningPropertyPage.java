@@ -13,7 +13,7 @@
 */
 package com.mobilesorcery.sdk.builder.android.ui.properties;
 
-import org.eclipse.core.resources.IProject;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -25,19 +25,28 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.IWorkbenchPropertyPage;
-import org.eclipse.ui.dialogs.PropertyPage;
 
+import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.builder.java.ui.KeystoreCertificateInfoEditor;
-import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.PreferenceStorePropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.core.SecurePropertyException;
+import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
+import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
+import com.mobilesorcery.sdk.ui.UpdateListener;
 
-public class AndroidSigningPropertyPage extends PropertyPage implements IWorkbenchPropertyPage {
+public class AndroidSigningPropertyPage extends MoSyncPropertyPage implements IWorkbenchPropertyPage {
 
     private Button useProjectSpecific;
     private Group signingGroup;
     private KeystoreCertificateInfoEditor keyCertUI;
+	private KeystoreCertificateInfo globalCertInfo;
+	private KeystoreCertificateInfo projectCertInfo;
+	private KeystoreCertificateInfo currentCertInfo;
+	private Boolean wasEnabled;
 
     public AndroidSigningPropertyPage() {
     }
@@ -50,11 +59,7 @@ public class AndroidSigningPropertyPage extends PropertyPage implements IWorkben
         useProjectSpecific.setText("Enable Pr&oject Specific Settings");
         
         useProjectSpecific.setSelection(PropertyUtil.getBoolean(getProject(), PropertyInitializer.ANDROID_PROJECT_SPECIFIC_KEYS));
-        useProjectSpecific.addListener(SWT.Selection, new Listener() {
-            public void handleEvent(Event event) {
-                updateUI();
-            }
-        });
+        useProjectSpecific.addListener(SWT.Selection, new UpdateListener(this));
         
         Label separator = new Label(main, SWT.SEPARATOR | SWT.HORIZONTAL);
         separator.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -65,34 +70,52 @@ public class AndroidSigningPropertyPage extends PropertyPage implements IWorkben
         signingGroup.setLayout(new GridLayout(1, false));
         
         keyCertUI = new KeystoreCertificateInfoEditor(signingGroup, SWT.NONE);
+        keyCertUI.setUpdatable(this);
         keyCertUI.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        init();
         updateUI();
         
         return main;
     }
     
-    private void updateUI() {
-        boolean isEnabled = useProjectSpecific.getSelection();
-        keyCertUI.setEnabled(isEnabled);
-        KeystoreCertificateInfo certInfo = useProjectSpecific.getSelection() ? 
-                KeystoreCertificateInfo.parseOne(getProject().getProperty(PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO)) :
-                KeystoreCertificateInfo.parseOne(getProject().getDefaultProperty(PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO));
-
-        keyCertUI.setKeystoreCertInfo(certInfo);
+    private void init() {
+    	globalCertInfo = KeystoreCertificateInfo.loadOne(PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO, 
+        		new PreferenceStorePropertyOwner(Activator.getDefault().getPreferenceStore()),
+        	    CoreMoSyncPlugin.getDefault().getSecureProperties());
+    	projectCertInfo = KeystoreCertificateInfo.loadOne(PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO, getProject(), getProject().getSecurePropertyOwner());
+    	currentCertInfo = globalCertInfo;
+    }
+    
+    public void updateUI() {
+    	 boolean isEnabled = useProjectSpecific.getSelection();
+         keyCertUI.setEnabled(isEnabled);
+         boolean changedState = wasEnabled == null || isEnabled != wasEnabled;
+         if (changedState) {
+         	wasEnabled = isEnabled;
+ 	        if (isEnabled) {
+ 	        	keyCertUI.setKeystoreCertInfo(projectCertInfo);
+ 	        } else {
+ 	        	projectCertInfo = currentCertInfo;
+ 	        	keyCertUI.setKeystoreCertInfo(globalCertInfo);
+ 	        }
+         }
+         currentCertInfo = keyCertUI.getKeystoreCertInfo();
+         setMessage(currentCertInfo.validate());
     }
     
     public boolean performOk() {
         PropertyUtil.setBoolean(getProject(), PropertyInitializer.ANDROID_PROJECT_SPECIFIC_KEYS, useProjectSpecific.getSelection());
-        getProject().setProperty(PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO, useProjectSpecific.getSelection() ? KeystoreCertificateInfo.unparse(keyCertUI.getKeystoreCertInfo()) : null);
+        try {
+			keyCertUI.getKeystoreCertInfo().store(PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO, getProject(), getProject().getSecurePropertyOwner());
+		} catch (SecurePropertyException e) {
+			handleSecurePropertyException(e);
+			return false;
+		}
         return true;
     }
     
-    private MoSyncProject getProject() {
-        IProject wrappedProject = (IProject) getElement();
-        MoSyncProject project = MoSyncProject.create(wrappedProject);
-
-        return project;
-    }
-
+    private void handleSecurePropertyException(SecurePropertyException e) {
+		setMessage(new DefaultMessageProvider(e.getMessage(), IMessageProvider.WARNING));
+	}
     
 }

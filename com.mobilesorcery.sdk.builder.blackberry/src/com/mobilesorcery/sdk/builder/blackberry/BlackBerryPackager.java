@@ -11,9 +11,11 @@ import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.builder.java.JavaPackager;
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.PreferenceStorePropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
@@ -58,11 +60,14 @@ public class BlackBerryPackager extends JavaPackager {
 		
 		if (shouldSign(project)) {
 			// At this point we only support ONE bb cert
-			String keystoreCertInfoStr = BlackBerryPlugin.getDefault().getPreferenceStore().getString(BlackBerryPlugin.BLACKBERRY_SIGNING_INFO);
-	        
-			// We just reuse this, it's not quite blackberry-ish. 
-			KeystoreCertificateInfo certInfo = KeystoreCertificateInfo.parseOne(keystoreCertInfoStr);
-
+			// We just reuse this java cert info, it's not quite blackberry-ish... 
+			KeystoreCertificateInfo certInfo = KeystoreCertificateInfo.loadOne(
+					BlackBerryPlugin.BLACKBERRY_SIGNING_INFO, new PreferenceStorePropertyOwner(BlackBerryPlugin.getDefault().getPreferenceStore()),
+							CoreMoSyncPlugin.getDefault().getSecureProperties());
+			if (Util.isEmpty(certInfo.getKeyPassword())) {
+				throw new CoreException(new Status(IStatus.OK, BlackBerryPlugin.PLUGIN_ID, "No key password for blackberry signing. Please note that for security reasons, passwords are locally stored. You may need to set the password in the BlackBerry preference page."));
+			}
+			
 			// Sign it
 			try {
 				jde.sign(finalOutput, certInfo);

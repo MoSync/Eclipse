@@ -15,6 +15,7 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.security.GeneralSecurityException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,6 +27,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
+
+import javax.crypto.spec.PBEKeySpec;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -64,6 +67,7 @@ import com.mobilesorcery.sdk.internal.PackagerProxy;
 import com.mobilesorcery.sdk.internal.PropertyInitializerProxy;
 import com.mobilesorcery.sdk.internal.RebuildListener;
 import com.mobilesorcery.sdk.internal.ReindexListener;
+import com.mobilesorcery.sdk.internal.SecureProperties;
 import com.mobilesorcery.sdk.internal.debug.MoSyncBreakpointSynchronizer;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLauncherProxy;
@@ -79,12 +83,14 @@ import com.mobilesorcery.sdk.profiles.filter.elementfactories.VendorFilterFactor
 /**
  * The activator class controls the plug-in life cycle
  */
-public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChangeListener, IResourceChangeListener {
+public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChangeListener, IResourceChangeListener, IProvider<PBEKeySpec, String> {
 	
     // The plug-in ID
     public static final String PLUGIN_ID = "com.mobilesorcery.sdk.core";
 
 	private static final String SECURE_ROOT_NODE = "mosync.com";
+
+	private static final String LOCAL_KEYRING_MASTER_KEY = "master.passkey";
 
     // The shared instance
     private static CoreMoSyncPlugin plugin;
@@ -123,6 +129,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
     private HashMap<String, Integer> logCounts = new HashMap<String, Integer>();
 
+	private ISecurePropertyOwner secureProperties;
+
     /**
      * The constructor
      */
@@ -146,11 +154,16 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         installResourceListener();
         initBuildConfigurationTypes();
         initLaunchers();
+        initSecureProperties();
 		getPreferenceStore().addPropertyChangeListener(this); 
 		initializeOnSeparateThread();
     }
     
-    private void initLaunchers() {
+    private void initSecureProperties() {
+		secureProperties = new SecureProperties(new PreferenceStorePropertyOwner(getPreferenceStore()), getPasswordProvider(), null);
+	}
+
+	private void initLaunchers() {
     	// Default always present
     	this.launchers.put(MoReLauncher.ID, new MoReLauncher());
     	
@@ -740,20 +753,32 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         logCounts.put(token, logCount);
     }
 
-	/**
-	 * <p>Returns a secure property. If not running
-	 * in headless mode, this may entail launching [master] password dialogs, etc.</p>
-	 * <p>This method makes use of the internal eclipse secure storage.
-	 * @param key
-	 * @return
-	 * @throws StorageException 
-	 */
-	public String getSecureProperty(String key, String def) throws StorageException {
-		return SecurePreferencesFactory.getDefault().node(SECURE_ROOT_NODE).get(key, def);
+	public ISecurePropertyOwner getSecureProperties() {
+		return secureProperties;
 	}
 
-	public void setSecureProperty(String key, String value) throws StorageException {
-		SecurePreferencesFactory.getDefault().node(SECURE_ROOT_NODE).put(key, value, true);
+	public IProvider<PBEKeySpec, String> getPasswordProvider() {
+		return this;
+	}
+
+	@Override
+	public PBEKeySpec get(String key) {
+		try {
+			String masterKey = SecurePreferencesFactory.getDefault().node(SECURE_ROOT_NODE).get(LOCAL_KEYRING_MASTER_KEY, "");
+			if (Util.isEmpty(masterKey)) {
+				masterKey = initMasterKey();
+			}
+			return new PBEKeySpec(masterKey.toCharArray());
+		} catch (Exception e) {
+			CoreMoSyncPlugin.getDefault().log(e);
+			return null;
+		}
+	}
+
+	private String initMasterKey() throws GeneralSecurityException, StorageException {
+		String masterKey = SecureProperties.generateRandomKey();
+		SecurePreferencesFactory.getDefault().node(SECURE_ROOT_NODE).put(LOCAL_KEYRING_MASTER_KEY, masterKey, true);
+		return masterKey;
 	}
 
 	

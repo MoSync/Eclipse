@@ -18,10 +18,14 @@ import java.util.Random;
 
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.preference.PreferenceStore;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IPropertyInitializerDelegate;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
+import com.mobilesorcery.sdk.core.PreferenceStorePropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.core.SecurePropertyException;
 
 public class PropertyInitializer extends AbstractPreferenceInitializer implements IPropertyInitializerDelegate {
 
@@ -47,7 +51,14 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
     public void initializeDefaultPreferences() {
         IPreferenceStore store = Activator.getDefault().getPreferenceStore();
         // By default, java me apps are NOT signed.
-        store.setDefault(JAVAME_KEYSTORE_CERT_INFOS, KeystoreCertificateInfo.unparse(new ArrayList<KeystoreCertificateInfo>()));
+        try {
+			KeystoreCertificateInfo.store(new ArrayList<KeystoreCertificateInfo>(),
+					JAVAME_KEYSTORE_CERT_INFOS,
+					new PreferenceStorePropertyOwner(store, true),
+					null);
+		} catch (SecurePropertyException e) {
+			CoreMoSyncPlugin.getDefault().log(e);
+		}
     }
 
 

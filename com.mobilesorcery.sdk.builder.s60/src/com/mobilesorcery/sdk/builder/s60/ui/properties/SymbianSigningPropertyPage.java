@@ -14,6 +14,7 @@
 package com.mobilesorcery.sdk.builder.s60.ui.properties;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.preference.FileFieldEditor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -88,6 +89,8 @@ public class SymbianSigningPropertyPage extends PropertyPage implements IWorkben
         passkeyData.horizontalSpan = 2;
         passkey.setLayoutData(passkeyData);
         
+        setMessage("The passkey will be stored as clear text", IMessageProvider.WARNING);
+
         updateUI();
         
         return main;

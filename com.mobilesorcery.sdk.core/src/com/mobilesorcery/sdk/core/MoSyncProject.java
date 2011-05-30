@@ -60,6 +60,7 @@ import org.eclipse.ui.ide.undo.CreateProjectOperation;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.MoSyncProjectConverter1_2;
+import com.mobilesorcery.sdk.internal.SecureProperties;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
@@ -77,7 +78,7 @@ import com.mobilesorcery.sdk.profiles.filter.CompositeDeviceFilter;
  * @author Mattias
  * 
  */
-public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
+public class MoSyncProject extends PropertyOwnerBase implements ITargetProfileProvider {
 
 	/**
 	 * An interface for converting older {@link MoSyncProject}s into a newer
@@ -190,6 +191,12 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 */
 	public static final String ICON_FILE_EXTENSION = ".icon";
 
+	/**
+	 * A suffix for properties to indicate them to be secure properties;
+	 * secure properties are usually stored in the local project file.
+	 */
+	public static final String SECURE_PROPERTY_SUFFIX = ".secure";
+	
 	private static final String PROJECT = "project";
 
 	private static final String TARGET = "target-profile";
@@ -242,11 +249,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 * located.
 	 */
 	public static final String MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME = ".mosyncproject.local";
+	
+	private static final int SHARED_PROPERTY = 0;
 
-	public static final int SHARED_PROPERTY = 0;
-
-	public static final int LOCAL_PROPERTY = 1;
-
+	static final int LOCAL_PROPERTY = 1;
+	
 	private static IdentityHashMap<IProject, MoSyncProject> projects = new IdentityHashMap<IProject, MoSyncProject>();
 
 	private IProject project;
@@ -297,6 +304,8 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 
 	private Version formatVersion = CURRENT_VERSION;
 
+	private ISecurePropertyOwner securePropertyOwner;
+
 	private MoSyncProject(IProject project) {
 		Assert.isNotNull(project);
 		this.project = project;
@@ -305,6 +314,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		initFromProjectMetaData(null, LOCAL_PROPERTY);
 		permissions = new ApplicationPermissions(this);
 		addDeviceFilterListener();
+		securePropertyOwner = new SecureProperties(this, CoreMoSyncPlugin.getDefault().getPasswordProvider(), SECURE_PROPERTY_SUFFIX);
 	}
 
 	private void addDeviceFilterListener() {
@@ -896,21 +906,6 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		return property;
 	}
 	
-	/**
-	 * <p>Returns a secure property of this project. If not running
-	 * in headless mode, this may entail launching [master] password dialogs, etc.</p>
-	 * <p>This method makes use of the internal eclipse secure storage.
-	 * @param key
-	 * @return
-	 * @throws StorageException 
-	 */
-	public String getSecureProperty(String key, String def) throws StorageException {
-		return CoreMoSyncPlugin.getDefault().getSecureProperty(getName() + "/" + key, def);
-	}
-	
-	public void setSecureProperty(String key, String value) throws StorageException {
-		CoreMoSyncPlugin.getDefault().setSecureProperty(getName() + "/" + key, value);
-	}
 
 	/**
 	 * <p>
@@ -941,7 +936,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 */
 	public boolean setProperty(String key, String value) {
 		String oldValue = getProperty(key);
-		if (NameSpacePropertyOwner.equals(oldValue, value)) {
+		if (Util.equals(oldValue, value)) {
 			return false;
 		}
 
@@ -953,19 +948,6 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		return true;
 	}
 
-	public boolean applyProperties(Map<String, String> properties) {
-		boolean result = false;
-		for (String key : properties.keySet()) {
-			String value = properties.get(key);
-			result |= setProperty(key, value);
-		}
-
-		return result;
-	}
-
-	public IWorkingCopy createWorkingCopy() {
-		return new PropertyOwnerWorkingCopy(this);
-	}
 
 	/**
 	 * <p>
@@ -1025,7 +1007,11 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 *            If <code>null</code>, then the entry is removed
 	 */
 	public void initProperty(String key, String value) {
-		initProperty(key, value, SHARED_PROPERTY, false);
+		initProperty(key, value, getStoreForKey(key), false);
+	}
+
+	private int getStoreForKey(String key) {
+		return key.endsWith(SECURE_PROPERTY_SUFFIX) ? LOCAL_PROPERTY : SHARED_PROPERTY;
 	}
 
 	/**
@@ -1037,7 +1023,7 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 	 * @param value
 	 *            If <code>null</code>, then the entry is removed
 	 * @param store
-	 *            The store that this key should be set in, ie LOCAL or SHARED
+	 *            The store that this key should be set in, ie LOCAL, SHARED or SECURE
 	 */
 	public void initProperty(String key, String value, int store, boolean save) {
 		if (value == null) {
@@ -1353,6 +1339,14 @@ public class MoSyncProject implements IPropertyOwner, ITargetProfileProvider {
 		}
 
 		return this;
+	}
+	
+	/**
+	 * Returns the secure property owner of this project.
+	 * @return
+	 */
+	public ISecurePropertyOwner getSecurePropertyOwner() {
+		return securePropertyOwner;
 	}
 
 	public LibraryLookup getLibraryLookup(IPropertyOwner buildProperties) {
