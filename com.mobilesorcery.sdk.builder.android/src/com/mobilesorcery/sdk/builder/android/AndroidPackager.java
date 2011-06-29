@@ -402,7 +402,11 @@ extends AbstractPackager
 			+"\tpackage=\"" + packageName + "\"\n"
 			+"\tandroid:versionCode=\"" + project.getProperty(PropertyInitializer.ANDROID_VERSION_CODE) + "\"\n"
 			+"\tandroid:versionName=\"" + version.toString() + "\">\n"
+			
+			// The application section.
 			+"\t<application android:icon=\"@drawable/icon\" android:label=\"@string/app_name\">\n"
+			
+				// Activites.
 				+"\t\t<activity android:name=\".MoSync\"\n"
 					// Use portrait orientation as default. 
 					+"\t\t\tandroid:screenOrientation=\"portrait\"\n"
@@ -420,10 +424,15 @@ extends AbstractPackager
 				+"\t\t<activity android:name=\".TextBox\"\n"
 	                  +"\t\t\tandroid:label=\"@string/app_name\">\n"
 	        	+"\t\t</activity>\n"
-//				+"\t\t<activity android:name=\".WebViewActivity\"\n"
-//                	+"\t\t\tandroid:label=\"@string/app_name\">\n"
-//				+"\t\t</activity>\n"
+
+				// Service.
 				+"\t\t<service android:name=\".MoSyncService\"/>\n"
+				
+				// Content provider. We set the authority to the package name.
+				+"\t\t<provider android:name=\".MoSyncLocalFileContentProvider\"\n"
+					+"\t\t\tandroid:authorities=\"" + packageName + "\" />\n"
+			
+				// Auto start.
 				+createAutoStartXML(project)
 			+"\t</application>\n";
 			
