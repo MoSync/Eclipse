@@ -608,10 +608,12 @@ public class MoSyncBuilder extends ACBuilder {
 	public static IPath[] resolvePaths(IPath[] paths, ParameterResolver resolver) throws ParameterResolverException {
 		// TODO: Consider moving this method
 		IPath[] result = new IPath[paths.length];
-    	for (int i = 0; i < paths.length; i++) {
-			result[i] = Path.fromPortableString(Util.replace(paths[i].toPortableString(), resolver));
+		for (int i = 0; i < paths.length; i++) {
+			// Cannot use toPortableString here since it escapes colons with double colons
+			String pathAsString = paths[i].toString();
+			result[i] = Path.fromOSString(Util.replace(pathAsString, resolver));
 		}
-    	return result;
+		return result;
 	}
 
 	public static String getCurrentAppCode(IBuildSession session) {

@@ -15,17 +15,22 @@ package com.mobilesorcery.sdk.internal.cdt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
+import org.eclipse.cdt.core.model.CModelException;
 import org.eclipse.cdt.core.model.CoreModel;
+import org.eclipse.cdt.core.model.CoreModelUtil;
 import org.eclipse.cdt.core.model.ICProject;
 import org.eclipse.cdt.core.model.IMacroEntry;
+import org.eclipse.cdt.core.model.IOutputEntry;
 import org.eclipse.cdt.core.model.IPathEntry;
 import org.eclipse.cdt.core.model.IPathEntryContainer;
 import org.eclipse.cdt.core.model.ISourceEntry;
 import org.eclipse.cdt.core.model.ISourceRoot;
 import org.eclipse.cdt.core.settings.model.ICConfigurationDescription;
 import org.eclipse.cdt.core.settings.model.ICProjectDescription;
+import org.eclipse.cdt.core.settings.model.util.CDataUtil;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
@@ -129,42 +134,27 @@ public class MoSyncIncludePathContainer implements IPathEntryContainer {
     	return compilerSymbols;
     }
     
-    private static List<ISourceEntry> createOutputEntries(IProject project) {
+    private static List<IOutputEntry> createOutputEntries(IProject project) {
     	// This one seems to be a bit prototype-ish, feel free to rip it out and replace it with something useful
     	// Note that the original intent of this was to make sure that the indexer does not index the large
-    	// generated XCode files for the iPhone.
+    	// generated XCode files for the iPhone. HOWEVER, I've left this approach and started using resource filters instead...
     	IFolder outputPath = project.getFolder(new Path(MoSyncBuilder.OUTPUT));
     	IFolder finalPath = project.getFolder(new Path(MoSyncBuilder.FINAL_OUTPUT));
     	
-    	IPath[] exclusionPattern = new IPath[] { new Path("am*.c") };
+    	IPath[] exclusionPattern = new IPath[] { new Path("rebuild.build.cpp") };
     	
-    	List<ISourceEntry> result = new ArrayList<ISourceEntry>();
-    	//addAsSourceEntryIfExists(result, outputPath, exclusionPattern);
-    	//addAsSourceEntryIfExists(result, finalPath, exclusionPattern);
-    	
-    	ICProjectDescription projDesc = CoreModel.getDefault().getProjectDescription(project);
-    	ICConfigurationDescription cfg = projDesc.getConfiguration();
-    	try {
-    		ICProject cProject = CoreModel.getDefault().create(project);
-    		ISourceRoot root = cProject.findSourceRoot(finalPath);
-        		IPathEntry[] rpe = cProject.getRawPathEntries();
-        	ArrayList<IPathEntry> newEntries = new ArrayList<IPathEntry>();
-        	newEntries.addAll(Arrays.asList(rpe));
-        	//newEntries.addAll(result);
-        		//cProject.setRawPathEntries(newEntries.toArray(new IPathEntry[0]), new NullProgressMonitor());
-        		//cfg.setSourceEntries(new ICSourceEntry[] { outputSourceEntry, finalOutputSourceEntry });
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
+    	List<IOutputEntry> result = new ArrayList<IOutputEntry>();
+    	addAsOutputEntryIfExists(result, outputPath, exclusionPattern);
+    	addAsOutputEntryIfExists(result, finalPath, exclusionPattern);
     	
     	return result;
     }
+    
 
-	private static void addAsSourceEntryIfExists(List<ISourceEntry> result,
+	private static void addAsOutputEntryIfExists(List<IOutputEntry> result,
 			IFolder sourceFolder, IPath[] exclusionPattern) {
 		if (sourceFolder.exists()) {
-    		result.add(CoreModel.newSourceEntry(sourceFolder.getFullPath(), exclusionPattern));
+    		result.add(CoreModel.newOutputEntry(sourceFolder.getFullPath(), exclusionPattern));
     	}
 	}
 }
