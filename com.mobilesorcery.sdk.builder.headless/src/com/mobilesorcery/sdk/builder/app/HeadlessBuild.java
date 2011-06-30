@@ -33,8 +33,10 @@ import com.mobilesorcery.sdk.finalizer.ui.FinalizeJob;
  */
 public class HeadlessBuild implements IApplication {
 
+
 	public class BuildRunnable implements Runnable {
 
+		
 		private String[] args;
 		private Integer result;
 		private Exception exception;
@@ -82,6 +84,7 @@ public class HeadlessBuild implements IApplication {
 
 		if (buildRunnable.getException() != null) {
 			System.err.println(buildRunnable.getException());
+			throw buildRunnable.getException();
 		}
 
 		return EXIT_OK;
@@ -110,7 +113,7 @@ public class HeadlessBuild implements IApplication {
 
 		if (projectName == null) {
 			printUsage();
-			return EXIT_OK;
+			throw new Exception(Messages.HeadlessBuild_Usage);
 		}
 
 		IProject project = ws.getRoot().getProject(projectName);
