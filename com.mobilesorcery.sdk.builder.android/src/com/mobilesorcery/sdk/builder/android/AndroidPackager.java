@@ -428,9 +428,12 @@ extends AbstractPackager
 				// Service.
 				+"\t\t<service android:name=\".MoSyncService\"/>\n"
 				
-				// Content provider. We set the authority to the package name.
-				+"\t\t<provider android:name=\".MoSyncLocalFileContentProvider\"\n"
-					+"\t\t\tandroid:authorities=\"" + packageName + "\" />\n"
+				// Commented out this code since we do not need to have
+				// a content provider for web view local file access. 
+				// The code is kept here for future use. Micke :)
+//				// Content provider. We set the authority to the package name.
+//				+"\t\t<provider android:name=\".MoSyncLocalFileContentProvider\"\n"
+//					+"\t\t\tandroid:authorities=\"" + packageName + "\" />\n"
 			
 				// Auto start.
 				+createAutoStartXML(project)
