@@ -309,7 +309,7 @@ public class MoSyncBuilder extends ACBuilder {
         IBuildVariant variant = getActiveVariant(MoSyncProject.create(project), false);
         IBuildSession session = createIncrementalBuildSession(project, kind);
         if (kind == FULL_BUILD) {
-            fullBuild(project, session, variant, null, monitor);
+            build(project, session, variant, null, monitor);
         } else {
             incrementalBuild(project, session, variant, null, monitor);
         }
@@ -372,7 +372,7 @@ public class MoSyncBuilder extends ACBuilder {
      * @throws CoreException
      * @throws {@link OperationCanceledException} If the operation was canceled
      */
-    public IBuildResult fullBuild(IProject project, IBuildSession session, IBuildVariant variant, 
+    public IBuildResult build(IProject project, IBuildSession session, IBuildVariant variant, 
             IFilter<IResource> resourceFilter, IProgressMonitor monitor) throws CoreException,
             OperationCanceledException {
         try {

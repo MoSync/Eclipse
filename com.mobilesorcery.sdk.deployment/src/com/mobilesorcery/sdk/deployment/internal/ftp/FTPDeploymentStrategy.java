@@ -158,7 +158,7 @@ public class FTPDeploymentStrategy implements IDeploymentStrategy {
 	    IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, profile);
 		IBuildSession session = MoSyncBuilder.createDefaultBuildSession(variant);
 		
-        IBuildResult buildResult = new MoSyncBuilder().fullBuild(project
+        IBuildResult buildResult = new MoSyncBuilder().build(project
 				.getWrappedProject(), session, variant, null, monitor);
 		return buildResult;
 	}

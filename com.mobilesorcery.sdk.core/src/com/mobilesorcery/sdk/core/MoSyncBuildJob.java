@@ -39,7 +39,7 @@ public class MoSyncBuildJob extends Job {
 
     protected IStatus run(IProgressMonitor monitor) {
         try {
-            new MoSyncBuilder().fullBuild(project.getWrappedProject(), session, variant, null, monitor);
+            new MoSyncBuilder().build(project.getWrappedProject(), session, variant, null, monitor);
         } catch (OperationCanceledException e) {
             return Status.CANCEL_STATUS;
         } catch (CoreException e) {

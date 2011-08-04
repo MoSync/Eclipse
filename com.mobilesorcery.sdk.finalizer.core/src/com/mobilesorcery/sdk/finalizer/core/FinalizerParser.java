@@ -163,7 +163,7 @@ public class FinalizerParser {
 		return new IRunnableWithProgress() {
 			public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
 				try {
-					IBuildResult buildResult = new MoSyncBuilder().fullBuild(project, session, variant, null, monitor);
+					IBuildResult buildResult = new MoSyncBuilder().build(project, session, variant, null, monitor);
 					if (!buildResult.success()) {
 						throw new InvocationTargetException(new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, Messages.FinalizerParser_BuildFailed)));
 					}

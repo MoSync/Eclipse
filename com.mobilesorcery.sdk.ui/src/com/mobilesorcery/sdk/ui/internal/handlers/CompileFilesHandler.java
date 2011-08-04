@@ -90,7 +90,7 @@ public class CompileFilesHandler extends MoSyncCommandHandler {
     					ResourceSet resourcesToCompile = new ResourceSet(resourceSet);
     					IBuildVariant variant = MoSyncBuilder.getActiveVariant(project, false);
                         IBuildSession session = MoSyncBuilder.createCompileOnlySession(variant);
-    					builder.fullBuild(project.getWrappedProject(), session, variant, resourcesToCompile, new SubProgressMonitor(monitor, resourceSet.size()));
+    					builder.build(project.getWrappedProject(), session, variant, resourcesToCompile, new SubProgressMonitor(monitor, resourceSet.size()));
     				}
     				return Status.OK_STATUS;
 				} else {

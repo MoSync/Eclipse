@@ -113,7 +113,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 			IBuildResult buildResult = null;
             IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, targetProfile);
             IBuildSession session = MoSyncBuilder.createDefaultBuildSession(variant);
-			buildResult = new MoSyncBuilder().fullBuild(project
+			buildResult = new MoSyncBuilder().build(project
 					.getWrappedProject(), session, variant, null,
 					new NullProgressMonitor());
 			monitor.worked(1);

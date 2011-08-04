@@ -85,7 +85,7 @@ public class RebuildListener implements PropertyChangeListener {
                 	project.getWrappedProject().refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
                     IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, targetProfile);
                     IBuildSession session = MoSyncBuilder.createCleanBuildSession(variant);
-                    new MoSyncBuilder().fullBuild(project.getWrappedProject(), session, variant, null, new SubProgressMonitor(monitor, 1));
+                    new MoSyncBuilder().build(project.getWrappedProject(), session, variant, null, new SubProgressMonitor(monitor, 1));
                 } catch (CoreException e) {
                     return new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, MessageFormat.format(
                             "Could not build for target {0}. Root cause: {1}", targetProfile, e.getMessage()), e);
