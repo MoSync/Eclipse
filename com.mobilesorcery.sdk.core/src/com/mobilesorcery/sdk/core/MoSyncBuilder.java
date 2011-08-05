@@ -1048,10 +1048,9 @@ public class MoSyncBuilder extends ACBuilder {
      * @return
      */
     public static IBuildSession createIncrementalBuildSession(IProject project, int kind) {
-        boolean doPack = kind == FULL_BUILD;
         boolean doClean = kind == FULL_BUILD;
         IBuildVariant variant = getActiveVariant(MoSyncProject.create(project), false);
-        return new BuildSession(Arrays.asList(variant), BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (doPack ? BuildSession.DO_PACK : 0) | (doClean ? BuildSession.DO_CLEAN : 0));
+        return new BuildSession(Arrays.asList(variant), BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (doClean ? BuildSession.DO_CLEAN : 0));
     }
 
     public static IPath getMetaDataPath(MoSyncProject project, IBuildVariant variant) {

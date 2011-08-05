@@ -1150,7 +1150,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	/**
 	 * <p>
 	 * Returns the build state for a variant manager of this project. All
-	 * non-finalizer build states are be cached.
+	 * non-finalizer build states are cached.
 	 * </p>
 	 * 
 	 * @return
