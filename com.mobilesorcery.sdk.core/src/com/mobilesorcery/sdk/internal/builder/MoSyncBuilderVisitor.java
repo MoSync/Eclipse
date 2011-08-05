@@ -108,7 +108,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
      * @throws CoreException
      * @throws ParameterResolverException 
      */
-    public void incrementalCompile(IProgressMonitor monitor, DependencyManager<IResource> dependencies) throws CoreException, ParameterResolverException {
+    public void incrementalCompile(IProgressMonitor monitor, DependencyManager<IResource> dependencies, DependencyManager.Delta<IResource> delta) throws CoreException, ParameterResolverException {
     	Set<IResource> recompileThese = computeResourcesToRebuild(dependencies);
     	
         IResource[] deletedResources = this.deletedResources.toArray(new IResource[0]);
@@ -127,7 +127,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
                 return;
             }
             if (shouldBuild(recompileThis)) {
-            	compile(recompileThis, dependencies);
+            	compile(recompileThis, delta);
             }
         }        
     }
@@ -195,7 +195,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
         return false;
     }
     
-    public void compile(IResource resource, DependencyManager<IResource> dependencies) throws CoreException, ParameterResolverException {
+    public void compile(IResource resource, DependencyManager.Delta<IResource> dependenciesDelta) throws CoreException, ParameterResolverException {
     	if (!CoreMoSyncPlugin.isHeadless()) {
     		MoSyncBuilder.clearCMarkers(resource);
             //clearCMarkers(resource.getProject());
@@ -267,8 +267,8 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             }     
         }
         
-        if (dependencies != null) {
-        	dependencies.setDependencies(resource, getDependencyProvider());
+        if (dependenciesDelta != null) {
+        	dependenciesDelta.addDependencies(resource, getDependencyProvider());
         }
 
     }

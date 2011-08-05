@@ -230,16 +230,10 @@ public class BuildState implements IBuildState {
             // Ehm... TODO: Dependencies should be on absolute paths, not resources...
             IWorkspaceRoot wr = ResourcesPlugin.getWorkspace().getRoot();
             //IFile[] dependeeFiles = wr.findFilesForLocation(dependeePath);
-            IResource[] dependeeFiles = new IResource[] { wr.findMember(dependeePath) }; 
-            for (int i = 0; i < dependeeFiles.length; i++) {
-                for (int j = 0; j < dependencyPaths.length; j++) {
-                    IResource[] dependencyFiles = new IResource[] { wr.findMember(dependencyPaths[i]) };
-                    for (int k = 0; k < dependencyFiles.length; k++) {
-                        if (dependeeFiles[i] != null) {
-                            dependencies.addDependency(dependeeFiles[i], dependencyFiles[k]);
-                        }
-                    }
-                }
+            IResource dependeeFile = wr.findMember(dependeePath); 
+            for (int j = 0; j < dependencyPaths.length; j++) {
+                IResource dependencyFile = wr.findMember(dependencyPaths[j]);
+                dependencies.addDependency(dependeeFile, dependencyFile);
             }
         }
     }

@@ -36,10 +36,11 @@ public interface IBuildStep {
 	public int SKIP = 1;
 	
 	/**
-	 * Performs this build step.
+	 * Performs this build step. Objects that are may be changed
+	 * by performing the build are passed into this method, the other
+	 * properties are passed via the various <code>init*</code> methods
 	 * @param project
 	 * @param session
-	 * @param buildState
 	 * @param variant
 	 * @param diff
 	 * @param result
@@ -50,10 +51,9 @@ public interface IBuildStep {
 	 * will only be used under very special circumstances.)
 	 */
     int incrementalBuild(MoSyncProject project, 
-    		IBuildSession session, IBuildState buildState, IBuildVariant variant,
+    		IBuildSession session, IBuildVariant variant,
     		IFileTreeDiff diff,
-    		IBuildResult result,
-            IFilter<IResource> resourceFilter, 
+    		IBuildResult result, 
             IProgressMonitor monitor) throws Exception;
 
     /**
@@ -107,6 +107,8 @@ public interface IBuildStep {
 	void initDefaultLineHandler(ILineHandler linehandler);
 
 	void initDependencyProvider(IDependencyProvider<IResource> dependencyProvider);
+	
+	void initResourceFilter(IFilter<IResource> resourceFilter);
 
 	void initParameterResolver(ParameterResolver resolver);
 

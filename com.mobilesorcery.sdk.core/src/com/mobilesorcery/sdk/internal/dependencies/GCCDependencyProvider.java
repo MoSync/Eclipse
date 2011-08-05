@@ -15,6 +15,7 @@ package com.mobilesorcery.sdk.internal.dependencies;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -77,7 +78,12 @@ public class GCCDependencyProvider implements IDependencyProvider<IResource> {
 			// Explicitly add the .c -> .s dependency
 			IResource outputResource = GCCDependencyFileParser.getFile(output.toOSString());
 			if (outputResource != null) {
-				parser.getDependencies().put(resource, Arrays.asList(outputResource));
+				Collection<IResource> depForOutput = parser.getDependencies().get(resource);
+				if (depForOutput == null) {
+					depForOutput = new ArrayList<IResource>();
+					parser.getDependencies().put(resource, depForOutput);
+				}
+				depForOutput.add(outputResource);
 			}
 			return parser.getDependencies();
 		} catch (IOException e) {

@@ -7,6 +7,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.ui.IMemento;
 
+import com.mobilesorcery.sdk.core.BuildResult;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildState;
@@ -47,9 +48,8 @@ public class ResourceBuildStep extends AbstractBuildStep {
 	
 	@Override
 	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
-			IBuildState buildState, IBuildVariant variant, IFileTreeDiff diff,
-			IBuildResult result, IFilter<IResource> resourceFilter,
-			IProgressMonitor monitor) throws CoreException {
+			IBuildVariant variant, IFileTreeDiff diff,
+			IBuildResult result, IProgressMonitor monitor) throws CoreException {
 		IProject project = mosyncProject.getWrappedProject();
 		MoSyncResourceBuilderVisitor resourceVisitor = new MoSyncResourceBuilderVisitor();
         resourceVisitor.setProject(project);
@@ -60,10 +60,10 @@ public class ResourceBuildStep extends AbstractBuildStep {
         resourceVisitor.setOutputFile(resource);
         resourceVisitor.setDependencyProvider(getDependencyProvider());
         resourceVisitor.setDiff(diff);
-        resourceVisitor.setResourceFilter(resourceFilter);
+        resourceVisitor.setResourceFilter(getResourceFilter());
 
         monitor.setTaskName("Assembling resources");
-        resourceVisitor.incrementalCompile(monitor, buildState.getDependencyManager());
+        resourceVisitor.incrementalCompile(monitor, getBuildState().getDependencyManager(), result.getDependencyDelta());
         
         session.getProperties().put(RESOURCE_FILES, resourceVisitor.getResourceFiles());
         

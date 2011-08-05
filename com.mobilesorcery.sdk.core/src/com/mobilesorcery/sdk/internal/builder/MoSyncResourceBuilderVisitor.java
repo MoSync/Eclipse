@@ -80,7 +80,7 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 		this.pipeTool = pipeTool;
 	}
 
-	public void incrementalCompile(IProgressMonitor monitor, DependencyManager<IResource> dependencyManager) throws CoreException {
+	public void incrementalCompile(IProgressMonitor monitor, DependencyManager<IResource> dependencyManager, DependencyManager.Delta<IResource> dependencyDelta) throws CoreException {
 		Set<IResource> recompileThese = computeResourcesToRebuild(dependencyManager);
 		if (!recompileThese.isEmpty()) {
 			String[] extraResourceSwitches = PropertyUtil.getStrings(getBuildProperties(), MoSyncBuilder.EXTRA_RES_SWITCHES);
@@ -97,8 +97,8 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 			
 			// Explicitly add dependencies for the pipetool output file -- TODO:
 			// outputfile must equal getresourceoutput; remove one.
-			dependencyManager.setDependencies(ResourceFileDependencyProvider.getResourceOutput(project), dependencyProvider);
-			dependencyManager.setDependencies(resourceFiles, dependencyProvider);
+			dependencyDelta.addDependencies(ResourceFileDependencyProvider.getResourceOutput(project), dependencyProvider);
+			dependencyDelta.addDependencies(resourceFiles, dependencyProvider);
 		}
 	}
 

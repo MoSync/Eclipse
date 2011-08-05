@@ -19,8 +19,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
@@ -63,11 +65,13 @@ public class ProjectResourceDependencyProvider implements IDependencyProvider<IR
 			String ext = resource.getFileExtension();
 			if (RESOURCE_EXT.equals(ext) && !STABS_FILE_NAME.equalsIgnoreCase(resource.getName())) {
 			    IPath maHeaderPath = MoSyncBuilder.getOutputPath(project, variant).append(MA_HEADER_PATH);
-				IResource maheaderFile = resource.getParent().getFile(maHeaderPath);
+			    IFile[] maHeaderMatchedFiles = ResourcesPlugin.getWorkspace().getRoot().findFilesForLocationURI(maHeaderPath.toFile().toURI());
 				HashMap<IResource, Collection<IResource>> result = new HashMap<IResource, Collection<IResource>>();
 				ArrayList<IResource> resourceList = new ArrayList<IResource>();
 				resourceList.add(resource);
-				result.put(maheaderFile, resourceList);
+				for (IFile maHeaderFile : maHeaderMatchedFiles) {
+				    result.put(maHeaderFile, resourceList);
+				}
 				return result;
 			}
 		}

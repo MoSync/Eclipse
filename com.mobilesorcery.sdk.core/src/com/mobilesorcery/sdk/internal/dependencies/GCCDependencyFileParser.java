@@ -30,6 +30,8 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+
 public class GCCDependencyFileParser {
 
 	private static final int IN_DEPFILE = 0;
@@ -138,6 +140,9 @@ public class GCCDependencyFileParser {
 		
 		addCurrentFileToDependencies(depFile);
 		
+		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+			CoreMoSyncPlugin.trace("GCC dependency parsing:\n{0}", dependencies);
+		}
 		currentDependentFile = null;
 		currentDependencies = null;
 	}

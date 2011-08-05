@@ -63,9 +63,8 @@ public class LinkBuildStep extends AbstractBuildStep {
 	
 	@Override
 	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
-			IBuildState buildState, IBuildVariant variant, IFileTreeDiff diff,
-			IBuildResult result, IFilter<IResource> resourceFilter,
-			IProgressMonitor monitor) throws Exception {
+			IBuildVariant variant, IFileTreeDiff diff,
+			IBuildResult result, IProgressMonitor monitor) throws Exception {
 		int continueFlag = IBuildStep.CONTINUE;
 		
 		IProcessConsole console = getConsole();

@@ -99,6 +99,17 @@ public class SectionedPropertiesFile {
 			public String getKey() {
 				return key;
 			}
+			
+			public String toString() {
+				StringBuffer toString = new StringBuffer();
+				if (key != null) {
+					toString.append(escape(key));
+					toString.append(" = "); //$NON-NLS-1$
+				}
+				
+				toString.append(escape(value));
+				return toString.toString();
+			}
 		}
 		
 
@@ -160,21 +171,14 @@ public class SectionedPropertiesFile {
 			}
 			
 			for (Entry entry : entries) {
-				String key = entry.getKey();
-				String value = entry.getValue();
-				if (key != null) {
-					toString.append(unescape(key));
-					toString.append(" = "); //$NON-NLS-1$
-				}
-				
-				toString.append(unescape(value));
+				toString.append(entry.toString());
 				toString.append('\n');
 			}
 			
 			return toString.toString();
 		}
 		
-		private String unescape(String str) {
+		private static String escape(String str) {
 			return str.replace("\\", "\\\\").replace("=", "\\="); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 		}
 

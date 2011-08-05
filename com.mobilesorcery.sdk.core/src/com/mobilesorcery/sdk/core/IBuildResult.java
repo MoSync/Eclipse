@@ -16,6 +16,10 @@ package com.mobilesorcery.sdk.core;
 import java.io.File;
 import java.util.List;
 
+import org.eclipse.core.resources.IResource;
+
+import com.mobilesorcery.sdk.internal.dependencies.DependencyManager.Delta;
+
 public interface IBuildResult {
 
 	/**
@@ -70,5 +74,13 @@ public interface IBuildResult {
      * @param utc
      */
     public abstract void setTimestamp(long utc);
+    
+    /**
+     * Returns the set of resources that needed to be rebuilt
+     * during this build.
+     * @return
+     */
+	public abstract Delta<IResource> getDependencyDelta();
+
 
 }

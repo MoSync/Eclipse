@@ -58,9 +58,8 @@ public class CompileBuildStep extends AbstractBuildStep {
 	
 	@Override
 	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
-			IBuildState buildState, IBuildVariant variant, IFileTreeDiff diff,
-			IBuildResult buildResult, IFilter<IResource> resourceFilter,
-			IProgressMonitor monitor) throws CoreException {		
+			IBuildVariant variant, IFileTreeDiff diff,
+			IBuildResult buildResult, IProgressMonitor monitor) throws CoreException {		
 		IProject project = mosyncProject.getWrappedProject();
 		
         MoSyncBuilderVisitor compilerVisitor = new MoSyncBuilderVisitor();
@@ -79,10 +78,10 @@ public class CompileBuildStep extends AbstractBuildStep {
         compilerVisitor.setLineHandler(lineHandler);
         compilerVisitor.setBuildResult(buildResult);
         compilerVisitor.setDiff(diff);
-        compilerVisitor.setResourceFilter(resourceFilter);
+        compilerVisitor.setResourceFilter(getResourceFilter());
         compilerVisitor.setParameterResolver(getParameterResolver());
         try {
-			compilerVisitor.incrementalCompile(monitor, getBuildState().getDependencyManager());
+			compilerVisitor.incrementalCompile(monitor, getBuildState().getDependencyManager(), buildResult.getDependencyDelta());
 		} catch (ParameterResolverException e) {
 			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
 		}

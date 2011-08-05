@@ -18,6 +18,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+
+import com.mobilesorcery.sdk.internal.dependencies.DependencyManager.Delta;
 
 public class BuildResult implements IBuildResult {
 
@@ -27,6 +30,7 @@ public class BuildResult implements IBuildResult {
 	private boolean success;
 	private IBuildVariant variant;
     private long timestamp;
+	private Delta<IResource> dependencyDelta;
 
     public BuildResult(IProject project) {
         this.project = project;
@@ -76,4 +80,12 @@ public class BuildResult implements IBuildResult {
     public void setTimestamp(long utc) {
         this.timestamp = utc;
     }
+
+	public void setDependencyDelta(Delta<IResource> dependencyDelta) {
+		this.dependencyDelta = dependencyDelta;
+	}
+	
+	public Delta<IResource> getDependencyDelta() {
+		return dependencyDelta;
+	}
 }

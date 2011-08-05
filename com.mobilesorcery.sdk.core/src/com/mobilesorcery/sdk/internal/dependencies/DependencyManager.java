@@ -28,6 +28,18 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 
 public class DependencyManager<T> {
 
+	/**
+	 * Represents a delta of dependencies.
+	 * @see {@link #applyDelta(com.mobilesorcery.sdk.internal.dependencies.DependencyManager.Delta)}
+	 *
+	 * @param <T>
+	 */
+	public static class Delta<T> extends DependencyManager<T> {
+		Delta() {
+			super();
+		}
+	}
+
 	public static final int DEPTH_INFINITE = Integer.MAX_VALUE;
 
 	private HashMap<T, HashSet<T>> dependencyMap = new HashMap<T, HashSet<T>>();
@@ -81,6 +93,12 @@ public class DependencyManager<T> {
 	    }
 	}
 	
+	public void addDependencies(T from, Collection<T> toList) {
+		for (T to : toList) {
+			addDependency(from, to);
+		}
+	}
+	
 	public void removeDependency(T from, T to) {
 		Set<T> dependencies = lazyInit(dependencyMap, from, new HashSet<T>());
 		Set<T> reverseDependencies = lazyInit(reverseDependencyMap, to, new HashSet<T>());
@@ -116,12 +134,10 @@ public class DependencyManager<T> {
 
 	public void setDependencies(T from, Collection<T> toList) {
 		clearDependencies(from);
-		for (T to : toList) {
-			addDependency(from, to);
-		}
+		addDependencies(from, toList);
 	}
-	
-	public void setDependencies(T from, IDependencyProvider<T> provider) throws CoreException {
+
+	public void addDependencies(T from, IDependencyProvider<T> provider) throws CoreException {
 		Map<T, Collection<T>> dependencies = provider.computeDependenciesOf(from);
        	
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
@@ -129,15 +145,21 @@ public class DependencyManager<T> {
        	}
        	
 		for (T dependency : dependencies.keySet()) {
-			setDependencies(dependency, dependencies.get(dependency));
+			addDependencies(dependency, dependencies.get(dependency));
 		}	
 	}
 
-	public void setDependencies(Collection<T> fromList, IDependencyProvider<T> provider) throws CoreException {
+	public void addDependencies(Collection<T> fromList, IDependencyProvider<T> provider) throws CoreException {
+		for (T from : fromList) {
+			addDependencies(from, provider);
+		}
+	}
+
+	/*private void setDependencies(Collection<T> fromList, IDependencyProvider<T> provider) throws CoreException {
 		for (T from : fromList) {
 			setDependencies(from, provider);
 		}
-	}
+	}*/
 	
 	private <K, V> V lazyInit(Map<K, V> map, K key, V valueIfNoKey) {
 		V value = map.get(key);
@@ -166,6 +188,27 @@ public class DependencyManager<T> {
 	public void clear() {
 		dependencyMap.clear();
 		reverseDependencyMap.clear();
+	}
+	
+	/**
+	 * Create a new delta to be used as a working copy
+	 * by clients.
+	 * @return
+	 */
+	public Delta<T> createDelta() {
+		return new Delta<T>();
+	}
+	
+	/**
+	 * <p>Applies all dependencies represented by <code>delta</code> to this manager.</p>
+	 * <p>If the delta has a defined dependency for an object, then those dependencies will
+	 * be cleared and replaced with the delta's value.</p>
+	 * @param delta
+	 */
+	public void applyDelta(DependencyManager.Delta<T> delta) {
+		for (T dependee : delta.getAllDependees()) {
+			setDependencies(dependee, delta.getDependenciesOf(dependee));
+		}
 	}
 	
 	private void innerGetReverseDependenciesOf(T obj, int depth, Set<T> result, Set<T> alreadyProcessed) {

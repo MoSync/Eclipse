@@ -489,6 +489,8 @@ public class MoSyncBuilder extends ACBuilder {
             if (diff == null || !buildState.isValid()) {
                 buildState.getDependencyManager().clear();
             }
+            
+            buildResult.setDependencyDelta(buildState.getDependencyManager().createDelta());
 
             IProcessConsole console = createConsole(session);
             IPropertyOwner buildProperties = MoSyncBuilder.getPropertyOwner(mosyncProject, variant.getConfigurationId());
@@ -496,7 +498,6 @@ public class MoSyncBuilder extends ACBuilder {
             DateFormat dateFormater = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG);
             console.addMessage("Build started at " + dateFormater.format(timestamp.getTime()));
             console.addMessage(createBuildMessage("Building", mosyncProject, variant));
-
 
             GCCLineHandler linehandler = new GCCLineHandler(epm);
             
@@ -530,6 +531,9 @@ public class MoSyncBuilder extends ACBuilder {
             	}
             	
             	if (continueFlag != IBuildStep.SKIP && buildStep.shouldBuild(mosyncProject, session, buildResult)) {
+            		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+            			CoreMoSyncPlugin.trace("Performing build step {0} for project {1}", buildStep.getName(), buildResult.getProject().getName());
+            		}
 	            	buildStep.initConsole(console);
 	            	buildStep.initBuildProperties(buildProperties);
 	            	buildStep.initBuildState(buildState);
@@ -537,6 +541,7 @@ public class MoSyncBuilder extends ACBuilder {
 	            	buildStep.initParameterResolver(resolver);
 	            	buildStep.initDefaultLineHandler(linehandler);
 	            	buildStep.initDependencyProvider(dependencyProvider);
+	            	buildStep.initResourceFilter(resourceFilter);
 	            	continueFlag = buildStep.incrementalBuild(mosyncProject, session, variant, diff, buildResult, monitor);
 	            	if (continueFlag == IBuildStep.SKIP) {
 	            		console.addMessage(MessageFormat.format("Was told by build step {0} to skip the remaining build steps. Build successful.", buildStep.getName()));
@@ -545,12 +550,20 @@ public class MoSyncBuilder extends ACBuilder {
             	
             	monitor.worked(1);
             }
-
+            
+            // Update the current set of dependencies.
+            buildState.getDependencyManager().applyDelta(buildResult.getDependencyDelta());
+            
             console.addMessage("Build finished at " + dateFormater.format(Calendar.getInstance().getTime()));
 
             project.refreshLocal(IProject.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
 
             buildResult.setSuccess(true);
+            
+            if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+            	CoreMoSyncPlugin.trace("Changed dependencies:\n{0}", buildResult.getDependencyDelta());
+            	CoreMoSyncPlugin.trace("Current set of dependencies:\n{0}", buildState.getDependencyManager());
+            }
             
             return buildResult;
         } catch (OperationCanceledException e) { 

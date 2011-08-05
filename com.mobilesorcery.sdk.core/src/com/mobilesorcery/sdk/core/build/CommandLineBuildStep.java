@@ -228,9 +228,8 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 	
 	@Override
 	public int incrementalBuild(MoSyncProject project, IBuildSession session,
-			IBuildState buildState, IBuildVariant variant, IFileTreeDiff diff,
-			IBuildResult result, IFilter<IResource> resourceFilter,
-			IProgressMonitor monitor) throws Exception {
+			IBuildVariant variant, IFileTreeDiff diff,
+			IBuildResult result, IProgressMonitor monitor) throws Exception {
 		PrivilegedAccess.getInstance().assertAccess(project);
 		Visitor visitor = new Visitor(prototype.filePattern, prototype.runPerFile);
 		visitor.setParameterResolver(getParameterResolver());

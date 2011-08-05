@@ -54,12 +54,10 @@ public class PackBuildStep extends AbstractBuildStep {
 	
 	@Override
 	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
-			IBuildState buildState, IBuildVariant variant, IFileTreeDiff diff,
-			IBuildResult buildResult, IFilter<IResource> resourceFilter,
-			IProgressMonitor monitor) throws Exception {
+			IBuildVariant variant, IFileTreeDiff diff,
+			IBuildResult buildResult, IProgressMonitor monitor) throws Exception {
 		IProcessConsole console = getConsole();
 		IPropertyOwner buildProperties = getBuildProperties();
-		IProject project = mosyncProject.getWrappedProject();
 		IProfile targetProfile = variant.getProfile();
 
         monitor.setTaskName(MessageFormat.format("Packaging for {0}", targetProfile));
