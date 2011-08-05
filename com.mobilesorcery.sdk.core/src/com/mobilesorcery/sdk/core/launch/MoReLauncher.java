@@ -64,7 +64,7 @@ import com.mobilesorcery.sdk.profiles.IProfile;
  * @author Mattias Bybro, mattias@bybro.com
  * TODO: Quite a bunch of remains from the emulatorlaunchconfigurationdelegate class.
  */
-public class MoReLauncher implements IEmulatorLauncher{
+public class MoReLauncher implements IEmulatorLauncher {
 
 	public final static String ID = "default";
 	

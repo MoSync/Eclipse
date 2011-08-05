@@ -107,17 +107,18 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     }
 
     public boolean preLaunchCheck(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
+    	boolean result = true;
     	IProject project = getProject(configuration);
     	if (!shouldAutoSwitch(configuration, mode)) {
     		MoSyncProject mosyncProject = MoSyncProject.create(project);
     		IBuildConfiguration activeCfg = mosyncProject.getActiveBuildConfiguration();
     		String[] preferredTypes = getRequiredBuildConfigTypes(mode);
     		if (activeCfg == null || !activeCfg.getTypes().containsAll(Arrays.asList(preferredTypes))) {
-    			return showSwitchConfigDialog(mosyncProject, mode, activeCfg, preferredTypes);
+    			result = showSwitchConfigDialog(mosyncProject, mode, activeCfg, preferredTypes);
     		}
     	}
     	
-    	return super.preLaunchCheck(configuration, mode, monitor);
+    	return result && super.preLaunchCheck(configuration, mode, monitor);
     }
     
     private boolean showSwitchConfigDialog(MoSyncProject mosyncProject, String mode,
@@ -210,9 +211,17 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 
     public void launchDelegate(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor)
             throws CoreException {
+    	IEmulatorLauncher launcher = getEmulatorLauncher(launchConfig);
+    	launcher.launch(launchConfig, mode, launch, emulatorId, monitor);
+    }
+    
+    protected IEmulatorLauncher getEmulatorLauncher(ILaunchConfiguration launchConfig) throws CoreException {
     	String delegateId = getLaunchDelegateId(launchConfig);
     	IEmulatorLauncher launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(delegateId);
-    	launcher.launch(launchConfig, mode, launch, emulatorId, monitor);
+    	if (launcher == null) {
+    		throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could not find emulator for launching."));
+    	}    	
+    	return launcher;
     }
     
     protected String getLaunchDelegateId(ILaunchConfiguration launchConfig) throws CoreException {
@@ -296,15 +305,18 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     }
     
     public boolean buildForLaunch(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
-        final IProject project = getProject(configuration);
+        IEmulatorLauncher launcher = getEmulatorLauncher(configuration);
+        // Special case: MoRe emulator does not need a packaged build.
+        boolean doPack = (!(launcher instanceof MoReLauncher));
+    	final IProject project = getProject(configuration);
         IBuildVariant variant = getVariant(configuration, mode);
-        IBuildSession session = new BuildSession(Arrays.asList(variant), BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK);
-        
+        IBuildSession session = new BuildSession(Arrays.asList(variant), BuildSession.DO_SAVE_DIRTY_EDITORS | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (doPack ? BuildSession.DO_PACK : 0));
+            
 		// No dialogs should pop up.
         Job job = new MoSyncBuildJob(MoSyncProject.create(project), session, variant);
         job.setName("Prelaunch build");
         job.schedule();
-        return false;
+       	return false;
     }
     
     protected static boolean shouldAutoSwitch(ILaunchConfiguration configuration, String mode) throws CoreException {

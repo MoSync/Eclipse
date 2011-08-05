@@ -477,7 +477,7 @@ public class MoSyncBuilder extends ACBuilder {
                 throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
                         "If resource building is suppressed, then linking should also be."));
             }
-            
+             
             // And we only remove things that are on the project.
             IFileTreeDiff diff = createDiff(buildState, session);
             boolean hadSevereBuildErrors = hasErrorMarkers(project, IResource.DEPTH_ZERO);
@@ -950,19 +950,21 @@ public class MoSyncBuilder extends ACBuilder {
             return true;
         }
 
-        final boolean confirmSave = !BuildAction.isSaveAllSet();
+        final boolean doSaveAll = BuildAction.isSaveAllSet();
         final boolean[] result = new boolean[1];
         result[0] = true;
 
-        Display display = PlatformUI.getWorkbench().getDisplay();
-        if (display != null) {
-            display.syncExec(new Runnable() {
-                public void run() {
-                    if (!IDE.saveAllEditors(resources.toArray(new IResource[0]), confirmSave)) {
-                        result[0] = false;
-                    }
-                }
-            });
+        if (doSaveAll) {
+	        Display display = PlatformUI.getWorkbench().getDisplay();
+	        if (display != null) {
+	            display.syncExec(new Runnable() {
+	                public void run() {
+	                    if (!IDE.saveAllEditors(resources.toArray(new IResource[0]), false)) {
+	                        result[0] = false;
+	                    }
+	                }
+	            });
+	        }
         }
 
         return result[0];
