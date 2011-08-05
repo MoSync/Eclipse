@@ -44,6 +44,7 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 public class RebuildListener implements PropertyChangeListener {
 	
     public void propertyChange(PropertyChangeEvent event) {
+    	boolean doTouch = false;
         if (MoSyncProject.TARGET_PROFILE_CHANGED == event.getPropertyName()) {
             Object source = event.getSource();
             if (source instanceof MoSyncProject) {
@@ -60,12 +61,14 @@ public class RebuildListener implements PropertyChangeListener {
 				}
 
                 IProfile profile = project.getTargetProfile();
-                if (profile != null) {
-                    runBuildJob(project, profile);
-                }
+                doTouch = profile != null;
             }
         } else if (MoSyncProject.BUILD_CONFIGURATION_CHANGED == event.getPropertyName()) {
-            // Make sure we rebuild when necessary
+        	doTouch = true;
+        }
+        
+        if (doTouch) {
+            // Make sure we rebuild when necessary (at a later point)
             Object source = event.getSource();
             if (source instanceof MoSyncProject) {
                 try {
@@ -75,29 +78,6 @@ public class RebuildListener implements PropertyChangeListener {
                 }
             }
         }
-    }
-
-    private void runBuildJob(final MoSyncProject project, final IProfile targetProfile) {
-        Job job = new Job("Building for target profile") {
-            protected IStatus run(IProgressMonitor monitor) {
-                try {
-                	monitor.beginTask("Building", 2);
-                	project.getWrappedProject().refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
-                    IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, targetProfile);
-                    IBuildSession session = MoSyncBuilder.createCleanBuildSession(variant);
-                    new MoSyncBuilder().build(project.getWrappedProject(), session, variant, null, new SubProgressMonitor(monitor, 1));
-                } catch (CoreException e) {
-                    return new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, MessageFormat.format(
-                            "Could not build for target {0}. Root cause: {1}", targetProfile, e.getMessage()), e);
-                }
-                
-                return Status.OK_STATUS;
-            }            
-            
-        };
-        
-        job.setUser(true);
-        job.schedule();
     }
 
 }
