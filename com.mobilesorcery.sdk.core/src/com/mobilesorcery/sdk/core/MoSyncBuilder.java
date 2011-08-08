@@ -537,7 +537,7 @@ public class MoSyncBuilder extends ACBuilder {
 	            	buildStep.initParameterResolver(resolver);
 	            	buildStep.initDefaultLineHandler(linehandler);
 	            	buildStep.initDependencyProvider(dependencyProvider);
-	            	continueFlag = buildStep.incrementalBuild(mosyncProject, session, buildState, variant, diff, buildResult, resourceFilter, monitor);
+	            	continueFlag = buildStep.incrementalBuild(mosyncProject, session, variant, diff, buildResult, monitor);
 	            	if (continueFlag == IBuildStep.SKIP) {
 	            		console.addMessage(MessageFormat.format("Was told by build step {0} to skip the remaining build steps. Build successful.", buildStep.getName()));
 	            	}
@@ -613,10 +613,8 @@ public class MoSyncBuilder extends ACBuilder {
 	public static IPath[] resolvePaths(IPath[] paths, ParameterResolver resolver) throws ParameterResolverException {
 		// TODO: Consider moving this method
 		IPath[] result = new IPath[paths.length];
-		for (int i = 0; i < paths.length; i++) {
-			// Cannot use toPortableString here since it escapes colons with double colons
-			String pathAsString = paths[i].toString();
-			result[i] = Path.fromOSString(Util.replace(pathAsString, resolver));
+    	for (int i = 0; i < paths.length; i++) {
+			result[i] = new Path(Util.replace(paths[i].toString(), resolver));
 		}
 		return result;
 	}
