@@ -36,11 +36,10 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 		
 	}
 	
-	protected File getPackageToInstall(ILaunchConfiguration launchConfig) throws CoreException {
+	protected File getPackageToInstall(ILaunchConfiguration launchConfig, String mode) throws CoreException {
 		IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
-		IProfile targetProfile = mosyncProject.getTargetProfile();
-		IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(mosyncProject, targetProfile);
+		IBuildVariant variant = EmulatorLaunchConfigurationDelegate.getVariant(launchConfig, mode);
         IBuildState buildState = mosyncProject.getBuildState(variant);
         IBuildResult buildResult = buildState.getBuildResult();
     	File packageToInstall = buildResult == null ? null : buildResult.getBuildResult();

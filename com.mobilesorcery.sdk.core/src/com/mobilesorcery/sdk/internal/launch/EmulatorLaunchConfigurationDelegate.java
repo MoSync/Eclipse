@@ -224,8 +224,13 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     	return launcher;
     }
     
+    
     protected String getLaunchDelegateId(ILaunchConfiguration launchConfig) throws CoreException {
-    	String delegateId = allowsExternalEmulators() ? 
+		return getLaunchDelegateId(launchConfig, allowsExternalEmulators());
+	}
+
+	protected static String getLaunchDelegateId(ILaunchConfiguration launchConfig, boolean allowExternalEmulators) throws CoreException {
+        	String delegateId = allowExternalEmulators ? 
     			launchConfig.getAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, MoReLauncher.ID) :
     			MoReLauncher.ID;
     	return delegateId;
@@ -253,7 +258,9 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 		IProject project = getProject(launchConfig);
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
 		IBuildConfiguration cfg = getAutoSwitchBuildConfiguration(launchConfig, mode);
-		return new BuildVariant(mosyncProject.getTargetProfile(), cfg, false);
+		// Emulators other than MoRe always wants to be finalized.
+		boolean finalize = MoReLauncher.ID.equals(getLaunchDelegateId(launchConfig, true));
+		return new BuildVariant(mosyncProject.getTargetProfile(), cfg, finalize);
 	}
 
 	public static IProject getProject(ILaunchConfiguration launchConfig) throws CoreException {
@@ -307,10 +314,10 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     public boolean buildForLaunch(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
         IEmulatorLauncher launcher = getEmulatorLauncher(configuration);
         // Special case: MoRe emulator does not need a packaged build.
-        boolean doPack = (!(launcher instanceof MoReLauncher));
+        boolean doFinalize = (!(launcher instanceof MoReLauncher));
     	final IProject project = getProject(configuration);
         IBuildVariant variant = getVariant(configuration, mode);
-        IBuildSession session = new BuildSession(Arrays.asList(variant), BuildSession.DO_SAVE_DIRTY_EDITORS | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (doPack ? BuildSession.DO_PACK : 0));
+        IBuildSession session = new BuildSession(Arrays.asList(variant), BuildSession.DO_SAVE_DIRTY_EDITORS | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (doFinalize ? BuildSession.DO_PACK : 0));
             
 		// No dialogs should pop up.
         Job job = new MoSyncBuildJob(MoSyncProject.create(project), session, variant);

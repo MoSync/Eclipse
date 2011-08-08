@@ -8,4 +8,11 @@
             pattern="^profiles[/|\\]runtimes[/|\\]iphoneos.*">
       </packager>
    </extension>
+         <extension
+            point="com.mobilesorcery.core.launcher">
+         <launcher
+               id="com.mobilesorcery.sdk.builder.iphoneos.launcher"
+               implementation="com.mobilesorcery.sdk.builder.iphoneos.launch.IPhoneEmulatorLauncher">
+         </launcher>
+      </extension>
 </plugin>

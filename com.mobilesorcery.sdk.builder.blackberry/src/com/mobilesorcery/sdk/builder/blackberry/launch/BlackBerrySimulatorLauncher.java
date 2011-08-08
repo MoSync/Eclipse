@@ -64,7 +64,7 @@ public class BlackBerrySimulatorLauncher extends AbstractEmulatorLauncher {
 
 		IPath fc = getSDKPath(launchConfig).append("fledgecontroller.exe");
 
-		final File packageToInstall = getPackageToInstall(launchConfig);
+		final File packageToInstall = getPackageToInstall(launchConfig, mode);
 		CommandLineExecutor executor = new CommandLineExecutor(MoSyncBuilder.CONSOLE_ID);
 		executor.setLineHandlers(new SimulatorProcessHandler(packageToInstall), null);
 		

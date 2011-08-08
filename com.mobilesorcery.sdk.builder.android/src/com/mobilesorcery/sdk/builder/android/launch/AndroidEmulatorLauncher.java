@@ -40,6 +40,8 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 		ADB adb = ADB.getExternal();
 		adb.assertValid();
 		
+		assertCorrectPackager(launchConfig, AndroidPackager.ID, "The Android Emulator requires the target profile to be an Android device");
+
 		List<String> emulators = adb.listEmulators(true);
 		if (emulators.size() == 0) {
 			Emulator emulator = Emulator.getExternal();
@@ -53,9 +55,7 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 
 		IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
 		
-		assertCorrectPackager(launchConfig, AndroidPackager.ID, "The Android Emulator requires the target profile to be an Android device");
-		
-    	File packageToInstall = getPackageToInstall(launchConfig);
+    	File packageToInstall = getPackageToInstall(launchConfig, mode);
     	if (packageToInstall != null) {
     		String serialNumberOfDevice = emulators.get(0);
     		adb.install(packageToInstall, serialNumberOfDevice);

@@ -166,15 +166,11 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	private void initLaunchers() {
     	// Default always present
     	this.launchers.put(MoReLauncher.ID, new MoReLauncher());
-    	
-    	// External emulators are only allowed in experimental mode
-    	if(Boolean.TRUE.equals(IsExperimentalTester.isExperimental())) {
-	    	IConfigurationElement[] launchers = Platform.getExtensionRegistry().getConfigurationElementsFor(IEmulatorLauncher.EXTENSION_POINT_ID);
-	    	for (int i = 0; i < launchers.length; i++) {
-	    		IConfigurationElement launcher = launchers[i];
-	    		String id = launcher.getAttribute("id");
-	    		this.launchers.put(id, new EmulatorLauncherProxy(launcher));
-	    	}
+    	IConfigurationElement[] launchers = Platform.getExtensionRegistry().getConfigurationElementsFor(IEmulatorLauncher.EXTENSION_POINT_ID);
+    	for (int i = 0; i < launchers.length; i++) {
+    		IConfigurationElement launcher = launchers[i];
+    		String id = launcher.getAttribute("id");
+    		this.launchers.put(id, new EmulatorLauncherProxy(launcher));
     	}
  	}
 
