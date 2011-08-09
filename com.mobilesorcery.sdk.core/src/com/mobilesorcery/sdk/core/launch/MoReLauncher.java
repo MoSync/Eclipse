@@ -42,6 +42,7 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.IProcess;
 
+import com.mobilesorcery.sdk.core.BuildVariant;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildVariant;
@@ -64,10 +65,15 @@ import com.mobilesorcery.sdk.profiles.IProfile;
  * @author Mattias Bybro, mattias@bybro.com
  * TODO: Quite a bunch of remains from the emulatorlaunchconfigurationdelegate class.
  */
-public class MoReLauncher implements IEmulatorLauncher {
+public class MoReLauncher extends AbstractEmulatorLauncher {
+
+	public MoReLauncher() {
+		super("MoRe Emulator");
+	}
 
 	public final static String ID = "default";
 	
+	@Override
 	public void launch(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor) throws CoreException {
     	boolean debug = EmulatorLaunchConfigurationDelegate.isDebugMode(mode);
     	
@@ -252,13 +258,16 @@ public class MoReLauncher implements IEmulatorLauncher {
     }
 
 	@Override
-	public String getName() {
-		return "MoRe Emulator";
+	public boolean isAvailable(MoSyncProject project, String mode) {
+		return true;
 	}
 
 	@Override
-	public boolean isAvailable(MoSyncProject project, String mode) {
-		return true;
+	public IBuildVariant getVariant(ILaunchConfiguration launchConfig, String mode) throws CoreException {
+		IBuildVariant prototype = super.getVariant(launchConfig, mode);
+		BuildVariant modified = new BuildVariant(prototype);
+		modified.setFinalizerBuild(false);
+		return modified;
 	}
 
 

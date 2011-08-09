@@ -14,7 +14,6 @@
 package com.mobilesorcery.sdk.builder.android.launch;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,10 +24,8 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.builder.android.Activator;
-import com.mobilesorcery.sdk.core.CommandLineExecutor;
-import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.AbstractTool;
 import com.mobilesorcery.sdk.core.CollectingLineHandler;
-import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 
@@ -38,7 +35,7 @@ import com.mobilesorcery.sdk.core.Util;
  * @author Mattias Bybro
  * 
  */
-public class ADB extends AndroidTool {
+public class ADB extends AbstractTool {
 
 	private static ADB instance = new ADB();
 	

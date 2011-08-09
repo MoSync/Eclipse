@@ -10,7 +10,9 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
+import com.mobilesorcery.sdk.core.BuildVariant;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildState;
 import com.mobilesorcery.sdk.core.IBuildVariant;
@@ -67,6 +69,19 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 	@Override
 	public boolean isAvailable(MoSyncProject project, String mode) {
 		return !EmulatorLaunchConfigurationDelegate.isDebugMode(mode);
+	}
+
+	/**
+	 * The default behaviour is to return a non-finalizing build with the build configuration
+	 * as per specified by the launch configuration and a target profile set to the currently
+	 * selected profile.
+	 */
+	@Override
+	public IBuildVariant getVariant(ILaunchConfiguration launchConfig, String mode) throws CoreException {
+	    IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
+		MoSyncProject mosyncProject = MoSyncProject.create(project);
+		IBuildConfiguration cfg = EmulatorLaunchConfigurationDelegate.getAutoSwitchBuildConfiguration(launchConfig, mode);
+		return new BuildVariant(mosyncProject.getTargetProfile(), cfg, true);
 	}
 
 }

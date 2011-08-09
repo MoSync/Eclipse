@@ -18,6 +18,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 
 /**
@@ -41,4 +42,13 @@ public interface IEmulatorLauncher {
 	 * @return
 	 */
 	public boolean isAvailable(MoSyncProject project, String mode);
+
+	/**
+	 * Returns the variant to use for this launcher. 
+	 * @param launchConfig
+	 * @param mode
+	 * @return
+	 * @throws CoreException 
+	 */
+	public IBuildVariant getVariant(ILaunchConfiguration launchConfig, String mode) throws CoreException;
 }

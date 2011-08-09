@@ -7,6 +7,7 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 
@@ -50,6 +51,13 @@ public class EmulatorLauncherProxy implements IEmulatorLauncher {
 	public boolean isAvailable(MoSyncProject project, String mode) {
 		initDelegate();
 		return delegate.isAvailable(project, mode);
+	}
+
+	@Override
+	public IBuildVariant getVariant(ILaunchConfiguration launchConfig,
+			String mode) throws CoreException {
+		initDelegate();
+		return delegate.getVariant(launchConfig, mode);
 	}
 
 }

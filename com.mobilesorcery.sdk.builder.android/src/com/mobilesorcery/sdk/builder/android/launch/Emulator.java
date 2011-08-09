@@ -1,20 +1,14 @@
 package com.mobilesorcery.sdk.builder.android.launch;
 
-import java.io.File;
-
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.builder.android.Activator;
+import com.mobilesorcery.sdk.core.AbstractTool;
 import com.mobilesorcery.sdk.core.CollectingLineHandler;
-import com.mobilesorcery.sdk.core.CommandLineExecutor;
 import com.mobilesorcery.sdk.core.MoSyncTool;
-import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
-import com.mobilesorcery.sdk.core.MoSyncBuilder;
 
-public class Emulator extends AndroidTool {
+public class Emulator extends AbstractTool {
 
 	public Emulator(IPath pathToEmulator) {
 		super(pathToEmulator);

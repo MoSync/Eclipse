@@ -14,14 +14,18 @@
 package com.mobilesorcery.sdk.builder.iphoneos;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IconManager;
@@ -41,6 +45,8 @@ import com.mobilesorcery.sdk.core.Version;
 public class IPhoneOSPackager
 extends AbstractPackager
 {
+	public final static String ID = "com.mobilesorcery.sdk.build.ios.packager";
+	
 	private String m_iphoneBuildLoc;
 	
 	public IPhoneOSPackager ( ) 
@@ -166,6 +172,14 @@ extends AbstractPackager
 			            }
 		            }
 	            }
+
+	            // Now, if we have XCode, build it as well!
+	            if (XCodeBuild.getDefault().isValid()) {
+	            	out = buildViaXCode(project, intern, variant, out).toFile();
+	            } else {
+	            	intern.getConsole().addMessage("No XCode, will not build generated project");
+	            }
+	            
             }
             catch ( Exception e ) 
             {
@@ -182,4 +196,37 @@ extends AbstractPackager
                                                  "Failed to build the xcode template." ));
         }
     }
+
+	private IPath buildViaXCode(MoSyncProject project, DefaultPackager packager, IBuildVariant variant, File xcodeProject) throws CoreException {
+		XCodeBuild xcodeBuild = XCodeBuild.getDefault();
+		xcodeBuild.setParameters(packager.getParameters());
+		// Kind of hard-coded in the XCode project template.
+		String cfgId = variant.getConfigurationId();
+		IBuildConfiguration cfg = project.getBuildConfiguration(cfgId);
+		boolean isDebugBuild = cfg != null && cfg.getTypes().contains(IBuildConfiguration.DEBUG_TYPE);
+		String target = isDebugBuild ? "Debug" : "Release";
+		String sdkId = getSDK(variant);
+		xcodeBuild.build(new Path(xcodeProject.getAbsolutePath()), target, sdkId);
+		
+		// Hm, is this always true...?
+		String simSuffix = isSimulatorBuild(variant) ? "-iphonesimulator" : "";
+		return new Path(packager.resolve(xcodeProject.getAbsolutePath() + "/build/" + target + simSuffix + "/%project-name%.app"));
+	}
+
+	private boolean isSimulatorBuild(IBuildVariant variant) {
+		return variant.getSpecifiers().containsKey(Activator.IOS_SIMULATOR_SPECIFIER);
+	}
+
+	private String getSDK(IBuildVariant variant) throws CoreException {
+		String sdkId = null;
+		if (isSimulatorBuild(variant)) {
+			// Special case: build for the simulator
+			SDK sdk = Activator.getDefault().getDefaultSimulatorSDK();
+			if (sdk == null) {
+				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "No simulator SDK found, cannot build"));
+			}
+			sdkId = sdk.getId();
+		}
+		return sdkId;
+	}
 }

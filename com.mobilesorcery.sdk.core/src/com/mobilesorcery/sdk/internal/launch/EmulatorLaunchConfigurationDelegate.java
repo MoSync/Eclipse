@@ -215,8 +215,8 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     	launcher.launch(launchConfig, mode, launch, emulatorId, monitor);
     }
     
-    protected IEmulatorLauncher getEmulatorLauncher(ILaunchConfiguration launchConfig) throws CoreException {
-    	String delegateId = getLaunchDelegateId(launchConfig);
+    protected static IEmulatorLauncher getEmulatorLauncher(ILaunchConfiguration launchConfig) throws CoreException {
+    	String delegateId = getLaunchDelegateId(launchConfig, true);
     	IEmulatorLauncher launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(delegateId);
     	if (launcher == null) {
     		throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could not find emulator for launching."));
@@ -255,12 +255,9 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     }
     
     public static IBuildVariant getVariant(ILaunchConfiguration launchConfig, String mode) throws CoreException {
-		IProject project = getProject(launchConfig);
-		MoSyncProject mosyncProject = MoSyncProject.create(project);
-		IBuildConfiguration cfg = getAutoSwitchBuildConfiguration(launchConfig, mode);
-		// Emulators other than MoRe always wants to be finalized.
-		boolean finalize = MoReLauncher.ID.equals(getLaunchDelegateId(launchConfig, true));
-		return new BuildVariant(mosyncProject.getTargetProfile(), cfg, finalize);
+		IEmulatorLauncher emulatorLauncher = getEmulatorLauncher(launchConfig);
+		IBuildVariant variant = emulatorLauncher.getVariant(launchConfig, mode);
+		return variant;
 	}
 
 	public static IProject getProject(ILaunchConfiguration launchConfig) throws CoreException {
@@ -313,11 +310,9 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     
     public boolean buildForLaunch(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
         IEmulatorLauncher launcher = getEmulatorLauncher(configuration);
-        // Special case: MoRe emulator does not need a packaged build.
-        boolean doFinalize = (!(launcher instanceof MoReLauncher));
-    	final IProject project = getProject(configuration);
+        final IProject project = getProject(configuration);
         IBuildVariant variant = getVariant(configuration, mode);
-        IBuildSession session = new BuildSession(Arrays.asList(variant), BuildSession.DO_SAVE_DIRTY_EDITORS | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (doFinalize ? BuildSession.DO_PACK : 0));
+        IBuildSession session = new BuildSession(Arrays.asList(variant), BuildSession.DO_SAVE_DIRTY_EDITORS | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (variant.isFinalizerBuild() ? BuildSession.DO_PACK : 0));
             
 		// No dialogs should pop up.
         Job job = new MoSyncBuildJob(MoSyncProject.create(project), session, variant);
@@ -331,7 +326,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         return configuration.getAttribute(autoChangeConfigKey, false);
     }
     
-	protected static IBuildConfiguration getAutoSwitchBuildConfiguration(ILaunchConfiguration configuration, String mode) throws CoreException {
+	public static IBuildConfiguration getAutoSwitchBuildConfiguration(ILaunchConfiguration configuration, String mode) throws CoreException {
         IProject project = getProject(configuration);
         MoSyncProject mosyncProject = MoSyncProject.create(project);
         // We'll let non-mosync projects slip through; they'll be handled in launchSync

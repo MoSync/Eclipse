@@ -13,6 +13,8 @@
 */
 package com.mobilesorcery.sdk.core;
 
+import java.util.SortedMap;
+
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 /**
@@ -24,11 +26,36 @@ import com.mobilesorcery.sdk.profiles.IProfile;
  *
  */
 public interface IBuildVariant {
-
+	
+	/**
+	 * Returns the configuration of this variant. (As a string identifier).
+	 * @return
+	 */
     public String getConfigurationId();
     
+    /**
+     * Returns the {@link IProfile} of this variant.
+     * @return
+     */
     public IProfile getProfile();
     
+    /**
+     * Returns whether this is a finalizer build (ie the app will be properly packaged, signed, etc).
+     * @return
+     */
     public boolean isFinalizerBuild();
     
+    /**
+     * <p>Returns the set of specifiers used for this variant.</p>
+     * <p>A specifier allows for specialized builds where a separate binary
+     * needs to be produced for whatever reason.</p>
+     * <p>Examples of potential specifiers:
+     * <ul>
+     * <li>Locale - if some aspect of the binary needs to be different based on language, etc</li>
+     * <li>Emulation - the iPhone Simulator needs a completely different binary than used by the actual device</li>
+     * </ul>
+     * </p>
+     * @return
+     */
+    public SortedMap<String, String> getSpecifiers();
 }

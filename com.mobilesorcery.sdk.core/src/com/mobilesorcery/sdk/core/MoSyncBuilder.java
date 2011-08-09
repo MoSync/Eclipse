@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeSet;
 
 import org.eclipse.cdt.core.CCorePlugin;
 import org.eclipse.cdt.core.ErrorParserManager;
@@ -221,16 +223,42 @@ public class MoSyncBuilder extends ACBuilder {
      *             If the variant is a finalizer variant
      */
     private static IPath getNoFinalizerOutputPath(IProject project, IBuildVariant variant) {
-        return getNoFinalizerOutputPath(project, getPropertyOwner(MoSyncProject.create(project), variant.getConfigurationId()));
-    }
-
-    private static IPath getNoFinalizerOutputPath(IProject project, IPropertyOwner buildProperties) {
+    	IPropertyOwner buildProperties = getPropertyOwner(MoSyncProject.create(project), variant.getConfigurationId());
         String outputPath = buildProperties.getProperty(APP_OUTPUT_PATH);
         if (outputPath == null) {
             throw new IllegalArgumentException("No output path specified");
         }
 
-        return toAbsolute(project.getLocation().append(OUTPUT), outputPath);
+        // Specifier variants end up one level below...
+        IPath outputRoot = project.getLocation().append(OUTPUT);
+        String specifierPathFragment = getSpecifierPathFragment(variant);
+        if (!Util.isEmpty(specifierPathFragment)) {
+        	outputRoot = outputRoot.append(specifierPathFragment);
+        }
+        return toAbsolute(outputRoot, outputPath);
+    }
+    
+    /**
+     * <p>Returns a fragment/prefix/suffix that may be used in file names, based
+     * on the specifiers of a given variant.</p>
+     * @see {@link IBuildVariant#getSpecifiers()}
+     * @param variant
+     * @return The same set of specifiers will always return the same string. (Usually in some alphabetical order).
+     * Only the <b>values</b> of the specifiers will be used to produce the string.
+     */
+    public static String getSpecifierPathFragment(IBuildVariant variant) {
+    	SortedMap<String, String> specifiers = variant.getSpecifiers();
+    	StringBuffer result = new StringBuffer();
+    	if (specifiers != null) {
+    		TreeSet<String> sortedSpecifiers = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+    		for (Map.Entry<String, String> specifier : specifiers.entrySet()) {
+    			if (specifier.getValue().length() > 0) {
+    				sortedSpecifiers.add(specifier.getValue());
+    			}
+    		}
+    		result.append(Util.join(sortedSpecifiers.toArray(), "_"));
+    	}
+    	return result.toString();
     }
     
     /**
@@ -265,8 +293,13 @@ public class MoSyncBuilder extends ACBuilder {
         if (outputPath == null) {
             throw new IllegalArgumentException("No output path specified");
         }
-
-        return toAbsolute(project.getLocation().append(FINAL_OUTPUT), outputPath).append(targetProfile.getVendor().getName()).append(targetProfile.getName());
+        
+        String variantPath = targetProfile.getName();
+        String specifierSuffix = getSpecifierPathFragment(variant);
+        if (!Util.isEmpty(specifierSuffix)) {
+        	variantPath += "_" + specifierSuffix;
+        }
+        return toAbsolute(project.getLocation().append(FINAL_OUTPUT), outputPath).append(targetProfile.getVendor().getName()).append(variantPath);
     }
 
     public static IPath getOutputPath(IProject project, IBuildVariant variant) {

@@ -10,9 +10,10 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 
 import com.mobilesorcery.sdk.builder.android.Activator;
+import com.mobilesorcery.sdk.core.AbstractTool;
 import com.mobilesorcery.sdk.core.LineReader.LineAdapter;
 
-public class Android extends AndroidTool {
+public class Android extends AbstractTool {
 
 	private static class AVDHandler extends LineAdapter {
 
