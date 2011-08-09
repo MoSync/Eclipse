@@ -34,14 +34,18 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 	}
 
 	@Override
+	public void assertLaunchable(ILaunchConfiguration launchConfig, String mode) throws CoreException {
+		assertCorrectPackager(launchConfig, AndroidPackager.ID, "The Android Emulator requires the target profile to be an Android device");
+		super.assertLaunchable(launchConfig, mode);
+	}
+	
+	@Override
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
 		ADB adb = ADB.getExternal();
-		adb.assertValid();
+		adb.assertValid();	
 		
-		assertCorrectPackager(launchConfig, AndroidPackager.ID, "The Android Emulator requires the target profile to be an Android device");
-
 		List<String> emulators = adb.listEmulators(true);
 		if (emulators.size() == 0) {
 			Emulator emulator = Emulator.getExternal();

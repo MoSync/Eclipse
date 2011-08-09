@@ -41,8 +41,14 @@ public interface IEmulatorLauncher {
 	 * Returns <code>true</code> if this launcher is available for a certain launch configuration
 	 * @return
 	 */
-	public boolean isAvailable(MoSyncProject project, String mode);
+	public boolean isAvailable(ILaunchConfiguration launchConfig, String mode);
 
+	/**
+	 * Asserts whether a launch configuration is compatible with this launcher.
+	 * @throws CoreException If not compatible
+	 */
+	public void assertLaunchable(ILaunchConfiguration launchConfig, String mode) throws CoreException;
+	
 	/**
 	 * Returns the variant to use for this launcher. 
 	 * @param launchConfig

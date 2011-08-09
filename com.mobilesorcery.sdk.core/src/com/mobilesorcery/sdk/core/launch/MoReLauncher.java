@@ -258,7 +258,7 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
     }
 
 	@Override
-	public boolean isAvailable(MoSyncProject project, String mode) {
+	public boolean isAvailable(ILaunchConfiguration config, String mode) {
 		return true;
 	}
 

@@ -55,6 +55,7 @@ import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.LaunchConfigurationDelegate;
 import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupDirector;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.util.Policy;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -117,6 +118,9 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     			result = showSwitchConfigDialog(mosyncProject, mode, activeCfg, preferredTypes);
     		}
     	}
+    	
+    	IEmulatorLauncher launcher = getEmulatorLauncher(configuration);
+    	launcher.assertLaunchable(configuration, mode);
     	
     	return result && super.preLaunchCheck(configuration, mode, monitor);
     }

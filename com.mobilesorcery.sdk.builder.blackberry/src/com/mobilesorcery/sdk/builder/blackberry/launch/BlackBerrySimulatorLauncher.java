@@ -84,7 +84,7 @@ public class BlackBerrySimulatorLauncher extends AbstractEmulatorLauncher {
 	}
 	
 	@Override
-	public boolean isAvailable(MoSyncProject project, String mode) {
+	public boolean isAvailable(ILaunchConfiguration config, String mode) {
 		// TODO: Activate when done
 		return false;
 	}

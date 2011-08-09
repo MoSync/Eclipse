@@ -132,7 +132,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		launchDelegateGroup.setLayout(new GridLayout(1, false));
 		launchDelegateList = new ComboViewer(launchDelegateGroup);
 		launchDelegateList.setContentProvider(new ArrayContentProvider());
-		launchDelegateList.setInput(filterLaunchDelegateIds(ids, project, mode).toArray());
+		launchDelegateList.setInput(filterLaunchDelegateIds(ids, mode).toArray());
 		launchDelegateList.setLabelProvider(new LabelProvider() {
 			public String getText(Object element) {
 				return CoreMoSyncPlugin.getDefault()
@@ -245,7 +245,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 
 	private void updateLaunchDelegateList() {
 		if (launchDelegateList != null) {
-			Set<String> ids = filterLaunchDelegateIds(CoreMoSyncPlugin.getDefault().getEmulatorLauncherIds(), getProject(), mode);
+			Set<String> ids = filterLaunchDelegateIds(CoreMoSyncPlugin.getDefault().getEmulatorLauncherIds(), mode);
 			launchDelegateList.setInput(ids.toArray());
 			updateLaunchDelegateListSelection(this.config);
 		}
@@ -274,12 +274,12 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		}
 	}
 
-	private Set<String> filterLaunchDelegateIds(Set<String> emulatorLauncherIds, IProject project, String mode) {
+	private Set<String> filterLaunchDelegateIds(Set<String> emulatorLauncherIds, String mode) {
 		HashSet<String> result = new HashSet<String>();
 		for (String id  : emulatorLauncherIds) {
 			IEmulatorLauncher launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(id);
-			if (launcher != null) {
-				if (launcher.isAvailable(MoSyncProject.create(project), mode)) {
+			if (launcher != null && config != null) {
+				if (launcher.isAvailable(config, mode)) {
 					result.add(id);
 				}
 			}
