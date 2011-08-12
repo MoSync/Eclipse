@@ -18,7 +18,6 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildState;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IPackager;
-import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -100,4 +99,17 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 		return new BuildVariant(mosyncProject.getTargetProfile(), cfg, true);
 	}
 
+	protected void assertWindows() throws CoreException {
+		if (System.getProperty("os.name").toLowerCase().indexOf("win") == -1) {
+			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, 
+					MessageFormat.format("{0} launches are only supported on Windows", getName())));
+		}
+	}
+	
+	protected void assertOSX() throws CoreException {
+		if (System.getProperty("os.name").toLowerCase().indexOf("mac") == -1) {
+			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, 
+					MessageFormat.format("{0} launches are only supported on Mac OS X", getName())));
+		}
+	}
 }
