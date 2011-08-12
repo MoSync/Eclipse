@@ -31,6 +31,7 @@ import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IconManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
 
@@ -75,6 +76,7 @@ extends AbstractPackager
     	String appName;
     	String version;
     	String company;
+    	String cert;
     	IconManager     icon;
         DefaultPackager intern;
         
@@ -89,7 +91,10 @@ extends AbstractPackager
         appName = intern.getParameters( ).get( DefaultPackager.APP_NAME );
         version = intern.getParameters( ).get( DefaultPackager.APP_VERSION );
         company = intern.getParameters( ).get( DefaultPackager.APP_VENDOR_NAME );
-        
+        // We do not yet support configuration specific certs.
+        cert = PropertyUtil.getBoolean(project, PropertyInitializer.IPHONE_PROJECT_SPECIFIC_CERT) ? 
+        		project.getProperty(PropertyInitializer.IPHONE_CERT):
+        		Activator.getDefault().getPreferenceStore().getString(PropertyInitializer.IPHONE_CERT);
         
         try
         {
@@ -107,6 +112,8 @@ extends AbstractPackager
                                                     ver,
                                                     "-company-name",
                                                     company,
+                                                    "-cert",
+                                                    cert,
 					                                "-input", 
 					                                in.getAbsolutePath( ),
 					                                "-output",

@@ -25,6 +25,7 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 
 	@Override
 	public void assertLaunchable(ILaunchConfiguration launchConfig, String mode) throws CoreException {
+		assertOSX();
 		IPhoneSimulator.getDefault().assertValid();
 		assertCorrectPackager(launchConfig, IPhoneOSPackager.ID, "The iPhone Emulator requires the target profile to be an iOS device");
 		super.assertLaunchable(launchConfig, mode);

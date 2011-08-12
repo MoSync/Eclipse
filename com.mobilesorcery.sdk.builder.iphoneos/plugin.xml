@@ -16,4 +16,46 @@
                implementation="com.mobilesorcery.sdk.builder.iphoneos.launch.IPhoneEmulatorLauncher">
          </launcher>
       </extension>
+             <extension
+             point="com.mobilesorcery.core.propertyinitializers">
+          <initializer
+                class="com.mobilesorcery.sdk.builder.iphoneos.PropertyInitializer"
+                context="com.mobilesorcery.sdk.mosync.project.context"
+                id="com.mobilesorcery.sdk.builder.iphoneos.initializer"
+                prefix="iphone">
+          </initializer>
+       </extension>
+       
+                 <extension
+             point="org.eclipse.ui.propertyPages">         
+          <page
+                category="com.mobilesorcery.sdk.ui.properties.project"
+                class="com.mobilesorcery.sdk.builder.iphoneos.ui.properties.IPhoneOSSigningPropertyPage"
+                id="com.mobilesorcery.sdk.builder.iphoneos.signing"
+                objectClass="org.eclipse.core.resources.IProject"
+                name="IPhone Signing">
+                                <enabledWhen>
+                                   <test
+                                         forcePluginActivation="true"
+                                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                                   </test>
+                                </enabledWhen>                
+          </page>          
+       </extension>
+                 <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            category="com.mobilesorcery.sdk.preferences.main"
+            class="com.mobilesorcery.sdk.builder.iphoneos.ui.preferences.IPhoneOSSigningPreferencePage"
+            id="com.mobilesorcery.sdk.builder.iphoneos.preferences"
+            name="IPhone Signing">
+      </page>
+      </extension>
+            <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="com.mobilesorcery.sdk.builder.iphoneos.PropertyInitializer">
+      </initializer>
+   </extension>
+       
 </plugin>
