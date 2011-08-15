@@ -181,7 +181,8 @@ extends AbstractPackager
 	            }
 
 	            // Now, if we have XCode, build it as well!
-	            if (XCodeBuild.getDefault().isValid()) {
+	            boolean hasXCode = XCodeBuild.getDefault().isValid();
+	            if (hasXCode) {
 	            	out = buildViaXCode(project, intern, variant, out).toFile();
 	            } else {
 	            	intern.getConsole().addMessage("No XCode, will not build generated project");

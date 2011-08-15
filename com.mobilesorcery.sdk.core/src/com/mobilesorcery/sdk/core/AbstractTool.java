@@ -10,6 +10,7 @@ import org.eclipse.core.runtime.Status;
 import com.mobilesorcery.sdk.core.CommandLineExecutor;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 
 public abstract class AbstractTool {
 			
@@ -48,6 +49,12 @@ public abstract class AbstractTool {
 	protected static boolean isWindows() {
 		return System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;
 	}
+	
+	protected static boolean isMac() {
+		return System.getProperty("os.name").toLowerCase().indexOf("mac") >= 0;
+	}
+	
+	
 
 	protected void setToolPath(File toolPath) {
 		this.toolPath = toolPath;
@@ -71,7 +78,6 @@ public abstract class AbstractTool {
 	protected int execute(String[] commandLine, ILineHandler stdoutLineHandler,
 			ILineHandler stderrLineHandler, boolean fork) throws CoreException {
 		try {
-			assertValid();
 			CommandLineExecutor executor = new CommandLineExecutor(
 					MoSyncBuilder.CONSOLE_ID);
 			executor.setParameters(getParameters());
