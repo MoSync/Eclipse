@@ -94,5 +94,10 @@ public class NameFilter implements IFilter<IInvocation> {
         matched = matched == null ? "" : matched;
         return matched;
 	}
+	
+	public String toString() {
+		// For debugging purposes.
+		return match + "<" + criteria + "," + type + ">";
+	}
 
 }

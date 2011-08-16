@@ -12,5 +12,10 @@ public class ReverseFilter<T> implements IFilter<T> {
 	public boolean accept(T obj) {
 		return !delegate.accept(obj);
 	}
+	
+	public String toString() {
+		// For debugging purposes.
+		return "!(" + delegate + ")";
+	}
 
 }

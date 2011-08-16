@@ -60,5 +60,11 @@ public class MergeFilter<T> implements IFilter<T> {
 
         return result;
     }
+    
+    public String toString() {
+    	// For debugging purposes.
+    	String opStr = operation == AND ? "&&" : "||";
+    	return Util.join(filters.toArray(), opStr);
+    }
 
 }

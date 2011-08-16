@@ -44,6 +44,7 @@ public class FunctionNameLabelProvider extends StyledCellLabelProvider {
         Object obj = cell.getElement();
         IInvocation invocation = (IInvocation) obj;
         boolean enabled = session.getFilter().accept(invocation);
+        System.err.println("ENABLED? " + enabled + "; " + invocation + ";" + session.getFilter());
         StyledString styledFunctionName = styleFunctionName(enabled, invocation.getProfiledEntity().toString());
         cell.setStyleRanges(styledFunctionName.getStyleRanges());
         cell.setText(styledFunctionName.getString());

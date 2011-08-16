@@ -27,7 +27,7 @@
       description="MoSync Profiling"
    name="MoSync Profiling" />
   
-     <categoryActivityBinding activityId="com.mobilesorcery.profiling"
+     <!-- <categoryActivityBinding activityId="com.mobilesorcery.profiling"
    categoryId="com.mobilesorcery.activities.experimental" />
    
    <activityPatternBinding activityId="com.mobilesorcery.profiling"
@@ -35,7 +35,7 @@
    
    
    <activityPatternBinding activityId="com.mobilesorcery.profiling"
-   pattern="com\.mobilesorcery\.sdk\.profiling/.*" />
+   pattern="com\.mobilesorcery\.sdk\.profiling/.*" /> -->
    
   </extension> 
 </plugin>

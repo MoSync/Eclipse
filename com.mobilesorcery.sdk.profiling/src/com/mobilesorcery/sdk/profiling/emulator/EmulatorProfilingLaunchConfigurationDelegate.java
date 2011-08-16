@@ -89,7 +89,7 @@ public class EmulatorProfilingLaunchConfigurationDelegate extends EmulatorLaunch
 		MatchType matchType = config.getAttribute(USE_REG_EXP, false) ? MatchType.REGEXP : MatchType.CONTAINS;
 		IFilter<IInvocation> funcFilter = NameFilter.create(config.getAttribute(FD_FILTER, ""), NameFilter.Criteria.NAME, matchType, true);
 		IFilter<IInvocation> fileFilter = NameFilter.create(config.getAttribute(FILE_FILTER, ""), NameFilter.Criteria.FILE, matchType, true);
-		return new ReverseFilter<IInvocation>(new MergeFilter<IInvocation>(MergeFilter.AND, funcFilter, fileFilter));
+		return new MergeFilter<IInvocation>(MergeFilter.AND, funcFilter, fileFilter);
 	}
     
 	@Override
