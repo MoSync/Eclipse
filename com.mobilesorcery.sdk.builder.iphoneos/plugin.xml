@@ -40,7 +40,20 @@
                                          property="com.mobilesorcery.sdk.testers.hasMoreNature">
                                    </test>
                                 </enabledWhen>                
-          </page>          
+          </page> 
+          <page
+                category="com.mobilesorcery.sdk.ui.properties.project"
+                class="com.mobilesorcery.sdk.builder.iphoneos.ui.properties.IPhoneOSSSDKPropertyPage"
+                id="com.mobilesorcery.sdk.builder.iphoneos.sdks"
+                objectClass="org.eclipse.core.resources.IProject"
+                name="XCode SDKs">
+                                <enabledWhen>
+                                   <test
+                                         forcePluginActivation="true"
+                                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                                   </test>
+                                </enabledWhen>                
+          </page>           
        </extension>
                  <extension
          point="org.eclipse.ui.preferencePages">

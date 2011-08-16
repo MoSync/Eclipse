@@ -21,6 +21,7 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.PropertyUtil;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -69,17 +70,29 @@ public class Activator extends AbstractUIPlugin {
     }
 
     /**
-     * TODO: We might want to add some prefs, etc.
+     * Returns the current SDKs for a project
+     * @param project
+     * @param sdkType
      * @return
      */
-	public SDK getDefaultSimulatorSDK() {
-		List<SDK> sdks = XCodeBuild.getDefault().listSDKs();
-		for (SDK sdk : sdks) {
-			if (sdk.isSimulatorSDK()) {
-				return sdk;
-			}
-		}
-		return null;
+	public SDK getSDK(MoSyncProject project, int sdkType) {
+		boolean useDefault = PropertyUtil.getBoolean(project, sdkType == XCodeBuild.IOS_SDKS ? PropertyInitializer.IOS_SDK_AUTO : PropertyInitializer.IOS_SIM_SDK_AUTO);
+		String sdkId = project.getProperty(sdkType == XCodeBuild.IOS_SDKS ? PropertyInitializer.IOS_SDK : PropertyInitializer.IOS_SIM_SDK);
+		SDK sdk = useDefault ? XCodeBuild.getDefault().getDefaultSDK(sdkType) : XCodeBuild.getDefault().getSDK(sdkId);
+		return sdk;
+	}
+
+	/**
+	 * Set the SDK to use for a project
+	 * @param project
+	 * @param sdkType
+	 * @param sdk
+	 * @param useDefault
+	 */
+	public void setSDK(MoSyncProject project, int sdkType, SDK sdk, boolean useDefault) {
+		String sdkId = useDefault || sdk == null ? null : sdk.getId(); 
+		PropertyUtil.setBoolean(project, sdkType == XCodeBuild.IOS_SDKS ? PropertyInitializer.IOS_SDK_AUTO : PropertyInitializer.IOS_SIM_SDK_AUTO, useDefault);
+		project.setProperty(sdkType == XCodeBuild.IOS_SDKS ? PropertyInitializer.IOS_SDK : PropertyInitializer.IOS_SIM_SDK, sdkId);
 	}
 
  

@@ -213,7 +213,7 @@ extends AbstractPackager
 		IBuildConfiguration cfg = project.getBuildConfiguration(cfgId);
 		boolean isDebugBuild = cfg != null && cfg.getTypes().contains(IBuildConfiguration.DEBUG_TYPE);
 		String target = isDebugBuild ? "Debug" : "Release";
-		String sdkId = getSDK(variant);
+		String sdkId = getSDK(project, variant);
 		xcodeBuild.build(new Path(xcodeProject.getAbsolutePath()), target, sdkId);
 		
 		// Hm, is this always true...?
@@ -225,16 +225,14 @@ extends AbstractPackager
 		return variant.getSpecifiers().containsKey(Activator.IOS_SIMULATOR_SPECIFIER);
 	}
 
-	private String getSDK(IBuildVariant variant) throws CoreException {
+	private String getSDK(MoSyncProject project, IBuildVariant variant) throws CoreException {
 		String sdkId = null;
-		if (isSimulatorBuild(variant)) {
-			// Special case: build for the simulator
-			SDK sdk = Activator.getDefault().getDefaultSimulatorSDK();
-			if (sdk == null) {
-				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "No simulator SDK found, cannot build"));
-			}
-			sdkId = sdk.getId();
+		int sdkType = isSimulatorBuild(variant) ? XCodeBuild.IOS_SIMULATOR_SDKS : XCodeBuild.IOS_SDKS;
+		SDK sdk = Activator.getDefault().getSDK(project, sdkType);
+		if (sdk == null) {
+			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "No simulator SDK found, cannot build"));
 		}
+		sdkId = sdk.getId();
 		return sdkId;
 	}
 }
