@@ -13,13 +13,13 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 
+import com.mobilesorcery.sdk.builder.blackberry.BlackBerryPackager;
 import com.mobilesorcery.sdk.builder.blackberry.BlackBerryPlugin;
 import com.mobilesorcery.sdk.core.CommandLineExecutor;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.LineReader;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
-import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.launch.AbstractEmulatorLauncher;
 
 // BIG PHAT TODO ON THIS CLASS; MAY BE USED AS A STARTING POINT
@@ -58,10 +58,6 @@ public class BlackBerrySimulatorLauncher extends AbstractEmulatorLauncher {
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
-		if (System.getProperty("os.name").toLowerCase().indexOf("win") == -1) {
-			throw new CoreException(new Status(IStatus.ERROR, BlackBerryPlugin.PLUGIN_ID, "BlackBerry Simulator launches are only supported on Windows"));
-		}
-
 		IPath fc = getSDKPath(launchConfig).append("fledgecontroller.exe");
 
 		final File packageToInstall = getPackageToInstall(launchConfig, mode);
@@ -85,8 +81,13 @@ public class BlackBerrySimulatorLauncher extends AbstractEmulatorLauncher {
 	
 	@Override
 	public boolean isAvailable(ILaunchConfiguration config, String mode) {
-		// TODO: Activate when done
-		return false;
+		return super.isAvailable(config, mode);
 	}
 
+	@Override
+	public void assertLaunchable(ILaunchConfiguration config, String mode) throws CoreException {
+		assertWindows();
+		assertCorrectPackager(config, BlackBerryPackager.ID, "The BlackBerry Simulator requires the target profile to be a BlackBerry device");
+		super.assertLaunchable(config, mode);
+	}
 }
