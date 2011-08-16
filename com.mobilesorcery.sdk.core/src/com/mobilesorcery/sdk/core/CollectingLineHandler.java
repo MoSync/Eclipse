@@ -36,6 +36,10 @@ public class CollectingLineHandler extends LineAdapter {
 		return lines;
 	}
 	
+	public String getFirstLine() {
+		return lines.size() == 0 ? "" : lines.get(0);
+	}
+	
 	public boolean isStopped() {
 		return stopped;
 	}

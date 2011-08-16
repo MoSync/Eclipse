@@ -38,7 +38,7 @@ import com.mobilesorcery.sdk.core.Util;
 public class ADB extends AbstractTool {
 
 	private static ADB instance = new ADB();
-	
+
 	private ADB() {
 		this(MoSyncTool.getDefault().getBinary("android/adb"));
 	}
@@ -46,39 +46,44 @@ public class ADB extends AbstractTool {
 	public ADB(IPath pathToADB) {
 		super(pathToADB);
 	}
-	
+
 	public static ADB getDefault() {
 		return instance;
 	}
-	
+
 	public static ADB getExternal() {
 		IPath sdkPath = Activator.getDefault().getExternalAndroidSDKPath();
-		return new ADB(sdkPath == null ? null : sdkPath.append("platform-tools/adb" + MoSyncTool.getBinExtension()));
+		return new ADB(sdkPath == null ? null
+				: sdkPath.append("platform-tools/adb"
+						+ MoSyncTool.getBinExtension()));
 	}
-	
+
 	/**
 	 * Returns a list of all online android devices (no emulators)
+	 * 
 	 * @return
 	 * @throws CoreException
 	 */
 
-	public List<String> listDeviceSerialNumbers(boolean useConsole) throws CoreException {
+	public List<String> listDeviceSerialNumbers(boolean useConsole)
+			throws CoreException {
 		return listDevices(false, true, useConsole);
 	}
-	
+
 	/**
 	 * Returns a list of all online android emulators (no real devices)
+	 * 
 	 * @return
 	 * @throws CoreException
 	 */
 	public List<String> listEmulators(boolean useConsole) throws CoreException {
 		return listDevices(true, false, useConsole);
 	}
-	
-	private List<String> listDevices(boolean emulators, boolean realDevices, boolean useConsole) throws CoreException {
+
+	private List<String> listDevices(boolean emulators, boolean realDevices,
+			boolean useConsole) throws CoreException {
 		CollectingLineHandler collectingLineHandler = new CollectingLineHandler();
-		execute(
-				new String[] { getToolPath().getAbsolutePath(), "devices" },
+		execute(new String[] { getToolPath().getAbsolutePath(), "devices" },
 				collectingLineHandler, collectingLineHandler, false);
 		ArrayList<String> result = new ArrayList<String>();
 		for (String line : collectingLineHandler.getLines()) {
@@ -91,8 +96,10 @@ public class ADB extends AbstractTool {
 						String serialNumber = device[0];
 						String state = device[device.length - 1];
 						if ("device".equals(state)) {
-							boolean isEmulator = serialNumber.startsWith("emulator-");
-							if ((realDevices && !isEmulator) || (emulators && isEmulator)) {
+							boolean isEmulator = serialNumber
+									.startsWith("emulator-");
+							if ((realDevices && !isEmulator)
+									|| (emulators && isEmulator)) {
 								// Only include online devices and no emulators
 								result.add(serialNumber);
 							}
@@ -105,17 +112,16 @@ public class ADB extends AbstractTool {
 		return result;
 	}
 
-	public void install(File packageToInstall, String serialNumberOfDevice) throws CoreException {
+	public void install(File packageToInstall, String serialNumberOfDevice)
+			throws CoreException {
 		CollectingLineHandler collectingLineHandler = new CollectingLineHandler();
 		CollectingLineHandler errorLineHandler = new CollectingLineHandler();
-		int errorCode = execute(new String[] { getToolPath().getAbsolutePath(),
-				"-s",
-				serialNumberOfDevice,
-				"install",
-				"-r",
-				packageToInstall.getAbsolutePath()
-		}, collectingLineHandler, errorLineHandler, false);
-		
+		int errorCode = execute(
+				new String[] { getToolPath().getAbsolutePath(), "-s",
+						serialNumberOfDevice, "install", "-r",
+						packageToInstall.getAbsolutePath() },
+				collectingLineHandler, errorLineHandler, false);
+
 		String errorMsg = null;
 		for (String line : collectingLineHandler.getLines()) {
 			if (line.trim().startsWith("Failure")) {
@@ -123,7 +129,7 @@ public class ADB extends AbstractTool {
 				errorCode = -127;
 			}
 		}
-		
+
 		List<String> errorLines = errorLineHandler.getLines();
 		if (errorLines.size() > 0) {
 			String error = Util.join(errorLines.toArray(), "\n").trim();
@@ -131,30 +137,49 @@ public class ADB extends AbstractTool {
 				errorMsg = error;
 			}
 		}
-		
+
 		if (errorCode != 0 && errorMsg != null) {
-			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID,
-					MessageFormat.format("Could not install on device: {0}", errorMsg)));
+			throw new CoreException(new Status(IStatus.ERROR,
+					Activator.PLUGIN_ID, MessageFormat.format(
+							"Could not install on device: {0}", errorMsg)));
 		}
 	}
-	
-	public void launch(String activityName, String serialNumberOfDevice) throws CoreException {
+
+	public void launch(String activityName, String serialNumberOfDevice)
+			throws CoreException {
 		CollectingLineHandler collectingLineHandler = new CollectingLineHandler();
 		CollectingLineHandler errorLineHandler = new CollectingLineHandler();
 		int errorCode = execute(new String[] { getToolPath().getAbsolutePath(),
-				"-s",
-				serialNumberOfDevice,
-				"shell",
-				"am",
-				"start",
-				"-n",
-				activityName
-		}, collectingLineHandler, errorLineHandler, false);
-		
+				"-s", serialNumberOfDevice, "shell", "am", "start", "-n",
+				activityName }, collectingLineHandler, errorLineHandler, false);
+
 	}
 
 	@Override
 	protected String getToolName() {
 		return "ADB";
+	}
+
+	public void awaitBoot(String serialNumberOfDevice, long timeoutInMs) throws CoreException {
+		long startTime = System.currentTimeMillis();
+		while (!isBootComplete(serialNumberOfDevice)) {
+			if (System.currentTimeMillis() - startTime > timeoutInMs) {
+				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Connection to Android Emulator timed out"));
+			}
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Connection to Android Emulator timed out", e));
+			}
+		}
+	}
+	
+	public boolean isBootComplete(String serialNumberOfDevice) throws CoreException {
+		CollectingLineHandler cl = new CollectingLineHandler();
+		execute(new String[] { getToolPath().getAbsolutePath(), "-s",
+				serialNumberOfDevice, "shell", "getprop", "dev.bootcomplete"
+		}, cl, cl, false);
+		String reply = cl.getFirstLine().trim();
+		return "1".equals(reply);
 	}
 }

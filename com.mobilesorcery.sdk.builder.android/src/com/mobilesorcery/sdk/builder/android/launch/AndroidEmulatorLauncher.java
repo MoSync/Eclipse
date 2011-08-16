@@ -71,15 +71,17 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 	}
 
 	private List<String> awaitEmulatorStarted(ADB adb, CollectingLineHandler emulatorProcess, int timeout, TimeUnit unit) throws CoreException {
-		// Hm... better ways to do this?
+		// Hm... better ways to do this? Ok, here is an adb command to wait.
+		// However, the problem is still the boot time!
 		long now = System.currentTimeMillis();
 		long timeoutInMs = TimeUnit.MILLISECONDS.convert(timeout, unit);
 		boolean wasStopped = emulatorProcess.isStopped();
 		while (!wasStopped && System.currentTimeMillis() - now < timeoutInMs) {
 			List<String> emulators = adb.listEmulators(false);
 			if (emulators.size() == 1) {
+				adb.awaitBoot(emulators.get(0), TimeUnit.SECONDS.convert(2, TimeUnit.MINUTES));
 				return emulators;
-			}
+			} 
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
