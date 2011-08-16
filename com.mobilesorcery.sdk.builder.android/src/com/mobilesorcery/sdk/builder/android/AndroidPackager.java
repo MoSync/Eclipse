@@ -433,7 +433,7 @@ extends AbstractPackager
 		{
 			manifest_string += 
 				"\t<uses-sdk android:minSdkVersion=\"3\" "
-				+ "android:targetSdkVersion=\"7\" />\n";
+				+ "android:targetSdkVersion=\"8\" />\n";
 		}
 		else
 		{
