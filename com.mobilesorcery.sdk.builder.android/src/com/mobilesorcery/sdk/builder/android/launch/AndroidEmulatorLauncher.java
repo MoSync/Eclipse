@@ -79,7 +79,7 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 		while (!wasStopped && System.currentTimeMillis() - now < timeoutInMs) {
 			List<String> emulators = adb.listEmulators(false);
 			if (emulators.size() == 1) {
-				adb.awaitBoot(emulators.get(0), TimeUnit.SECONDS.convert(2, TimeUnit.MINUTES));
+				adb.awaitBoot(emulators.get(0), TimeUnit.MILLISECONDS.convert(2, TimeUnit.MINUTES));
 				return emulators;
 			} 
 			try {

@@ -26,6 +26,7 @@ import org.eclipse.core.runtime.Status;
 import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.core.AbstractTool;
 import com.mobilesorcery.sdk.core.CollectingLineHandler;
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 
@@ -84,7 +85,7 @@ public class ADB extends AbstractTool {
 			boolean useConsole) throws CoreException {
 		CollectingLineHandler collectingLineHandler = new CollectingLineHandler();
 		execute(new String[] { getToolPath().getAbsolutePath(), "devices" },
-				collectingLineHandler, collectingLineHandler, false);
+				collectingLineHandler, collectingLineHandler, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
 		ArrayList<String> result = new ArrayList<String>();
 		for (String line : collectingLineHandler.getLines()) {
 			line = line.trim();
@@ -178,7 +179,7 @@ public class ADB extends AbstractTool {
 		CollectingLineHandler cl = new CollectingLineHandler();
 		execute(new String[] { getToolPath().getAbsolutePath(), "-s",
 				serialNumberOfDevice, "shell", "getprop", "dev.bootcomplete"
-		}, cl, cl, false);
+		}, cl, cl, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
 		String reply = cl.getFirstLine().trim();
 		return "1".equals(reply);
 	}

@@ -77,9 +77,22 @@ public abstract class AbstractTool {
 	 */
 	protected int execute(String[] commandLine, ILineHandler stdoutLineHandler,
 			ILineHandler stderrLineHandler, boolean fork) throws CoreException {
+		return execute(commandLine, stdoutLineHandler, stderrLineHandler, MoSyncBuilder.CONSOLE_ID, fork);
+	}
+	/**
+	 * Executes a command line
+	 * @param commandLine
+	 * @param stdoutLineHandler
+	 * @param stderrLineHandler
+	 * @param fork
+	 * @return <code>-1</code> if <code>fork</code> is set to <code>true</code>,
+	 * otherwise the return code of the executed process.
+	 * @throws CoreException If the tool is not valid or if some other exception was thrown.
+	 */
+	protected int execute(String[] commandLine, ILineHandler stdoutLineHandler,
+			ILineHandler stderrLineHandler, String consoleId, boolean fork) throws CoreException {			
 		try {
-			CommandLineExecutor executor = new CommandLineExecutor(
-					MoSyncBuilder.CONSOLE_ID);
+			CommandLineExecutor executor = new CommandLineExecutor(consoleId);
 			executor.setParameters(getParameters());
 			executor.setLineHandlers(stdoutLineHandler, stderrLineHandler);
 			executor.addCommandLine(commandLine);

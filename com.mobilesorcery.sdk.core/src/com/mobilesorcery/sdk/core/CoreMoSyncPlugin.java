@@ -92,6 +92,11 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	private static final String LOCAL_KEYRING_MASTER_KEY = "master.passkey";
 
+	/**
+	 * A non-UI console id.
+	 */
+	public static final String LOG_CONSOLE_NAME = "@@log";
+
     // The shared instance
     private static CoreMoSyncPlugin plugin;
 
@@ -539,8 +544,16 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		return factories.get(factoryId);
 	}
 	
+	/**
+	 * Creates an {@link IProcessConsole} to be used for output of command line tools,
+	 * build plugins, etc.
+	 * @param consoleName 
+	 * @return An {@link IProcessConsole}. If running in headless mode or if the
+	 * {@code consoleName} is set to {@link #LOG_CONSOLE_NAME}, a non-UI console is
+	 * returned.
+	 */
 	public IProcessConsole createConsole(String consoleName) {
-		if (isHeadless) {
+		if (isHeadless || LOG_CONSOLE_NAME.equals(consoleName)) {
 			return new LogProcessConsole(consoleName);
 		} else {
 			return ideProcessConsoleProvider == null ? new LogProcessConsole(consoleName) : ideProcessConsoleProvider.get(consoleName);
