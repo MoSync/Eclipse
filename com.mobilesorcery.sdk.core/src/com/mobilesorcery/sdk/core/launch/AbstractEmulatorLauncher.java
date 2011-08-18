@@ -29,47 +29,70 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 	protected AbstractEmulatorLauncher(String name) {
 		this.name = name;
 	}
-	
+
 	@Override
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
 		// TODO Auto-generated method stub
-		
+
 	}
-	
+
 	/**
-	 * The default implementation just checks whether this launcher is available.
-	 * @throws CoreException 
+	 * The default implementation just checks whether this launcher is
+	 * available.
+	 * 
+	 * @throws CoreException
 	 */
 	@Override
-	public void assertLaunchable(ILaunchConfiguration launchConfig, String mode) throws CoreException {
+	public void assertLaunchable(ILaunchConfiguration launchConfig, String mode)
+			throws CoreException {
 		if (!isAvailable(launchConfig, mode)) {
 			IBuildVariant variant = getVariant(launchConfig, mode);
-			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, 
-					MessageFormat.format("Cannot use {0} run in execution mode \\'{1}\\' on platform {2}.", 
-							getName(), mode, variant.getProfile())));
+			throw new CoreException(
+					new Status(
+							IStatus.ERROR,
+							CoreMoSyncPlugin.PLUGIN_ID,
+							MessageFormat
+									.format("Cannot use {0} run in execution mode \\'{1}\\' on platform {2}.",
+											getName(), mode,
+											variant.getProfile())));
 		}
 	}
-	
-	
-	protected File getPackageToInstall(ILaunchConfiguration launchConfig, String mode) throws CoreException {
-		IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
+
+	protected File getPackageToInstall(ILaunchConfiguration launchConfig,
+			String mode) throws CoreException {
+		IProject project = EmulatorLaunchConfigurationDelegate
+				.getProject(launchConfig);
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
-		IBuildVariant variant = EmulatorLaunchConfigurationDelegate.getVariant(launchConfig, mode);
-        IBuildState buildState = mosyncProject.getBuildState(variant);
-        IBuildResult buildResult = buildState.getBuildResult();
-    	File packageToInstall = buildResult == null ? null : buildResult.getBuildResult();
-        return packageToInstall;
+		IBuildVariant variant = EmulatorLaunchConfigurationDelegate.getVariant(
+				launchConfig, mode);
+		IBuildState buildState = mosyncProject.getBuildState(variant);
+		IBuildResult buildResult = buildState.getBuildResult();
+		File packageToInstall = buildResult == null ? null : buildResult
+				.getBuildResult();
+		return packageToInstall;
 	}
-	
-	protected void assertCorrectPackager(ILaunchConfiguration launchConfig, String id, String errormsg) throws CoreException {
-		IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
-		MoSyncProject mosyncProject = MoSyncProject.create(project);
-		IProfile targetProfile = mosyncProject.getTargetProfile();
-		IPackager packager = targetProfile.getPackager();
-		if (!id.equals(packager.getId())) {
-			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, errormsg));
+
+	protected void assertCorrectPackager(ILaunchConfiguration launchConfig,
+			String packagerId, String errormsg) throws CoreException {
+		if (!isCorrectPackager(launchConfig, packagerId)) {
+			throw new CoreException(new Status(IStatus.ERROR,
+					CoreMoSyncPlugin.PLUGIN_ID, errormsg));
+		}
+	}
+
+	protected boolean isCorrectPackager(ILaunchConfiguration launchConfig, String packagerId) {
+		IProject project;
+		try {
+			project = EmulatorLaunchConfigurationDelegate
+					.getProject(launchConfig);
+			MoSyncProject mosyncProject = MoSyncProject.create(project);
+			IProfile targetProfile = mosyncProject.getTargetProfile();
+			IPackager packager = targetProfile.getPackager();
+			return packagerId.equals(packager.getId());
+		} catch (CoreException e) {
+			return false;
 		}
 	}
 
@@ -79,37 +102,46 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 	}
 
 	/**
-	 * The default behaviour is to make this emulator launcher available in non-debug modes
+	 * The default behaviour is to make this emulator launcher available in
+	 * non-debug modes
 	 */
 	@Override
-	public boolean isAvailable(ILaunchConfiguration launchConfiguration, String mode) {
+	public boolean isAvailable(ILaunchConfiguration launchConfiguration,
+			String mode) {
 		return !EmulatorLaunchConfigurationDelegate.isDebugMode(mode);
 	}
 
 	/**
-	 * The default behaviour is to return a non-finalizing build with the build configuration
-	 * as per specified by the launch configuration and a target profile set to the currently
-	 * selected profile.
+	 * The default behaviour is to return a non-finalizing build with the build
+	 * configuration as per specified by the launch configuration and a target
+	 * profile set to the currently selected profile.
 	 */
 	@Override
-	public IBuildVariant getVariant(ILaunchConfiguration launchConfig, String mode) throws CoreException {
-	    IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
+	public IBuildVariant getVariant(ILaunchConfiguration launchConfig,
+			String mode) throws CoreException {
+		IProject project = EmulatorLaunchConfigurationDelegate
+				.getProject(launchConfig);
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
-		IBuildConfiguration cfg = EmulatorLaunchConfigurationDelegate.getAutoSwitchBuildConfiguration(launchConfig, mode);
+		IBuildConfiguration cfg = EmulatorLaunchConfigurationDelegate
+				.getAutoSwitchBuildConfiguration(launchConfig, mode);
 		return new BuildVariant(mosyncProject.getTargetProfile(), cfg, true);
 	}
 
 	protected void assertWindows() throws CoreException {
 		if (System.getProperty("os.name").toLowerCase().indexOf("win") == -1) {
-			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, 
-					MessageFormat.format("{0} launches are only supported on Windows", getName())));
+			throw new CoreException(new Status(IStatus.ERROR,
+					CoreMoSyncPlugin.PLUGIN_ID, MessageFormat.format(
+							"{0} launches are only supported on Windows",
+							getName())));
 		}
 	}
-	
+
 	protected void assertOSX() throws CoreException {
 		if (System.getProperty("os.name").toLowerCase().indexOf("mac") == -1) {
-			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, 
-					MessageFormat.format("{0} launches are only supported on Mac OS X", getName())));
+			throw new CoreException(new Status(IStatus.ERROR,
+					CoreMoSyncPlugin.PLUGIN_ID, MessageFormat.format(
+							"{0} launches are only supported on Mac OS X",
+							getName())));
 		}
 	}
 }

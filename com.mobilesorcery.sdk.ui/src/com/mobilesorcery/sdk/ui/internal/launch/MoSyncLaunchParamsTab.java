@@ -116,7 +116,9 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		Composite control = new Composite(parent, SWT.NONE);
 		control.setLayout(new GridLayout(1, false));
 		createProjectEditor(control);
-		createLaunchDelegateEditor(control);
+		if (allowsExternalEmulators) {
+			createLaunchDelegateEditor(control);
+		}
 		createConfigurationEditor(control);
 		setControl(control);
 	}
@@ -259,6 +261,10 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 	 *               default config is used.
 	 */
 	private void updateLaunchDelegateListSelection(ILaunchConfiguration config) {
+		if (launchDelegateList == null) {
+			return;
+		}
+		
 		if(config == null) {
 			launchDelegateList.setSelection(new StructuredSelection(MoReLauncher.ID));
 			return;
@@ -428,7 +434,9 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		configurations.getControl().setEnabled(comboEnabled);
 		configurationGroup.setVisible(configurationsVisible);
 
-		launchDelegateHolderParent.setVisible(project != null);
+		if (launchDelegateHolderParent != null) {
+			launchDelegateHolderParent.setVisible(project != null);
+		}
 		
 		super.updateLaunchConfigurationDialog();
 	}
