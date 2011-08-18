@@ -54,9 +54,32 @@ public class ADB extends AbstractTool {
 
 	public static ADB getExternal() {
 		IPath sdkPath = Activator.getDefault().getExternalAndroidSDKPath();
-		return new ADB(sdkPath == null ? null
-				: sdkPath.append("platform-tools/adb"
-						+ MoSyncTool.getBinExtension()));
+		return findADB(sdkPath);
+	}
+	
+	/**
+	 * Tries to locate the proper ADB to use; this location may differ depending
+	 * on which Android SDK is installed.
+	 * @param sdkRootPath The Android SDK root directory
+	 * @return
+	 */
+	public static ADB findADB(IPath sdkRootPath) {
+		if (sdkRootPath == null) {
+			return null;
+		}
+		
+		IPath primaryADBPath = sdkRootPath.append("platform-tools/adb" + MoSyncTool.getBinExtension());
+		ADB primaryADB = new ADB(primaryADBPath);
+		if (!primaryADB.isValid()) {
+			// Older Android SDK has the adb tool elsewhere
+			IPath secondaryADBPath = sdkRootPath.append("tools/adb" + MoSyncTool.getBinExtension());
+			ADB secondaryADB = new ADB(secondaryADBPath);
+			if (secondaryADB.isValid()) {
+				return secondaryADB;
+			}
+		}
+		
+		return primaryADB;
 	}
 
 	/**
