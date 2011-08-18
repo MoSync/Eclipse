@@ -393,7 +393,9 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 	public void performApply(ILaunchConfigurationWorkingCopy copy) {
 		for (IEmulatorLaunchConfigurationPart launcherPart : launcherParts
 				.values()) {
-			launcherPart.apply(copy);
+			if (initedParts.contains(launcherPart)) {
+				launcherPart.apply(copy);
+			}
 		}
 		copy.setAttribute(ILaunchConstants.PROJECT, projectText.getText()
 				.trim());
