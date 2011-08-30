@@ -4,6 +4,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.swt.widgets.Composite;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -14,7 +15,7 @@ public class EmulatorLaunchConfigurationPartProxy implements IEmulatorLaunchConf
 
 	private IConfigurationElement element;
 	private IEmulatorLaunchConfigurationPart delegate;
-	
+
 	public EmulatorLaunchConfigurationPartProxy(IConfigurationElement element) {
 		this.element = element;
 	}
@@ -30,7 +31,7 @@ public class EmulatorLaunchConfigurationPartProxy implements IEmulatorLaunchConf
 		initDelegate();
 		return delegate.createControl(parent, updatable);
 	}
-	
+
 	@Override
 	public void apply(ILaunchConfigurationWorkingCopy copy) {
 		initDelegate();
@@ -47,6 +48,12 @@ public class EmulatorLaunchConfigurationPartProxy implements IEmulatorLaunchConf
 				element = null;
 			}
 		}
+	}
+
+	@Override
+	public IMessageProvider validate() {
+		initDelegate();
+		return delegate.validate();
 	}
 
 }

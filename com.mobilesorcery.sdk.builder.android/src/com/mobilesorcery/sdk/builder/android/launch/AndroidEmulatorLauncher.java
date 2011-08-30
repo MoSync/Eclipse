@@ -15,15 +15,9 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.AndroidPackager;
 import com.mobilesorcery.sdk.core.CollectingLineHandler;
-import com.mobilesorcery.sdk.core.IBuildResult;
-import com.mobilesorcery.sdk.core.IBuildState;
-import com.mobilesorcery.sdk.core.IBuildVariant;
-import com.mobilesorcery.sdk.core.IPackager;
-import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.launch.AbstractEmulatorLauncher;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
-import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 
@@ -40,13 +34,13 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 		assertCorrectPackager(launchConfig, AndroidPackager.ID, "The Android Emulator requires the target profile to be an Android device");
 		super.assertLaunchable(launchConfig, mode);
 	}
-	
+
 	@Override
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
 		ADB adb = ADB.getExternal();
-		
+
 		List<String> emulators = adb.listEmulators(true);
 		if (emulators.size() == 0) {
 			Emulator emulator = Emulator.getExternal();
@@ -54,12 +48,13 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 			String avd = launchConfig.getAttribute(AVD_NAME, "");
 			CollectingLineHandler handler = emulator.start(avd, true);
 			emulators = awaitEmulatorStarted(adb, handler, 2, TimeUnit.MINUTES);
+			//startLogCat(adb);
 		} else if (emulators.size() > 1) {
 			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "This launcher only supports launching if exactly one Android emulator is started"));
 		}
 
 		IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
-		
+
     	File packageToInstall = getPackageToInstall(launchConfig, mode);
     	if (packageToInstall != null) {
     		String serialNumberOfDevice = emulators.get(0);
@@ -68,6 +63,10 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
         } else {
         	throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Project not built or build failed"));
         }
+	}
+
+	private void startLogCat(ADB adb) throws CoreException {
+		adb.startLogCat();
 	}
 
 	private List<String> awaitEmulatorStarted(ADB adb, CollectingLineHandler emulatorProcess, int timeout, TimeUnit unit) throws CoreException {
@@ -81,7 +80,7 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 			if (emulators.size() == 1) {
 				adb.awaitBoot(emulators.get(0), TimeUnit.MILLISECONDS.convert(2, TimeUnit.MINUTES));
 				return emulators;
-			} 
+			}
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
@@ -89,7 +88,7 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 			}
 			wasStopped = emulatorProcess.isStopped();
 		}
-		
+
 		if (!emulatorProcess.isStopped()) {
 			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Timeout occurred -- could not connect to Android Emulator"));
 		} else {

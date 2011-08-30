@@ -63,11 +63,11 @@ public class BlackBerrySimulatorLauncher extends AbstractEmulatorLauncher {
 		final File packageToInstall = getPackageToInstall(launchConfig, mode);
 		CommandLineExecutor executor = new CommandLineExecutor(MoSyncBuilder.CONSOLE_ID);
 		executor.setLineHandlers(new SimulatorProcessHandler(packageToInstall), null);
-		
+
 		executor.addCommandLine(new String[] {
 				fc.toFile().getAbsolutePath()
 		});
-		
+
 		try {
 			executor.execute();
 		} catch (IOException e) {
@@ -78,10 +78,11 @@ public class BlackBerrySimulatorLauncher extends AbstractEmulatorLauncher {
 	private IPath getSDKPath(ILaunchConfiguration launchConfig) throws CoreException {
 		return new Path(launchConfig.getAttribute(BlackBerryPlugin.SDK_PATH, ""));
 	}
-	
+
 	@Override
 	public boolean isAvailable(ILaunchConfiguration config, String mode) {
-		return super.isAvailable(config, mode);
+		return false;
+		//return super.isAvailable(config, mode);
 	}
 
 	@Override

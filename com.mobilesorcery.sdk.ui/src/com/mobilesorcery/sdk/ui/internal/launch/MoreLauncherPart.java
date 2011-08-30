@@ -1,8 +1,11 @@
 package com.mobilesorcery.sdk.ui.internal.launch;
 
+import java.text.MessageFormat;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -13,6 +16,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 import com.mobilesorcery.sdk.core.ILaunchConstants;
+import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 import com.mobilesorcery.sdk.ui.UpdateListener;
 import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
@@ -80,6 +84,25 @@ public class MoreLauncherPart implements IEmulatorLaunchConfigurationPart {
 		copy.setAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, heightText
 				.getText().trim());
 
+	}
+
+	@Override
+	public IMessageProvider validate() {
+		IMessageProvider result = null;
+		result = validateInt(widthText.getText(), "Width");
+		if (result == null) {
+			result = validateInt(heightText.getText(), "Height");
+		}
+		return result;
+	}
+
+	private IMessageProvider validateInt(String text, String attrName) {
+		try {
+			Integer.parseInt(text);
+		} catch (Exception e) {
+			return new DefaultMessageProvider(MessageFormat.format("{0} must be an integer", attrName), IMessageProvider.ERROR);
+		}
+		return null;
 	}
 
 }

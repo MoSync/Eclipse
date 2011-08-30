@@ -29,6 +29,7 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.equinox.security.ui;bundle-version="1.0.200"
 Bundle-ActivationPolicy: lazy
 Export-Package: com.mobilesorcery.sdk.core,
+ com.mobilesorcery.sdk.core.apisupport.nfc,
  com.mobilesorcery.sdk.core.build,
  com.mobilesorcery.sdk.core.launch,
  com.mobilesorcery.sdk.core.security,
