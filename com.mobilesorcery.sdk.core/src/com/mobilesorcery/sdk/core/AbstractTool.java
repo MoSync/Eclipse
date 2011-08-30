@@ -13,15 +13,16 @@ import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 
 public abstract class AbstractTool {
-			
+
 	private boolean toolExists;
 	private File toolPath;
 	private CascadingProperties parameters;
-	
+	private File currentDir;
+
 	protected AbstractTool(IPath toolPath) {
 		setToolPath(toolPath == null ? null : toolPath.toFile());
 	}
-	
+
 	/**
 	 * Returns <code>true</code> if this tool
 	 * is valid. The default implementation checks
@@ -34,7 +35,7 @@ public abstract class AbstractTool {
 	public boolean isValid() {
 		return toolPath == null || toolExists;
 	}
-	
+
 	/**
 	 * Asserts whether the tool is valid. The default
 	 * implementation defers to {@link #isValid()}.
@@ -45,22 +46,22 @@ public abstract class AbstractTool {
 			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, String.format("%s not found at %s; please check your settings", getToolName(), getToolPath())));
 		}
 	}
-	
+
 	protected static boolean isWindows() {
 		return System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;
 	}
-	
+
 	protected static boolean isMac() {
 		return System.getProperty("os.name").toLowerCase().indexOf("mac") >= 0;
 	}
-	
-	
+
+
 
 	protected void setToolPath(File toolPath) {
 		this.toolPath = toolPath;
 		toolExists = toolPath != null && toolPath.exists();
 	}
-	
+
 	protected File getToolPath() {
 		return toolPath;
 	}
@@ -90,9 +91,12 @@ public abstract class AbstractTool {
 	 * @throws CoreException If the tool is not valid or if some other exception was thrown.
 	 */
 	protected int execute(String[] commandLine, ILineHandler stdoutLineHandler,
-			ILineHandler stderrLineHandler, String consoleId, boolean fork) throws CoreException {			
+			ILineHandler stderrLineHandler, String consoleId, boolean fork) throws CoreException {
 		try {
 			CommandLineExecutor executor = new CommandLineExecutor(consoleId);
+			if (currentDir != null) {
+				executor.setExecutionDirectory(currentDir.getAbsolutePath());
+			}
 			executor.setParameters(getParameters());
 			executor.setLineHandlers(stdoutLineHandler, stderrLineHandler);
 			executor.addCommandLine(commandLine);
@@ -107,13 +111,28 @@ public abstract class AbstractTool {
 					CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
 		}
 	}
-	
+
 	public void setParameters(CascadingProperties parameters) {
 		this.parameters = parameters;
 	}
-	
+
 	protected CascadingProperties getParameters() {
 		return parameters;
+	}
+
+	/**
+	 * Changes the current directory of this tool.
+	 * Executions will take place in this directory.
+	 * @param parentFile {@code null} implies no change of directory
+	 * before executing.
+	 * @throws CoreException If {@code currentDir} is not
+	 * a directory.
+	 */
+	protected void chdir(File currentDir) throws CoreException {
+		if (!currentDir.isDirectory()) {
+			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Expected a directory, this file is not:" + currentDir));
+		}
+		this.currentDir = currentDir;
 	}
 
 	protected abstract String getToolName();

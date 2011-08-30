@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.builder.iphoneos;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -23,20 +24,20 @@ public class XCodeBuild extends AbstractTool {
 	public static final int IOS_SDKS = 1 << 0;
 	public static final int IOS_SIMULATOR_SDKS = 1 << 1;
 	public static final int ALL_SDKS = IOS_SDKS | IOS_SIMULATOR_SDKS;
-	
+
 
 	private static XCodeBuild instance = null;
-	
-	private String pathToCommand;
 
-	private boolean canExecute;
+	private final String pathToCommand;
+
+	private final boolean canExecute;
 
 	private ArrayList<SDK> cachedSDKs;
 
 	/**
 	 * Returns the xcodebuild tool with the default path (ie it is expected to
 	 * be added to the system path, and modified using the xcode-select command)
-	 * 
+	 *
 	 * @return
 	 */
 	public static XCodeBuild getDefault() {
@@ -63,7 +64,7 @@ public class XCodeBuild extends AbstractTool {
 
 	/**
 	 * Builds an Xcode project
-	 * 
+	 *
 	 * @param pathToXcodeProject
 	 * @param sdk
 	 *            The sdk to use for building, or <code>null</code> for the
@@ -74,10 +75,12 @@ public class XCodeBuild extends AbstractTool {
 	 */
 	public void build(IPath pathToXcodeProject, String target, String sdk)
 			throws CoreException {
+		chdir(pathToXcodeProject.toFile());
 		ArrayList<String> cmd = new ArrayList<String>();
 		cmd.add(pathToCommand);
 		cmd.add("-project");
-		cmd.add(pathToXcodeProject.toOSString() + "/%project-name%.xcodeproj");
+		// XCode < 4.0 does not allow for absolute paths here.
+		cmd.add("%project-name%.xcodeproj");
 		if (!Util.isEmpty(sdk)) {
 			cmd.add("-sdk");
 			cmd.add(sdk);
@@ -120,7 +123,7 @@ public class XCodeBuild extends AbstractTool {
 				CoreMoSyncPlugin.getDefault().log(e);
 			}
 		}
-		
+
 		return filterSDKs(cachedSDKs, sdkTypes);
 	}
 
@@ -151,10 +154,10 @@ public class XCodeBuild extends AbstractTool {
 		}
 		return result;
 	}
-	
+
 	/**
 	 * Returns a default SDK for the given SDK type.
-	 * 
+	 *
 	 * @param sdkType Either {@link #IOS_SDKS} or {@link #IOS_SIMULATOR_SDKS}.
 	 * @return
 	 */
@@ -181,13 +184,13 @@ public class XCodeBuild extends AbstractTool {
 		if (Util.isEmpty(sdkId)) {
 			return null;
 		}
-		
+
 		for (SDK sdk : listSDKs(false, ALL_SDKS)) {
 			if (sdkId.equals(sdk.getId())) {
 				return sdk;
 			}
 		}
-		
+
 		return null;
 	}
 
