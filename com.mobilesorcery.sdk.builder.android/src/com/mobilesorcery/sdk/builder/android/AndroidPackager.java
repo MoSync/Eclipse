@@ -37,6 +37,7 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
+import com.mobilesorcery.sdk.core.apisupport.nfc.NFCSupport;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -90,6 +91,8 @@ extends AbstractPackager
 
 			File defaultIcon = internal.resolveFile( "%mosync-bin%/../etc/icon.png" );
 
+			NFCAndroidSupport nfcSupport = new NFCAndroidSupport(NFCSupport.create(project));
+
 			// Delete previous apk file if any
 			File projectAPK = new File( packageOutDir, appName + ".apk");
 			projectAPK.delete();
@@ -98,8 +101,7 @@ extends AbstractPackager
 			String packageName = project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME);
 
 			// Create manifest file
-			File manifest = new File( packageOutDir, "AndroidManifest.xml" );
-			createManifest(project, new Version(internal.getParameters().get(DefaultPackager.APP_VERSION)), packageName, manifest);
+			File manifest = createManifest(project, nfcSupport, new Version(internal.getParameters().get(DefaultPackager.APP_VERSION)), packageName, packageOutDir);
 
 			// Create layout (main.xml) file
 			File main_xml = new File( packageOutDir, "res/layout/main.xml" );
@@ -377,13 +379,18 @@ extends AbstractPackager
 	 * @param version			The application version
 	 * @param packageName		The package which the source code belongs to
 	 * @param manifest			The file handle to which the manifest will be written to
+	 * @param nfcSupport
+	 * @return
 	 * @throws IOException
+	 * @throws CoreException
 	 */
-	private void createManifest(
+	private File createManifest(
 			MoSyncProject project,
+			NFCAndroidSupport nfcSupport,
 			Version version,
 			String packageName,
-			File manifest) throws IOException {
+			File packageOutDir) throws IOException, CoreException {
+		File manifest = new File( packageOutDir, "AndroidManifest.xml" );
 		manifest.getParentFile().mkdirs();
 		String manifest_string = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 		+"<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\n"
@@ -405,6 +412,8 @@ extends AbstractPackager
 						+"\t\t\t\t<action android:name=\"android.intent.action.MAIN\" />\n"
 						+"\t\t\t\t<category android:name=\"android.intent.category.LAUNCHER\" />\n"
 					+"\t\t\t</intent-filter>\n"
+				// NFC
+				+ getNFCActivityXML(nfcSupport, project)
 				+"\t\t</activity>\n"
 				+"\t\t<activity android:name=\".MoSyncPanicDialog\"\n"
 					+"android:label=\"@string/app_name\">\n"
@@ -428,18 +437,20 @@ extends AbstractPackager
 				+createAutoStartXML(project)
 			+"\t</application>\n";
 
+		int minSDKVersion = getMinSDKVersion(project);
+
 		// Attribute targetSdkVersion is supported only
 		// on Android API level 4 and above.
 		if (m_AndroidVersion >= 4)
 		{
 			manifest_string +=
-				"\t<uses-sdk android:minSdkVersion=\"3\" "
+				"\t<uses-sdk android:minSdkVersion=\"" + minSDKVersion +"\" "
 				+ "android:targetSdkVersion=\"8\" />\n";
 		}
 		else
 		{
 			manifest_string +=
-				"\t<uses-sdk android:minSdkVersion=\"3\" />\n";
+				"\t<uses-sdk android:minSdkVersion=\"" + minSDKVersion + "\" />\n";
 		}
 
 		// The support-screens tag is supported only
@@ -457,6 +468,34 @@ extends AbstractPackager
 		manifest_string += createPermissionXML(project);
 		manifest_string += "</manifest>\n";
 		DefaultPackager.writeFile(manifest, manifest_string);
+
+		String nfcXMLFileContents = nfcSupport.createNFCFilterXML();
+		if (nfcXMLFileContents.length() > 0) {
+			File nfcXMLFile = new File(packageOutDir, "res/xml/nfc.xml");
+			nfcXMLFile.getParentFile().mkdirs();
+			DefaultPackager.writeFile(nfcXMLFile, nfcXMLFileContents);
+		}
+
+		return manifest;
+	}
+
+	private int getMinSDKVersion(MoSyncProject project) {
+		IApplicationPermissions permissions = project.getPermissions();
+		if (permissions.isPermissionRequested(ICommonPermissions.NFC)) {
+			return 10;
+		} else if (permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH)) {
+			return 4;
+		} else {
+			return 3;
+		}
+	}
+
+	private String getNFCActivityXML(NFCAndroidSupport nfcSupport, MoSyncProject project) throws CoreException {
+		StringBuffer result = new StringBuffer();
+		if (project.getPermissions().isPermissionRequested(ICommonPermissions.NFC)) {
+			nfcSupport = new NFCAndroidSupport(NFCSupport.create(project));
+		}
+        return result.toString();
 	}
 
 	/**
@@ -511,6 +550,10 @@ extends AbstractPackager
 				permissions.isPermissionRequested(ICommonPermissions.BLUETOOTH),
 				"android.permission.BLUETOOTH_ADMIN");
 		}
+
+		//if (m_AndroidVersion >= 10) {
+			addPermission(result, permissions.isPermissionRequested(ICommonPermissions.NFC), "android.permission.NFC");
+		//}
 
 		// Required to be able to log in debug runtime
 		if(shouldUseDebugRuntimes() && !permissions.isPermissionRequested(ICommonPermissions.FILE_STORAGE_WRITE))

@@ -32,9 +32,9 @@ import com.mobilesorcery.sdk.core.Util;
 
 /**
  * A class representing the Android Debug Bridge.
- * 
+ *
  * @author Mattias Bybro
- * 
+ *
  */
 public class ADB extends AbstractTool {
 
@@ -56,18 +56,18 @@ public class ADB extends AbstractTool {
 		IPath sdkPath = Activator.getDefault().getExternalAndroidSDKPath();
 		return findADB(sdkPath);
 	}
-	
+
 	/**
 	 * Tries to locate the proper ADB to use; this location may differ depending
 	 * on which Android SDK is installed.
 	 * @param sdkRootPath The Android SDK root directory
-	 * @return
+	 * @return Does not return {@code null} unless {@code sdkRootPath} is {@code null}.
 	 */
 	public static ADB findADB(IPath sdkRootPath) {
 		if (sdkRootPath == null) {
 			return null;
 		}
-		
+
 		IPath primaryADBPath = sdkRootPath.append("platform-tools/adb" + MoSyncTool.getBinExtension());
 		ADB primaryADB = new ADB(primaryADBPath);
 		if (!primaryADB.isValid()) {
@@ -78,13 +78,13 @@ public class ADB extends AbstractTool {
 				return secondaryADB;
 			}
 		}
-		
+
 		return primaryADB;
 	}
 
 	/**
 	 * Returns a list of all online android devices (no emulators)
-	 * 
+	 *
 	 * @return
 	 * @throws CoreException
 	 */
@@ -96,7 +96,7 @@ public class ADB extends AbstractTool {
 
 	/**
 	 * Returns a list of all online android emulators (no real devices)
-	 * 
+	 *
 	 * @return
 	 * @throws CoreException
 	 */
@@ -197,7 +197,7 @@ public class ADB extends AbstractTool {
 			}
 		}
 	}
-	
+
 	public boolean isBootComplete(String serialNumberOfDevice) throws CoreException {
 		CollectingLineHandler cl = new CollectingLineHandler();
 		execute(new String[] { getToolPath().getAbsolutePath(), "-s",
@@ -205,5 +205,12 @@ public class ADB extends AbstractTool {
 		}, cl, cl, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
 		String reply = cl.getFirstLine().trim();
 		return "1".equals(reply);
+	}
+
+	public void startLogCat() throws CoreException {
+		execute(new String[] {
+			getToolPath().getAbsolutePath(),
+			"logcat"
+		}, null, null, true);
 	}
 }

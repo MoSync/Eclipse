@@ -24,6 +24,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.ui.AbstractLaunchConfigurationTab;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -55,6 +56,7 @@ import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
+import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 import com.mobilesorcery.sdk.ui.MoSyncProjectSelectionDialog;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
@@ -64,18 +66,21 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 
 	private class TabListener implements ModifyListener, SelectionListener {
 
+		@Override
 		public void modifyText(ModifyEvent e) {
 			updateLaunchConfigurationDialog();
 		}
 
+		@Override
 		public void widgetDefaultSelected(SelectionEvent e) {/* do nothing */
 		}
 
+		@Override
 		public void widgetSelected(SelectionEvent e) {
 			Object source = e.getSource();
 			if (source == projectButton) {
 				handleProjectButtonSelected();
-			} else if (source == projectText) { 
+			} else if (source == projectText) {
 				updateLaunchConfigurationDialog();
 			} else {
 				updateLaunchConfigurationDialog();
@@ -84,6 +89,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 	}
 
 	private class UpdateConfigurationListener implements ModifyListener {
+		@Override
 		public void modifyText(ModifyEvent e) {
 			updateConfigurations();
 			if (e.getSource() == projectText) {
@@ -94,7 +100,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 
 	private Text projectText;
 	private Button projectButton;
-	private TabListener listener = new TabListener();
+	private final TabListener listener = new TabListener();
 	private IProject project;
 	private String mode;
 	private Button changeConfiguration;
@@ -105,13 +111,15 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 	private ComboViewer launchDelegateList;
 	private Composite launchDelegateHolder;
 	private StackLayout launchDelegateHolderLayout;
-	private HashMap<String, Composite> delegateComposites = new HashMap<String, Composite>();
+	private final HashMap<String, Composite> delegateComposites = new HashMap<String, Composite>();
 	private ILaunchConfiguration config;
-	private HashMap<String, IEmulatorLaunchConfigurationPart> launcherParts = new HashMap<String, IEmulatorLaunchConfigurationPart>();
-	private HashSet<IEmulatorLaunchConfigurationPart> initedParts = new HashSet<IEmulatorLaunchConfigurationPart>();
+	private final HashMap<String, IEmulatorLaunchConfigurationPart> launcherParts = new HashMap<String, IEmulatorLaunchConfigurationPart>();
+	private final HashSet<IEmulatorLaunchConfigurationPart> initedParts = new HashSet<IEmulatorLaunchConfigurationPart>();
 	private Composite launchDelegateHolderParent;
 	private boolean allowsExternalEmulators;
+	private String currentLaunchDelegateId;
 
+	@Override
 	public void createControl(Composite parent) {
 		Composite control = new Composite(parent, SWT.NONE);
 		control.setLayout(new GridLayout(1, false));
@@ -127,7 +135,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		Set<String> ids = CoreMoSyncPlugin.getDefault()
 				.getEmulatorLauncherIds();
 		launchDelegateHolderParent = control;
-		
+
 		Group launchDelegateGroup = new Group(control, SWT.NONE);
 		launchDelegateGroup.setLayoutData(new GridData(GridData.FILL_BOTH));
 		launchDelegateGroup.setText("&Emulator");
@@ -136,6 +144,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		launchDelegateList.setContentProvider(new ArrayContentProvider());
 		launchDelegateList.setInput(filterLaunchDelegateIds(ids, mode).toArray());
 		launchDelegateList.setLabelProvider(new LabelProvider() {
+			@Override
 			public String getText(Object element) {
 				return CoreMoSyncPlugin.getDefault()
 						.getEmulatorLauncher((String) element).getName();
@@ -153,7 +162,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 				});
 		launchDelegateList.getCombo().addModifyListener(listener);
 		launchDelegateHolderParent = launchDelegateGroup;
-		
+
 		launchDelegateHolder = new Composite(launchDelegateHolderParent, SWT.NONE);
 		launchDelegateHolder.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		launchDelegateHolderLayout = new StackLayout();
@@ -175,7 +184,10 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 			this.launchDelegateList.setSelection(new StructuredSelection(id));
 		}
 		launchDelegateHolderLayout.topControl = delegateComposite;
+		currentLaunchDelegateId = id;
 		launchDelegateHolder.layout();
+		validateCurrentLaunchDelegate();
+		updateLaunchConfigurationDialog();
 	}
 
 	private void initLauncherPart(String id) {
@@ -252,11 +264,11 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 			updateLaunchDelegateListSelection(this.config);
 		}
 	}
-	
+
 	/**
 	 * Updates the selection in the launchDelegate list according to the
 	 * current launch configuration.
-	 * 
+	 *
 	 * @param config The current launch configuration, if config is null the
 	 *               default config is used.
 	 */
@@ -264,12 +276,12 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		if (launchDelegateList == null) {
 			return;
 		}
-		
+
 		if(config == null) {
 			launchDelegateList.setSelection(new StructuredSelection(MoReLauncher.ID));
 			return;
 		}
-		
+
 		try {
 			String launchConfigId = config.getAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, MoReLauncher.ID);
 			launchDelegateList.setSelection(new StructuredSelection(launchConfigId));
@@ -335,11 +347,13 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		projectButton.addSelectionListener(listener);
 	}
 
+	@Override
 	public String getName() {
 		return "Main";
 	}
 
-	public void initializeFrom(ILaunchConfiguration config) {		
+	@Override
+	public void initializeFrom(ILaunchConfiguration config) {
 		try {
 			this.config = config;
 			projectText.setText(config.getAttribute(ILaunchConstants.PROJECT,
@@ -379,17 +393,18 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		return isDebugMode() ? ILaunchConstants.BUILD_CONFIG_DEBUG
 				: ILaunchConstants.BUILD_CONFIG;
 	}
-	
+
 	private String getCurrentLauncherDelegateId() {
 		String delegateId = MoReLauncher.ID;
 		if (launchDelegateList != null) {
 			IStructuredSelection selection = (IStructuredSelection) launchDelegateList.getSelection();
 			delegateId = (String) selection.getFirstElement();
 		}
-		
+
 		return delegateId;
 	}
 
+	@Override
 	public void performApply(ILaunchConfigurationWorkingCopy copy) {
 		for (IEmulatorLaunchConfigurationPart launcherPart : launcherParts
 				.values()) {
@@ -411,6 +426,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		return result == null ? "" : result;
 	}
 
+	@Override
 	public void setDefaults(ILaunchConfigurationWorkingCopy wc) {
 		EmulatorLaunchConfigurationDelegate
 				.configureLaunchConfigForSourceLookup(wc);
@@ -424,6 +440,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		this.mode = mode;
 	}
 
+	@Override
 	public void updateLaunchConfigurationDialog() {
 		if (changeConfiguration == null) {
 			return;
@@ -439,7 +456,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		if (launchDelegateHolderParent != null) {
 			launchDelegateHolderParent.setVisible(project != null);
 		}
-		
+
 		super.updateLaunchConfigurationDialog();
 	}
 
@@ -456,14 +473,27 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		} catch (Exception e) {
 			// Ignore.
 		}
-		
+
 		return newProject;
 	}
 
 	@Override
 	public void updateUI() {
 		updateConfigurations();
+		validateCurrentLaunchDelegate();
 		updateLaunchConfigurationDialog();
+	}
+
+	private void validateCurrentLaunchDelegate() {
+		IEmulatorLaunchConfigurationPart launcherPart = launcherParts.get(currentLaunchDelegateId);
+		if (launcherPart != null) {
+			IMessageProvider validationResult = launcherPart.validate();
+			if (DefaultMessageProvider.isEmpty(validationResult)) {
+				setErrorMessage(null);
+			} else {
+				setErrorMessage(validationResult.getMessage());
+			}
+		}
 	}
 
 	public void setAllowExternalEmulators(boolean allowsExternalEmulators) {

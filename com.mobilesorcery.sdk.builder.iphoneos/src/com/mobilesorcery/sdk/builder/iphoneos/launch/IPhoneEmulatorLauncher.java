@@ -24,9 +24,9 @@ import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate
 public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 
 	public final static String SDK_ATTR = "iphone.sdk";
-	
+
 	public IPhoneEmulatorLauncher() {
-		super("iPhone Emulator");
+		super("iPhone Simulator");
 	}
 
 	@Override
@@ -36,7 +36,7 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 		assertCorrectPackager(launchConfig, IPhoneOSPackager.ID, "The iPhone Emulator requires the target profile to be an iOS device");
 		super.assertLaunchable(launchConfig, mode);
 	}
-	
+
 	@Override
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
@@ -58,7 +58,7 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 		}
 		return null;
 	}
-	
+
 	@Override
 	public IBuildVariant getVariant(ILaunchConfiguration launchConfig, String mode) throws CoreException {
 		IBuildVariant prototype = super.getVariant(launchConfig, mode);

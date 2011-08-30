@@ -1,10 +1,13 @@
 package com.mobilesorcery.sdk.builder.android.launch;
 
+import java.text.MessageFormat;
+import java.util.HashSet;
 import java.util.List;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -14,10 +17,11 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Text;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.SimpleQueue;
+import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 import com.mobilesorcery.sdk.ui.UpdateListener;
 import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
@@ -27,7 +31,8 @@ public class AndroidEmulatorLauncherPart implements
 
 	private Combo avd;
 	private Android android;
-	private SimpleQueue q = new SimpleQueue(false);
+	private final SimpleQueue q = new SimpleQueue(false);
+	private HashSet<String> avdsAtLastRefresh = new HashSet<String>();
 
 	public AndroidEmulatorLauncherPart() {
 		// TODO Auto-generated constructor stub
@@ -56,11 +61,11 @@ public class AndroidEmulatorLauncherPart implements
 			public void handleEvent(Event event) {
 				updateAVDs();
 			}
-			
+
 		});
-		
+
 		updateAVDs();
-		
+
 		avd.addListener(SWT.Modify, new UpdateListener(updatable));
 		return main;
 	}
@@ -72,6 +77,7 @@ public class AndroidEmulatorLauncherPart implements
 			public void run() {
 				try {
 					final List<String> avds = android.listAVDs();
+					avdsAtLastRefresh = new HashSet<String>(avds);
 					avd.getDisplay().asyncExec(new Runnable() {
 
 						@Override
@@ -80,19 +86,30 @@ public class AndroidEmulatorLauncherPart implements
 							avd.setItems(avds.toArray(new String[0]));
 							avd.setText(oldText);
 						}
-						
+
 					});
 				} catch (CoreException e) {
 					CoreMoSyncPlugin.getDefault().log(e);
 				}
 			}
-			
+
 		});
 	}
 
 	@Override
 	public void apply(ILaunchConfigurationWorkingCopy copy) {
-		copy.setAttribute(AndroidEmulatorLauncher.AVD_NAME, avd.getText());
+		copy.setAttribute(AndroidEmulatorLauncher.AVD_NAME, avd.getText().trim());
+	}
+
+	@Override
+	public IMessageProvider validate() {
+		String avdName = avd.getText().trim();
+		if (Util.isEmpty(avdName)) {
+			return new DefaultMessageProvider("No AVD set", IMessageProvider.ERROR);
+		} else if (!avdsAtLastRefresh.contains(avdName)) {
+			return new DefaultMessageProvider(MessageFormat.format("No AVD found with name {0}", avdName), IMessageProvider.WARNING);
+		}
+		return null;
 	}
 
 }

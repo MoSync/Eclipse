@@ -16,16 +16,10 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.AndroidPackager;
 import com.mobilesorcery.sdk.core.CollectingLineHandler;
-import com.mobilesorcery.sdk.core.IBuildResult;
-import com.mobilesorcery.sdk.core.IBuildState;
-import com.mobilesorcery.sdk.core.IBuildVariant;
-import com.mobilesorcery.sdk.core.IPackager;
-import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.launch.AbstractEmulatorLauncher;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
-import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 
@@ -63,6 +57,7 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 			}
 			CollectingLineHandler handler = emulator.start(avd, true);
 			emulators = awaitEmulatorStarted(adb, handler, 2, TimeUnit.MINUTES);
+			//startLogCat(adb);
 		} else if (emulators.size() > 1) {
 			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "This launcher only supports launching if exactly one Android emulator is started"));
 		}
@@ -77,6 +72,10 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
         } else {
         	throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Project not built or build failed"));
         }
+	}
+
+	private void startLogCat(ADB adb) throws CoreException {
+		adb.startLogCat();
 	}
 
 	private List<String> awaitEmulatorStarted(ADB adb, CollectingLineHandler emulatorProcess, int timeout, TimeUnit unit) throws CoreException {
