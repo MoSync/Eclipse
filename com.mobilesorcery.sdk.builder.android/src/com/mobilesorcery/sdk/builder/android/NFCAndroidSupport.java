@@ -27,14 +27,16 @@ public class NFCAndroidSupport {
 
 	public String createIntentFilterXML() {
 		StringBuffer result = new StringBuffer();
+		boolean wroteTechDiscoveryIntentFilter = false;
 
 		for (INFCEnablement enablement : nfcSupport.getEnablements()) {
-			if (enablement instanceof TagTechNFCEnablement) {
+			if (enablement instanceof TagTechNFCEnablement && !wroteTechDiscoveryIntentFilter) {
 				result.append(INTENT_FILTER_START_XML);
 				result.append(createActionXML(TECH_DISC_ACTION));
 				result.append(INTENT_FILTER_END_XML);
 				result.append("<meta-data android:name=\"" + TECH_DISC_ACTION +"\" " +
 		                "android:resource=\"@xml/nfc\"/>");
+				wroteTechDiscoveryIntentFilter = true;
 			}
 			result.append("\n");
 		}
