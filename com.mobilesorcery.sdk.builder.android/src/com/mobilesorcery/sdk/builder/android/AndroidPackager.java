@@ -494,6 +494,7 @@ extends AbstractPackager
 		StringBuffer result = new StringBuffer();
 		if (project.getPermissions().isPermissionRequested(ICommonPermissions.NFC)) {
 			nfcSupport = new NFCAndroidSupport(NFCSupport.create(project));
+			result.append(nfcSupport.createIntentFilterXML());
 		}
         return result.toString();
 	}
