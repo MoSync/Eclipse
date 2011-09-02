@@ -1,6 +1,7 @@
 package com.mobilesorcery.sdk.builder.android.launch;
 
 import java.io.File;
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -21,6 +22,7 @@ import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.launch.AbstractEmulatorLauncher;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -40,18 +42,25 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 		assertCorrectPackager(launchConfig, AndroidPackager.ID, "The Android Emulator requires the target profile to be an Android device");
 		super.assertLaunchable(launchConfig, mode);
 	}
-	
+
 	@Override
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
 		ADB adb = ADB.getExternal();
-		
+		Android android = Android.getExternal();
+
 		List<String> emulators = adb.listEmulators(true);
 		if (emulators.size() == 0) {
 			Emulator emulator = Emulator.getExternal();
 			emulator.assertValid();
 			String avd = launchConfig.getAttribute(AVD_NAME, "");
+			if (Util.isEmpty(avd)) {
+				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format("No AVD specified (modify your launch configuration).", avd)));
+			}
+			if (!android.hasAVD(avd)) {
+				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format("No AVD found with name {0} (modify your launch configuration).", avd)));
+			}
 			CollectingLineHandler handler = emulator.start(avd, true);
 			emulators = awaitEmulatorStarted(adb, handler, 2, TimeUnit.MINUTES);
 		} else if (emulators.size() > 1) {
@@ -59,7 +68,7 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 		}
 
 		IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
-		
+
     	File packageToInstall = getPackageToInstall(launchConfig, mode);
     	if (packageToInstall != null) {
     		String serialNumberOfDevice = emulators.get(0);
@@ -81,7 +90,7 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 			if (emulators.size() == 1) {
 				adb.awaitBoot(emulators.get(0), TimeUnit.MILLISECONDS.convert(2, TimeUnit.MINUTES));
 				return emulators;
-			} 
+			}
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
@@ -89,7 +98,7 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 			}
 			wasStopped = emulatorProcess.isStopped();
 		}
-		
+
 		if (!emulatorProcess.isStopped()) {
 			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Timeout occurred -- could not connect to Android Emulator"));
 		} else {
