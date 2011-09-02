@@ -1,6 +1,7 @@
 package com.mobilesorcery.sdk.builder.android.launch;
 
 import java.io.File;
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -16,6 +17,7 @@ import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.AndroidPackager;
 import com.mobilesorcery.sdk.core.CollectingLineHandler;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.launch.AbstractEmulatorLauncher;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 
@@ -40,12 +42,19 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
 		ADB adb = ADB.getExternal();
+		Android android = Android.getExternal();
 
 		List<String> emulators = adb.listEmulators(true);
 		if (emulators.size() == 0) {
 			Emulator emulator = Emulator.getExternal();
 			emulator.assertValid();
 			String avd = launchConfig.getAttribute(AVD_NAME, "");
+			if (Util.isEmpty(avd)) {
+				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format("No AVD specified (modify your launch configuration).", avd)));
+			}
+			if (!android.hasAVD(avd)) {
+				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format("No AVD found with name {0} (modify your launch configuration).", avd)));
+			}
 			CollectingLineHandler handler = emulator.start(avd, true);
 			emulators = awaitEmulatorStarted(adb, handler, 2, TimeUnit.MINUTES);
 			//startLogCat(adb);

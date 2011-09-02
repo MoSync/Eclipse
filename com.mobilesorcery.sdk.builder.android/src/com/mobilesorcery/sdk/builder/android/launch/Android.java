@@ -18,8 +18,8 @@ public class Android extends AbstractTool {
 	private static class AVDHandler extends LineAdapter {
 
 		private final static Pattern NAME_PATTERN = Pattern.compile("\\s*Name:\\s*(.*)\\s*");
-		private List<String> avds = new ArrayList<String>();
-		
+		private final List<String> avds = new ArrayList<String>();
+
 		@Override
 		public void newLine(String line) {
 			Matcher matcher = NAME_PATTERN.matcher(line);
@@ -38,14 +38,14 @@ public class Android extends AbstractTool {
 	public Android(IPath pathToAndroid) {
 		super(pathToAndroid);
 	}
-	
+
 	public static Android getExternal() {
 		IPath sdkPath = Activator.getDefault().getExternalAndroidSDKPath();
 		String extension = "";
 		if(System.getProperty("os.name").toLowerCase().indexOf("win") >= 0) {
 			extension = ".bat";
 		}
-	
+
 		IPath path = sdkPath == null ? null : sdkPath.append("tools/android" + extension);
 		return new Android(path);
 	}
@@ -56,13 +56,17 @@ public class Android extends AbstractTool {
 				getToolPath().getAbsolutePath(),
 				"list", "avds"
 		}, avdHandler, null, false);
-		
+
 		return avdHandler.getAVDs();
 	}
-	
+
 	@Override
 	protected String getToolName() {
 		return "Android";
+	}
+
+	public boolean hasAVD(String avd) throws CoreException {
+		return listAVDs().contains(avd);
 	}
 
 }
