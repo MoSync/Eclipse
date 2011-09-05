@@ -27,7 +27,8 @@ public class MoSyncPathInitializer extends PathEntryContainerInitializer {
     	instance = this;
     }
 
-    public void initialize(IPath containerPath, ICProject project) throws CoreException {
+    @Override
+	public void initialize(IPath containerPath, ICProject project) throws CoreException {
         CoreModel.setPathEntryContainer(new ICProject[] { project }, new MoSyncIncludePathContainer(project.getProject()), null);
     }
 
