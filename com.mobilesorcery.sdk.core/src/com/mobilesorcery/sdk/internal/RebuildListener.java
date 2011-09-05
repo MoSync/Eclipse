@@ -32,6 +32,7 @@ import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
 import com.mobilesorcery.sdk.internal.cdt.MoSyncIncludePathContainer;
 import com.mobilesorcery.sdk.internal.cdt.MoSyncPathInitializer;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -42,10 +43,12 @@ import com.mobilesorcery.sdk.profiles.IProfile;
  *
  */
 public class RebuildListener implements PropertyChangeListener {
-	
-    public void propertyChange(PropertyChangeEvent event) {
+
+    @Override
+	public void propertyChange(PropertyChangeEvent event) {
     	boolean doTouch = false;
-        if (MoSyncProject.TARGET_PROFILE_CHANGED == event.getPropertyName()) {
+    	boolean updateProjectPaths = shouldUpdatePaths(event);
+        if (updateProjectPaths) {
             Object source = event.getSource();
             if (source instanceof MoSyncProject) {
                 MoSyncProject project = (MoSyncProject) source;
@@ -66,7 +69,7 @@ public class RebuildListener implements PropertyChangeListener {
         } else if (MoSyncProject.BUILD_CONFIGURATION_CHANGED == event.getPropertyName()) {
         	doTouch = true;
         }
-        
+
         if (doTouch) {
             // Make sure we rebuild when necessary (at a later point)
             Object source = event.getSource();
@@ -79,5 +82,11 @@ public class RebuildListener implements PropertyChangeListener {
             }
         }
     }
+
+	private boolean shouldUpdatePaths(PropertyChangeEvent event) {
+		return MoSyncProject.TARGET_PROFILE_CHANGED == event.getPropertyName() ||
+				MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS.equals(NameSpacePropertyOwner.getKey(event.getPropertyName())) ||
+				MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS.equals(NameSpacePropertyOwner.getKey(event.getPropertyName()));
+	}
 
 }
