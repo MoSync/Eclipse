@@ -90,7 +90,7 @@ public class KeystoreCertificateInfo {
         return shouldEncryptPasswords;
     }
 
-    public IMessageProvider validate() {
+    public IMessageProvider validate(boolean strict) {
         String msg = null;
         int type = IMessageProvider.NONE;
         if (exception != null) {
@@ -99,7 +99,7 @@ public class KeystoreCertificateInfo {
         } else if (Util.isEmpty(keyPassword) || Util.isEmpty(keystorePassword)) {
             msg = "Empty passwords are not allowed (shared projects do not share passwords for security reasons)";
             type = IMessageProvider.WARNING;
-        } else if (!CoreMoSyncPlugin.getDefault().usesEclipseSecureStorage()) {
+        } else if (strict && CoreMoSyncPlugin.getDefault().usesEclipseSecureStorage()) {
         	msg = "Un-encrypted passwords, see Preferences > MoSync Tool > Security";
         	type = IMessageProvider.WARNING;
         }

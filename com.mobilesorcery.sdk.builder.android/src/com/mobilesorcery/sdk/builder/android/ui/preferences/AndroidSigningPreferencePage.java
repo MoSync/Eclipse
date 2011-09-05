@@ -29,7 +29,8 @@ public class AndroidSigningPreferencePage extends PreferencePage implements IWor
         setPreferenceStore(Activator.getDefault().getPreferenceStore());
     }
 
-    public boolean performOk() {
+    @Override
+	public boolean performOk() {
         KeystoreCertificateInfo info = editor.getKeystoreCertInfo();
         try {
 			info.store(PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO,
@@ -42,26 +43,29 @@ public class AndroidSigningPreferencePage extends PreferencePage implements IWor
 		updateUI();
         return true;
     }
-    
-    public void init(IWorkbench workbench) {
+
+    @Override
+	public void init(IWorkbench workbench) {
     }
 
-    protected Control createContents(Composite parent) {
+    @Override
+	protected Control createContents(Composite parent) {
         editor = new KeystoreCertificateInfoEditor(parent, SWT.NONE);
         editor.setUpdatable(this);
         KeystoreCertificateInfo info = KeystoreCertificateInfo.loadOne(PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO,
         		new PreferenceStorePropertyOwner(getPreferenceStore()),
             	CoreMoSyncPlugin.getDefault().getSecureProperties());
         editor.setKeystoreCertInfo(info);
-        setMessage(info.validate().getMessage(), info.validate().getMessageType());
+        setMessage(info.validate(true).getMessage(), info.validate(true).getMessageType());
         updateUI();
         return editor;
     }
 
+	@Override
 	public void updateUI() {
 		KeystoreCertificateInfo info = editor.getKeystoreCertInfo();
 		if (info != null) {
-			IMessageProvider message = info.validate();
+			IMessageProvider message = info.validate(true);
 			setMessage(message.getMessage(), message.getMessageType());
 		}
 	}

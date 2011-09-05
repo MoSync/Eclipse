@@ -47,8 +47,8 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 
 public class JavaPackager extends AbstractPackager {
-    private String m_zipLoc;
-    private String m_iconInjectorLoc;
+    private final String m_zipLoc;
+    private final String m_iconInjectorLoc;
 
     public JavaPackager() {
         MoSyncTool tool = MoSyncTool.getDefault();
@@ -57,7 +57,8 @@ public class JavaPackager extends AbstractPackager {
 
     }
 
-    public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+    @Override
+	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
     	createPackage(project, variant, buildResult, true);
     }
 
@@ -76,7 +77,7 @@ public class JavaPackager extends AbstractPackager {
 
             Version appVersion = new Version(internal.getParameters().get(DefaultPackager.APP_VERSION));
             IApplicationPermissions permissions = project.getPermissions();
-            
+
             File projectJar = internal.resolveFile("%package-output-dir%/%app-name%.jar"); //$NON-NLS-1$
             File projectJad = internal.resolveFile("%package-output-dir%/%app-name%.jad"); //$NON-NLS-1$
 
@@ -85,7 +86,7 @@ public class JavaPackager extends AbstractPackager {
 
             String appVendorName = internal.getParameters().get(DefaultPackager.APP_VENDOR_NAME);
             String appName = internal.getParameters().get(DefaultPackager.APP_NAME);
-            
+
             File manifest = internal.resolveFile("%compile-output-dir%/META-INF/MANIFEST.MF"); //$NON-NLS-1$
             createManifest(variant, appName, appVendorName, permissions, appVersion, manifest);
 
@@ -115,7 +116,7 @@ public class JavaPackager extends AbstractPackager {
                 Object xObj = targetProfile.getProperties().get("MA_PROF_CONST_ICONSIZE_X"); //$NON-NLS-1$
                 Object yObj = targetProfile.getProperties().get("MA_PROF_CONST_ICONSIZE_Y"); //$NON-NLS-1$
                 if (xObj != null && yObj != null) {
-                    String sizeStr = ((Long) xObj) + "x" + ((Long) yObj); //$NON-NLS-1$
+                    String sizeStr = xObj + "x" + yObj; //$NON-NLS-1$
                     internal.runCommandLine(m_iconInjectorLoc, "-src", iconFiles[0].getLocation().toOSString(), "-size", sizeStr, "-platform", "j2me", "-dst",
                             projectJar.getAbsolutePath());
                 } else {
@@ -135,21 +136,21 @@ public class JavaPackager extends AbstractPackager {
         List<KeystoreCertificateInfo> keystoreCertInfos = KeystoreCertificateInfo.load(
         		PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS,
         		project, project.getSecurePropertyOwner());
-        
+
         for (KeystoreCertificateInfo keystoreCertInfo : keystoreCertInfos) {
             String keystore = keystoreCertInfo.getKeystoreLocation();
             String alias = keystoreCertInfo.getAlias();
             String storepass = keystoreCertInfo.getKeystorePassword();
             String keypass = keystoreCertInfo.getKeyPassword();
 
-            if (!DefaultMessageProvider.isEmpty(keystoreCertInfo.validate())) {
-            	throw new CoreException(new Status(IStatus.OK, Activator.PLUGIN_ID, "No or invalid key/keystore password for java signing. Please note that for security reasons, passwords are locally stored. You may need to set the password in the Java preference page."));	
+            if (!DefaultMessageProvider.isEmpty(keystoreCertInfo.validate(false))) {
+            	throw new CoreException(new Status(IStatus.OK, Activator.PLUGIN_ID, "No or invalid key/keystore password for java signing. Please note that for security reasons, passwords are locally stored. You may need to set the password in the Java preference page."));
             }
-            
+
             MoSyncTool moSyncTool = MoSyncTool.getDefault();
             String javaPath = moSyncTool.getJava().toOSString();
             CommandLineBuilder addCertCmd = new CommandLineBuilder(javaPath);
-            
+
             String jadToolPath = moSyncTool.getMoSyncBin().append("javame/JadTool.jar").toOSString();
             addCertCmd.flag("-jar").with(jadToolPath);
             addCertCmd.flag("-addcert");
@@ -158,7 +159,7 @@ public class JavaPackager extends AbstractPackager {
             addCertCmd.flag("-inputjad").with(projectJad);
             addCertCmd.flag("-outputjad").with(projectJad);
             addCertCmd.flag("-storepass").with(storepass);
-            
+
             assertOk(internal.runCommandLine(addCertCmd.asArray(), addCertCmd.toHiddenString("-storepass")));
 
             CommandLineBuilder addJarSigCmd = new CommandLineBuilder(javaPath);
@@ -175,7 +176,7 @@ public class JavaPackager extends AbstractPackager {
             assertOk(internal.runCommandLine(addJarSigCmd.asArray(), addJarSigCmd.toHiddenString("-storepass", "-keypass")));
         }
     }
-    
+
     private void assertOk(int errorCode) {
         if (errorCode != 0) {
             throw new IllegalArgumentException("Tool execution failed");
@@ -237,7 +238,7 @@ public class JavaPackager extends AbstractPackager {
             mainAttr.putValue("MIDlet-Jar-Size", Long.toString(jarSize));
             mainAttr.putValue("MIDlet-Jar-URL", jarName);
         }
-        
+
         return result;
     }
 

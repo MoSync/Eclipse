@@ -63,6 +63,7 @@ extends AbstractPackager
 		m_aaptLoc = tool.getBinary( "android/aapt" ).toOSString( );
 	}
 
+	@Override
 	public void createPackage ( MoSyncProject project, IBuildVariant variant, IBuildResult buildResult )
 	throws CoreException
 	{
@@ -256,7 +257,7 @@ extends AbstractPackager
 
 			// sign apk file using jarSigner
             KeystoreCertificateInfo keystoreCertInfo = null;
-            
+
             try {
             	keystoreCertInfo = KeystoreCertificateInfo.loadOne(
             			PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO,
@@ -270,28 +271,28 @@ extends AbstractPackager
                 String alias = keystoreCertInfo.getAlias();
                 String storepass = keystoreCertInfo.getKeystorePassword();
                 String keypass = keystoreCertInfo.getKeyPassword();
-                
-                if (!DefaultMessageProvider.isEmpty(keystoreCertInfo.validate())) {
-                	throw new CoreException(new Status(IStatus.OK, Activator.PLUGIN_ID, "No or invalid key/keystore password for android signing. Please note that for security reasons, passwords are locally stored. You may need to set the password in the Android preference page."));	
+
+                if (!DefaultMessageProvider.isEmpty(keystoreCertInfo.validate(false))) {
+                	throw new CoreException(new Status(IStatus.OK, Activator.PLUGIN_ID, "No or invalid key/keystore password for android signing. Please note that for security reasons, passwords are locally stored. You may need to set the password in the Android preference page."));
                 }
-				
-                String[] jarSignerCommandLine = new String[] 
+
+                String[] jarSignerCommandLine = new String[]
                 {
-                    "java", 
-                    "-jar", 
+                    "java",
+                    "-jar",
                     new File( mosyncBinDir, "android/tools-stripped.jar" ).getAbsolutePath( ),
-                    "-keystore", 
-                    keystore, 
-                    "-storepass", 
-                    storepass, 
-                    "-keypass", 
+                    "-keystore",
+                    keystore,
+                    "-storepass",
+                    storepass,
+                    "-keypass",
                     keypass,
-                    "-signedjar", 
+                    "-signedjar",
                     internal.resolveFile( "%package-output-dir%/%app-name%.apk" ).getAbsolutePath( ),
-                    internal.resolveFile( "%package-output-dir%/%app-name%_unsigned.apk" ).getAbsolutePath( ), 
+                    internal.resolveFile( "%package-output-dir%/%app-name%_unsigned.apk" ).getAbsolutePath( ),
                     alias
                 };
-                
+
     			internal.runCommandLine(jarSignerCommandLine, "*** COMMAND LINE WITHHELD, CONTAINS PASSWORDS ***");
             }
 			// Clean up!
