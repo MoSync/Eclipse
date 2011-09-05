@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
@@ -67,6 +68,7 @@ import com.mobilesorcery.sdk.internal.PackagerProxy;
 import com.mobilesorcery.sdk.internal.PropertyInitializerProxy;
 import com.mobilesorcery.sdk.internal.RebuildListener;
 import com.mobilesorcery.sdk.internal.ReindexListener;
+import com.mobilesorcery.sdk.internal.SecurePasswordProvider;
 import com.mobilesorcery.sdk.internal.SecureProperties;
 import com.mobilesorcery.sdk.internal.debug.MoSyncBreakpointSynchronizer;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
@@ -83,30 +85,28 @@ import com.mobilesorcery.sdk.profiles.filter.elementfactories.VendorFilterFactor
 /**
  * The activator class controls the plug-in life cycle
  */
-public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChangeListener, IResourceChangeListener, IProvider<PBEKeySpec, String> {
-	
+public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChangeListener, IResourceChangeListener {
+
     // The plug-in ID
     public static final String PLUGIN_ID = "com.mobilesorcery.sdk.core";
-
-	private static final String SECURE_ROOT_NODE = "mosync.com";
-
-	private static final String LOCAL_KEYRING_MASTER_KEY = "master.passkey";
 
 	/**
 	 * A non-UI console id.
 	 */
 	public static final String LOG_CONSOLE_NAME = "@@log";
 
+	private static final String WORKSPACE_TOKEN_PREF = PLUGIN_ID + ".w.s.token";
+
     // The shared instance
     private static CoreMoSyncPlugin plugin;
 
-    private ArrayList<Pattern> patterns = new ArrayList<Pattern>();
+    private final ArrayList<Pattern> patterns = new ArrayList<Pattern>();
 
-    private ArrayList<IPackager> packagers = new ArrayList<IPackager>();
+    private final ArrayList<IPackager> packagers = new ArrayList<IPackager>();
 
     private Map<String, Map<String, IPropertyInitializer>> propertyInitializers = new HashMap<String, Map<String, IPropertyInitializer>>();
 
-	private HashMap<String, IEmulatorLauncher> launchers = new HashMap<String, IEmulatorLauncher>();
+	private final HashMap<String, IEmulatorLauncher> launchers = new HashMap<String, IEmulatorLauncher>();
 
 	private DependencyManager<IProject> projectDependencyManager;
 
@@ -117,7 +117,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     private Integer[] sortedPanicErrorCodes;
 
 	private MoSyncBreakpointSynchronizer bpSync;
-	
+
 	private boolean isHeadless = false;
 
 	private HashMap<String, IDeviceFilterFactory> factories;
@@ -132,9 +132,13 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
     private String[] buildConfigurationTypes;
 
-    private HashMap<String, Integer> logCounts = new HashMap<String, Integer>();
+    private final HashMap<String, Integer> logCounts = new HashMap<String, Integer>();
 
 	private ISecurePropertyOwner secureProperties;
+
+	private final SecurePasswordProvider passwordProvider = new SecurePasswordProvider();
+
+	private String workspaceToken;
 
     /**
      * The constructor
@@ -142,7 +146,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     public CoreMoSyncPlugin() {
     }
 
-    public void start(BundleContext context) throws Exception {
+    @Override
+	public void start(BundleContext context) throws Exception {
         super.start(context);
         plugin = this;
         isHeadless = Boolean.TRUE.toString().equals(System.getProperty("com.mobilesorcery.headless"));
@@ -153,17 +158,18 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         initDeviceFilterFactories();
         initPanicErrorMessages();
         initPropertyInitializers();
-        initGlobalDependencyManager();        
+        initGlobalDependencyManager();
         initEmulatorProcessManager();
         installBreakpointHack();
         installResourceListener();
         initBuildConfigurationTypes();
         initLaunchers();
         initSecureProperties();
-		getPreferenceStore().addPropertyChangeListener(this); 
+        initWorkspaceToken();
+		getPreferenceStore().addPropertyChangeListener(this);
 		initializeOnSeparateThread();
     }
-    
+
     private void initSecureProperties() {
 		secureProperties = new SecureProperties(new PreferenceStorePropertyOwner(getPreferenceStore()), getPasswordProvider(), null);
 	}
@@ -183,11 +189,11 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         IConfigurationElement[] types = Platform.getExtensionRegistry().getConfigurationElementsFor(
                 BuildConfiguration.TYPE_EXTENSION_POINT);
         ArrayList<String> buildConfigurationTypes = new ArrayList<String>();
-        
+
         // Add defaults
         buildConfigurationTypes.add(IBuildConfiguration.RELEASE_TYPE);
         buildConfigurationTypes.add(IBuildConfiguration.DEBUG_TYPE);
-        
+
         // Add extensions
         for (int i = 0; i < types.length; i++) {
             String typeId = types[i].getAttribute("id");
@@ -202,11 +208,12 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     void initializeOnSeparateThread() {
     	// I think we should move this to the UI plugin!
     	Thread initializerThread = new Thread(new Runnable() {
+			@Override
 			public void run() {
 				checkAutoUpdate();
-			}    		
+			}
     	}, "Initializer");
-    	
+
     	initializerThread.setDaemon(true);
     	initializerThread.start();
     }
@@ -233,7 +240,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		}
 	}
 
-    private void installBreakpointHack() {    	
+    private void installBreakpointHack() {
     	bpSync = new MoSyncBreakpointSynchronizer();
     	bpSync.install();
 	}
@@ -247,7 +254,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         MoSyncProject.addGlobalPropertyChangeListener(new RebuildListener());
     }
 
-    public void stop(BundleContext context) throws Exception {
+    @Override
+	public void stop(BundleContext context) throws Exception {
         plugin = null;
         projectDependencyManager = null;
         disposeUpdater();
@@ -324,10 +332,10 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         try {
         	panicMessages = new Properties();
 
-        	InputStream messagesStream = 
+        	InputStream messagesStream =
         		new FileInputStream(MoSyncTool.getDefault().getMoSyncHome().
         				append("eclipse/paniccodes.properties").toFile());
-        	
+
         	try {
         		panicMessages.load(messagesStream);
            } finally {
@@ -379,7 +387,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     }
 
     private void initNativeLibs(BundleContext context) {
-        try {	
+        try {
             JNALibInitializer.init(this.getBundle(), "libpipe");
             @SuppressWarnings("unused")
 			PROCESS dummy = PROCESS.INSTANCE; // Just to execute the .clinit.
@@ -446,7 +454,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
      * the builder + recalculated every time...
      * @return
      */
-    public DependencyManager<IProject> getProjectDependencyManager() {
+    @Deprecated
+	public DependencyManager<IProject> getProjectDependencyManager() {
     	return getProjectDependencyManager(ResourcesPlugin.getWorkspace());
     }
 
@@ -456,10 +465,11 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
      * @param ws
      * @return
      */
-    public DependencyManager<IProject> getProjectDependencyManager(IWorkspace ws) {
+    @Deprecated
+	public DependencyManager<IProject> getProjectDependencyManager(IWorkspace ws) {
     	return projectDependencyManager;
     }
-    
+
     /**
      * Returns the Eclipse OS Process ID.
      * @return
@@ -471,7 +481,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     public IProcessUtil getProcessUtil() {
     	return PROCESS.INSTANCE;
     }
-    
+
     /**
      * <p>Outputs a trace message.</p>
      * <p>Please use this pattern:
@@ -503,7 +513,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		factories.put(VendorFilterFactory.ID, new VendorFilterFactory());
 		factories.put(FeatureFilterFactory.ID, new FeatureFilterFactory());
 		factories.put(ProfileFilterFactory.ID, new ProfileFilterFactory());
-		
+
 		IConfigurationElement[] factoryCEs = Platform.getExtensionRegistry().getConfigurationElementsFor(PLUGIN_ID + ".filter.factories");
 		for (int i = 0; i < factoryCEs.length; i++) {
 			IConfigurationElement factoryCE = factoryCEs[i];
@@ -512,42 +522,42 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 			registerDeviceFilterFactory(id, factory);
 		}
 	}
-	
+
 	private void registerDeviceFilterFactory(String id, IDeviceFilterFactory factory) {
 		if (factories.containsKey(id)) {
 			throw new IllegalStateException("Id already used");
 		}
 		factories.put(id, factory);
 	}
-	
+
 	private void installResourceListener() {
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.PRE_DELETE | IResourceChangeEvent.PRE_BUILD);
 	}
-	
+
 	private void deinstallResourceListener() {
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(this);
 	}
-	
+
 	/**
 	 * <p>Returns an <code>IDeviceFilterFactory</code>.</p>
 	 * <p>Examples of <code>IDeviceFilterFactories</code> are
-	 * <code>ConstantFilterFactory</code> and <code>VenderFilterFactory</code>. 
+	 * <code>ConstantFilterFactory</code> and <code>VenderFilterFactory</code>.
 	 * @param factoryId
 	 * @return
 	 */
 	public IDeviceFilterFactory getDeviceFilterFactory(String factoryId) {
 		if (factoryId == null) {
-			return null;			
+			return null;
 		}
-		
+
 		// Kind of an IElementFactory, but without the UI deps.
 		return factories.get(factoryId);
 	}
-	
+
 	/**
 	 * Creates an {@link IProcessConsole} to be used for output of command line tools,
 	 * build plugins, etc.
-	 * @param consoleName 
+	 * @param consoleName
 	 * @return An {@link IProcessConsole}. If running in headless mode or if the
 	 * {@code consoleName} is set to {@link #LOG_CONSOLE_NAME}, a non-UI console is
 	 * returned.
@@ -559,15 +569,15 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 			return ideProcessConsoleProvider == null ? new LogProcessConsole(consoleName) : ideProcessConsoleProvider.get(consoleName);
 		}
 	}
-		
+
 	public IEmulatorLauncher getEmulatorLauncher(String launcherId) {
 		return launchers.get(launcherId);
 	}
-	
+
 	public Set<String> getEmulatorLauncherIds() {
 		return Collections.unmodifiableSet(launchers.keySet());
 	}
-	
+
 	public IUpdater getUpdater() {
 		if (!updaterInitialized) {
 			IExtensionRegistry registry = Platform.getExtensionRegistry();
@@ -581,13 +591,13 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 					getLog().log(e.getStatus());
 				}
 			}
-			
+
 			updaterInitialized = true;
 		}
-		
+
 		return updater;
 	}
-	
+
 	private void disposeUpdater() {
 	    if (updater != null) {
 	        updater.dispose();
@@ -598,12 +608,12 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		if (isHeadless) {
 			return;
 		}
-		
+
 		String[] args = Platform.getApplicationArgs();
 		if (suppressUpdating(args)) {
 			return;
 		}
-		
+
 		IUpdater updater = getUpdater();
 		if (updater != null) {
 			updater.update(false);
@@ -616,7 +626,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
 
@@ -627,7 +637,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	public EmulatorProcessManager getEmulatorProcessManager() {
 		return emulatorProcessManager;
 	}
-	
+
 	/**
 	 * INTERNAL: Clients should not call this method.
 	 */
@@ -636,14 +646,15 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		this.ideProcessConsoleProvider = ideProcessConsoleProvider;
 	}
 
+	@Override
 	public void propertyChange(PropertyChangeEvent event) {
 		if (MoSyncTool.MOSYNC_HOME_PREF.equals(event.getProperty()) || MoSyncTool.MO_SYNC_HOME_FROM_ENV_PREF.equals(event.getProperty())) {
 			initPanicErrorMessages();
 		}
-		
+
 	}
-	
-	
+
+
 	/**
 	 * Tries to derive a mosync project from whatever object is passed
 	 * as the <code>receiver</code>; this method will accept <code>List</code>s,
@@ -656,37 +667,38 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		if (receiver instanceof IStructuredSelection) {
 			return extractProject(((IStructuredSelection) receiver).toList());
 		}
-		
+
         if (receiver instanceof IAdaptable) {
-            receiver = ((IAdaptable) receiver).getAdapter(IResource.class);             
+            receiver = ((IAdaptable) receiver).getAdapter(IResource.class);
         }
-        
+
         if (receiver instanceof List) {
             if (((List)(receiver)).size() == 0) {
                 return null;
             }
-            
+
             return extractProject(((List)receiver).get(0));
         }
-        
+
         if(receiver == null) {
             return null;
         }
-        
+
         if (receiver instanceof IResource) {
             IProject project = ((IResource)receiver).getProject();
 
-            try {                
+            try {
                 return MoSyncNature.isCompatible(project) ? MoSyncProject.create(project) : null;
             } catch (CoreException e) {
                 return null;
             }
         }
-        
+
         return null;
 	}
 
-	public void resourceChanged(IResourceChangeEvent event) {	    
+	@Override
+	public void resourceChanged(IResourceChangeEvent event) {
 		if (event.getType() == IResourceChangeEvent.PRE_DELETE) {
 		    IResource resource = event.getResource();
 	        IProject project = (resource != null && resource.getType() == IResource.PROJECT) ? (IProject) resource : null;
@@ -705,23 +717,23 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		    } else if (source instanceof IProject) {
 		        projects = new IProject[] { (IProject) source };
 		    }
-		    
+
 	        for (int i = 0; projects != null && i < projects.length; i++) {
 	            IProject project = projects[i];
 	            try {
                     if (MoSyncNature.isCompatible(project)) {
-                        mosyncProjects.add(projects[i]);	                
+                        mosyncProjects.add(projects[i]);
                     }
                 } catch (CoreException e) {
                     CoreMoSyncPlugin.getDefault().log(e);
                 }
 		    }
-		    
+
 	        IJobManager jm = Job.getJobManager();
 	        Job currentJob = jm.currentJob();
 		    if (!MoSyncBuilder.saveAllEditors(mosyncProjects)) {
 		        // If this thread is a build job, then cancel.
-		        // TODO: Could this somewhere or some day cease to work!   
+		        // TODO: Could this somewhere or some day cease to work!
 		        if (currentJob != null) {
 		            currentJob.cancel();
 		        }
@@ -732,7 +744,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     public String[] getBuildConfigurationTypes() {
         return buildConfigurationTypes;
     }
-    
+
     /**
      * <p>Returns a working copy of an <code>IApplicationPermissions</code>
      * with default permissions.</p>
@@ -753,11 +765,11 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         if (logCount == null) {
             logCount = 0;
         }
-        
+
         if (logCount < 1) {
             log(e);
         }
-        
+
         logCount++;
         logCounts.put(token, logCount);
     }
@@ -767,28 +779,35 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	}
 
 	public IProvider<PBEKeySpec, String> getPasswordProvider() {
-		return this;
+		return passwordProvider;
 	}
 
-	@Override
-	public PBEKeySpec get(String key) {
-		try {
-			String masterKey = SecurePreferencesFactory.getDefault().node(SECURE_ROOT_NODE).get(LOCAL_KEYRING_MASTER_KEY, "");
-			if (Util.isEmpty(masterKey)) {
-				masterKey = initMasterKey();
-			}
-			return new PBEKeySpec(masterKey.toCharArray());
-		} catch (Exception e) {
-			CoreMoSyncPlugin.getDefault().log(e);
-			return null;
+	public boolean usesEclipseSecureStorage() {
+		return passwordProvider.usesEclipseSecureStorage();
+	}
+
+	public void doUseEclipseSecureStorage(boolean useEclipseSecureStorage) throws CoreException {
+		passwordProvider.doUseEclipseSecureStorage(useEclipseSecureStorage);
+	}
+
+	/**
+	 * Returns a 'workspace' token, that has a very large probability
+	 * of being unique per workspace. (It is randomly generated).
+	 * It is designed be used in filenames for workspace specific file lookup.
+	 * @return
+	 */
+	public String getWorkspaceToken() {
+		return workspaceToken;
+	}
+
+	private void initWorkspaceToken() {
+		if (getPreferenceStore().isDefault(WORKSPACE_TOKEN_PREF)) {
+			byte[] random = new byte[6];
+			new Random(System.currentTimeMillis()).nextBytes(random);
+			String workspaceToken = Util.toBase16(random);
+			getPreferenceStore().setValue(WORKSPACE_TOKEN_PREF, workspaceToken);
 		}
+		this.workspaceToken = getPreferenceStore().getString(WORKSPACE_TOKEN_PREF);
 	}
 
-	private String initMasterKey() throws GeneralSecurityException, StorageException {
-		String masterKey = SecureProperties.generateRandomKey();
-		SecurePreferencesFactory.getDefault().node(SECURE_ROOT_NODE).put(LOCAL_KEYRING_MASTER_KEY, masterKey, true);
-		return masterKey;
-	}
-
-	
 }

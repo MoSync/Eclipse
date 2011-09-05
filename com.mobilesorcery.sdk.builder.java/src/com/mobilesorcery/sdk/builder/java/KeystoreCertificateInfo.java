@@ -22,9 +22,9 @@ import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
  * <p>
  * A utility class for handling certificates stored in a key store.
  * </p>
- * 
+ *
  * @author Mattias Bybro, mattias.bybro@purplescout.se
- * 
+ *
  */
 public class KeystoreCertificateInfo {
 
@@ -99,6 +99,9 @@ public class KeystoreCertificateInfo {
         } else if (Util.isEmpty(keyPassword) || Util.isEmpty(keystorePassword)) {
             msg = "Empty passwords are not allowed (shared projects do not share passwords for security reasons)";
             type = IMessageProvider.WARNING;
+        } else if (!CoreMoSyncPlugin.getDefault().usesEclipseSecureStorage()) {
+        	msg = "Un-encrypted passwords, see Preferences > MoSync Tool > Security";
+        	type = IMessageProvider.WARNING;
         }
         return new DefaultMessageProvider(msg, type);
     }
@@ -113,7 +116,7 @@ public class KeystoreCertificateInfo {
      * {@link #validate()} method will return a non-<code>null</code> error
      * message.
      * </p>
-     * 
+     *
      * @param baseKey
      *            the key that is used as a base to store the information; the
      *            properties actually used will be <code>baseKey</code> + a
@@ -150,7 +153,7 @@ public class KeystoreCertificateInfo {
         alias = storage.getProperty(baseKey + ALIAS_SUFFIX + "." + ordinal);
         shouldEncryptPasswords = !PropertyUtil.getBoolean(storage, baseKey + PASSWORDS_IN_CLEARTEXT + "." + ordinal);
 
-        if (shouldEncryptPasswords) {
+        if (shouldEncryptPasswords && secureStorage != null) {
             try {
                 keystorePassword = secureStorage.getSecureProperty(baseKey + KEYSTORE_PWD_SUFFIX + "." + ordinal);
                 keyPassword = secureStorage.getSecureProperty(baseKey + KEY_PWD_SUFFIX + "." + ordinal);

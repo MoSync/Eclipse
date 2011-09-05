@@ -32,39 +32,44 @@ public class JavaMESigningPreferencePage extends PreferencePage implements IWork
         setPreferenceStore(Activator.getDefault().getPreferenceStore());
     }
 
-    public boolean performOk() {
+    @Override
+	public boolean performOk() {
         ArrayList<KeystoreCertificateInfo> infos = new ArrayList<KeystoreCertificateInfo>();
         if (doSign.getSelection()) {
             infos.add(editor.getKeystoreCertInfo());
         }
-        
+
         try {
-			KeystoreCertificateInfo.store(infos, 
-					PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS, 
+			KeystoreCertificateInfo.store(infos,
+					PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS,
 					new PreferenceStorePropertyOwner(getPreferenceStore()),
 					CoreMoSyncPlugin.getDefault().getSecureProperties());
 		} catch (SecurePropertyException e) {
 			handleSecurePropertyException(e);
+			return false;
 		}
         return true;
     }
-    
+
     private void handleSecurePropertyException(SecurePropertyException e) {
 		setMessage(e.getMessage(), IMessageProvider.WARNING);
 	}
-    
+
     private void setMessage(IMessageProvider message) {
     	setMessage(message.getMessage(), message.getMessageType());
     }
-    
-    public void performDefaults() {
-        
-    }
-    
-    public void init(IWorkbench workbench) {
+
+    @Override
+	public void performDefaults() {
+
     }
 
-    protected Control createContents(Composite parent) {
+    @Override
+	public void init(IWorkbench workbench) {
+    }
+
+    @Override
+	protected Control createContents(Composite parent) {
         // We only support one certificate at this time (in the UI).
         doSign = new Button(parent, SWT.CHECK);
         doSign.addListener(SWT.Selection, new UpdateListener(this));
@@ -77,12 +82,13 @@ public class JavaMESigningPreferencePage extends PreferencePage implements IWork
         editor.setKeystoreCertInfo(info);
         editor.setUpdatable(this);
         doSign.setSelection(info != null);
-        
+
         updateUI();
         return editor;
     }
 
-    public void updateUI() {
+    @Override
+	public void updateUI() {
         editor.setEnabled(doSign.getSelection());
         KeystoreCertificateInfo info = editor.getKeystoreCertInfo();
         setMessage((doSign.getSelection() && info != null) ? info.validate() : DefaultMessageProvider.EMPTY);
