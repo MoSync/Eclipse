@@ -47,7 +47,16 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 		SDK sdk = Activator.getDefault().getSDK(mosyncProject, XCodeBuild.IOS_SIMULATOR_SDKS);
 		Version sdkVersion = sdk == null ? null : sdk.getVersion();
 		File pathToApp = getPackageToInstall(launchConfig, mode);
-		IPhoneSimulator.getDefault().runApp(new Path(pathToApp.getAbsolutePath()), sdkVersion == null ? null : sdkVersion.toString());
+		String family = getFamily(getVariant(launchConfig, mode));
+		IPhoneSimulator.getDefault().runApp(new Path(pathToApp.getAbsolutePath()), sdkVersion == null ? null : sdkVersion.toString(), family);
+	}
+
+	private String getFamily(IBuildVariant variant) {
+		// Hard-coded, we may want to get this from device db instead.
+		if (variant.getProfile().getName().contains("iPad")) {
+			return "ipad";
+		}
+		return null;
 	}
 	
 	@Override
