@@ -107,7 +107,7 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 		}
 		keyCertUI.setEnabled(isProjectSpecificEnabled && doSign.getSelection());
 		currentCertInfo = keyCertUI.getKeystoreCertInfo();
-		setMessage(currentCertInfo == null ? DefaultMessageProvider.EMPTY : currentCertInfo.validate());
+		setMessage(currentCertInfo == null ? DefaultMessageProvider.EMPTY : currentCertInfo.validate(true));
 		listener.setActive(true);
 		super.updateUI();
 	}

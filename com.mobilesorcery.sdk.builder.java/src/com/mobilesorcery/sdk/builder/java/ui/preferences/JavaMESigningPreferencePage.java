@@ -91,7 +91,7 @@ public class JavaMESigningPreferencePage extends PreferencePage implements IWork
 	public void updateUI() {
         editor.setEnabled(doSign.getSelection());
         KeystoreCertificateInfo info = editor.getKeystoreCertInfo();
-        setMessage((doSign.getSelection() && info != null) ? info.validate() : DefaultMessageProvider.EMPTY);
+        setMessage((doSign.getSelection() && info != null) ? info.validate(true) : DefaultMessageProvider.EMPTY);
     }
 
 

@@ -6,8 +6,11 @@ import java.text.MessageFormat;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.IMemento;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildState;
@@ -38,7 +41,7 @@ public class PackBuildStep extends AbstractBuildStep {
 		public String getId() {
 			return ID;
 		}
-		
+
 		@Override
 		public String getName() {
 			return "Package";
@@ -51,7 +54,7 @@ public class PackBuildStep extends AbstractBuildStep {
 		setId(ID);
 		setName("Pack");
 	}
-	
+
 	@Override
 	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff,
@@ -68,11 +71,15 @@ public class PackBuildStep extends AbstractBuildStep {
         packager.createPackage(mosyncProject, variant, buildResult);
 
         if (buildResult.getBuildResult() == null || !buildResult.getBuildResult().exists()) {
+        	if (buildResult.getBuildResult() != null) {
+        		CoreMoSyncPlugin.getDefault().getLog().log(new Status(IStatus.WARNING, CoreMoSyncPlugin.PLUGIN_ID,
+        			MessageFormat.format("Expected build result at {0}, but did not find it", buildResult.getBuildResult())));
+        	}
             throw new IOException(MessageFormat.format("Failed to create package for {0} (platform: {1})", targetProfile, Profile.getAbbreviatedPlatform(targetProfile)));
         } else {
             console.addMessage(MessageFormat.format("Created package: {0} (platform: {1})", buildResult.getBuildResult(), Profile.getAbbreviatedPlatform(targetProfile)));
         }
-        
+
         return CONTINUE;
 	}
 
@@ -80,12 +87,12 @@ public class PackBuildStep extends AbstractBuildStep {
 	public boolean shouldBuild(MoSyncProject project, IBuildSession session, IBuildResult buildResult) {
 		return super.shouldBuild(project, session, buildResult) && !MoSyncBuilder.isLib(project);
 	}
-	
+
 	@Override
 	public boolean shouldAdd(IBuildSession session) {
 		return session.doPack();
 	}
-	
+
 	@Override
 	public String[] getDependees() {
 		return new String[] { LinkBuildStep.ID };

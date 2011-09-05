@@ -274,7 +274,7 @@ extends AbstractPackager
                 String storepass = keystoreCertInfo.getKeystorePassword();
                 String keypass = keystoreCertInfo.getKeyPassword();
 
-                if (!DefaultMessageProvider.isEmpty(keystoreCertInfo.validate())) {
+                if (!DefaultMessageProvider.isEmpty(keystoreCertInfo.validate(false))) {
                 	throw new CoreException(new Status(IStatus.OK, Activator.PLUGIN_ID, "No or invalid key/keystore password for android signing. Please note that for security reasons, passwords are locally stored. You may need to set the password in the Android preference page."));
                 }
 
