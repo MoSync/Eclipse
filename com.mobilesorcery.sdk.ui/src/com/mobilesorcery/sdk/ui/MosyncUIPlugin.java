@@ -46,6 +46,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.jface.resource.ImageRegistry;
+import org.eclipse.jface.util.Util;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
@@ -108,31 +109,31 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
     static final String PASSWORD_HIDE = "p.hide";
 
     static final String COLLAPSE_ALL = "collapse.all";
-    
+
     static final String EXPAND_ALL = "expand.all";
 
 	public static final String FONT_INFO_TEXT = "font.instr";
 
 	public static final String FONT_DEFAULT_BOLD = "b";
-	
+
 	public static final String FONT_DEFAULT_ITALIC = "i";
 
     // The shared instance
     private static MosyncUIPlugin plugin;
 
-    private CopyOnWriteArrayList<ISelectionListener> customSelectionListeners = new CopyOnWriteArrayList<ISelectionListener>();
+    private final CopyOnWriteArrayList<ISelectionListener> customSelectionListeners = new CopyOnWriteArrayList<ISelectionListener>();
 
     private PropertyChangeSupport listeners;
 
     private boolean listenerAdded;
 
-    private IdentityHashMap<IWorkbenchWindow, IProject> currentProjects = new IdentityHashMap<IWorkbenchWindow, IProject>();
+    private final IdentityHashMap<IWorkbenchWindow, IProject> currentProjects = new IdentityHashMap<IWorkbenchWindow, IProject>();
 
     private PropertyChangeListener globalListener;
 
-	private HashMap<String, IEmulatorLaunchConfigurationPart> launcherParts = new HashMap<String, IEmulatorLaunchConfigurationPart>();
+	private final HashMap<String, IEmulatorLaunchConfigurationPart> launcherParts = new HashMap<String, IEmulatorLaunchConfigurationPart>();
 
-	private HashMap<Display, FontRegistry> fontRegistries = new HashMap<Display, FontRegistry>();
+	private final HashMap<Display, FontRegistry> fontRegistries = new HashMap<Display, FontRegistry>();
 
     /**
      * The constructor
@@ -142,12 +143,13 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext
      * )
      */
-    public void start(BundleContext context) throws Exception {
+    @Override
+	public void start(BundleContext context) throws Exception {
         super.start(context);
         plugin = this;
 
@@ -157,7 +159,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         UIUtils.awaitWorkbenchStartup(new IWorkbenchStartupListener() {
 			@Override
 			public void started() {
-		        initializeCustomActivities();	
+		        initializeCustomActivities();
 		        initializeLauncherParts();
 			}
 		});
@@ -198,12 +200,13 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext
      * )
      */
-    public void stop(BundleContext context) throws Exception {
+    @Override
+	public void stop(BundleContext context) throws Exception {
         plugin = null;
         super.stop(context);
         deregisterGlobalProjectListener();
@@ -211,7 +214,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 
     /**
      * Returns the shared instance
-     * 
+     *
      * @return the shared instance
      */
     public static MosyncUIPlugin getDefault() {
@@ -221,7 +224,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
     /**
      * Convenience method for creating a <code>MoSyncProject</code> at the
      * requested location, or in the workspace if location is <code>null</code>.
-     * 
+     *
      * @param project
      * @param location
      * @param monitor
@@ -229,7 +232,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
      * @throws CoreException
      * @deprecated Use {@link MoSyncProject#createNewProject(IProject, URI, IProgressMonitor)} instead.
      */
-    public static MoSyncProject createProject(IProject project, URI location, IProgressMonitor monitor) throws CoreException {
+    @Deprecated
+	public static MoSyncProject createProject(IProject project, URI location, IProgressMonitor monitor) throws CoreException {
     	return MoSyncProject.createNewProject(project, location, monitor);
     }
 
@@ -303,7 +307,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         initProjectChangeListener();
 
         window.getWorkbench().getDisplay().asyncExec(new Runnable() {
-            public void run() {
+            @Override
+			public void run() {
                 ISelection selection = window.getSelectionService().getSelection();
                 IResource selectedResource = getResource(selection);
                 if (selectedResource != null) {
@@ -315,7 +320,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 
     private void updateCurrentlySelectedProject(final IWorkbenchWindow window, final IEditorPart editor) {
         window.getWorkbench().getDisplay().asyncExec(new Runnable() {
-            public void run() {
+            @Override
+			public void run() {
                 if (editor != null) {
                     IEditorInput input = editor.getEditorInput();
                     if (input instanceof IFileEditorInput) {
@@ -366,24 +372,29 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         return null;
     }
 
-    public void windowClosed(IWorkbenchWindow window) {
+    @Override
+	public void windowClosed(IWorkbenchWindow window) {
         window.getSelectionService().removeSelectionListener(this);
         currentProjects.remove(window);
     }
 
-    public void windowActivated(IWorkbenchWindow window) {
+    @Override
+	public void windowActivated(IWorkbenchWindow window) {
         // Ignore.
     }
 
-    public void windowDeactivated(IWorkbenchWindow window) {
+    @Override
+	public void windowDeactivated(IWorkbenchWindow window) {
         // Ignore.
     }
 
-    public void windowOpened(IWorkbenchWindow window) {
+    @Override
+	public void windowOpened(IWorkbenchWindow window) {
         window.getSelectionService().addSelectionListener(this);
     }
 
-    public void selectionChanged(IWorkbenchPart part, ISelection selection) {
+    @Override
+	public void selectionChanged(IWorkbenchPart part, ISelection selection) {
         if (part instanceof IEditorPart) {
             updateCurrentlySelectedProject(part.getSite().getWorkbenchWindow(), (IEditorPart) part);
         } else {
@@ -397,11 +408,13 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         for (Iterator<ISelectionListener> customSelectionListeners = this.customSelectionListeners.iterator(); customSelectionListeners.hasNext();) {
             final ISelectionListener customSelectionListener = customSelectionListeners.next();
             SafeRunner.run(new ISafeRunnable() {
-                public void handleException(Throwable exception) {
+                @Override
+				public void handleException(Throwable exception) {
                     log(exception);
                 }
 
-                public void run() throws Exception {
+                @Override
+				public void run() throws Exception {
                     customSelectionListener.selectionChanged(part, selection);
                 }
             });
@@ -410,7 +423,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 
     public void registerGlobalProjectListener() {
         globalListener = new PropertyChangeListener() {
-            public void propertyChange(PropertyChangeEvent event) {
+            @Override
+			public void propertyChange(PropertyChangeEvent event) {
                 Object source = event.getSource();
                 if (MoSyncProject.BUILD_CONFIGURATION_CHANGED.equals(event.getPropertyName())
                         || MoSyncProject.BUILD_CONFIGURATION_SUPPORT_CHANGED.equals(event.getPropertyName())
@@ -424,7 +438,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
                                 Shell shell = ww.getShell();
                                 if (shell != null) {
                                     shell.getDisplay().asyncExec(new Runnable() {
-                                        public void run() {
+                                        @Override
+										public void run() {
                                             dec.updateDecorations();
                                         }
                                     });
@@ -450,11 +465,13 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         getLog().log(new Status(IStatus.ERROR, PLUGIN_ID, e.getMessage(), e));
     }
 
-    public IProcessConsole get(String name) {
+    @Override
+	public IProcessConsole get(String name) {
         return new IDEProcessConsole(name);
     }
 
-    public void initializeImageRegistry(ImageRegistry reg) {
+    @Override
+	public void initializeImageRegistry(ImageRegistry reg) {
         super.initializeImageRegistry(reg);
         reg.put(IMG_OVR_EXCLUDED_RESOURCE, AbstractUIPlugin.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID, "$nl$/icons/exclude_ovr.png"));
         reg.put(PASSWORD_HIDE, AbstractUIPlugin.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID, "$nl$/icons/hide_pwd.png"));
@@ -469,17 +486,17 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
                 try {
                     URL urlToHelpDoc = FileLocator.find(Platform.getBundle("com.mobilesorcery.sdk.help"), new Path(helpResource), null);
                     URL fileUrlToHelpDoc = FileLocator.toFileURL(urlToHelpDoc);
-                    
+
                     PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(fileUrlToHelpDoc);
                 } catch (Exception e) {
                     CoreMoSyncPlugin.getDefault().log(e);
                 }
             } else {
-                PlatformUI.getWorkbench().getHelpSystem().displayHelpResource(helpResource);  
+                PlatformUI.getWorkbench().getHelpSystem().displayHelpResource(helpResource);
             }
         }
     }
-    
+
     public String getUserHash() {
         return MoSyncTool.getDefault().getProperty(MoSyncTool.USER_HASH_PROP_2);
     }
@@ -492,11 +509,11 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 
         return null;
     }
-    
+
     private void addHalfHash(Map<String, String> request) {
         request.put("hhash", getUserHalfHash()); //$NON-NLS-1$
     }
-    
+
     /**
      * Returns a set of version parameters that may be used by
      * updaters, help urls, etc, to inform the server about the
@@ -518,7 +535,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         params.put("hhash", getUserHalfHash());
         return params;
     }
-    
+
     private void initializeCustomActivities() {
     	boolean enable = Boolean.TRUE.equals(IsExperimentalTester.isExperimental());
     	boolean disable = Boolean.FALSE.equals(IsExperimentalTester.isExperimental());
@@ -534,7 +551,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 	    				activityIds.remove(((ICategoryActivityBinding) binding).getActivityId());
 	    			}
 	    		}
-	    		activitySupport.setEnabledActivityIds(activityIds);	
+	    		activitySupport.setEnabledActivityIds(activityIds);
 	    	}
     	}
     }
@@ -542,7 +559,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 	public IEmulatorLaunchConfigurationPart getEmulatorLauncherPart(String id) {
 		return launcherParts.get(id);
 	}
-    
+
 	/**
 	 * <p>Returns a standard font used throughtout the MoSync IDE.
 	 * Clients should <b>not</b> dispose these fonts.</p>
@@ -563,12 +580,13 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 			fontRegistries.put(current, registry);
 			initRegistry(registry);
 		}
-		
+
 		return registry;
 	}
 
 	private void initRegistry(FontRegistry registry) {
-		registry.put(FONT_INFO_TEXT, UIUtils.modifyFont((FontData[]) null, SWT.DEFAULT, -1));
+		int infoTextSizeDelta = Util.isMac() ? -2 : -1;
+		registry.put(FONT_INFO_TEXT, UIUtils.modifyFont((FontData[]) null, SWT.DEFAULT, infoTextSizeDelta));
 		registry.put(FONT_DEFAULT_BOLD, UIUtils.modifyFont((FontData[]) null, SWT.BOLD, 0));
 		registry.put(FONT_DEFAULT_ITALIC, UIUtils.modifyFont((FontData[]) null, SWT.ITALIC, 0));
 	}

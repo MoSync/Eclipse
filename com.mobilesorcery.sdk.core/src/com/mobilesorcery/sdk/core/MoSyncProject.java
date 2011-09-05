@@ -74,24 +74,24 @@ import com.mobilesorcery.sdk.profiles.filter.CompositeDeviceFilter;
 /**
  * This is a wrapper to provider mosync-specific capabilities to a vanilla
  * IProject, eg special properties, persistence, etc
- * 
+ *
  * @author Mattias
- * 
+ *
  */
 public class MoSyncProject extends PropertyOwnerBase implements ITargetProfileProvider {
 
 	/**
 	 * An interface for converting older {@link MoSyncProject}s into a newer
 	 * format.
-	 * 
+	 *
 	 * @author Mattias Bybro
-	 * 
+	 *
 	 */
 	public interface IConverter {
 
 		/**
 		 * Converts an older project into a newer format.
-		 * 
+		 *
 		 * @param project
 		 * @throws CoreException
 		 */
@@ -110,6 +110,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	};
 
 	private final class DeviceFilterListener implements PropertyChangeListener {
+		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			updateProjectSpec();
 			// Then just pass it along.
@@ -137,7 +138,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	/**
 	 * The file exclude filter property for this project.
-	 * 
+	 *
 	 * @see PathExclusionFilter
 	 */
 	public static final String EXCLUDE_FILTER_KEY = "excludes";
@@ -145,9 +146,10 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	/**
 	 * The standard file excludes for this project (usually NOT an a
 	 * per-configuration basis).
-	 * 
+	 *
 	 * @deprecated Move this to the testing plugin
 	 */
+	@Deprecated
 	public static final String STANDARD_EXCLUDES_FILTER_KEY = "standard.excludes";
 
 	/**
@@ -158,7 +160,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	/**
 	 * The property initializer context of MoSyncProjects
-	 * 
+	 *
 	 * @see IPropertyInitializer
 	 */
 	public static final String CONTEXT = "com.mobilesorcery.sdk.mosync.project.context";
@@ -191,12 +193,6 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 */
 	public static final String ICON_FILE_EXTENSION = ".icon";
 
-	/**
-	 * A suffix for properties to indicate them to be secure properties;
-	 * secure properties are usually stored in the local project file.
-	 */
-	public static final String SECURE_PROPERTY_SUFFIX = ".secure";
-	
 	private static final String PROJECT = "project";
 
 	private static final String TARGET = "target-profile";
@@ -229,7 +225,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	/**
 	 * The format version currently used to store projects.
-	 * 
+	 *
 	 * @see MoSyncProject#getFormatVersion()
 	 */
 	public static final Version CURRENT_VERSION = new Version("1.2");
@@ -249,21 +245,23 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * located.
 	 */
 	public static final String MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME = ".mosyncproject.local";
-	
+
 	private static final int SHARED_PROPERTY = 0;
 
 	static final int LOCAL_PROPERTY = 1;
-	
+
+	static final int WORKSPACE_LOCAL_PROPERTY = 2;
+
 	private static IdentityHashMap<IProject, MoSyncProject> projects = new IdentityHashMap<IProject, MoSyncProject>();
 
-	private IProject project;
+	private final IProject project;
 
 	private IProfile target;
 
 	private static PropertyChangeSupport globalListeners = new PropertyChangeSupport(
 			new Object());
 
-	private PropertyChangeSupport listeners = new PropertyChangeSupport(this);
+	private final PropertyChangeSupport listeners = new PropertyChangeSupport(this);
 
 	private ICompositeDeviceFilter deviceFilter = new CompositeDeviceFilter(
 			new IDeviceFilter[0]);
@@ -272,39 +270,41 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * This is the map holding the shared properties of this project, stored in
 	 * .mosyncproject
 	 */
-	private Map<String, String> sharedProperties = new HashMap<String, String>();
+	private final Map<String, String> sharedProperties = new HashMap<String, String>();
 
 	/**
 	 * This is the map holding the user's local properties of this project,
 	 * stored in .mosyncproject.local
 	 */
-	private Map<String, String> localProperties = new HashMap<String, String>();
+	private final Map<String, String> localProperties = new HashMap<String, String>();
 
-	private CascadingProperties properties = new CascadingProperties(new Map[] {
-			sharedProperties, localProperties });
+	private final Map<String, String> workspaceLocalProperties = new HashMap<String, String>();
 
-	private DeviceFilterListener deviceFilterListener;
+	private final CascadingProperties properties = new CascadingProperties(new Map[] {
+			sharedProperties, localProperties, workspaceLocalProperties });
+
+	private final DeviceFilterListener deviceFilterListener;
 
 	private IBuildConfiguration currentBuildConfig;
 
-	private TreeMap<String, IBuildConfiguration> configurations = new TreeMap<String, IBuildConfiguration>(
+	private final TreeMap<String, IBuildConfiguration> configurations = new TreeMap<String, IBuildConfiguration>(
 			String.CASE_INSENSITIVE_ORDER);
 
 	private boolean isBuildConfigurationsSupported;
 
-	private HashMap<String, SLD> slds = new HashMap<String, SLD>();
+	private final HashMap<String, SLD> slds = new HashMap<String, SLD>();
 
 	private boolean disposed = false;
 
-	private HashMap<IBuildVariant, IBuildState> cachedBuildStates = new HashMap<IBuildVariant, IBuildState>();
+	private final HashMap<IBuildVariant, IBuildState> cachedBuildStates = new HashMap<IBuildVariant, IBuildState>();
 
-	private HashMap<IPropertyOwner, PathExclusionFilter> excludes = new HashMap<IPropertyOwner, PathExclusionFilter>();
+	private final HashMap<IPropertyOwner, PathExclusionFilter> excludes = new HashMap<IPropertyOwner, PathExclusionFilter>();
 
-	private ApplicationPermissions permissions;
+	private final ApplicationPermissions permissions;
 
 	private Version formatVersion = CURRENT_VERSION;
 
-	private ISecurePropertyOwner securePropertyOwner;
+	private final ISecurePropertyOwner securePropertyOwner;
 
 	private MoSyncProject(IProject project) {
 		Assert.isNotNull(project);
@@ -312,9 +312,10 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 		this.deviceFilterListener = new DeviceFilterListener();
 		initFromProjectMetaData(null, SHARED_PROPERTY);
 		initFromProjectMetaData(null, LOCAL_PROPERTY);
+		initFromProjectMetaData(null, WORKSPACE_LOCAL_PROPERTY);
 		permissions = new ApplicationPermissions(this);
 		addDeviceFilterListener();
-		securePropertyOwner = new SecureProperties(this, CoreMoSyncPlugin.getDefault().getPasswordProvider(), SECURE_PROPERTY_SUFFIX);
+		securePropertyOwner = new SecureProperties(this, CoreMoSyncPlugin.getDefault().getPasswordProvider(), SecureProperties.DEFAULT_SECURE_PROPERTY_SUFFIX);
 	}
 
 	private void addDeviceFilterListener() {
@@ -369,13 +370,9 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	}
 
 	private void initProperties(Map<String, String> properties, int store) {
-		if (store == LOCAL_PROPERTY) {
-			localProperties = properties;
-		} else {
-			sharedProperties = properties;
-		}
-		this.properties = new CascadingProperties(new Map[] { sharedProperties,
-				localProperties });
+		Map<String, String> oldProperties = getProperties(store);
+		oldProperties.clear();
+		oldProperties.putAll(properties);
 		invalidatePropertyDependentObjects();
 	}
 
@@ -457,9 +454,13 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	protected void updateProjectSpec() {
 		updateProjectSpec(SHARED_PROPERTY);
 		updateProjectSpec(LOCAL_PROPERTY);
+		updateProjectSpec(WORKSPACE_LOCAL_PROPERTY);
 	}
 
 	protected void updateProjectSpec(int store) {
+		if (!requiresUpdate(store)) {
+			return;
+		}
 		IPath projectMetaDataPath = getMoSyncProjectMetaDataLocation(store);
 		XMLMemento root = XMLMemento.createWriteRoot(PROJECT);
 		FileWriter output = null;
@@ -474,7 +475,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 				deviceFilter.saveState(root);
 			}
 
-			if (store == LOCAL_PROPERTY) {
+			if (store == WORKSPACE_LOCAL_PROPERTY) {
 				saveActiveBuildConfiguration(root);
 				IMemento target = root.createChild(TARGET);
 				saveTargetProfile(target);
@@ -497,6 +498,12 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 				}
 			}
 		}
+	}
+
+	private boolean requiresUpdate(int store) {
+		IPath projectMetaDataPath = getMoSyncProjectMetaDataLocation(store);
+		// Special case: the local properties; if it exists, we always write it anew regardless.
+		return store != LOCAL_PROPERTY || projectMetaDataPath.toFile().exists() || !getProperties(store).isEmpty();
 	}
 
 	private void saveActiveBuildConfiguration(XMLMemento root) {
@@ -543,12 +550,15 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	}
 
 	public IPath getMoSyncProjectMetaDataLocation(int store) {
-		if (store == LOCAL_PROPERTY) {
-			return project.getLocation().append(
-					MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME);
-		} else {
-			return project.getLocation().append(
-					MOSYNC_PROJECT_META_DATA_FILENAME);
+		switch (store) {
+		case SHARED_PROPERTY:
+			return project.getLocation().append(MOSYNC_PROJECT_META_DATA_FILENAME);
+		case LOCAL_PROPERTY:
+			return project.getLocation().append(MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME);
+		case WORKSPACE_LOCAL_PROPERTY:
+			return project.getLocation().append(MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME + "." + CoreMoSyncPlugin.getDefault().getWorkspaceToken());
+		default:
+			throw new IllegalArgumentException();
 		}
 	}
 
@@ -557,7 +567,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * Returns a (shared) instance of a MoSyncProject of the provided project,
 	 * or <code>null</code> if the project does not have a MoSync nature.
 	 * </p>
-	 * 
+	 *
 	 * @param project
 	 *            The eclipse project this <code>MoSyncProject</code> should
 	 *            wrap
@@ -571,7 +581,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 			boolean upgrade = false;
 			MoSyncProject result = null;
-		
+
 			synchronized (projects) {
 				result = projects.get(project);
 				if (result == null) {
@@ -580,11 +590,11 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 					upgrade = !CURRENT_VERSION.equals(result.getFormatVersion());
 				}
 			}
-			
+
 			if (upgrade) {
 				upgrade(result);
 			}
-			
+
 			return result;
 		} catch (CoreException e) {
 			return null;
@@ -600,7 +610,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
     /**
      * Convenience method for creating a <code>MoSyncProject</code> at the
      * requested location, or in the workspace if location is <code>null</code>.
-     * 
+     *
      * @param project
      * @param location
      * @param monitor
@@ -666,7 +676,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * This file will then be loaded and its project meta data used by the
 	 * project.
 	 * </p>
-	 * 
+	 *
 	 * @param project
 	 *            The eclipse project this <code>MoSyncProject</code> should
 	 *            wrap
@@ -681,14 +691,9 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 			IPath projectMetadataLocation) {
 		MoSyncProject result = create(project);
 		if (projectMetadataLocation != null) {
+			// We only imported SHARED properties.
 			result.initFromProjectMetaData(projectMetadataLocation,
 					SHARED_PROPERTY);
-			// There may be a local file too - we just try a reasonable default
-			IPath localProjectMetaDataLocation = projectMetadataLocation
-					.removeLastSegments(1).append(
-							MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME);
-			result.initFromProjectMetaData(localProjectMetaDataLocation,
-					LOCAL_PROPERTY);
 		}
 
 		return result;
@@ -714,6 +719,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * If none is set, a default target profile is returned.
 	 * </p>
 	 */
+	@Override
 	public IProfile getTargetProfile() {
 		return target == null ? MoSyncTool.getDefault()
 				.getDefaultTargetProfile() : target;
@@ -724,7 +730,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * Sets the current target profile of this MoSync project, and notifies all
 	 * listeners about this change.
 	 * </p>
-	 * 
+	 *
 	 * @param newTarget
 	 *            The new target profile
 	 */
@@ -737,7 +743,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	/**
 	 * Initializes the target profile; same as <code>setTargetProfile</code>,
 	 * but no event is fired.
-	 * 
+	 *
 	 * @param newTarget
 	 * @return The old target profile.
 	 */
@@ -761,7 +767,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * Adds a <emph>global</emph> property listener, ie a listener that listens
 	 * to changes to <emph>all</emph> MoSync projects in a workspace.
 	 * </p>
-	 * 
+	 *
 	 * @param globalListener
 	 *            The listener to add
 	 */
@@ -775,7 +781,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * Removes a <emph>global</emph> property listener, ie a listener that
 	 * listens to changes to <emph>all</emph> MoSync projects in a workspace.
 	 * </p>
-	 * 
+	 *
 	 * @param globalListener
 	 *            The listener to remove
 	 */
@@ -792,7 +798,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * Property listeners are notified about events such as changing target
 	 * profile or any other project property change set by
 	 * <code>setProperty</code>.
-	 * 
+	 *
 	 * @param globalListener
 	 *            The listener to add
 	 */
@@ -804,7 +810,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * <p>
 	 * Removes a property listener from this project.
 	 * </p>
-	 * 
+	 *
 	 * @param globalListener
 	 *            The listener to remove
 	 */
@@ -817,7 +823,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * Returns the <code>ICompositeDeviceFilter</code> currently associated with
 	 * this project.
 	 * </p>
-	 * 
+	 *
 	 * @return
 	 */
 	public ICompositeDeviceFilter getDeviceFilter() {
@@ -829,7 +835,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * Sets the <code>ICompositeDeviceFilter</code> currently associated with
 	 * this project.
 	 * </p>
-	 * 
+	 *
 	 * @param deviceFilter
 	 *            The new filter
 	 */
@@ -847,7 +853,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * Returns the path to the STABS debug info file of a specific build
 	 * configuration.
 	 * </p>
-	 * 
+	 *
 	 * @param buildConfiguration
 	 * @return
 	 */
@@ -864,7 +870,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * Returns the SLD for a specific buildconfiguration; if a null build
 	 * configuration is passed as argument, then this amounts to build
 	 * configurations not being supported.
-	 * 
+	 *
 	 * @param buildConfiguration
 	 * @return
 	 */
@@ -884,7 +890,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	/**
 	 * Returns the underlying Eclipse project of this MoSync project.
-	 * 
+	 *
 	 * @return
 	 */
 	public IProject getWrappedProject() {
@@ -897,6 +903,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * property initializers if necessary.
 	 * </p>
 	 */
+	@Override
 	public String getProperty(String key) {
 		String property = properties.get(key);
 		if (property == null) {
@@ -905,7 +912,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 		return property;
 	}
-	
+
 
 	/**
 	 * <p>
@@ -921,6 +928,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * to use getPropertyOwner(), which will properly handle build
 	 * configurations, etc.</code>
 	 */
+	@Override
 	public Map<String, String> getProperties() {
 		return properties.toMap();
 	}
@@ -929,11 +937,12 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * <p>
 	 * Sets a project-specific property.
 	 * </p>
-	 * 
+	 *
 	 * @param key
 	 * @param value
 	 * @return <code>true</code> if and only if the property was changed
 	 */
+	@Override
 	public boolean setProperty(String key, String value) {
 		String oldValue = getProperty(key);
 		if (Util.equals(oldValue, value)) {
@@ -957,7 +966,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * <p>
 	 * To get a list of all vendors, use MoSyncTool.getVendors.
 	 * </p>
-	 * 
+	 *
 	 * @return
 	 */
 	public IVendor[] getFilteredVendors() {
@@ -973,7 +982,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * <p>
 	 * To get a list of all profiles, use MoSyncTool.getProfiles.
 	 * </p>
-	 * 
+	 *
 	 * @return
 	 */
 	public IProfile[] getFilteredProfiles() {
@@ -984,10 +993,11 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	/**
 	 * Returns the default value of a project specific property
 	 */
+	@Override
 	public String getDefaultProperty(String key) {
 		return CoreMoSyncPlugin.getDefault().getDefaultValue(this, key);
 	}
-	
+
 	@Override
 	public boolean isDefault(String key) {
 		return properties.get(key) == null;
@@ -1001,29 +1011,31 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * Any property set by this method will be stored in the SHARED_PROPERTY
 	 * properties.
 	 * </p>
-	 * 
+	 *
 	 * @param key
 	 * @param value
 	 *            If <code>null</code>, then the entry is removed
 	 */
+	@Override
 	public void initProperty(String key, String value) {
 		initProperty(key, value, getStoreForKey(key), false);
 	}
 
 	private int getStoreForKey(String key) {
-		return key.endsWith(SECURE_PROPERTY_SUFFIX) ? LOCAL_PROPERTY : SHARED_PROPERTY;
+		// As of this moment, only workspace local or shared...
+		return key.endsWith(SecureProperties.DEFAULT_SECURE_PROPERTY_SUFFIX) ? WORKSPACE_LOCAL_PROPERTY : SHARED_PROPERTY;
 	}
 
 	/**
 	 * <p>
 	 * Sets the property, regardless of any previous value.
 	 * </p>
-	 * 
+	 *
 	 * @param key
 	 * @param value
 	 *            If <code>null</code>, then the entry is removed
 	 * @param store
-	 *            The store that this key should be set in, ie LOCAL, SHARED or SECURE
+	 *            The store that this key should be set in, ie LOCAL, SHARED or WORKSPACE_LOCAL
 	 */
 	public void initProperty(String key, String value, int store, boolean save) {
 		if (value == null) {
@@ -1037,17 +1049,22 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	}
 
 	private Map<String, String> getProperties(int store) {
-		if (store == LOCAL_PROPERTY) {
-			return localProperties;
-		} else {
+		switch (store) {
+		case SHARED_PROPERTY:
 			return sharedProperties;
+		case LOCAL_PROPERTY:
+			return localProperties;
+		case WORKSPACE_LOCAL_PROPERTY:
+			return workspaceLocalProperties;
+		default:
+			throw new IllegalArgumentException();
 		}
 	}
 
 	/**
 	 * A convenience method for returning the exclusion filter for a
 	 * project/config.
-	 * 
+	 *
 	 * @param project
 	 *            The project for which to find the filter
 	 * @param withStandardExcludes
@@ -1109,13 +1126,14 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 				filter.getFileSpecs());
 	}
 
+	@Override
 	public String getContext() {
 		return CONTEXT;
 	}
 
 	/**
 	 * Returns the name of this MoSync project.
-	 * 
+	 *
 	 * @return
 	 */
 	public String getName() {
@@ -1124,7 +1142,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	/**
 	 * Adds a MoSync Project Nature to an Eclipse project.
-	 * 
+	 *
 	 * @param project
 	 */
 	public static void addNatureToProject(IProject project) {
@@ -1138,7 +1156,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * <p>
 	 * They will all be added to the SHARED store.
 	 * </p>
-	 * 
+	 *
 	 * @param properties
 	 */
 	public void setProperties(Map<String, String> properties) {
@@ -1152,7 +1170,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * Returns the build state for a variant manager of this project. All
 	 * non-finalizer build states are cached.
 	 * </p>
-	 * 
+	 *
 	 * @return
 	 */
 	public IBuildState getBuildState(IBuildVariant variant) {
@@ -1176,7 +1194,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * configuration does not exist, <code>null</code> will be returned. This
 	 * method will return a value regardless of what
 	 * <code>isBuildConfigurationsSupported</code> returns.
-	 * 
+	 *
 	 * @return
 	 */
 	public IBuildConfiguration getActiveBuildConfiguration() {
@@ -1190,7 +1208,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	/**
 	 * Sets the current build configuration. A property change event with event
 	 * type <code>BUILD_CONFIGURATION_CHANGED</code> is triggered.
-	 * 
+	 *
 	 * @param id
 	 *            The new build configuration to use
 	 * @throws IllegalArgumentException
@@ -1229,7 +1247,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	/**
 	 * Returns the ids of all build configurations that has a set of types
-	 * 
+	 *
 	 * @param types
 	 *            The types to match against
 	 * @return The build configurations that have <b>all</b> the specified
@@ -1254,7 +1272,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	/**
 	 * Returns the build configuration for a given id
-	 * 
+	 *
 	 * @param id
 	 * @return <code>null</code> if the given id is <code>null</code> or if
 	 *         there is no build configuration with that id
@@ -1340,7 +1358,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 		return this;
 	}
-	
+
 	/**
 	 * Returns the secure property owner of this project.
 	 * @return
@@ -1362,7 +1380,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	/**
 	 * Returns the icon file associated with this project.
-	 * 
+	 *
 	 * @return the icon file associated with this project, null if no icon file
 	 *         exists.
 	 */
@@ -1373,7 +1391,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	/**
 	 * Recursive search for a file that ends with
 	 * DefaultPackager.ICON_FILE_EXTENSION.
-	 * 
+	 *
 	 * @param rootFile
 	 *            The root directory to begin searching in.
 	 * @return a file on success and null if no such file was found.
@@ -1405,7 +1423,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	/**
 	 * Returns the version of the format used to persist the project meta data.
-	 * 
+	 *
 	 * @return
 	 */
 	public Version getFormatVersion() {
@@ -1420,7 +1438,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	/**
 	 * Returns a list of the names of all open projects that are compatible
 	 * {@link MoSyncProject}s
-	 * 
+	 *
 	 * @see {@link MoSyncNature#isCompatible(IProject)}
 	 * @return
 	 * @throws CoreException

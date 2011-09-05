@@ -1,18 +1,24 @@
 package com.mobilesorcery.sdk.core;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.ui.preferences.ScopedPreferenceStore;
+import org.osgi.service.prefs.BackingStoreException;
 
 public class PreferenceStorePropertyOwner extends PropertyOwnerBase {
 
-	private IPreferenceStore store;
-	private boolean useDefault;
+	private final IPreferenceStore store;
+	private final boolean useDefault;
 
 	public PreferenceStorePropertyOwner(IPreferenceStore store) {
 		this(store, false);
 	}
-	
+
 	/**
 	 * Creates a new {@link PreferenceStorePropertyOwner} with
 	 * the option to work with the default values instead.
@@ -23,7 +29,7 @@ public class PreferenceStorePropertyOwner extends PropertyOwnerBase {
 		this.store = store;
 		this.useDefault = useDefault;
 	}
-	
+
 	@Override
 	public boolean setProperty(String key, String newValue) {
 		String oldValue = getProperty(key);
@@ -66,7 +72,29 @@ public class PreferenceStorePropertyOwner extends PropertyOwnerBase {
 
 	@Override
 	public Map<String, String> getProperties() {
-		throw new UnsupportedOperationException();
+		if (store instanceof ScopedPreferenceStore) {
+			ScopedPreferenceStore scopedPrefs = (ScopedPreferenceStore) store;
+			IEclipsePreferences[] nodes = scopedPrefs.getPreferenceNodes(useDefault);
+			ArrayList<String> prefKeys = new ArrayList<String>();
+			try {
+				for (IEclipsePreferences node : nodes) {
+					prefKeys.addAll(Arrays.asList(node.keys()));
+				}
+			} catch (BackingStoreException e) {
+				CoreMoSyncPlugin.getDefault().log(e);
+			}
+			HashMap<String, String> result = new HashMap<String, String>();
+			for (String key : prefKeys) {
+				// TODO: Non-string prefs does not really work... but that's usually ok.
+				String value = scopedPrefs.getString(key);
+				if (!Util.isEmpty(value)) {
+					result.put(key, value);
+				}
+			}
+			return result;
+		} else {
+			throw new UnsupportedOperationException();
+		}
 	}
 
 }

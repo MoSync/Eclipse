@@ -51,6 +51,12 @@ icon="icons/launchshortcut.png">
                id="com.mobilesorcery.sdk.preferences.access"
                name="Scripts">
          </page>
+         <page
+               category="com.mobilesorcery.sdk.preferences.main"
+               class="com.mobilesorcery.sdk.ui.internal.preferences.SecurityPreferencePage"
+               id="com.mobilesorcery.sdk.preferences.security"
+               name="Security">
+         </page>
       </extension> 
       
          <extension point="org.eclipse.ui.console.consolePatternMatchListeners">

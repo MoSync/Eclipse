@@ -34,7 +34,9 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 	private KeystoreCertificateInfo projectCertInfo;
 	private KeystoreCertificateInfo currentCertInfo;
 	private KeystoreCertificateInfo globalCertInfo;
+	private UpdateListener listener;
 
+	@Override
 	protected Control createContents(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(1, false));
@@ -45,7 +47,7 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 
 		useProjectSpecific.setSelection(PropertyUtil.getBoolean(getProject(),
 				PropertyInitializer.JAVAME_PROJECT_SPECIFIC_KEYS));
-		UpdateListener listener = new UpdateListener(this);
+		listener = new UpdateListener(this);
 		useProjectSpecific.addListener(SWT.Selection, listener);
 
 		Label separator = new Label(main, SWT.SEPARATOR | SWT.HORIZONTAL);
@@ -65,6 +67,7 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 		keyCertUI.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
 		init();
+		doSign.setSelection(projectCertInfo != null);
 		updateUI();
 		return main;
 	}
@@ -81,10 +84,11 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 		currentCertInfo = globalCertInfo;
 	}
 
+	@Override
 	public void updateUI() {
+		listener.setActive(false);
 		boolean isProjectSpecificEnabled = useProjectSpecific.getSelection();
 
-		keyCertUI.setEnabled(isProjectSpecificEnabled && doSign.getSelection());
 		doSign.setEnabled(isProjectSpecificEnabled);
 
 		boolean changedState = wasProjectSpecificEnabled == null
@@ -101,8 +105,10 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 			currentCertInfo = keyCertUI.getKeystoreCertInfo();
 			doSign.setSelection(currentCertInfo != null);
 		}
+		keyCertUI.setEnabled(isProjectSpecificEnabled && doSign.getSelection());
 		currentCertInfo = keyCertUI.getKeystoreCertInfo();
 		setMessage(currentCertInfo == null ? DefaultMessageProvider.EMPTY : currentCertInfo.validate());
+		listener.setActive(true);
 		super.updateUI();
 	}
 
@@ -111,6 +117,7 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 				IMessageProvider.WARNING));
 	}
 
+	@Override
 	public boolean performOk() {
 		PropertyUtil.setBoolean(getProject(),
 				PropertyInitializer.JAVAME_PROJECT_SPECIFIC_KEYS,

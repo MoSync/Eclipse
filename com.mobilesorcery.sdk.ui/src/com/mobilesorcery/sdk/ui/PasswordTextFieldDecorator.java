@@ -16,9 +16,9 @@ import org.eclipse.swt.widgets.Text;
  */
 public class PasswordTextFieldDecorator implements SelectionListener {
 
-    private Text text;
+    private final Text text;
     private boolean hidden = true;
-    private ControlDecoration decoration;
+    private final ControlDecoration decoration;
 
     /**
      * Creates a password text field.
@@ -29,14 +29,15 @@ public class PasswordTextFieldDecorator implements SelectionListener {
         decoration = new ControlDecoration(text, SWT.LEFT | SWT.BOTTOM);
         hidePassword(true);
         setEnabled(true);
+        decoration.addSelectionListener(this);
     }
-    
+
     public void hidePassword(boolean hidden) {
         this.hidden = hidden;
         text.setEchoChar(hidden ? '\u2022' : '\0');
         updateDecoration();
     }
-    
+
     public void setEnabled(boolean enabled) {
         text.setEnabled(enabled);
         if (enabled) {
@@ -49,14 +50,15 @@ public class PasswordTextFieldDecorator implements SelectionListener {
     private void updateDecoration() {
         decoration.setDescriptionText(hidden ? "Show password" : "Hide password");
         decoration.setImage(MosyncUIPlugin.getDefault().getImageRegistry().get(hidden ? MosyncUIPlugin.PASSWORD_SHOW : MosyncUIPlugin.PASSWORD_HIDE));
-        decoration.addSelectionListener(this);
     }
 
-    public void widgetDefaultSelected(SelectionEvent event) {
+    @Override
+	public void widgetDefaultSelected(SelectionEvent event) {
         widgetSelected(event);
     }
 
-    public void widgetSelected(SelectionEvent event) {
+    @Override
+	public void widgetSelected(SelectionEvent event) {
         hidePassword(!hidden);
     }
 }
