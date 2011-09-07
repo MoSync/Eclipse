@@ -68,7 +68,7 @@ public interface ICommonPermissions {
         SMS, SMS_SEND, SMS_RECEIVE, SMS_READ,
         VIBRATE,
 		HOMESCREEN,
-		AUTOSTART,
-		NFC
+		AUTOSTART/*,
+		NFC*/
     };
 }
