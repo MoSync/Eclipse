@@ -13,9 +13,11 @@
  */
 package com.mobilesorcery.sdk.ui.internal.launch;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -51,6 +53,7 @@ import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.ILaunchConstants;
 import com.mobilesorcery.sdk.core.MoSyncNature;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
@@ -132,8 +135,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 	}
 
 	private void createLaunchDelegateEditor(Composite control) {
-		Set<String> ids = CoreMoSyncPlugin.getDefault()
-				.getEmulatorLauncherIds();
+		Set<String> ids = sortLaunchers(CoreMoSyncPlugin.getDefault().getEmulatorLauncherIds());
 		launchDelegateHolderParent = control;
 
 		Group launchDelegateGroup = new Group(control, SWT.NONE);
@@ -142,7 +144,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		launchDelegateGroup.setLayout(new GridLayout(1, false));
 		launchDelegateList = new ComboViewer(launchDelegateGroup);
 		launchDelegateList.setContentProvider(new ArrayContentProvider());
-		launchDelegateList.setInput(filterLaunchDelegateIds(ids, mode).toArray());
+		launchDelegateList.setInput(filterLaunchDelegateIds(ids).toArray());
 		launchDelegateList.setLabelProvider(new LabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -169,6 +171,34 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		launchDelegateHolder.setLayout(launchDelegateHolderLayout);
 
 		switchDelegate(MoReLauncher.ID, true);
+	}
+
+	private Set<String> sortLaunchers(Set<String> emulatorLauncherIds) {
+		TreeSet<String> sortedLaunchers = new TreeSet<String>(new Comparator<String>() {
+			@Override
+			public int compare(String id1, String id2) {
+				if (id1.equals(id2)) {
+					return 0;
+				}
+				int score1 = getLauncherScore(id1);
+				int score2 = getLauncherScore(id2);
+				if (score1 != score2) {
+					return score2 - score1;
+				}
+				return id1.compareTo(id2);
+			}
+
+			private int getLauncherScore(String id) {
+				if (AutomaticEmulatorLauncher.ID.equals(id)) {
+					return 2;
+				} else if (MoReLauncher.ID.equals(id)) {
+					return 1;
+				}
+				return 0;
+			}
+		});
+		sortedLaunchers.addAll(emulatorLauncherIds);
+		return sortedLaunchers;
 	}
 
 	protected void switchDelegate(String id, boolean updateCombo) {
@@ -259,7 +289,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 
 	private void updateLaunchDelegateList() {
 		if (launchDelegateList != null) {
-			Set<String> ids = filterLaunchDelegateIds(CoreMoSyncPlugin.getDefault().getEmulatorLauncherIds(), mode);
+			Set<String> ids = filterLaunchDelegateIds(CoreMoSyncPlugin.getDefault().getEmulatorLauncherIds());
 			launchDelegateList.setInput(ids.toArray());
 			updateLaunchDelegateListSelection(this.config);
 		}
@@ -292,17 +322,21 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 		}
 	}
 
-	private Set<String> filterLaunchDelegateIds(Set<String> emulatorLauncherIds, String mode) {
-		HashSet<String> result = new HashSet<String>();
+	private Set<String> filterLaunchDelegateIds(Set<String> emulatorLauncherIds) {
+		Set<String> result = new HashSet<String>();
 		for (String id  : emulatorLauncherIds) {
 			IEmulatorLauncher launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(id);
 			if (launcher != null && config != null) {
-				if (launcher.isAvailable(config, mode)) {
+				/*int availability = launcher.isAvailable(config, mode);
+				if (availability == IEmulatorLauncher.AVAILABLE || availability == IEmulatorLauncher.REQUIRES_CONFIGURATION) {
+					result.add(id);
+				}*/
+				if (!isDebugMode() || MoReLauncher.ID.equals(id)) {
 					result.add(id);
 				}
 			}
 		}
-		return result;
+		return sortLaunchers(result);
 	}
 
 	public void setBuildConfigurationTypes(boolean isDebug, String... types) {

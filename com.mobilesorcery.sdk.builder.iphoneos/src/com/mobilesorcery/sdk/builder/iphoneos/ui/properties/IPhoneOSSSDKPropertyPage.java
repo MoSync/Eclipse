@@ -27,18 +27,19 @@ import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 public class IPhoneOSSSDKPropertyPage extends MoSyncPropertyPage {
 
 	private static final Object AUTOMATIC_SDK = "@auto";
-	
+
 	private ComboViewer iOSSDKs;
 	private ComboViewer iOSSimulatorSDKs;
 
 	class SDKLabelProvider extends LabelProvider {
-		
-		private int sdkType;
+
+		private final int sdkType;
 
 		public SDKLabelProvider(int sdkType) {
 			this.sdkType = sdkType;
 		}
-		
+
+		@Override
 		public String getText(Object element) {
 			if (element == AUTOMATIC_SDK) {
 				SDK sdk = XCodeBuild.getDefault().getDefaultSDK(sdkType);
@@ -47,36 +48,36 @@ public class IPhoneOSSSDKPropertyPage extends MoSyncPropertyPage {
 				return ((SDK) element).getName();
 			}
 		}
-		
+
 	}
 	public IPhoneOSSSDKPropertyPage() {
-		// TODO Auto-generated constructor stub
+		XCodeBuild.getDefault().refresh();
 	}
 
 	@Override
 	protected Control createContents(Composite parent) {
         Composite main = new Composite(parent, SWT.NONE);
         main.setLayout(new GridLayout(2, false));
-        
+
         Label iOSLabel = new Label(main, SWT.NONE);
         iOSLabel.setText("iOS SDK");
         iOSSDKs = createSDKCombo(main, XCodeBuild.IOS_SDKS);
-        
+
         Label iOSSimulatorLabel = new Label(main, SWT.NONE);
         iOSSimulatorLabel.setText("iOS Simulator SDK");
         iOSSimulatorSDKs = createSDKCombo(main, XCodeBuild.IOS_SIMULATOR_SDKS);
-        
+
         Label infoLabel = new Label(main, SWT.WRAP);
         infoLabel.setFont(MosyncUIPlugin.getDefault().getFont(MosyncUIPlugin.FONT_INFO_TEXT));
         infoLabel.setText("Select which iOS SDKs to use for building.\nThe iOS Simulator SDK selected will be used for building for and launching the iPhone Simulator");
         infoLabel.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false, 2, 1));
-        
+
         return main;
 	}
 
 	private ComboViewer createSDKCombo(Composite parent, int sdkType) {
 		ComboViewer combo = new ComboViewer(parent);
-		List<SDK> listSDKs = XCodeBuild.getDefault().listSDKs(false, sdkType);
+		List<SDK> listSDKs = XCodeBuild.getDefault().listSDKs(sdkType);
 	    combo.setContentProvider(new ArrayContentProvider());
         combo.setLabelProvider(new SDKLabelProvider(sdkType));
         ArrayList<Object> sdksPlusAuto = new ArrayList<Object>();
@@ -91,15 +92,15 @@ public class IPhoneOSSSDKPropertyPage extends MoSyncPropertyPage {
 		}
 		return combo;
 	}
-	
+
 	@Override
 	public boolean performOk() {
 		updateProperties(iOSSDKs, XCodeBuild.IOS_SDKS);
 		updateProperties(iOSSimulatorSDKs, XCodeBuild.IOS_SIMULATOR_SDKS);
-		
+
 		return super.performOk();
 	}
-	
+
 	private void updateProperties(ComboViewer sdkCombo, int sdkType) {
 		IStructuredSelection selection = (IStructuredSelection) sdkCombo.getSelection();
 		Object element = selection.getFirstElement();

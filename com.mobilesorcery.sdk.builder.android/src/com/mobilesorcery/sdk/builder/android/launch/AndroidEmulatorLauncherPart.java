@@ -1,6 +1,7 @@
 package com.mobilesorcery.sdk.builder.android.launch;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -27,9 +28,10 @@ import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
 
 public class AndroidEmulatorLauncherPart implements
-		IEmulatorLaunchConfigurationPart {
+		IEmulatorLaunchConfigurationPart, IUpdatableControl {
 
 	private Combo avd;
+	private Button autoSelectAVD;
 	private Android android;
 	private final SimpleQueue q = new SimpleQueue(false);
 	private HashSet<String> avdsAtLastRefresh = new HashSet<String>();
@@ -41,12 +43,23 @@ public class AndroidEmulatorLauncherPart implements
 	@Override
 	public void init(ILaunchConfiguration config) throws CoreException {
 		avd.setText(config.getAttribute(AndroidEmulatorLauncher.AVD_NAME, ""));
+		autoSelectAVD.setSelection(config.getAttribute(AndroidEmulatorLauncher.AUTO_SELECT_AVD, true));
+		updateUI();
 	}
 
 	@Override
 	public Composite createControl(Composite parent, IUpdatableControl updatable) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(3, false));
+		UpdateListener listener = new UpdateListener(updatable);
+		autoSelectAVD = new Button(main, SWT.CHECK);
+		autoSelectAVD.setText("&Automatically select AVD");
+		autoSelectAVD.addListener(SWT.Selection, new UpdateListener(this));
+		autoSelectAVD.addListener(SWT.Selection, listener);
+
+		autoSelectAVD.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true,
+				false, 3, 1));
+
 		Label avdLabel = new Label(main, SWT.NONE);
 		avdLabel.setText("&AVD:");
 		avd = new Combo(main, SWT.NONE);
@@ -65,8 +78,8 @@ public class AndroidEmulatorLauncherPart implements
 		});
 
 		updateAVDs();
-
-		avd.addListener(SWT.Modify, new UpdateListener(updatable));
+		avd.addListener(SWT.Modify, listener);
+		updateUI();
 		return main;
 	}
 
@@ -76,15 +89,24 @@ public class AndroidEmulatorLauncherPart implements
 			@Override
 			public void run() {
 				try {
-					final List<String> avds = android.listAVDs();
-					avdsAtLastRefresh = new HashSet<String>(avds);
+					android.refresh();
+					List<AVD> avds = android.listAVDs();
+					final List<String> avdNames = new ArrayList<String>();
+					for (AVD avd : avds) {
+						avdNames.add(avd.getName());
+					}
+					avdsAtLastRefresh = new HashSet<String>(avdNames);
 					avd.getDisplay().asyncExec(new Runnable() {
 
 						@Override
 						public void run() {
-							String oldText = avd.getText();
-							avd.setItems(avds.toArray(new String[0]));
-							avd.setText(oldText);
+							String oldText = avd.getText().trim();
+							avd.setItems(avdNames.toArray(new String[0]));
+							if (!Util.isEmpty(oldText)) {
+								avd.setText(oldText);
+							} else if (avdNames.size() > 0) {
+								avd.setText(avdNames.get(0));
+							}
 						}
 
 					});
@@ -98,18 +120,31 @@ public class AndroidEmulatorLauncherPart implements
 
 	@Override
 	public void apply(ILaunchConfigurationWorkingCopy copy) {
-		copy.setAttribute(AndroidEmulatorLauncher.AVD_NAME, avd.getText().trim());
+		copy.setAttribute(AndroidEmulatorLauncher.AVD_NAME, avd.getText()
+				.trim());
+		copy.setAttribute(AndroidEmulatorLauncher.AUTO_SELECT_AVD,
+				autoSelectAVD.getSelection());
 	}
 
 	@Override
 	public IMessageProvider validate() {
 		String avdName = avd.getText().trim();
-		if (Util.isEmpty(avdName)) {
-			return new DefaultMessageProvider("No AVD set", IMessageProvider.ERROR);
-		} else if (!avdsAtLastRefresh.contains(avdName)) {
-			return new DefaultMessageProvider(MessageFormat.format("No AVD found with name {0}", avdName), IMessageProvider.WARNING);
+		if (!autoSelectAVD.getSelection()) {
+			if (Util.isEmpty(avdName)) {
+				return new DefaultMessageProvider("No AVD set",
+						IMessageProvider.ERROR);
+			} else if (!avdsAtLastRefresh.contains(avdName)) {
+				return new DefaultMessageProvider(MessageFormat.format(
+						"No AVD found with name {0}", avdName),
+						IMessageProvider.WARNING);
+			}
 		}
 		return null;
+	}
+
+	@Override
+	public void updateUI() {
+		avd.setEnabled(!autoSelectAVD.getSelection());
 	}
 
 }

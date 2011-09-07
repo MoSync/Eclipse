@@ -42,7 +42,7 @@ public class XCodeBuild extends AbstractTool {
 	 */
 	public static XCodeBuild getDefault() {
 		if (instance == null) {
-			instance = new XCodeBuild("xcodebuild");
+			instance = new XCodeBuild("xcodebuild2");
 		}
 		return instance;
 	}
@@ -105,13 +105,12 @@ public class XCodeBuild extends AbstractTool {
 	/**
 	 * Returns the list of available SDKs, or <code>null</code> if unable to
 	 * extract them.
-	 * @param refresh Call xcode regardless
 	 * @param sdkTypes A list of OR'ed sdk types.
 	 * An sdk type is either {@link #IOS_SDKS} or {@link #IOS_SIMULATOR_SDKS}.
 	 * @return The list of matching SDKs
 	 */
-	public List<SDK> listSDKs(boolean refresh, int sdkTypes) {
-		if (refresh || cachedSDKs == null) {
+	public List<SDK> listSDKs(int sdkTypes) {
+		if (cachedSDKs == null) {
 			cachedSDKs = new ArrayList<SDK>();
 			CollectingLineHandler lh = new CollectingLineHandler();
 			try {
@@ -162,7 +161,7 @@ public class XCodeBuild extends AbstractTool {
 	 * @return
 	 */
 	public SDK getDefaultSDK(int sdkType) {
-		List<SDK> sdks = listSDKs(false, sdkType);
+		List<SDK> sdks = listSDKs(sdkType);
 		Version bestMatch = null;
 		SDK bestMatchSDK = null;
 		for (SDK sdk : sdks) {
@@ -185,13 +184,17 @@ public class XCodeBuild extends AbstractTool {
 			return null;
 		}
 
-		for (SDK sdk : listSDKs(false, ALL_SDKS)) {
+		for (SDK sdk : listSDKs(ALL_SDKS)) {
 			if (sdkId.equals(sdk.getId())) {
 				return sdk;
 			}
 		}
 
 		return null;
+	}
+
+	public void refresh() {
+		cachedSDKs = null;
 	}
 
 }

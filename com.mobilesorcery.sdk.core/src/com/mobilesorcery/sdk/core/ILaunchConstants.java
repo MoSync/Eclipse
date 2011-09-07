@@ -19,14 +19,14 @@ public interface ILaunchConstants {
 	 * The launch property representing the project's name
 	 */
     String PROJECT = "project";
-    
+
 	/**
-	 * The screen height launch property 
+	 * The screen height launch property
 	 */
     String SCREEN_SIZE_HEIGHT = "screen.height";
 
 	/**
-	 * The screen width launch property 
+	 * The screen width launch property
 	 */
     String SCREEN_SIZE_WIDTH = "screen.width";
 
@@ -34,7 +34,7 @@ public interface ILaunchConstants {
 
 	/**
 	 * The launch property deciding whether to automatically change
-	 * the build configuration before launch 
+	 * the build configuration before launch
 	 */
 	String AUTO_CHANGE_CONFIG = "auto.change.config.2";
 
@@ -43,10 +43,10 @@ public interface ILaunchConstants {
 	 * to before launch
 	 */
 	String BUILD_CONFIG = "build.config";
-	
+
 	/**
 	 * The launch property deciding whether to automatically change
-	 * the build configuration before a <i>debug</i> launch 
+	 * the build configuration before a <i>debug</i> launch
 	 */
 	String AUTO_CHANGE_CONFIG_DEBUG = AUTO_CHANGE_CONFIG + ".debug.2";
 
@@ -55,12 +55,10 @@ public interface ILaunchConstants {
 	 * to before a <i>debug</i> launch
 	 */
 	String BUILD_CONFIG_DEBUG= BUILD_CONFIG + ".debug";
-	
+
 	/**
 	 * The id of the launch delegate that should launch the app
 	 */
 	String LAUNCH_DELEGATE_ID = "launch.delegate";
-    
-	
 
 }

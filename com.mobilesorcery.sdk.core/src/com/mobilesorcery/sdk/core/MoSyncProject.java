@@ -475,7 +475,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 				deviceFilter.saveState(root);
 			}
 
-			if (store == WORKSPACE_LOCAL_PROPERTY) {
+			if (store == LOCAL_PROPERTY) {
 				saveActiveBuildConfiguration(root);
 				IMemento target = root.createChild(TARGET);
 				saveTargetProfile(target);

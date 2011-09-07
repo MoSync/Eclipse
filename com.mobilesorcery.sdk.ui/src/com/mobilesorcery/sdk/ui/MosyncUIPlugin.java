@@ -82,9 +82,11 @@ import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
+import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.ui.internal.console.IDEProcessConsole;
 import com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator;
+import com.mobilesorcery.sdk.ui.internal.launch.AutomaticEmulatorLauncherPart;
 import com.mobilesorcery.sdk.ui.internal.launch.EmulatorLaunchConfigurationPartProxy;
 import com.mobilesorcery.sdk.ui.internal.launch.MoreLauncherPart;
 import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
@@ -172,7 +174,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
     		String id = launcherPart.getAttribute("launcher");
     		this.launcherParts.put(id, new EmulatorLaunchConfigurationPartProxy(launcherPart));
     	}
-    	// Default always present
+    	// Default + auto always present
+    	this.launcherParts.put(AutomaticEmulatorLauncher.ID, new AutomaticEmulatorLauncherPart());
     	this.launcherParts.put(MoReLauncher.ID, new MoreLauncherPart());
 	}
 

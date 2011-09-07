@@ -5,6 +5,7 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildVariant;
@@ -14,11 +15,18 @@ public class EmulatorLauncherProxy implements IEmulatorLauncher {
 
 	private IConfigurationElement element;
 	private IEmulatorLauncher delegate;
-	
+	private final String id;
+
 	public EmulatorLauncherProxy(IConfigurationElement element) {
 		this.element = element;
+		this.id = element.getAttribute("id");
 	}
-	
+
+	@Override
+	public final String getId() {
+		return id;
+	}
+
 	@Override
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
@@ -37,7 +45,7 @@ public class EmulatorLauncherProxy implements IEmulatorLauncher {
 		} finally {
 			element = null;
 		}
-		
+
 	}
 
 	@Override
@@ -47,9 +55,9 @@ public class EmulatorLauncherProxy implements IEmulatorLauncher {
 	}
 
 	@Override
-	public boolean isAvailable(ILaunchConfiguration launchConfig, String mode) {
+	public int isLaunchable(ILaunchConfiguration launchConfig, String mode) {
 		initDelegate();
-		return delegate.isAvailable(launchConfig, mode);
+		return delegate.isLaunchable(launchConfig, mode);
 	}
 
 	@Override
@@ -60,10 +68,14 @@ public class EmulatorLauncherProxy implements IEmulatorLauncher {
 	}
 
 	@Override
-	public void assertLaunchable(ILaunchConfiguration launchConfig, String mode)
-			throws CoreException {
+	public void setDefaultAttributes(ILaunchConfigurationWorkingCopy wc) {
 		initDelegate();
-		delegate.assertLaunchable(launchConfig, mode);
+		delegate.setDefaultAttributes(wc);
 	}
 
+	@Override
+	public String configure(ILaunchConfiguration config, String mode) {
+		initDelegate();
+		return delegate.configure(config, mode);
+	}
 }

@@ -58,6 +58,7 @@ import org.osgi.framework.BundleContext;
 
 import sun.security.action.GetLongAction;
 
+import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
@@ -175,7 +176,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	}
 
 	private void initLaunchers() {
-    	// Default always present
+    	// Default and auto always present
+		this.launchers.put(AutomaticEmulatorLauncher.ID, new AutomaticEmulatorLauncher());
     	this.launchers.put(MoReLauncher.ID, new MoReLauncher());
     	IConfigurationElement[] launchers = Platform.getExtensionRegistry().getConfigurationElementsFor(IEmulatorLauncher.EXTENSION_POINT_ID);
     	for (int i = 0; i < launchers.length; i++) {
