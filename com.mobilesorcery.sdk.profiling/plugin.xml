@@ -11,7 +11,7 @@
             name="Profiled MoSync Emulated App"/>
    </extension>
    
-      <extension point="org.eclipse.debug.ui.launchShortcuts">
+      <!-- <extension point="org.eclipse.debug.ui.launchShortcuts">
 <shortcut id="com.mobilesorcery.profiling.launchShortcut"
 modes="run,debug"
 class=
@@ -28,7 +28,7 @@ icon="icons/profiling.png">
             
          </contextualLaunch>
 </shortcut>
-</extension> 
+</extension> -->
    
       <extension
          point="org.eclipse.debug.ui.launchConfigurationTabGroups">
