@@ -42,7 +42,7 @@ public class XCodeBuild extends AbstractTool {
 	 */
 	public static XCodeBuild getDefault() {
 		if (instance == null) {
-			instance = new XCodeBuild("xcodebuild2");
+			instance = new XCodeBuild("xcodebuild");
 		}
 		return instance;
 	}
