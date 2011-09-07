@@ -39,6 +39,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.IProcess;
 
@@ -72,14 +73,19 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
 	}
 
 	public final static String ID = "default";
-	
+
+	@Override
+	public String getId() {
+		return ID;
+	}
+
 	@Override
 	public void launch(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor) throws CoreException {
     	boolean debug = EmulatorLaunchConfigurationDelegate.isDebugMode(mode);
-    	
+
     	String width = launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_WIDTH, "176");
         String height = launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, "220");
-        
+
         IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
         IBuildVariant variant = EmulatorLaunchConfigurationDelegate.getVariant(launchConfig, mode);
 
@@ -98,7 +104,7 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
                 }
             }
         }
-        
+
         IProcessUtil pu = CoreMoSyncPlugin.getDefault().getProcessUtil();
         int fds[] = new int[2];
         pu.pipe_create(fds);
@@ -115,7 +121,8 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
 
         try {
             messageInputStream = new PipedInputStream(messageOutputStream) {
-            	public int read() throws IOException {
+            	@Override
+				public int read() throws IOException {
             		return super.read();
             	}
             };
@@ -132,19 +139,20 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
 
         IPath outputPath = EmulatorLaunchConfigurationDelegate.getLaunchDir(mosyncProject, variant);
         File dir = outputPath.toFile();
-        
+
         String command = Util.join(Util.ensureQuoted(cmdline), " ");
         final SpawnedProcess process = new SpawnedProcess(getMoREExe(), command, dir);
 
         final EmulatorOutputParser parser = new EmulatorOutputParser(emulatorId, handler);
         startEmulatorListener(process, parser, readFd, dupWriteFd);
-        
+
         process.setInputStream(messageInputStream);
 
     	process.setShutdownHook(new Runnable() {
+			@Override
 			public void run() {
 				parser.awaitParseEventsToBeHandled(2000);
-			}    		
+			}
     	});
 
         try {
@@ -152,9 +160,9 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
 			CoreMoSyncPlugin.getDefault().getEmulatorProcessManager().processStarted(emulatorId);
 
             IProcess p = DebugPlugin.newProcess(launch, process, project.getName());
-     
+
             IPath program = outputPath.append("program");
-            
+
             if (debug) {
             	attachDebugger(launch, p, program);
             }
@@ -163,7 +171,7 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
                 int errcode = process.waitFor();
                 if (errcode != 0) {
                     handler.setExitMessage(getErrorMessage(errcode));
-                }                
+                }
             } catch (InterruptedException e) {
                 CoreMoSyncPlugin.getDefault().log(e);
             } finally {
@@ -175,7 +183,7 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
 
         pu.pipe_close(dupWriteFd);
 	}
-    
+
     private void attachDebugger(ILaunch launch, IProcess process, IPath program) throws CoreException {
     	IFile[] programFiles = ResourcesPlugin.getWorkspace().getRoot().findFilesForLocation(program);
     	IProject project = EmulatorLaunchConfigurationDelegate.getProject(launch.getLaunchConfiguration());
@@ -188,11 +196,11 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
 
     	MoSyncDebugger dbg = new MoSyncDebugger();
     	ICDISession targetSession = dbg.createSession(launch, program.toFile(), new NullProgressMonitor());
-    	IBinaryObject binaryFile = (IBinaryObject) CModelManager.getDefault().createBinaryFile(programFile);    	
+    	IBinaryObject binaryFile = (IBinaryObject) CModelManager.getDefault().createBinaryFile(programFile);
     	//IDebugTarget debugTarget = CDIDebugModel.newDebugTarget(launch, project, targetSession.getTargets()[0], launch.getLaunchConfiguration().getName(), process, binaryFile, true, false, true);
     	IDebugTarget debugTarget = MoSyncCDebugTarget.newDebugTarget(launch, project, targetSession.getTargets()[0], launch.getLaunchConfiguration().getName(), process, binaryFile, true, false, null, true);
 	}
-    
+
     private void addBinaryParser(IProject project) throws CoreException {
     	  ICDescriptor cDescriptor = CCorePlugin.getDefault().getCDescriptorManager().getDescriptor(project);
     	  cDescriptor.create("org.eclipse.cdt.core.BinaryParser", "org.eclipse.cdt.core.ELF");
@@ -214,7 +222,8 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
     private void startEmulatorListener(SpawnedProcess process, final EmulatorOutputParser parser, final int readFd, final int writeFd) {
     	final OSPipeInputStream input = new OSPipeInputStream(readFd);
         Runnable emulatorListener = new Runnable() {
-            public void run() {                
+            @Override
+			public void run() {
                 try {
                     parser.parse(input);
                 } catch (IOException e) {
@@ -227,39 +236,39 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
 
         Thread thread = new Thread(emulatorListener, "Reading from pipe");
         thread.setDaemon(true);
-        thread.start();        
+        thread.start();
     }
 
     private String[] getCommandLine(IProject project, IBuildVariant variant, String width, String height, int fd, int id, boolean debug) throws CoreException {
         IPath outputPath = EmulatorLaunchConfigurationDelegate.getLaunchDir(MoSyncProject.create(project), variant);
         IPath program = outputPath.append("program");
         IPath resources = outputPath.append("resources");
-         
+
         if (!program.toFile().exists()) {
             throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could find no executable - please rebuild"));
         }
-        
+
         ArrayList<String> args = new ArrayList<String>();
-        
+
         args.addAll(Arrays.asList(new String[] { getMoREExe(), "-program", program.toOSString(), "-resource", resources.toOSString(),
                 "-resolution", "" + width, "" + height, "-fd", Integer.toString(fd), "-id", Integer.toString(id)
                 /*,"-icon", outputPath.append("more.png").toOSString()*/
         }));
-        
+
         if (debug) {
         	args.add("-gdb");
         }
 
         return args.toArray(new String[args.size()]);
     }
-    
+
     private String getMoREExe() {
     	return MoSyncTool.getDefault().getBinary("MoRE").toOSString();
     }
 
 	@Override
-	public boolean isAvailable(ILaunchConfiguration config, String mode) {
-		return true;
+	public int isLaunchable(ILaunchConfiguration config, String mode) {
+		return LAUNCHABLE;
 	}
 
 	@Override
@@ -268,6 +277,12 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
 		BuildVariant modified = new BuildVariant(prototype);
 		modified.setFinalizerBuild(false);
 		return modified;
+	}
+
+	@Override
+	public void setDefaultAttributes(ILaunchConfigurationWorkingCopy wc) {
+        wc.setAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, "220");
+        wc.setAttribute(ILaunchConstants.SCREEN_SIZE_WIDTH, "176");
 	}
 
 

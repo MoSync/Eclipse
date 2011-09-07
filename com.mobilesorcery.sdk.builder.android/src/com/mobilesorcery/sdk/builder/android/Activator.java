@@ -30,6 +30,8 @@ public class Activator extends AbstractUIPlugin {
 
 	public static final String EXTERNAL_SDK_PATH = "android.sdk";
 
+	private static final String USE_FALLBACK = "use.fallback";
+
     // The shared instance
     private static Activator plugin;
 
@@ -43,7 +45,8 @@ public class Activator extends AbstractUIPlugin {
      * (non-Javadoc)
      * @see org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext)
      */
-    public void start(BundleContext context) throws Exception {
+    @Override
+	public void start(BundleContext context) throws Exception {
         super.start(context);
         plugin = this;
     }
@@ -52,7 +55,8 @@ public class Activator extends AbstractUIPlugin {
      * (non-Javadoc)
      * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
      */
-    public void stop(BundleContext context) throws Exception {
+    @Override
+	public void stop(BundleContext context) throws Exception {
         plugin = null;
         super.stop(context);
     }
@@ -70,11 +74,19 @@ public class Activator extends AbstractUIPlugin {
     	String sdkPath = getPreferenceStore().getString(EXTERNAL_SDK_PATH);
     	return sdkPath == null ? null : new Path(sdkPath);
     }
-    
+
 	public static String getAndroidComponentName(MoSyncProject project) {
 		String packageName = project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME);
 		String activityName = packageName + ".MoSync";
 		String androidComponent = packageName + "/" + activityName;
 		return androidComponent;
+	}
+
+	public void setUseFallback(boolean useFallback) {
+		getPreferenceStore().setValue(USE_FALLBACK, useFallback);
+	}
+
+	public boolean shouldUseFallback() {
+		return getPreferenceStore().getBoolean(USE_FALLBACK);
 	}
 }

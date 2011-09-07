@@ -215,6 +215,7 @@ extends AbstractPackager
 
 			internal.runCommandLine( m_unzipLoc,
 									 "-q",
+									 "-o",
 									 internal.resolveFile( "%runtime-dir%/MoSyncRuntime%D%.zip" ).getCanonicalPath(),
 									 "-d",
 									 new File ( packageOutDir, "classes" ).getAbsolutePath( ) );

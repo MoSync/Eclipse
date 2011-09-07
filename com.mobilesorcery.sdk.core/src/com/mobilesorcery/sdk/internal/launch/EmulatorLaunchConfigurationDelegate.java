@@ -13,34 +13,20 @@
 */
 package com.mobilesorcery.sdk.internal.launch;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.eclipse.cdt.core.CCorePlugin;
-import org.eclipse.cdt.core.ICDescriptor;
-import org.eclipse.cdt.core.IBinaryParser.IBinaryObject;
 import org.eclipse.cdt.core.model.ICModelMarker;
-import org.eclipse.cdt.core.model.ICProject;
-import org.eclipse.cdt.debug.core.cdi.ICDISession;
 import org.eclipse.cdt.debug.ui.CDebugUIPlugin;
-import org.eclipse.cdt.internal.core.model.CModelManager;
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.debug.core.DebugPlugin;
@@ -48,66 +34,56 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.core.Launch;
-import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate2;
 import org.eclipse.debug.core.model.IPersistableSourceLocator;
-import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.LaunchConfigurationDelegate;
 import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupDirector;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.util.Policy;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.statushandlers.StatusManager;
 
-import com.mobilesorcery.sdk.core.BuildVariant;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.ILaunchConstants;
-import com.mobilesorcery.sdk.core.IProcessUtil;
 import com.mobilesorcery.sdk.core.MoSyncBuildJob;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncNature;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.MoSyncTool;
-import com.mobilesorcery.sdk.core.SpawnedProcess;
-import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.internal.BuildSession;
-import com.mobilesorcery.sdk.internal.EmulatorOutputParser;
-import com.mobilesorcery.sdk.internal.OSPipeInputStream;
-import com.mobilesorcery.sdk.internal.debug.MoSyncCDebugTarget;
-import com.mobilesorcery.sdk.internal.debug.MoSyncDebugger;
-import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDelegate implements ILaunchConfigurationDelegate2 {
 
     private static int GLOBAL_ID = 1;
 
-    public void launch(final ILaunchConfiguration launchConfig, final String mode, final ILaunch launch,
+    @Override
+	public void launch(final ILaunchConfiguration launchConfig, final String mode, final ILaunch launch,
             final IProgressMonitor monitor) throws CoreException {
         IProject project = getProject(launchConfig);
-        // We use a job just to let all current build jobs finish - but we need to spawn 
+        // We use a job just to let all current build jobs finish - but we need to spawn
         // a new thread within the job to avoid this job to block other operations that
         // we may want perform as the emulator is running.
         Job job = new Job("Launching") {
-            public IStatus run(IProgressMonitor monitor) {
+            @Override
+			public IStatus run(IProgressMonitor monitor) {
                 final int emulatorId = getNextId();
                 launchAsync(launchConfig, mode, launch, emulatorId, monitor);
                 return Status.OK_STATUS;
             }
         };
-        
+
         job.setRule(project);
         job.setSystem(true);
         job.schedule();
     }
 
-    public boolean preLaunchCheck(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
+    @Override
+	public boolean preLaunchCheck(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
     	boolean result = true;
     	IProject project = getProject(configuration);
     	if (!shouldAutoSwitch(configuration, mode)) {
@@ -118,26 +94,51 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     			result = showSwitchConfigDialog(mosyncProject, mode, activeCfg, preferredTypes);
     		}
     	}
-    	
-    	IEmulatorLauncher launcher = getEmulatorLauncher(configuration);
-    	launcher.assertLaunchable(configuration, mode);
-    	
+
+    	IEmulatorLauncher launcher = getEmulatorLauncher(configuration, mode);
+		while (launcher.isLaunchable(configuration, mode) == IEmulatorLauncher.REQUIRES_CONFIGURATION) {
+			String launcherId = launcher.configure(configuration, mode);
+			if (launcherId == null) {
+				return false;
+			} else {
+				launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(launcherId);
+			}
+    	}
+
+		// And a final check in case configuration failed.
+		assertLaunchable(launcher, configuration, mode);
     	return result && super.preLaunchCheck(configuration, mode, monitor);
     }
-    
+
+	private void assertLaunchable(IEmulatorLauncher launcher, ILaunchConfiguration launchConfig, String mode)
+			throws CoreException {
+		if (launcher.isLaunchable(launchConfig, mode) != IEmulatorLauncher.LAUNCHABLE) {
+			IBuildVariant variant = getVariant(launchConfig, mode);
+			throw new CoreException(
+					new Status(
+							IStatus.ERROR,
+							CoreMoSyncPlugin.PLUGIN_ID,
+							MessageFormat
+									.format("Cannot use {0} in execution mode \"{1}\" on platform {2}.",
+											launcher.getName(), mode,
+											variant.getProfile())));
+		}
+	}
+
     private boolean showSwitchConfigDialog(MoSyncProject mosyncProject, String mode,
 			final IBuildConfiguration activeCfg, String[] requiredTypes) {
     	if (isDebugMode(mode)) {
     		Display d = PlatformUI.getWorkbench().getDisplay();
     		final boolean[] result = new boolean[1];
     		d.syncExec(new Runnable() {
+				@Override
 				public void run() {
 			    	Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 					MessageDialog dialog = new MessageDialog(shell, "Incompatible build configuration", null,
 						MessageFormat.format("The build configuration \"{0}\" is not intended for debugging. Debug anyway?",
 						activeCfg.getId()), MessageDialog.WARNING, new String[] { "Debug", "Cancel" }, 1);
 					result[0] = dialog.open() == 0;
-				}    			
+				}
     		});
 			return result[0];
     	}
@@ -169,27 +170,28 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
             return candidateCfgs.first();
         }
     }
-    
+
     public void launchAsync(final ILaunchConfiguration launchConfig, final String mode, final ILaunch launch, final int emulatorId, final IProgressMonitor monitor) {
         Thread t = new Thread(new Runnable() {
-            public void run() {
+            @Override
+			public void run() {
                 try {
                     launchSync(launchConfig, mode, launch, emulatorId, monitor);
                 } catch (CoreException e) {
                     StatusManager.getManager().handle(e.getStatus(), StatusManager.SHOW);
                 }
             }
-        }, MessageFormat.format("Emulator {0}", emulatorId)); 
-        
+        }, MessageFormat.format("Emulator {0}", emulatorId));
+
         t.setDaemon(true);
         t.start();
     }
-    
+
     public void launchSync(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor)
     throws CoreException {
         IProject project = getProject(launchConfig);
         IBuildVariant variant = getVariant(launchConfig, mode);
-        
+
         if (!MoSyncNature.hasNature(project) && MoSyncNature.isCompatible(project)) {
         	throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, MessageFormat.format(
         			"Could not launch ''{0}'' - please upgrade this project to the new MoSync project type (available in the context menu)", project.getName())));
@@ -198,49 +200,50 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         if (project.findMaxProblemSeverity(ICModelMarker.C_MODEL_PROBLEM_MARKER, true, IResource.DEPTH_INFINITE) == IMarker.SEVERITY_ERROR) {
             throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, MessageFormat.format("Could not launch; build errors in project {0}", project.getName())));
         }
-        
+
         if (!getLaunchDir(MoSyncProject.create(project), variant).toFile().exists()) {
             throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could not find build directory - please make sure your project is built"));
         }
-        
+
         MoSyncProject mosyncProject = MoSyncProject.create(project);
         if (MoSyncBuilder.PROJECT_TYPE_LIBRARY.equals(mosyncProject.getProperty(MoSyncBuilder.PROJECT_TYPE))) {
             throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
                     "Cannot execute a library; please compile as application"));
         }
-        
+
         launchDelegate(launchConfig, mode, launch, emulatorId, monitor);
-        
+
     }
 
     public void launchDelegate(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor)
             throws CoreException {
-    	IEmulatorLauncher launcher = getEmulatorLauncher(launchConfig);
+    	IEmulatorLauncher launcher = getEmulatorLauncher(launchConfig, mode);
     	launcher.launch(launchConfig, mode, launch, emulatorId, monitor);
     }
-    
-    protected static IEmulatorLauncher getEmulatorLauncher(ILaunchConfiguration launchConfig) throws CoreException {
-    	String delegateId = getLaunchDelegateId(launchConfig, true);
+
+    public static IEmulatorLauncher getEmulatorLauncher(ILaunchConfiguration launchConfig, String mode) throws CoreException {
+    	String delegateId = getLaunchDelegateId(launchConfig, mode, true);
     	IEmulatorLauncher launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(delegateId);
     	if (launcher == null) {
     		throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could not find emulator for launching."));
-    	}    	
+    	}
     	return launcher;
     }
-    
-    
-    protected String getLaunchDelegateId(ILaunchConfiguration launchConfig) throws CoreException {
-		return getLaunchDelegateId(launchConfig, allowsExternalEmulators());
+
+    protected String getLaunchDelegateId(ILaunchConfiguration launchConfig, String mode) throws CoreException {
+		return getLaunchDelegateId(launchConfig, mode, allowsExternalEmulators());
 	}
 
-	protected static String getLaunchDelegateId(ILaunchConfiguration launchConfig, boolean allowExternalEmulators) throws CoreException {
-        	String delegateId = allowExternalEmulators ? 
-    			launchConfig.getAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, MoReLauncher.ID) :
-    			MoReLauncher.ID;
-    	return delegateId;
+	protected static String getLaunchDelegateId(ILaunchConfiguration launchConfig, String mode, boolean allowExternalEmulators) throws CoreException {
+    	if (allowExternalEmulators) {
+			return launchConfig.getAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, MoReLauncher.ID);
+    	} else {
+    		// Fallback is MoRe.
+    		return MoReLauncher.ID;
+    	}
     }
-    
-    /**
+
+	/**
      * Returns whether this launch configuration allows other emulators
      * than the default. Clients may override.
      * @return
@@ -248,7 +251,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     protected boolean allowsExternalEmulators() {
     	return true;
     }
-    
+
 	/**
      * Returns the launch directory of this launch.
      * @param project
@@ -257,9 +260,9 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     public static IPath getLaunchDir(MoSyncProject project, IBuildVariant variant) {
         return MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant);
     }
-    
+
     public static IBuildVariant getVariant(ILaunchConfiguration launchConfig, String mode) throws CoreException {
-		IEmulatorLauncher emulatorLauncher = getEmulatorLauncher(launchConfig);
+		IEmulatorLauncher emulatorLauncher = getEmulatorLauncher(launchConfig, mode);
 		IBuildVariant variant = emulatorLauncher.getVariant(launchConfig, mode);
 		return variant;
 	}
@@ -267,7 +270,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 	public static IProject getProject(ILaunchConfiguration launchConfig) throws CoreException {
 		return MoSyncBuilder.getProject(launchConfig);
     }
-	
+
     private int getNextId() {
         synchronized (EmulatorLaunchConfigurationDelegate.class) {
             GLOBAL_ID %= 256;
@@ -275,16 +278,17 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         }
     }
 
-    public ILaunch getLaunch(ILaunchConfiguration configuration, String mode) throws CoreException {
+    @Override
+	public ILaunch getLaunch(ILaunchConfiguration configuration, String mode) throws CoreException {
     	//ISourceLookupDirector commonSourceLookupDirector = CDebugCorePlugin.getDefault().getCommonSourceLookupDirector();
-    	
+
     	Launch launch = new Launch(configuration, mode, null);
-    	// We implement this ourselves so we can add source lookup (and hence niceties like 
+    	// We implement this ourselves so we can add source lookup (and hence niceties like
         // clicking on stack trace -> open editor
         setDefaultSourceLocator(launch, configuration);
     	return launch;
     }
-    
+
     protected void setDefaultSourceLocator(ILaunch launch, ILaunchConfiguration configuration) throws CoreException {
         if (launch.getSourceLocator() == null) {
             IPersistableSourceLocator sourceLocator;
@@ -307,35 +311,36 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
             launch.setSourceLocator(sourceLocator);
         }
     }
-    
+
     public static void configureLaunchConfigForSourceLookup(ILaunchConfigurationWorkingCopy wc) {
         wc.setAttribute(ILaunchConfiguration.ATTR_SOURCE_LOCATOR_ID, CDebugUIPlugin.getDefaultSourceLocatorID());
     }
-    
-    public boolean buildForLaunch(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
-        IEmulatorLauncher launcher = getEmulatorLauncher(configuration);
+
+    @Override
+	public boolean buildForLaunch(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
+        IEmulatorLauncher launcher = getEmulatorLauncher(configuration, mode);
         final IProject project = getProject(configuration);
         IBuildVariant variant = getVariant(configuration, mode);
         IBuildSession session = new BuildSession(Arrays.asList(variant), BuildSession.DO_SAVE_DIRTY_EDITORS | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (variant.isFinalizerBuild() ? BuildSession.DO_PACK : 0));
-            
+
 		// No dialogs should pop up.
         Job job = new MoSyncBuildJob(MoSyncProject.create(project), session, variant);
         job.setName("Prelaunch build");
         job.schedule();
        	return false;
     }
-    
+
     protected static boolean shouldAutoSwitch(ILaunchConfiguration configuration, String mode) throws CoreException {
     	String autoChangeConfigKey = isDebugMode(mode) ? ILaunchConstants.AUTO_CHANGE_CONFIG_DEBUG : ILaunchConstants.AUTO_CHANGE_CONFIG;
         return configuration.getAttribute(autoChangeConfigKey, false);
     }
-    
+
 	public static IBuildConfiguration getAutoSwitchBuildConfiguration(ILaunchConfiguration configuration, String mode) throws CoreException {
         IProject project = getProject(configuration);
         MoSyncProject mosyncProject = MoSyncProject.create(project);
         // We'll let non-mosync projects slip through; they'll be handled in launchSync
         if (mosyncProject != null && mosyncProject.areBuildConfigurationsSupported()) {
-            
+
             String buildConfigKey = isDebugMode(mode) ? ILaunchConstants.BUILD_CONFIG_DEBUG : ILaunchConstants.BUILD_CONFIG;
 
             if (shouldAutoSwitch(configuration, mode)) {
@@ -347,13 +352,24 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
                 }
             }
         }
-        
+
         return mosyncProject.getActiveBuildConfiguration();
     }
-        
+
     public static boolean isDebugMode(String mode) {
         boolean isDebugMode = "debug".equals(mode);
         return isDebugMode;
+	}
+
+	public static boolean doesConfigMatch(ILaunchConfiguration config,
+			IProject project, String mode) throws CoreException {
+    	boolean sameProject = config.getAttribute(ILaunchConstants.PROJECT, "").equals(project.getName());
+    	if (!sameProject) {
+    		return false;
+    	} // else, interesting...
+
+    	IEmulatorLauncher emulator = EmulatorLaunchConfigurationDelegate.getEmulatorLauncher(config, mode);
+		return (emulator.isLaunchable(config, mode) != IEmulatorLauncher.UNLAUNCHABLE);
 	}
 
 }

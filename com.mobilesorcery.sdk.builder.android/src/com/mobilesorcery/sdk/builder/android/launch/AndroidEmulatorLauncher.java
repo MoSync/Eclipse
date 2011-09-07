@@ -12,43 +12,82 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.util.Policy;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.AndroidPackager;
+import com.mobilesorcery.sdk.builder.android.ui.dialogs.ConfigureAndroidSDKDialog;
 import com.mobilesorcery.sdk.core.CollectingLineHandler;
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.launch.AbstractEmulatorLauncher;
+import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
+import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
+import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 
 public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 
 	public static final String AVD_NAME = "avd";
 
+	public static final String AUTO_SELECT_AVD = "avd.auto.select";
+
+	public static final String ID = "com.mobilesorcery.sdk.builder.android.launcher";
+
 	public AndroidEmulatorLauncher() {
 		super("Android Emulator");
 	}
 
 	@Override
-	public void assertLaunchable(ILaunchConfiguration launchConfig, String mode) throws CoreException {
-		ADB.getExternal().assertValid();
-		Emulator.getExternal().assertValid();
-		assertCorrectPackager(launchConfig, AndroidPackager.ID, "The Android Emulator requires the target profile to be an Android device");
-		super.assertLaunchable(launchConfig, mode);
+	public int isLaunchable(ILaunchConfiguration launchConfiguration, String mode) {
+		if (!isCorrectPackager(launchConfiguration, AndroidPackager.ID)) {
+			return IEmulatorLauncher.UNLAUNCHABLE;
+		} else if (isIncorrectlyInstalled()) {
+			return isAutoSelectLaunch(launchConfiguration, mode) && Activator.getDefault().shouldUseFallback() ?
+					IEmulatorLauncher.UNLAUNCHABLE :
+					IEmulatorLauncher.REQUIRES_CONFIGURATION;
+		} else if (hasNoAVDs()) {
+			return IEmulatorLauncher.REQUIRES_CONFIGURATION;
+		} else {
+			return super.isLaunchable(launchConfiguration, mode);
+		}
+	}
+
+	protected boolean isIncorrectlyInstalled() {
+		return !ADB.getExternal().isValid() || !Emulator.getExternal().isValid() || !Android.getExternal().isValid();
+	}
+
+	protected boolean hasNoAVDs() {
+		try {
+			return Android.getExternal().listAVDs().isEmpty();
+		} catch (CoreException e) {
+			CoreMoSyncPlugin.getDefault().log(e);
+			return true;
+		}
 	}
 
 	@Override
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
+		// If once again it's not properly conf'ed:
+		Activator.getDefault().setUseFallback(false);
+
 		ADB adb = ADB.getExternal();
 		Android android = Android.getExternal();
+		android.refresh();
 
 		List<String> emulators = adb.listEmulators(true);
 		if (emulators.size() == 0) {
 			Emulator emulator = Emulator.getExternal();
 			emulator.assertValid();
-			String avd = launchConfig.getAttribute(AVD_NAME, "");
+			String avd = getAVD(android, launchConfig);
 			if (Util.isEmpty(avd)) {
 				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format("No AVD specified (modify your launch configuration).", avd)));
 			}
@@ -72,6 +111,23 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
         } else {
         	throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Project not built or build failed"));
         }
+	}
+
+	private String getAVD(Android android, ILaunchConfiguration launchConfig) throws CoreException {
+		boolean autoSelect = launchConfig.getAttribute(AUTO_SELECT_AVD, true);
+		if (autoSelect) {
+			List<AVD> avds = android.listAVDs();
+			AVD bestMatch = null;
+			for (AVD avd : avds) {
+				int apiLevel = avd.getAPILevel();
+				if (bestMatch == null || apiLevel > bestMatch.getAPILevel()) {
+					bestMatch = avd;
+				}
+			}
+			return bestMatch == null ? null : bestMatch.getName();
+		} else {
+			return launchConfig.getAttribute(AVD_NAME, "");
+		}
 	}
 
 	private void startLogCat(ADB adb) throws CoreException {
@@ -104,5 +160,61 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Could not launch Android Emulator; wrong arguments?"));
 		}
 	}
+
+	@Override
+	public void setDefaultAttributes(ILaunchConfigurationWorkingCopy wc) {
+		wc.setAttribute(AUTO_SELECT_AVD, true);
+	}
+
+	@Override
+	public String configure(ILaunchConfiguration config, String mode) {
+		Display d = PlatformUI.getWorkbench().getDisplay();
+		// So any changes to the AVDs will be propagated.
+		Android.getExternal().refresh();
+		// If we are not auto-select, don't fallback to MoRe.
+		final boolean showFallbackAlternative = isAutoSelectLaunch(config, mode);
+
+		final String[] result = new String[] { ID };
+		d.syncExec(new Runnable() {
+			@Override
+			public void run() {
+				// OK, figure out after 2.6 release where to really put this ui stuff!
+				Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+				if (isIncorrectlyInstalled()) {
+					result[0] = showConfigureDialog(shell, showFallbackAlternative);
+				} else if (hasNoAVDs()) {
+					result[0] = showAutoCreateAVD(shell);
+				}
+			}
+		});
+		return result[0];
+	}
+
+	protected String showAutoCreateAVD(Shell shell) {
+		boolean goAhead = MessageDialog.openConfirm(shell, "No AVD installed",
+				"No AVD (Android Virtual Device) has been installed into your Android SDK.\n" +
+				"Would you like to launch the Android AVD manager to help you create an AVD?");
+		if (goAhead) {
+			try {
+				Android.getExternal().launchUI(true);
+			} catch (CoreException e) {
+				CoreMoSyncPlugin.getDefault().log(e);
+			}
+		}
+		return null; // Cancel execution
+	}
+
+	protected String showConfigureDialog(Shell shell, boolean showFallbackAlternative) {
+		ConfigureAndroidSDKDialog dialog = new ConfigureAndroidSDKDialog(shell);
+		dialog.setShowFallback(showFallbackAlternative);
+		int dialogResult = dialog.open();
+		if (dialogResult == ConfigureAndroidSDKDialog.FALLBACK_ID) {
+			return MoReLauncher.ID;
+		} else if (dialogResult == ConfigureAndroidSDKDialog.CONFIGURE_ID) {
+			return ID;
+		}
+		return null;
+	}
+
 
 }

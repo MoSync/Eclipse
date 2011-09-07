@@ -5,11 +5,10 @@ import java.text.MessageFormat;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 
 import com.mobilesorcery.sdk.core.BuildVariant;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -24,40 +23,15 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 
 public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 
-	private String name;
+	private final String name;
 
 	protected AbstractEmulatorLauncher(String name) {
 		this.name = name;
 	}
 
 	@Override
-	public void launch(ILaunchConfiguration launchConfig, String mode,
-			ILaunch launch, int emulatorId, IProgressMonitor monitor)
-			throws CoreException {
-		// TODO Auto-generated method stub
-
-	}
-
-	/**
-	 * The default implementation just checks whether this launcher is
-	 * available.
-	 * 
-	 * @throws CoreException
-	 */
-	@Override
-	public void assertLaunchable(ILaunchConfiguration launchConfig, String mode)
-			throws CoreException {
-		if (!isAvailable(launchConfig, mode)) {
-			IBuildVariant variant = getVariant(launchConfig, mode);
-			throw new CoreException(
-					new Status(
-							IStatus.ERROR,
-							CoreMoSyncPlugin.PLUGIN_ID,
-							MessageFormat
-									.format("Cannot use {0} run in execution mode \\'{1}\\' on platform {2}.",
-											getName(), mode,
-											variant.getProfile())));
-		}
+	public String getId() {
+		throw new UnsupportedOperationException();
 	}
 
 	protected File getPackageToInstall(ILaunchConfiguration launchConfig,
@@ -106,9 +80,8 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 	 * non-debug modes
 	 */
 	@Override
-	public boolean isAvailable(ILaunchConfiguration launchConfiguration,
-			String mode) {
-		return !EmulatorLaunchConfigurationDelegate.isDebugMode(mode);
+	public int isLaunchable(ILaunchConfiguration launchConfiguration, String mode) {
+		return EmulatorLaunchConfigurationDelegate.isDebugMode(mode) ? UNLAUNCHABLE : LAUNCHABLE;
 	}
 
 	/**
@@ -117,14 +90,32 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 	 * profile set to the currently selected profile.
 	 */
 	@Override
-	public IBuildVariant getVariant(ILaunchConfiguration launchConfig,
-			String mode) throws CoreException {
+	public IBuildVariant getVariant(ILaunchConfiguration launchConfig, String mode) throws CoreException {
 		IProject project = EmulatorLaunchConfigurationDelegate
 				.getProject(launchConfig);
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
 		IBuildConfiguration cfg = EmulatorLaunchConfigurationDelegate
 				.getAutoSwitchBuildConfiguration(launchConfig, mode);
 		return new BuildVariant(mosyncProject.getTargetProfile(), cfg, true);
+	}
+
+	@Override
+	public void setDefaultAttributes(ILaunchConfigurationWorkingCopy wc) {
+		// Default impl does nothing.
+	}
+
+	@Override
+	public String configure(ILaunchConfiguration config, String mode) {
+		return getId();
+	}
+
+	protected boolean isAutoSelectLaunch(ILaunchConfiguration config, String mode) {
+		try {
+			IEmulatorLauncher launcher = EmulatorLaunchConfigurationDelegate.getEmulatorLauncher(config, mode);
+			return AutomaticEmulatorLauncher.ID.equals(launcher.getId());
+		} catch (CoreException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	protected void assertWindows() throws CoreException {

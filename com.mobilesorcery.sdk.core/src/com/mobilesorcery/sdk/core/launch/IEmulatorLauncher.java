@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -31,30 +32,53 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
  */
 public interface IEmulatorLauncher {
 
+	/**
+	 * The extension points to hook into for clients implementing this interface.
+	 */
     public static final String EXTENSION_POINT_ID = "com.mobilesorcery.core.launcher";
+
+    public static final int LAUNCHABLE = 1 << 1;
+
+    public static final int UNLAUNCHABLE = 1 << 2;
+
+    public static final int REQUIRES_CONFIGURATION = 1 << 3;
 
 	public void launch(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor) throws CoreException;
 
+	/**
+	 * Returns the id of this launcher.
+	 */
+	public String getId();
+
+	/**
+	 * Returns the user-friendly name of this launcher.
+	 */
 	public String getName();
 
 	/**
-	 * Returns <code>true</code> if this launcher is available for a certain launch configuration
-	 * @return
+	 * Returns {@code true} if this launcher is available for a certain launch configuration.
+	 * Clients need to consider the device profile associated with the launch configuration.
+	 * @return One of the values {@link IEmulatorLauncher#LAUNCHABLE}, {@link IEmulatorLauncher#UNLAUNCHABLE},
+	 * {@link IEmulatorLauncher#REQUIRES_CONFIGURATION}. If it requires configuration,
+	 * then it is not launchable.
 	 */
-	public boolean isAvailable(ILaunchConfiguration launchConfig, String mode);
+	public int isLaunchable(ILaunchConfiguration launchConfig, String mode);
 
 	/**
-	 * Asserts whether a launch configuration is compatible with this launcher.
-	 * @throws CoreException If not compatible
-	 */
-	public void assertLaunchable(ILaunchConfiguration launchConfig, String mode) throws CoreException;
-	
-	/**
-	 * Returns the variant to use for this launcher. 
+	 * Returns the variant to use for this launcher.
 	 * @param launchConfig
 	 * @param mode
 	 * @return
-	 * @throws CoreException 
+	 * @throws CoreException
 	 */
 	public IBuildVariant getVariant(ILaunchConfiguration launchConfig, String mode) throws CoreException;
+
+	/**
+	 * Sets the default launch configuration attributes for this emulator launcher
+	 * @param wc
+	 */
+	public void setDefaultAttributes(ILaunchConfigurationWorkingCopy wc);
+
+	// HACK!
+	public String configure(ILaunchConfiguration config, String mode);
 }

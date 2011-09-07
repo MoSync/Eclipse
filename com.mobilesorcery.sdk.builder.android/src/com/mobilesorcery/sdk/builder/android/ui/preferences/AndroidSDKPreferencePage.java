@@ -4,6 +4,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.preference.DirectoryFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
@@ -12,7 +13,26 @@ import com.mobilesorcery.sdk.builder.android.launch.ADB;
 
 public class AndroidSDKPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage{
 
-    public AndroidSDKPreferencePage() {
+    private final class SDKFieldEditor extends DirectoryFieldEditor {
+		private SDKFieldEditor(String name, String labelText, Composite parent) {
+			super(name, labelText, parent);
+			setValidateStrategy(VALIDATE_ON_KEY_STROKE);
+		}
+
+		@Override
+		protected boolean checkState() {
+			ADB adb = ADB.findADB(new Path(getStringValue()));
+			clearErrorMessage();
+			if (!adb.isValid()) {
+				setMessage("This is an invalid Android SDK location (found no ADB binary)", IMessageProvider.WARNING);
+			} else {
+				setMessage(null, IMessageProvider.NONE);
+			}
+			return adb.isValid() && super.checkState();
+		}
+	}
+
+	public AndroidSDKPreferencePage() {
         super();
         setPreferenceStore(Activator.getDefault().getPreferenceStore());
     }
@@ -24,19 +44,7 @@ public class AndroidSDKPreferencePage extends FieldEditorPreferencePage implemen
 
 	@Override
 	protected void createFieldEditors() {
-		DirectoryFieldEditor sdkLocation = new DirectoryFieldEditor(Activator.EXTERNAL_SDK_PATH, "&SDK Location", getFieldEditorParent()) {
-			@Override
-			protected boolean checkState() {
-				ADB adb = ADB.findADB(new Path(getStringValue()));
-				if (!adb.isValid()) {
-					setMessage("This is an invalid Android SDK location (found no ADB binary)", IMessageProvider.WARNING);
-				} else {
-					setMessage(null, IMessageProvider.NONE);
-				}
-				return adb.isValid() && super.checkState();
-			}
-		};
-		sdkLocation.setValidateStrategy(DirectoryFieldEditor.VALIDATE_ON_KEY_STROKE);
+		SDKFieldEditor sdkLocation = new SDKFieldEditor(Activator.EXTERNAL_SDK_PATH, "&SDK Location", getFieldEditorParent());
 		addField(sdkLocation);
 	}
 

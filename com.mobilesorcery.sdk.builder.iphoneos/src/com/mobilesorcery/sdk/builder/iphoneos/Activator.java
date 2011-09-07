@@ -13,10 +13,6 @@
 */
 package com.mobilesorcery.sdk.builder.iphoneos;
 
-import java.util.List;
-
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -32,7 +28,9 @@ public class Activator extends AbstractUIPlugin {
     public static final String PLUGIN_ID = "com.mobilesorcery.sdk.builder.iphoneose"; //$NON-NLS-1$
 
     public final static String IOS_SIMULATOR_SPECIFIER = "simulator";
-	
+
+	private static final String USE_FALLBACK = "use.fallback";
+
     // The shared instance
     private static Activator plugin;
 
@@ -46,7 +44,8 @@ public class Activator extends AbstractUIPlugin {
      * (non-Javadoc)
      * @see org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext)
      */
-    public void start(BundleContext context) throws Exception {
+    @Override
+	public void start(BundleContext context) throws Exception {
         super.start(context);
         plugin = this;
     }
@@ -55,7 +54,8 @@ public class Activator extends AbstractUIPlugin {
      * (non-Javadoc)
      * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
      */
-    public void stop(BundleContext context) throws Exception {
+    @Override
+	public void stop(BundleContext context) throws Exception {
         plugin = null;
         super.stop(context);
     }
@@ -90,10 +90,18 @@ public class Activator extends AbstractUIPlugin {
 	 * @param useDefault
 	 */
 	public void setSDK(MoSyncProject project, int sdkType, SDK sdk, boolean useDefault) {
-		String sdkId = useDefault || sdk == null ? null : sdk.getId(); 
+		String sdkId = useDefault || sdk == null ? null : sdk.getId();
 		PropertyUtil.setBoolean(project, sdkType == XCodeBuild.IOS_SDKS ? PropertyInitializer.IOS_SDK_AUTO : PropertyInitializer.IOS_SIM_SDK_AUTO, useDefault);
 		project.setProperty(sdkType == XCodeBuild.IOS_SDKS ? PropertyInitializer.IOS_SDK : PropertyInitializer.IOS_SIM_SDK, sdkId);
 	}
 
- 
+	public void setUseFallback(boolean useFallback) {
+		getPreferenceStore().setValue(USE_FALLBACK, useFallback);
+	}
+
+	public boolean shouldUseFallback() {
+		return getPreferenceStore().getBoolean(USE_FALLBACK);
+	}
+
+
 }

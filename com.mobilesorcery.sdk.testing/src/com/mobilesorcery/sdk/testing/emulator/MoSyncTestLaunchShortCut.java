@@ -22,24 +22,32 @@ import org.eclipse.debug.core.ILaunchManager;
 
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.testing.project.MoSyncProjectTestManager;
 import com.mobilesorcery.sdk.ui.internal.launch.MoreLaunchShortCut;
 
 public class MoSyncTestLaunchShortCut extends MoreLaunchShortCut {
 
+	@Override
     protected ILaunchConfigurationType getConfigType() {
         ILaunchManager lm = DebugPlugin.getDefault().getLaunchManager();
         ILaunchConfigurationType configType = lm.getLaunchConfigurationType("com.mobilesorcery.test.launchconfigurationtype");
         return configType;
     }
 
-    protected String getInitialConfigurationId(IProject project, String mode) {
+	@Override
+	protected String getPreferredLauncherId() {
+		return MoReLauncher.ID;
+	}
+
+    @Override
+	protected String getInitialConfigurationId(IProject project, String mode) {
         boolean isDebug = "debug".equals(mode);
         List<IBuildConfiguration> testCfgs = new MoSyncProjectTestManager(MoSyncProject.create(project)).getTestConfigs(isDebug);
         if (testCfgs.size() > 0) {
             return testCfgs.get(0).getId();
         }
-        
+
         return null;
     }
 }

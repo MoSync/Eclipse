@@ -80,15 +80,9 @@ public class BlackBerrySimulatorLauncher extends AbstractEmulatorLauncher {
 	}
 
 	@Override
-	public boolean isAvailable(ILaunchConfiguration config, String mode) {
-		return false;
+	public int isLaunchable(ILaunchConfiguration config, String mode) {
+		return UNLAUNCHABLE;
 		//return super.isAvailable(config, mode);
 	}
 
-	@Override
-	public void assertLaunchable(ILaunchConfiguration config, String mode) throws CoreException {
-		assertWindows();
-		assertCorrectPackager(config, BlackBerryPackager.ID, "The BlackBerry Simulator requires the target profile to be a BlackBerry device");
-		super.assertLaunchable(config, mode);
-	}
 }

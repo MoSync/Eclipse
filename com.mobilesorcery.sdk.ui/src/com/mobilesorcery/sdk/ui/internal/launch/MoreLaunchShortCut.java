@@ -43,11 +43,14 @@ import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.ILaunchConstants;
+import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
+import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 
 public class MoreLaunchShortCut implements ILaunchShortcut2 {
 
-    public void launch(ISelection selection, String mode) {
+    @Override
+	public void launch(ISelection selection, String mode) {
         launch(getProjectFromSelection(selection), mode);
     }
 
@@ -66,7 +69,7 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
             if (selection instanceof IEditorPart) {
                 selection = ((IEditorPart) selection).getEditorInput();
             }
-            
+
             if (selection instanceof IAdaptable) {
                 selection = ((IAdaptable) selection).getAdapter(IResource.class);
             }
@@ -92,13 +95,14 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
         }
     }
 
-    public void launch(IEditorPart part, String mode) {
+    @Override
+	public void launch(IEditorPart part, String mode) {
         launch(getProjectFromSelection(new Object[] { part }), mode);
     }
 
     private ILaunchConfiguration findLaunchConfiguration(IProject project, String mode) {
         ILaunchConfiguration configuration = null;
-        List candidateConfigs = getCandidateConfigs(project);
+        List candidateConfigs = getCandidateConfigs(project, mode);
 
         int candidateCount = candidateConfigs.size();
         if (candidateCount < 1) {
@@ -116,7 +120,7 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
     }
 
     /**
-     * Clients may override
+     * Clients may override.
      * @return
      */
     protected ILaunchConfigurationType getConfigType() {
@@ -125,19 +129,22 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
         return configType;
     }
 
+    /**
+     * Clients should override.
+     * @return
+     */
+    protected String getPreferredLauncherId() {
+    	return AutomaticEmulatorLauncher.ID;
+    }
+
     private ILaunchConfiguration createConfiguration(IProject project, String mode) {
         ILaunchConfiguration config = null;
         try {
             ILaunchConfigurationType configType = getConfigType();
 
-            String launchConfigName = DebugPlugin.getDefault().getLaunchManager().generateUniqueLaunchConfigurationNameFrom(
-                    project.getName());
+            String launchConfigName = DebugPlugin.getDefault().getLaunchManager().generateLaunchConfigurationName(project.getName());
             ILaunchConfigurationWorkingCopy wc = configType.newInstance(null, launchConfigName);
 
-            wc.setAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, "220");
-            wc.setAttribute(ILaunchConstants.SCREEN_SIZE_WIDTH, "176");
-            wc.setAttribute(ILaunchConstants.PROJECT, project.getName());
-            
             if ("run".equals(mode)) {
                 wc.setAttribute(DebugPlugin.ATTR_PROCESS_FACTORY_ID, "com.mobilesorcery.sdk.builder.nonterminableprocessfactory");
             }
@@ -145,13 +152,21 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
             DebugUITools.setLaunchPerspective(configType, ILaunchManager.DEBUG_MODE, IDebugUIConstants.PERSPECTIVE_DEFAULT);
 
             EmulatorLaunchConfigurationDelegate.configureLaunchConfigForSourceLookup(wc);
-            
+
             String initialCfg = getInitialConfigurationId(project, mode);
             if (initialCfg != null) {
                 String key = "run".equals(mode) ? ILaunchConstants.BUILD_CONFIG : ILaunchConstants.BUILD_CONFIG_DEBUG;
                 wc.setAttribute(key, initialCfg);
             }
-            
+
+            wc.setAttribute(ILaunchConstants.PROJECT, project.getName());
+
+            // Let the launcher add its own attributes
+            String launcherId = getPreferredLauncherId();
+            IEmulatorLauncher launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(launcherId);
+            wc.setAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, launcherId);
+            launcher.setDefaultAttributes(wc);
+
             config = wc.doSave();
         } catch (CoreException ce) {
             CoreMoSyncPlugin.getDefault().getLog().log(
@@ -160,7 +175,7 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
 
         return config;
     }
-    
+
     /**
      * Returns the configuration to launch with (or null if none, in which case a default configuration will be selected)
      * @return
@@ -169,7 +184,7 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
         return null;
     }
 
-    private List<ILaunchConfiguration> getCandidateConfigs(IProject project) {
+    private List<ILaunchConfiguration> getCandidateConfigs(IProject project, String mode) {
         ILaunchConfigurationType configType = getConfigType();
 
         List<ILaunchConfiguration> candidateConfigs = Collections.EMPTY_LIST;
@@ -179,7 +194,7 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
                 candidateConfigs = new ArrayList<ILaunchConfiguration>(configs.length);
                 for (int i = 0; i < configs.length; i++) {
                     ILaunchConfiguration config = configs[i];
-                    if (config.getAttribute(ILaunchConstants.PROJECT, "").equals(project.getName())) {
+                    if (doesConfigMatch(config, project, mode)) {
                         candidateConfigs.add(config);
                     }
                 }
@@ -192,11 +207,15 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
         return candidateConfigs;
     }
 
-    private ILaunchConfiguration chooseConfiguration(List configList, String mode) {
+    private boolean doesConfigMatch(ILaunchConfiguration config, IProject project, String mode) throws CoreException {
+    	return EmulatorLaunchConfigurationDelegate.doesConfigMatch(config, project, mode);
+	}
+
+	private ILaunchConfiguration chooseConfiguration(List configList, String mode) {
         IDebugModelPresentation labelProvider = DebugUITools.newDebugModelPresentation();
         ElementListSelectionDialog dialog = new ElementListSelectionDialog(getShell(), labelProvider);
         dialog.setElements(configList.toArray());
-        dialog.setTitle("MoRE Launch configuration");
+        dialog.setTitle("MoSync Emulator launch configuration");
         dialog.setMessage("Select launch configuration");
         dialog.setMultipleSelection(false);
 
@@ -220,19 +239,23 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
     }
 
     // ILaunchShortcut2
-    public ILaunchConfiguration[] getLaunchConfigurations(ISelection selection) {
-        return getCandidateConfigs(getProjectFromSelection(selection)).toArray(new ILaunchConfiguration[0]);
+    @Override
+	public ILaunchConfiguration[] getLaunchConfigurations(ISelection selection) {
+        return getCandidateConfigs(getProjectFromSelection(selection), "run").toArray(new ILaunchConfiguration[0]);
     }
 
-    public ILaunchConfiguration[] getLaunchConfigurations(IEditorPart editorpart) {        
-        return getCandidateConfigs(getProjectFromSelection(new Object[] { editorpart })).toArray(new ILaunchConfiguration[0]);
+    @Override
+	public ILaunchConfiguration[] getLaunchConfigurations(IEditorPart editorpart) {
+        return getCandidateConfigs(getProjectFromSelection(new Object[] { editorpart }), "run").toArray(new ILaunchConfiguration[0]);
     }
 
-    public IResource getLaunchableResource(ISelection selection) {
+    @Override
+	public IResource getLaunchableResource(ISelection selection) {
         return getProjectFromSelection(selection);
     }
 
-    public IResource getLaunchableResource(IEditorPart editorpart) {
+    @Override
+	public IResource getLaunchableResource(IEditorPart editorpart) {
         return getProjectFromSelection(new Object[] { editorpart });
     }
 

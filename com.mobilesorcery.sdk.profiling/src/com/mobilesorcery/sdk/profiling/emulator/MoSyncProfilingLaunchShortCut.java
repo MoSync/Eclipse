@@ -17,14 +17,20 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunchConfigurationType;
 import org.eclipse.debug.core.ILaunchManager;
 
+import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.ui.internal.launch.MoreLaunchShortCut;
 
 public class MoSyncProfilingLaunchShortCut extends MoreLaunchShortCut {
 
+	@Override
     protected ILaunchConfigurationType getConfigType() {
         ILaunchManager lm = DebugPlugin.getDefault().getLaunchManager();
         ILaunchConfigurationType configType = lm.getLaunchConfigurationType("com.mobilesorcery.profiling.launchconfigurationtype");
         return configType;
     }
-    
+
+	@Override
+	protected String getPreferredLauncherId() {
+		return MoReLauncher.ID;
+	}
 }
