@@ -40,7 +40,7 @@ public class XCodeBuild extends AbstractTool {
 	 *
 	 * @return
 	 */
-	public static XCodeBuild getDefault() {
+	public static synchronized XCodeBuild getDefault() {
 		if (instance == null) {
 			instance = new XCodeBuild("xcodebuild");
 		}
@@ -109,7 +109,7 @@ public class XCodeBuild extends AbstractTool {
 	 * An sdk type is either {@link #IOS_SDKS} or {@link #IOS_SIMULATOR_SDKS}.
 	 * @return The list of matching SDKs
 	 */
-	public List<SDK> listSDKs(int sdkTypes) {
+	public synchronized List<SDK> listSDKs(int sdkTypes) {
 		if (cachedSDKs == null) {
 			cachedSDKs = new ArrayList<SDK>();
 			CollectingLineHandler lh = new CollectingLineHandler();

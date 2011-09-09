@@ -88,6 +88,8 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 
 	@Override
 	public String configure(ILaunchConfiguration config, String mode) {
+		XCodeBuild.getDefault().refresh();
+
 		Display d = PlatformUI.getWorkbench().getDisplay();
 		// If we are not auto-select, don't fallback to MoRe.
 		final boolean showFallbackAlternative = isAutoSelectLaunch(config, mode);
@@ -110,7 +112,6 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 	}
 
 	protected boolean isIncorrectlyInstalled() {
-		XCodeBuild.getDefault().refresh();
 		return !IPhoneSimulator.getDefault().isValid() || !XCodeBuild.getDefault().isValid() || XCodeBuild.getDefault().listSDKs(XCodeBuild.IOS_SIMULATOR_SDKS).size() == 0;
 	}
 }

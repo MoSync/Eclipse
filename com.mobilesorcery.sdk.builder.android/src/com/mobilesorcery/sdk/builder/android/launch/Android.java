@@ -90,6 +90,7 @@ public class Android extends AbstractTool {
 
 			IPath path = sdkPath == null ? null : sdkPath.append("tools/android" + extension);
 			external = new Android(path);
+			externalPath = sdkPath;
 		}
 		return external;
 	}
@@ -98,7 +99,7 @@ public class Android extends AbstractTool {
 		avds = null;
 	}
 
-	public List<AVD> listAVDs() throws CoreException {
+	public synchronized List<AVD> listAVDs() throws CoreException {
 		if (avds == null) {
 			AVDHandler avdHandler = new AVDHandler();
 			execute(new String[] {
