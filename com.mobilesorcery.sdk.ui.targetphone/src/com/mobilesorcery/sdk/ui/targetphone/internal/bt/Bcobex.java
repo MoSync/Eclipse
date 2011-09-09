@@ -38,7 +38,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import com.mobilesorcery.sdk.core.Util;
 
 /**
- * 
+ *
  * Minimal Services Search example.
  */
 class ServiceSearch {
@@ -51,13 +51,16 @@ class ServiceSearch {
         final Object serviceSearchCompletedEvent = new Object();
 
         DiscoveryListener listener = new DiscoveryListener() {
-            public void deviceDiscovered(RemoteDevice btDevice, DeviceClass cod) {
+            @Override
+			public void deviceDiscovered(RemoteDevice btDevice, DeviceClass cod) {
             }
 
-            public void inquiryCompleted(int discType) {
+            @Override
+			public void inquiryCompleted(int discType) {
             }
 
-            public void servicesDiscovered(int transID, ServiceRecord[] servRecord) {
+            @Override
+			public void servicesDiscovered(int transID, ServiceRecord[] servRecord) {
                 for (int i = 0; i < servRecord.length; i++) {
                     String url = servRecord[i].getConnectionURL(ServiceRecord.NOAUTHENTICATE_NOENCRYPT, false);
                     if (url == null) {
@@ -68,7 +71,8 @@ class ServiceSearch {
                 }
             }
 
-            public void serviceSearchCompleted(int transID, int respCode) {
+            @Override
+			public void serviceSearchCompleted(int transID, int respCode) {
                 System.out.println("service search completed.");
                 synchronized (serviceSearchCompletedEvent) {
                     serviceSearchCompletedEvent.notifyAll();
@@ -99,15 +103,15 @@ class ServiceSearch {
 }
 
 public class Bcobex {
-	
+
 	/**
-	 * This specifies the size of the chunks in which a file 
+	 * This specifies the size of the chunks in which a file
 	 * sent to a device.
 	 */
-	private static final int TRANSPORT_CHUNK_SIZE = 1024;
-	
+	private static final int TRANSPORT_CHUNK_SIZE = 65536;
+
 	static {
-		/* OS X is slow when sending packages to a device, the below 
+		/* OS X is slow when sending packages to a device, the below
 		 * line increases the MTU (Maximum Transferable Unit), so
 		 * that transfers is a bit faster (about 2 times compared to
 		 * the default value). */
@@ -186,7 +190,7 @@ public class Bcobex {
                 } else {
                 	monitor.setTaskName(MessageFormat.format("Sent {0} of {1}", Util.dataSize(totalRead), Util.dataSize(length)));
                 }
-                
+
                 monitor.worked(read);
             }
 
