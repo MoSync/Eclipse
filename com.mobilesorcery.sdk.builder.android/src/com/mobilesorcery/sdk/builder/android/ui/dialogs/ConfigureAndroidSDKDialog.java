@@ -16,8 +16,10 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.dialogs.PreferencesUtil;
 
 import com.mobilesorcery.sdk.builder.android.Activator;
+import com.mobilesorcery.sdk.ui.UpdateListener;
+import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 
-public class ConfigureAndroidSDKDialog extends IconAndMessageDialog {
+public class ConfigureAndroidSDKDialog extends IconAndMessageDialog implements IUpdatableControl {
 
 	public static final int FALLBACK_ID = 0xff01;
 
@@ -29,7 +31,9 @@ public class ConfigureAndroidSDKDialog extends IconAndMessageDialog {
 
 	public ConfigureAndroidSDKDialog(Shell parentShell) {
 		super(parentShell);
-		message = "To be able to run apps on an Android Emulator, the Android SDK has to be installed and properly configured.";
+		message = "You have selected an Android device. Some features available for Android such as " +
+				"Native UI and OpenGL are not supported by MoRE. However, you can run your application " +
+				"in the Android Emulator which supports them. Would you like to configure your Android SDK now?";
 	}
 
 	@Override
@@ -41,7 +45,8 @@ public class ConfigureAndroidSDKDialog extends IconAndMessageDialog {
 		if (showFallback) {
 			Label spacer = new Label(contents, SWT.NONE);
 			dontAskAgain = new Button(contents, SWT.CHECK);
-			dontAskAgain.setText("Do not ask this again (applies to \"Run Default Emulator\")");
+			dontAskAgain.setText("Do not ask this again");
+			dontAskAgain.addListener(SWT.Selection, new UpdateListener(this));
 		}
 		return contents;
 	}
@@ -51,7 +56,7 @@ public class ConfigureAndroidSDKDialog extends IconAndMessageDialog {
     	createButton(parent, CONFIGURE_ID, "Configure Android SDK", false);
     	createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);
     	if (showFallback) {
-    		createButton(parent, FALLBACK_ID, "Run Default Emulator", true);
+    		createButton(parent, FALLBACK_ID, "Run in MoRE", true);
     	}
 	}
 
@@ -78,5 +83,12 @@ public class ConfigureAndroidSDKDialog extends IconAndMessageDialog {
 	@Override
 	protected Image getImage() {
 		return getQuestionImage();
+	}
+
+	@Override
+	public void updateUI() {
+		if (showFallback) {
+			getButton(CONFIGURE_ID).setEnabled(!dontAskAgain.getSelection());
+		}
 	}
 }

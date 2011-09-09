@@ -23,8 +23,8 @@ public class ConfigureXcodeDialog extends IconAndMessageDialog {
 
 	public ConfigureXcodeDialog(Shell parentShell) {
 		super(parentShell);
-		message = "To be able to run apps on an iOS Simulator, Xcode has to be installed and properly configured.\n" +
-				"(At least one simulator SDK must be installed.)";
+		message = "You have selected an iOS device. Some features available for iOS such as Native UI and OpenGL are not supported by MoRE. " +
+				"If you install and configure the iOS SDK, MoSync can automatically launch it for you instead of MoRE.";
 	}
 
 	@Override
@@ -36,7 +36,7 @@ public class ConfigureXcodeDialog extends IconAndMessageDialog {
 		if (showFallback) {
 			Label spacer = new Label(contents, SWT.NONE);
 			dontAskAgain = new Button(contents, SWT.CHECK);
-			dontAskAgain.setText("Do not ask this again (applies to \"Run Default Emulator\")");
+			dontAskAgain.setText("Do not show this message again");
 		}
 		return contents;
 	}
@@ -45,7 +45,7 @@ public class ConfigureXcodeDialog extends IconAndMessageDialog {
 	public void createButtonsForButtonBar(Composite parent) {
     	if (showFallback) {
         	createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);
-    		createButton(parent, FALLBACK_ID, "Run Default Emulator", true);
+    		createButton(parent, FALLBACK_ID, "Run in MoRE", true);
     	} else {
         	createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL, false);
     	}
