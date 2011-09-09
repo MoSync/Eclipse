@@ -23,7 +23,8 @@ public class PerspectiveFactory implements IPerspectiveFactory {
 
     private IPageLayout layout;
 
-    public void createInitialLayout(IPageLayout layout) {
+    @Override
+	public void createInitialLayout(IPageLayout layout) {
         this.layout = layout;
         addViews();
         addPerspectiveShortcuts();
@@ -31,8 +32,9 @@ public class PerspectiveFactory implements IPerspectiveFactory {
     }
 
     private void addActionSets() {
-        layout.addActionSet(IDebugUIConstants.LAUNCH_ACTION_SET);
-        layout.addActionSet("com.mobilesorcery.sdk.ui.targetphone");      
+    	layout.addActionSet(IDebugUIConstants.LAUNCH_ACTION_SET);
+    	layout.addActionSet("org.eclipse.debug.ui.profileActionSet");
+        layout.addActionSet("com.mobilesorcery.sdk.ui.targetphone");
     }
 
     private void addViews() {
@@ -53,10 +55,10 @@ public class PerspectiveFactory implements IPerspectiveFactory {
         //topLeft.addView(IPageLayout.ID_RES_NAV);
         topLeft.addView("org.eclipse.ui.navigator.ProjectExplorer");
         topLeft.addPlaceholder("com.mobilesorcery.sdk.testing.view");
-       
-        IFolderLayout topRight = 
+
+        IFolderLayout topRight =
         	layout.createFolder("topRight", IPageLayout.RIGHT, 0.70f, layout.getEditorArea());
-        
+
         topRight.addView("com.mobilesorcery.sdk.profiles.ui.view");
         topRight.addView("com.mobilesorcery.sdk.finalizer.ui.view");
     }
