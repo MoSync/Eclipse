@@ -42,7 +42,7 @@ import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 
 	private final class CommandLineBuildStepEditor extends Dialog implements IUpdatableControl {
-		
+
 		private Factory factory;
 		private Button runOnce;
 		private Button runPerFile;
@@ -55,12 +55,14 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 			// TODO: We may want more types of build steps, maybe a wizard-like thingy?
 			super(shell);
 		}
-		
+
+		@Override
 		public void configureShell(Shell shell) {
 			super.configureShell(shell);
 			shell.setText("Edit Command Line Build Step");
 		}
-		
+
+		@Override
 		public Control createDialogArea(Composite parent) {
 			Composite main = (Composite) super.createDialogArea(parent);
 			main.setLayoutData(new GridData(GridData.FILL));
@@ -84,23 +86,23 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 			UpdateListener listener = new UpdateListener(this);
 			runPerFile.addListener(SWT.Selection, listener);
 			runOnce.addListener(SWT.Selection, listener);
-			
+
 			name.setText(factory.getName() == null ? "" : factory.getName());
 			runPerFile.setSelection(factory.shouldRunPerFile());
 			filePattern.setText(factory.getFilePattern() == null ? "" : factory.getFilePattern());
 			script.setText(factory.getScript() == null ? "" : factory.getScript());
-			
+
 			failOnError = new Button(main, SWT.CHECK);
 			failOnError.setText("&Fail on build error");
 			failOnError.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false, 2, 1));
-			
+
 			ParameterResolver resolver = CommandLineBuildStep.createParameterResolver(
 					MoSyncBuilder.createParameterResolver(getProject(), null));
 			ParameterResolverContentProvider.createProposalProvider(script, resolver);
 
 			return main;
 		}
-		
+
 		public void setBuildStepFactory(CommandLineBuildStep.Factory factory) {
 			this.factory = factory;
 		}
@@ -119,26 +121,27 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 			factory.setFailOnError(failOnError.getSelection());
 			super.okPressed();
 		}
-		
+
 	}
-	
+
 	private final class BuildStepListEditor extends
 			SimpleListEditor<IBuildStepFactory> {
 		private BuildStepListEditor(Composite parent, int style) {
 			super(parent, style);
 			setEditAfterAdd(true);
 			getList().setLabelProvider(new LabelProvider() {
+				@Override
 				public String getText(Object element) {
 					return ((IBuildStepFactory) element).getName();
 				}
 			});
 		}
-		
+
 		@Override
 		protected IBuildStepFactory createObject() {
 			return new CommandLineBuildStep.Factory();
 		}
-		
+
 		@Override
 		protected boolean edit(Object selection, boolean add) {
 			CommandLineBuildStepEditor editor = new CommandLineBuildStepEditor(getParent().getShell());
@@ -146,11 +149,11 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 				editor.setBuildStepFactory((Factory) selection);
 				boolean doAdd = CommandLineBuildStepEditor.OK == editor.open();
 				if (doAdd) {
-					
+
 				}
 				return doAdd;
-			} 
-			
+			}
+
 			return false;
 		}
 
@@ -158,17 +161,17 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 		protected boolean canEdit(Object element) {
 			return isEditable(element);
 		}
-		
+
 		@Override
 		protected boolean canRemove(Object element) {
 			return isEditable(element);
 		}
-		
+
 		@Override
 		protected boolean canMoveUp(Object element) {
 			return isEditable(element);
 		}
-		
+
 		@Override
 		protected boolean canMoveDown(Object element) {
 			return isEditable(element);
@@ -180,7 +183,7 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 	}
 
 	private BuildStepListEditor steps;
-	
+
 	@Override
 	protected Control createContents(Composite parent) {
 		steps = new BuildStepListEditor(parent, SimpleListEditor.REARRANGEABLE);
@@ -188,7 +191,7 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 		steps.setInput(sequence.getBuildStepFactories());
 		return steps;
 	}
-	
+
 	@Override
 	public boolean performOk() {
 		BuildSequence newSequence = new BuildSequence(getProject());
@@ -200,8 +203,15 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 		} catch (IOException e) {
 			Policy.getStatusHandler().show(new Status(IStatus.ERROR, MosyncUIPlugin.PLUGIN_ID, e.getMessage(), e), "Could not save build step info");
 			return false;
-		}		
+		}
 		return super.performOk();
+	}
+
+	@Override
+	public void performDefaults() {
+		BuildSequence defaultSequence = new BuildSequence(getProject());
+		defaultSequence.setToDefault();
+		steps.setInput(defaultSequence.getBuildStepFactories());
 	}
 
 }

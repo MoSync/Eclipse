@@ -23,7 +23,7 @@ import com.mobilesorcery.sdk.core.Util;
 
 public class BuildSequence implements IBuildSequence {
 
-	private MoSyncProject project;
+	private final MoSyncProject project;
 	private ArrayList<IBuildStepFactory> buildStepFactories = new ArrayList<IBuildStepFactory>();
 	private ArrayList<IBuildStep> buildSteps;
 
@@ -31,14 +31,14 @@ public class BuildSequence implements IBuildSequence {
 		this.project = project;
 		load();
 	}
-	
+
 	private void initDefaultFactories() {
 		addStandardFactory(ResourceBuildStep.ID);
 		addStandardFactory(CompileBuildStep.ID);
 		addStandardFactory(LinkBuildStep.ID);
 		addStandardFactory(PackBuildStep.ID);
 	}
-	
+
 	private boolean isDefaultSequence() {
 		// Note: if we add properties to these build steps
 		// we need to change this method
@@ -49,7 +49,7 @@ public class BuildSequence implements IBuildSequence {
 		result &= PackBuildStep.ID.equals(buildStepFactories.get(3).getId());
 		return result;
 	}
-	
+
 	private void addStandardFactory(String id) {
 		IBuildStepFactory factory = createFactory(id);
 		buildStepFactories.add(factory);
@@ -68,7 +68,7 @@ public class BuildSequence implements IBuildSequence {
 		} else if (CommandLineBuildStep.ID.equals(id)) {
 			return new CommandLineBuildStep.Factory();
 		}
-		
+
 		return null;
 	}
 
@@ -123,13 +123,13 @@ public class BuildSequence implements IBuildSequence {
 		} finally {
 			Util.safeClose(output);
 		}
-		
+
 	}
-	
+
 	private IPath getBuildFilePath() {
 		return project.getWrappedProject().getLocation().append(".build");
 	}
-	
+
 	@Override
 	public List<IBuildStep> getBuildSteps(IBuildSession session) {
 		if (this.buildSteps == null) {
@@ -141,7 +141,7 @@ public class BuildSequence implements IBuildSequence {
 				}
 			}
 		}
-		
+
 		return buildSteps;
 	}
 
@@ -153,7 +153,7 @@ public class BuildSequence implements IBuildSequence {
 			if (dependees != null) {
 					for (String dependee : buildStep.getDependees()) {
 					if (!buildStepsBefore.contains(dependee)) {
-						throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, 
+						throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
 								MessageFormat.format("The build step {0} requires this build step with this id to be performed prior to it: {1}", buildStep.getName(), dependee)));
 					}
 				}
@@ -171,16 +171,25 @@ public class BuildSequence implements IBuildSequence {
 	public List<IBuildStepFactory> getBuildStepFactories() {
 		return new ArrayList<IBuildStepFactory>(this.buildStepFactories);
 	}
-	
+
 	/**
 	 * Will apply a list of build step factories to this sequence
 	 * and save it.
 	 * @param buildStepFactories
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public void apply(List<IBuildStepFactory> buildStepFactories) throws IOException {
 		this.buildSteps = null;
 		this.buildStepFactories = new ArrayList<IBuildStepFactory>(buildStepFactories);
 		save();
+	}
+
+
+	/**
+	 * Sets this build sequence to the default sequence.
+	 */
+	public void setToDefault() {
+		buildStepFactories.clear();
+		initDefaultFactories();
 	}
 }
