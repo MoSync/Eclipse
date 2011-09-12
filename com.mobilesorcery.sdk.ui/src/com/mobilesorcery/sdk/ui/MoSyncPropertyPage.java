@@ -18,6 +18,7 @@ import java.text.MessageFormat;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.dialogs.IMessageProvider;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbenchPropertyPage;
 import org.eclipse.ui.dialogs.PropertyPage;
@@ -38,6 +39,8 @@ public abstract class MoSyncPropertyPage extends PropertyPage implements IWorkbe
 
 	private ParameterResolver resolver;
 
+	private final FieldValidationHelper validationHelper = new FieldValidationHelper();
+
     /**
      * Returns the project currently being edited
      * @return
@@ -48,11 +51,11 @@ public abstract class MoSyncPropertyPage extends PropertyPage implements IWorkbe
 
         return project;
     }
-    
+
     protected void setText(Text text, String value) {
         text.setText(value == null ? "" : value);
     }
-    
+
     /**
      * Validates a text field with paths.
      * @param shortcurcuit
@@ -60,35 +63,39 @@ public abstract class MoSyncPropertyPage extends PropertyPage implements IWorkbe
      * @param text
      * @param possibleParents An array of possible parent (absolute) paths. If <code>null</code> no validation of the existance
      * of all paths will be performed, otherwise it will be performed based on the list of possible parents.
-     * @return
+     * @return If {@code provider} is {@code null}, will return a standard message provider.
      */
-    protected IMessageProvider validatePathsField(IMessageProvider shortcurcuit, String fieldName, Text text, IPath[] possibleParentPaths) {
-        if (!DefaultMessageProvider.isEmpty(shortcurcuit)) {
-            return shortcurcuit;
-        }
+    protected IMessageProvider validatePathsField(ValidationMessageProvider provider, String fieldName, Text text, IPath[] possibleParentPaths) {
+        IMessageProvider result = DefaultMessageProvider.EMPTY;
 
-        String str = text.getText().trim();
+    	String str = text.getText().trim();
         IPath[] paths = PropertyUtil.toPaths(str);
         for (int i = 0; i < paths.length; i++) {
             if (paths[i].toOSString().indexOf(' ') != -1) {
-                return new DefaultMessageProvider(
+                result = new DefaultMessageProvider(
                         MessageFormat.format("\"{0}\": space is an invalid delimiter - use comma (,) instead", fieldName),
                         DefaultMessageProvider.WARNING);
             }
-            
-            boolean pathExists = possibleParentPaths == null;
-            for (int j = 0; !pathExists && j < possibleParentPaths.length; j++) {
-                IPath fullPath = possibleParentPaths[j].append(paths[i]);
-                pathExists = pathExists |= (fullPath.toFile().exists());
-            }
-            
-            if (!pathExists) {
-                return new DefaultMessageProvider(MessageFormat.format("\"{0}\" does not exist", paths[i].toOSString()),
-                        DefaultMessageProvider.WARNING);     
+
+            if (DefaultMessageProvider.isEmpty(result)) {
+	            boolean pathExists = possibleParentPaths == null;
+	            for (int j = 0; !pathExists && j < possibleParentPaths.length; j++) {
+	                IPath fullPath = possibleParentPaths[j].append(paths[i]);
+	                pathExists = pathExists |= (fullPath.toFile().exists());
+	            }
+
+	            if (!pathExists) {
+	                result = new DefaultMessageProvider(MessageFormat.format("\"{0}\" does not exist", paths[i].toOSString()),
+	                        DefaultMessageProvider.WARNING);
+	            }
             }
         }
 
-        return DefaultMessageProvider.EMPTY;
+        if (provider != null) {
+        	provider.setMessage(text, result);
+        }
+
+        return result;
     }
 
     protected void setMessage(IMessageProvider message) {
@@ -96,23 +103,27 @@ public abstract class MoSyncPropertyPage extends PropertyPage implements IWorkbe
         int messageType = message == null ? IMessageProvider.NONE : message.getMessageType();
         setMessage(messageStr, messageType);
         setValid(DefaultMessageProvider.isEmpty(message) || message.getMessageType() != IMessageProvider.ERROR);
+        if (message instanceof ValidationMessageProvider) {
+        	validationHelper.setMessage((ValidationMessageProvider) message);
+        }
     }
-    
+
     protected void addContentAssist(Text text) {
     	if (resolver == null) {
             resolver = MoSyncBuilder.createParameterResolver(getProject(), null);
     	}
 		ParameterResolverContentProvider.createProposalProvider(text, resolver);
 	}
-    
-    public void updateUI() {
+
+    @Override
+	public void updateUI() {
         validate();
     }
-    
+
     /**
      * Validation code - clients may override.
      */
     protected void validate() {
-        
+
     }
 }

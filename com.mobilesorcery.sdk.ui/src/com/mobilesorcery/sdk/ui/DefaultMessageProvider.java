@@ -25,19 +25,21 @@ import com.mobilesorcery.sdk.core.Util;
 public class DefaultMessageProvider implements IMessageProvider {
 
 	public static final IMessageProvider EMPTY = new DefaultMessageProvider(null, NONE);
-	
-	private String message;
-	private int type;
+
+	private final String message;
+	private final int type;
 
 	public DefaultMessageProvider(String message, int type) {
 		this.message = message;
 		this.type = type;
 	}
-	
+
+	@Override
 	public String getMessage() {
 		return message;
 	}
 
+	@Override
 	public int getMessageType() {
 		return type;
 	}
@@ -46,8 +48,13 @@ public class DefaultMessageProvider implements IMessageProvider {
 		if (provider == null) {
 			return true;
 		}
-		
+
 		return Util.isEmpty(provider.getMessage()) && provider.getMessageType() == IMessageProvider.NONE;
+	}
+
+	@Override
+	public String toString() {
+		return type + ": " + message;
 	}
 
 }
