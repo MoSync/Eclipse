@@ -503,7 +503,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	private boolean requiresUpdate(int store) {
 		IPath projectMetaDataPath = getMoSyncProjectMetaDataLocation(store);
 		// Special case: the local properties; if it exists, we always write it anew regardless.
-		return store != LOCAL_PROPERTY || projectMetaDataPath.toFile().exists() || !getProperties(store).isEmpty();
+		return store != WORKSPACE_LOCAL_PROPERTY || projectMetaDataPath.toFile().exists() || !getProperties(store).isEmpty();
 	}
 
 	private void saveActiveBuildConfiguration(XMLMemento root) {
