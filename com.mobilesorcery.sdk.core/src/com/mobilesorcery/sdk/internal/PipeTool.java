@@ -46,28 +46,28 @@ public class PipeTool {
     public static final String BUILD_LIB_MODE = "-L";
     public static final String BUILD_GEN_CPP_MODE = "-B -cpp";
     public static final String BUILD_GEN_JAVA_MODE = "-B -java";
-    
+
     /**
      * The default heap size; if no <code>-heapsize</code> argument is provided
      * to pipe tool, then this is the size that will be used.
      */
-    public static final int DEFAULT_HEAP_SIZE_KB = 64;
-    
+    public static final int DEFAULT_HEAP_SIZE_KB = 512;
+
     /**
-     * The default heap size; if no <code>-stacksize</code> argument is provided
+     * The default stack size; if no <code>-stacksize</code> argument is provided
      * to pipe tool, then this is the size that will be used.
      */
-    public static final int DEFAULT_STACK_SIZE_KB = 32;
-    
+    public static final int DEFAULT_STACK_SIZE_KB = 128;
+
     /**
-     * The default heap size; if no <code>-datasize</code> argument is provided
+     * The default data size; if no <code>-datasize</code> argument is provided
      * to pipe tool, then this is the size that will be used.
      */
-    public static final int DEFAULT_DATA_SIZE_KB = 128;
-    
+    public static final int DEFAULT_DATA_SIZE_KB = 1024;
+
 	private static final String RESOURCE_DEPENDENCY_FILE_NAME = "resources.deps";
 	private static final int MAX_PIPE_TOOL_ARG_LENGTH = 162;
-	
+
     /**
      *  A return code from pipe tool that instructs the builder to skip
      *  any remaining build steps.
@@ -130,7 +130,7 @@ public class PipeTool {
     public void setArguments(IPropertyOwner argumentMap) {
     	this.argumentMap = argumentMap;
     }
-    
+
     /**
      * <p>Runs pipetool and returns the error code
      * if it is either <code>0</code> or {@link #SKIP_RETURN_CODE}
@@ -149,28 +149,28 @@ public class PipeTool {
         if (extra != null && Util.join(extra, "").trim().length() > 0) {
             args.addAll(Arrays.asList(Util.replace(extra, resolver)));
         }
-        
+
         if (appCode != null) {
         	args.add("-appcode=" + getAppCode());
         }
-        
+
         if (collectStabs) {
         	args.add("-stabs=stabs.tab");
         }
-        
+
         boolean programMode = BUILD_C_MODE == mode ||
                               BUILD_GEN_CPP_MODE == mode ||
                               BUILD_GEN_JAVA_MODE == mode ||
                               BUILD_LIB_MODE == mode;
 
-        
+
         if (programMode) {
             if (argumentMap != null) {
             	addMemoryArg(args, argumentMap, MoSyncBuilder.MEMORY_HEAPSIZE_KB, DEFAULT_HEAP_SIZE_KB, "-heapsize");
             	addMemoryArg(args, argumentMap, MoSyncBuilder.MEMORY_STACKSIZE_KB, DEFAULT_STACK_SIZE_KB, "-stacksize");
             	addMemoryArg(args, argumentMap, MoSyncBuilder.MEMORY_DATASIZE_KB, DEFAULT_DATA_SIZE_KB, "-datasize");
             }
-            
+
             if (sld) {
                 args.add("-sld=sld.tab");
             }
@@ -195,18 +195,18 @@ public class PipeTool {
         if (BUILD_RESOURCES_MODE == mode) {
         	IPath depsFile = getResourcesDependencyFile(project);
         	depsFile.toFile().getParentFile().mkdirs();
-        	// Pipetool only accepts -depend files in exeuction dir        
+        	// Pipetool only accepts -depend files in exeuction dir
         	args.add("-depend=" + depsFile.toOSString());
         }
-        
+
         args.add(outputFile.toOSString());
 
         args.addAll(Arrays.asList(inputFiles));
 
-        if ( BUILD_C_MODE == mode || 
-             BUILD_LIB_MODE == mode || 
+        if ( BUILD_C_MODE == mode ||
+             BUILD_LIB_MODE == mode ||
              BUILD_GEN_CPP_MODE == mode ||
-             BUILD_GEN_JAVA_MODE == mode ) 
+             BUILD_GEN_JAVA_MODE == mode )
         {
             for (int i = 0; libraries != null && i < libraries.length; i++) {
                 args.add(Util.replace(libraries[i].toOSString(), resolver));
@@ -217,31 +217,31 @@ public class PipeTool {
 
         try {
             assertArgLength(args);
-            
+
             boolean ensureOutputFileParentExists = outputFile.toFile().getParentFile().mkdirs();
             if (ensureOutputFileParentExists && CoreMoSyncPlugin.getDefault().isDebugging()) {
             	CoreMoSyncPlugin.trace("Created directory {0}", outputFile.toFile().getParentFile());
             }
-            
+
             getExecDir().mkdirs();
-            
+
             // Note where it's executed - this is where the sld will end up.
-            Process process = DebugPlugin.exec((String[]) args.toArray(new String[0]), getExecDir());
+            Process process = DebugPlugin.exec(args.toArray(new String[0]), getExecDir());
 
             String cmdLine = Util.join(Util.ensureQuoted(args.toArray()), " ");
-            
+
             if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-            	CoreMoSyncPlugin.trace(cmdLine);            	
+            	CoreMoSyncPlugin.trace(cmdLine);
             }
-            
+
             console.attachProcess(process, linehandler);
             int result = process.waitFor();
-            
+
             if (result != 0 && result != SKIP_RETURN_CODE) {
                 throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
-                        MessageFormat.format("Pipe tool failed. (See console for more information).\n Command line: {0}", cmdLine)));                
+                        MessageFormat.format("Pipe tool failed. (See console for more information).\n Command line: {0}", cmdLine)));
             }
-            
+
             return result;
         } catch (CoreException e) {
             throw e;
@@ -268,9 +268,9 @@ public class PipeTool {
     public String getAppCode() {
 		return appCode;
 	}
-    
+
     /**
-     * Generates a random 4-character app code 
+     * Generates a random 4-character app code
      * @return
      */
     public static String generateAppCode() {
@@ -280,10 +280,10 @@ public class PipeTool {
         for (int i = 0; i < result.length; i++) {
         	result[i] = CHARS[rnd.nextInt(CHARS.length)];
         }
-        
+
         return new String(result);
     }
-    
+
     /**
      * Sets the app code of this pipe tool
      * @param appCode
@@ -331,7 +331,7 @@ public class PipeTool {
     	//return getExecDir(project);
     	return outputFile.toFile().getParentFile();
     }
-    
+
     public void setNoVerify(boolean noVerify) {
         this.noVerify = noVerify;
     }
