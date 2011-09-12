@@ -14,7 +14,9 @@
    </configIni>
 
    <launcherArgs>
-      <vmArgsMac>-XstartOnFirstThread -Dorg.eclipse.swt.internal.carbon.smallFonts -Xdock:icon=../Resources/mosync.icns -Dosgi.instance.area.default=@user.home/workspace</vmArgsMac>
+      <vmArgsLin>-Xmx1280m</vmArgsLin>
+      <vmArgsMac>-XstartOnFirstThread -Dorg.eclipse.swt.internal.carbon.smallFonts -Xdock:icon=../Resources/mosync.icns -Dosgi.instance.area.default=@user.home/workspace -Xmx1280m</vmArgsMac>
+      <vmArgsWin>-Xmx1280m</vmArgsWin>
    </launcherArgs>
 
    <windowImages i16="/com.mobilesorcery.sdk.product/icons/mosync_16x16.png" i32="/com.mobilesorcery.sdk.product/icons/mosync_32x32.png" i48="/com.mobilesorcery.sdk.product/icons/mosync_48x48.png" i64="/com.mobilesorcery.sdk.product/icons/mosync_64x64.png" i128="/com.mobilesorcery.sdk.product/icons/mosync_128x128.png"/>
@@ -165,7 +167,7 @@ Creative Commons 3.0 Attribution License covers the Android Icon, a &quot;modifi
       <plugin id="com.mobilesorcery.sdk.core.templates"/>
       <plugin id="com.mobilesorcery.sdk.core.templates.tests" fragment="true"/>
       <plugin id="com.mobilesorcery.sdk.core.tests" fragment="true"/>
-      <plugin id="com.mobilesorcery.sdk.docs"/>
+      <plugin id="com.mobilesorcery.sdk.docs" fragment=""/>
       <plugin id="com.mobilesorcery.sdk.finalizer.core"/>
       <plugin id="com.mobilesorcery.sdk.finalizer.ui"/>
       <plugin id="com.mobilesorcery.sdk.fontsupport"/>
@@ -316,7 +318,7 @@ Creative Commons 3.0 Attribution License covers the Android Icon, a &quot;modifi
       <feature id="com.mobilesorcery.sdk.cdt.feature" version="1.0.0.qualifier"/>
       <feature id="org.eclipse.platform"/>
       <feature id="org.eclipse.help"/>
-      <feature id="org.eclipse.equinox.p2.user.ui" version="2.0.1.r361_v20100903-897HFZFFZRuSD2LMtVxyz0Vr"/>
+      <feature id="org.eclipse.equinox.p2.user.ui"/>
    </features>
 
 
