@@ -73,9 +73,9 @@ import com.mobilesorcery.sdk.profiles.Profile;
 /**
  * The main builder. This builder extends ACBuilder for its implementation of
  * {@link IMarkerGenerator}.
- * 
+ *
  * @author Mattias Bybro
- * 
+ *
  */
 public class MoSyncBuilder extends ACBuilder {
 
@@ -137,15 +137,15 @@ public class MoSyncBuilder extends ACBuilder {
     public static final String MEMORY_DATASIZE_KB = MEMORY_PREFS_PREFIX + "data";
 
     public static final String USE_DEBUG_RUNTIME_LIBS = BUILD_PREFS_PREFIX + "runtime.debug";
-    
+
     public static final String PROJECT_VERSION = BUILD_PREFS_PREFIX + "app.version";
-    
+
     public static final String APP_NAME = BUILD_PREFS_PREFIX + "app.name";
 
     private static final String APP_CODE = "app.code";
-   
+
     private static final String CONSOLE_PREPARED = "console.prepared";
-    
+
     public static final int GCC_WALL = 1 << 1;
 
     public static final int GCC_WEXTRA = 1 << 2;
@@ -154,7 +154,7 @@ public class MoSyncBuilder extends ACBuilder {
 
     public final class GCCLineHandler extends LineAdapter {
 
-        private ErrorParserManager epm;
+        private final ErrorParserManager epm;
 
         public GCCLineHandler(ErrorParserManager epm) {
             this.epm = epm;
@@ -162,7 +162,8 @@ public class MoSyncBuilder extends ACBuilder {
 
         private String aggregateLine = "";
 
-        public void newLine(String line) {
+        @Override
+		public void newLine(String line) {
             // We need to 'aggregate' lines;
             // whenever a line is indented,
             // it is actually an extension
@@ -196,7 +197,8 @@ public class MoSyncBuilder extends ACBuilder {
             }
         }
 
-        public void stop(IOException e) {
+        @Override
+		public void stop(IOException e) {
             newLine("");
             /*
              * if (aggregateLine.length() > 0) { reportLine(aggregateLine); }
@@ -215,7 +217,7 @@ public class MoSyncBuilder extends ACBuilder {
     /**
      * Returns the output path for a project + build variant. Please note that
      * there is another method for returning final output paths
-     * 
+     *
      * @param project
      * @param variant
      * @return
@@ -237,7 +239,7 @@ public class MoSyncBuilder extends ACBuilder {
         }
         return toAbsolute(outputRoot, outputPath);
     }
-    
+
     /**
      * <p>Returns a fragment/prefix/suffix that may be used in file names, based
      * on the specifiers of a given variant.</p>
@@ -260,7 +262,7 @@ public class MoSyncBuilder extends ACBuilder {
     	}
     	return result.toString();
     }
-    
+
     /**
      * Determines whether a resource is part of the output directory tree
      * @param project
@@ -274,7 +276,7 @@ public class MoSyncBuilder extends ACBuilder {
 
     /**
      * Converts a project-relative path to an absolute path.
-     * 
+     *
      * @param path
      * @return An absolute path
      */
@@ -287,13 +289,13 @@ public class MoSyncBuilder extends ACBuilder {
         if (!variant.isFinalizerBuild()) {
             throw new IllegalStateException("Finalizer variant required allowed here");
         }
-        
+
         IProfile targetProfile = variant.getProfile();
         String outputPath = getPropertyOwner(MoSyncProject.create(project), variant.getConfigurationId()).getProperty(APP_OUTPUT_PATH);
         if (outputPath == null) {
             throw new IllegalArgumentException("No output path specified");
         }
-        
+
         String variantPath = targetProfile.getName();
         String specifierSuffix = getSpecifierPathFragment(variant);
         if (!Util.isEmpty(specifierSuffix)) {
@@ -327,7 +329,8 @@ public class MoSyncBuilder extends ACBuilder {
         }
     }
 
-    protected IProject[] build(int kind, Map args, IProgressMonitor monitor) throws CoreException {
+    @Override
+	protected IProject[] build(int kind, Map args, IProgressMonitor monitor) throws CoreException {
             IProject project = getProject();
 
         if (MoSyncProject.NULL_DEPENDENCY_STRATEGY == PropertyUtil.getInteger(MoSyncProject.create(project), MoSyncProject.DEPENDENCY_STRATEGY,
@@ -361,7 +364,8 @@ public class MoSyncBuilder extends ACBuilder {
         return project.findMaxProblemSeverity(ICModelMarker.C_MODEL_PROBLEM_MARKER, true, depth) == IMarker.SEVERITY_ERROR;
     }
 
-    public void clean(IProgressMonitor monitor) {
+    @Override
+	public void clean(IProgressMonitor monitor) {
         forgetLastBuiltState();
         IProject project = getProject();
         MoSyncProject mosyncProject = MoSyncProject.create(project);
@@ -382,7 +386,7 @@ public class MoSyncBuilder extends ACBuilder {
         Util.deleteFiles(getProgramCombOutputPath(project, variant).toFile(), null, 1, monitor);
         Util.deleteFiles(getResourceOutputPath(project, variant).toFile(), null, 1, monitor);
         Util.deleteFiles(outputFile, Util.getExtensionFilter("s"), 512, monitor);
-        
+
         IBuildState buildState = MoSyncProject.create(project).getBuildState(variant);
         buildState.clear();
         buildState.save();
@@ -391,7 +395,7 @@ public class MoSyncBuilder extends ACBuilder {
 
     /**
      * Perfoms a full build of a project
-     * 
+     *
      * @param project
      * @param variant
      * @param doClean
@@ -405,7 +409,7 @@ public class MoSyncBuilder extends ACBuilder {
      * @throws CoreException
      * @throws {@link OperationCanceledException} If the operation was canceled
      */
-    public IBuildResult build(IProject project, IBuildSession session, IBuildVariant variant, 
+    public IBuildResult build(IProject project, IBuildSession session, IBuildVariant variant,
             IFilter<IResource> resourceFilter, IProgressMonitor monitor) throws CoreException,
             OperationCanceledException {
         try {
@@ -429,26 +433,26 @@ public class MoSyncBuilder extends ACBuilder {
         }
     }
 
-    IBuildResult build(IProject project, IResourceDelta[] ignoreMe, IBuildSession session, IBuildVariant variant, 
+    IBuildResult build(IProject project, IResourceDelta[] ignoreMe, IBuildSession session, IBuildVariant variant,
             IFilter<IResource> resourceFilter, IProgressMonitor monitor) {
         return null;
     }
-    
+
     /**
      * Returns the pipe tool mode that should be used for the given kind
-     * of input. 
-     * 
+     * of input.
+     *
      * @param profile The profile we want to use pipe-tool for.
      * @param isLib Indicates whether we are building a library or not.
      * @return The appropriate mode for the given profile.
      */
     public static String getPipeToolMode(IProfile profile, boolean isLib)
     {
-        if ( isLib ) 
+        if ( isLib )
         {
         	return PipeTool.BUILD_LIB_MODE;
         }
-        
+
         Map<String, Object> properties = profile.getProperties( );
         if ( properties.containsKey( "MA_PROF_OUTPUT_CPP" ) )
         {
@@ -463,15 +467,15 @@ public class MoSyncBuilder extends ACBuilder {
         	return PipeTool.BUILD_C_MODE;
         }
     }
-    
+
     /**
      * Returns true if any of the libraries that the given project depends
      * on have changed.
-     * 
-     * @param mosyncProject Project to check for changes. 
+     *
+     * @param mosyncProject Project to check for changes.
      * @param buildProperties Build properties of project.
      * @param programComb Latest built program file.
-     * @return true if any of the libraries have changed, false otherwise. 
+     * @return true if any of the libraries have changed, false otherwise.
      */
     private boolean haveLibrariesChanged(MoSyncProject mosyncProject, IPropertyOwner buildProperties, IPath programComb)
     {
@@ -479,38 +483,38 @@ public class MoSyncBuilder extends ACBuilder {
         long programCombTouched = programComb.toFile().exists() ? programComb.toFile().lastModified() : Long.MAX_VALUE;
         return librariesTouched > programCombTouched;
     }
-    
-    IBuildResult incrementalBuild(IProject project, IBuildSession session, IBuildVariant variant, 
-            IFilter<IResource> resourceFilter, IProgressMonitor monitor) throws CoreException 
+
+    IBuildResult incrementalBuild(IProject project, IBuildSession session, IBuildVariant variant,
+            IFilter<IResource> resourceFilter, IProgressMonitor monitor) throws CoreException
     {
         if (CoreMoSyncPlugin.getDefault().isDebugging()) {
             CoreMoSyncPlugin.trace("Building project {0}", project);
         }
-        
+
         BuildResult buildResult = new BuildResult(project);
         buildResult.setVariant(variant);
         Calendar timestamp = Calendar.getInstance();
         buildResult.setTimestamp(timestamp.getTimeInMillis());
-        
+
         MoSyncProject mosyncProject = MoSyncProject.create(project);
         IBuildState buildState = mosyncProject.getBuildState(variant);
-        
+
         ParameterResolver resolver = createParameterResolver(mosyncProject, variant);
-        
+
         ensureOutputIsMarkedDerived(project, variant);
 
         ErrorParserManager epm = createErrorParserManager(project);
-        
+
         try {
         	/* Set up build monitor */
             monitor.beginTask(MessageFormat.format("Building {0}", project), 4);
             monitor.setTaskName("Clearing old problem markers");
-            
+
             if (session.doLink() && !session.doBuildResources()) {
                 throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
                         "If resource building is suppressed, then linking should also be."));
             }
-             
+
             // And we only remove things that are on the project.
             IFileTreeDiff diff = createDiff(buildState, session);
             boolean hadSevereBuildErrors = hasErrorMarkers(project, IResource.DEPTH_ZERO);
@@ -522,7 +526,7 @@ public class MoSyncBuilder extends ACBuilder {
             if (diff == null || !buildState.isValid()) {
                 buildState.getDependencyManager().clear();
             }
-            
+
             buildResult.setDependencyDelta(buildState.getDependencyManager().createDelta());
 
             IProcessConsole console = createConsole(session);
@@ -533,7 +537,7 @@ public class MoSyncBuilder extends ACBuilder {
             console.addMessage(createBuildMessage("Building", mosyncProject, variant));
 
             GCCLineHandler linehandler = new GCCLineHandler(epm);
-            
+
             /* Set up pipe-tool */
             PipeTool pipeTool = new PipeTool();
             pipeTool.setAppCode(getCurrentAppCode(session));
@@ -541,28 +545,28 @@ public class MoSyncBuilder extends ACBuilder {
             pipeTool.setConsole(console);
             pipeTool.setLineHandler(linehandler);
             pipeTool.setArguments(buildProperties);
-            
+
             IDependencyProvider<IResource> dependencyProvider = createDependencyProvider(mosyncProject, variant);
-            
+
             boolean requiresPrivilegedAccess = requiresPrivilegedAccess(mosyncProject);
             if (requiresPrivilegedAccess) {
             	PrivilegedAccess.getInstance().assertAccess(mosyncProject);
             }
-            
+
             BuildSequence sequence = new BuildSequence(mosyncProject);
             List<IBuildStep> buildSteps = sequence.getBuildSteps(session);
 
             monitor.beginTask("Build", buildSteps.size());
 
             sequence.assertValid(session);
-            
+
             int continueFlag = IBuildStep.CONTINUE;
-            	
+
             for (IBuildStep buildStep : buildSteps) {
             	if (monitor.isCanceled()) {
             		return buildResult;
             	}
-            	
+
             	if (continueFlag != IBuildStep.SKIP && buildStep.shouldBuild(mosyncProject, session, buildResult)) {
             		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
             			CoreMoSyncPlugin.trace("Performing build step {0} for project {1}", buildStep.getName(), buildResult.getProject().getName());
@@ -580,28 +584,28 @@ public class MoSyncBuilder extends ACBuilder {
 	            		console.addMessage(MessageFormat.format("Was told by build step {0} to skip the remaining build steps. Build successful.", buildStep.getName()));
 	            	}
             	}
-            	
+
             	monitor.worked(1);
             }
-            
+
             // Update the current set of dependencies.
             buildState.getDependencyManager().applyDelta(buildResult.getDependencyDelta());
-            
+
             console.addMessage("Build finished at " + dateFormater.format(Calendar.getInstance().getTime()));
 
             project.refreshLocal(IProject.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
 
             buildResult.setSuccess(true);
-            
+
             if (CoreMoSyncPlugin.getDefault().isDebugging()) {
             	CoreMoSyncPlugin.trace("Changed dependencies:\n{0}", buildResult.getDependencyDelta());
             	CoreMoSyncPlugin.trace("Current set of dependencies:\n{0}", buildState.getDependencyManager());
             }
-            
+
             return buildResult;
-        } catch (OperationCanceledException e) { 
+        } catch (OperationCanceledException e) {
             // That's ok, why? MB 11-01-10: Because :)
-            return buildResult; 
+            return buildResult;
         } catch (Exception e) {
             e.printStackTrace();
             throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
@@ -614,7 +618,7 @@ public class MoSyncBuilder extends ACBuilder {
             } else if (buildResult.success()) {
                 clearCMarkers(project);
             }
-            
+
             saveBuildState(buildState, mosyncProject, buildResult);
         }
     }
@@ -623,7 +627,7 @@ public class MoSyncBuilder extends ACBuilder {
 		BuildSequence seq = new BuildSequence(mosyncProject);
 		return requiresPrivilegedAccess(seq);
 	}
-	
+
 	public static boolean requiresPrivilegedAccess(BuildSequence seq) {
 		List<IBuildStepFactory> factories = seq.getBuildStepFactories();
 		for (IBuildStepFactory factory : factories) {
@@ -631,7 +635,7 @@ public class MoSyncBuilder extends ACBuilder {
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
 
@@ -640,8 +644,8 @@ public class MoSyncBuilder extends ACBuilder {
 		CompoundDependencyProvider<IResource> dependencyProvider = new CompoundDependencyProvider<IResource>(new GCCDependencyProvider(mosyncProject, variant),
         																	   new ProjectResourceDependencyProvider(mosyncProject.getWrappedProject(), variant),
         																	   new ResourceFileDependencyProvider());
-        	
-    	return dependencyProvider; 
+
+    	return dependencyProvider;
 	}
 
 	/**
@@ -674,75 +678,75 @@ public class MoSyncBuilder extends ACBuilder {
             appCode = PipeTool.generateAppCode();
             session.getProperties().put(APP_CODE, appCode);
         }
-        
+
         return appCode;
     }
 
     private String createBuildMessage(String buildType, MoSyncProject project, IBuildVariant variant) {
         StringBuffer result = new StringBuffer();
-        
+
         if (variant.isFinalizerBuild()) {
             result.append("*** FINALIZER BUILD ***\n");
         }
-        
+
         result.append(MessageFormat.format("{0}: Project {1} for profile {2}", buildType, project.getName(), variant.getProfile()));
         if (project.areBuildConfigurationsSupported() && variant.getConfigurationId() != null) {
             result.append(MessageFormat.format("\nConfiguration: {0}", variant.getConfigurationId()));
         }
-        
+
         return result.toString();
     }
 
     // returns null if a full build should be performed.
     private IFileTreeDiff createDiff(IBuildState buildState, IBuildSession session) throws CoreException {
         Set<String> changedProperties = buildState.getChangedBuildProperties();
-        
+
         if (session.doClean() || buildState.fullRebuildNeeded()) {
             // Always full build after clean.
             return null;
         }
-        
+
         // Also, if the variant we want to build does not match what was previously built here,
         // then we'll do a full rebuild.
         IBuildResult previousResult = buildState.getBuildResult();
         if (previousResult == null || !buildState.getBuildVariant().equals(previousResult.getVariant())) {
             return null;
         }
-        
+
         if (changedProperties.isEmpty()) {
-            return buildState.createDiff();    
+            return buildState.createDiff();
         } else {
             if (CoreMoSyncPlugin.getDefault().isDebugging()) {
                 CoreMoSyncPlugin.trace("Changed build properties, full rebuild required. Changed properties: {0}", changedProperties);
             }
             return null;
         }
-        
+
     }
 
     private void ensureOutputIsMarkedDerived(IProject project, IBuildVariant variant) throws CoreException {
         ensureFolderIsMarkedDerived(project.getFolder(FINAL_OUTPUT));
         ensureFolderIsMarkedDerived(project.getFolder(OUTPUT));
-        
+
         IPath outputPath = getOutputPath(project, variant);
         IContainer[] outputFolder = project.getWorkspace().getRoot().findContainersForLocation(outputPath);
         for (int i = 0; i < outputFolder.length; i++) {
             ensureFolderIsMarkedDerived((IFolder) outputFolder[i]);
         }
     }
-    
+
     private void ensureFolderExists(IFolder folder) throws CoreException {
         if (!folder.exists()) {
             if (!folder.getParent().exists() && folder.getParent().getType() == IResource.FOLDER) {
                 ensureFolderExists((IFolder) folder.getParent());
             }
             folder.create(true, true, new NullProgressMonitor());
-        }        
+        }
     }
-    
+
     private void ensureFolderIsMarkedDerived(IFolder folder) throws CoreException {
         ensureFolderExists(folder);
-        
+
         if (!folder.isDerived()) {
             folder.setDerived(true);
         }
@@ -777,7 +781,7 @@ public class MoSyncBuilder extends ACBuilder {
     /**
      * 'Prepares' a console for printing -- first checks whether the CDT
      * preference is set to clear the console, and if so, clears it.
-     * 
+     *
      * @param console
      */
     private void prepareConsole(IBuildSession session, IProcessConsole console) {
@@ -791,10 +795,10 @@ public class MoSyncBuilder extends ACBuilder {
             }
         }
     }
-    
+
     /**
      * Creates a console that is ready for printing.
-     * 
+     *
      * @param session The current build session.
      * @return A console that is ready for printing.
      */
@@ -808,7 +812,7 @@ public class MoSyncBuilder extends ACBuilder {
             console.addMessage(MessageFormat.format("MoSync Tool not properly initialized: {0}", error));
             console.addMessage("- go to Window > Preferences > MoSync Tool to set the MoSync home directory");
         }
-        
+
         return console;
     }
 
@@ -847,7 +851,7 @@ public class MoSyncBuilder extends ACBuilder {
 
     /**
      * Clears all C markers of the given resource
-     * 
+     *
      * @param resource
      * @param severityError
      * @return true if at least one marker was cleared, false otherwise
@@ -895,12 +899,12 @@ public class MoSyncBuilder extends ACBuilder {
 
     public static IPath[] getBaseIncludePaths(MoSyncProject project, IBuildVariant variant) throws ParameterResolverException {
         IPropertyOwner buildProperties = getPropertyOwner(project, variant.getConfigurationId());
-        
+
         ArrayList<IPath> result = new ArrayList<IPath>();
         if (!PropertyUtil.getBoolean(buildProperties, IGNORE_DEFAULT_INCLUDE_PATHS)) {
             result.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
         }
-        
+
         result.addAll(Arrays.asList(MoSyncBuilder.getProfileIncludes(variant.getProfile())));
 
         IPath[] additionalIncludePaths = PropertyUtil.getPaths(buildProperties, ADDITIONAL_INCLUDE_PATHS);
@@ -991,7 +995,8 @@ public class MoSyncBuilder extends ACBuilder {
 	        Display display = PlatformUI.getWorkbench().getDisplay();
 	        if (display != null) {
 	            display.syncExec(new Runnable() {
-	                public void run() {
+	                @Override
+					public void run() {
 	                    if (!IDE.saveAllEditors(resources.toArray(new IResource[0]), false)) {
 	                        result[0] = false;
 	                    }
@@ -1006,7 +1011,7 @@ public class MoSyncBuilder extends ACBuilder {
     /**
      * Returns a build variant that represents the currently active project
      * settings.
-     * 
+     *
      * @param isFinalizerBuild
      * @return
      */
@@ -1028,7 +1033,7 @@ public class MoSyncBuilder extends ACBuilder {
     	IBuildConfiguration cfg = project.getActiveBuildConfiguration();
         return getFinalizerVariant(project, profile, cfg);
     }
-    
+
 
     /**
      * Creates a {@link IBuildVariant} for finalizing, based on a specified {@link IProfile}
@@ -1041,7 +1046,7 @@ public class MoSyncBuilder extends ACBuilder {
     public static IBuildVariant getFinalizerVariant(MoSyncProject project, IProfile profile, String cfgId) {
     	return new BuildVariant(profile, cfgId, true);
     }
-   
+
     /**
      * Creates a {@link IBuildVariant} for finalizing, based on a specified {@link IProfile}
      * and a specified {@link IBuildConfiguration}.
@@ -1054,11 +1059,11 @@ public class MoSyncBuilder extends ACBuilder {
         String cfgId = project.areBuildConfigurationsSupported() && cfg != null ? cfg.getId() : null;
     	return new BuildVariant(profile, cfgId, true);
     }
-    
+
     public static IBuildSession createFinalizerBuildSession(List<IBuildVariant> variants) {
         return new BuildSession(variants, BuildSession.DO_LINK | BuildSession.DO_PACK | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_CLEAN);
     }
-    
+
     public static IBuildSession createCompileOnlySession(IBuildVariant variant) {
         return new BuildSession(Arrays.asList(variant), 0);
     }
@@ -1075,7 +1080,7 @@ public class MoSyncBuilder extends ACBuilder {
     public static IBuildSession createCleanBuildSession(IBuildVariant variant) {
         return new BuildSession(Arrays.asList(variant), BuildSession.ALL);
     }
-    
+
     /**
      * Returns a build session for incremental builds (ie the kind of build session
      * created upon calls to the <code>build</code> method).
@@ -1084,8 +1089,10 @@ public class MoSyncBuilder extends ACBuilder {
      */
     public static IBuildSession createIncrementalBuildSession(IProject project, int kind) {
         boolean doClean = kind == FULL_BUILD;
+        // MOSYNCTWOSIX-328: until we've decided upon how the device db should work...
+        boolean doPack = kind == FULL_BUILD;
         IBuildVariant variant = getActiveVariant(MoSyncProject.create(project), false);
-        return new BuildSession(Arrays.asList(variant), BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (doClean ? BuildSession.DO_CLEAN : 0));
+        return new BuildSession(Arrays.asList(variant), BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (doClean ? BuildSession.DO_CLEAN : 0) | (doPack ? BuildSession.DO_PACK : 0));
     }
 
     public static IPath getMetaDataPath(MoSyncProject project, IBuildVariant variant) {
