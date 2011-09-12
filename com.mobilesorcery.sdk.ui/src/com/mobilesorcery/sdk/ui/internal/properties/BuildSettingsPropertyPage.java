@@ -59,6 +59,7 @@ import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
 import com.mobilesorcery.sdk.ui.ParameterResolverContentProvider;
 import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.ui.UpdateListener;
+import com.mobilesorcery.sdk.ui.ValidationMessageProvider;
 
 public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements PropertyChangeListener {
 
@@ -66,7 +67,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         private boolean active = true;
 
-        public void selectionChanged(SelectionChangedEvent event) {
+        @Override
+		public void selectionChanged(SelectionChangedEvent event) {
             if (!active) {
                 return;
             }
@@ -108,7 +110,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private ComboViewer buildConfigurations;
     private String currentConfigId;
     private BuildConfigurationChangedListener buildConfigurationListener;
-    private HashMap<Object, IWorkingCopy> workingCopies = new HashMap<Object, IWorkingCopy>();
+    private final HashMap<Object, IWorkingCopy> workingCopies = new HashMap<Object, IWorkingCopy>();
     private Composite main;
     private Composite placeHolder;
 
@@ -119,8 +121,9 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private Text vendor;
     private Text version;
     private Text appName;
-	
-    protected Control createContents(Composite parent) {
+
+    @Override
+	protected Control createContents(Composite parent) {
         placeHolder = new Composite(parent, SWT.NONE);
         FillLayout placeHolderLayout = new FillLayout();
         placeHolderLayout.marginHeight = 0;
@@ -254,7 +257,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         extraLink = new Text(compilerFlags, SWT.BORDER | SWT.SINGLE);
         extraLink.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         addContentAssist(extraLink);
-        
+
         Label gccWarningsLabel = new Label(compilerFlags, SWT.NONE);
         gccWarningsLabel.setText("GCC &Warnings:");
         gccWarningsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 1, 3));
@@ -346,7 +349,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         additionalIncludePathsText = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
         additionalIncludePathsText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         addContentAssist(additionalIncludePathsText);
-        
+
         ignoreDefaultIncludePaths = new Button(buildPaths, SWT.CHECK);
         ignoreDefaultIncludePaths.setText("Ignore &Default");
 
@@ -357,7 +360,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         additionalLibraryPathsText = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
         additionalLibraryPathsText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         addContentAssist(additionalLibraryPathsText);
-        
+
         ignoreDefaultLibraryPaths = new Button(buildPaths, SWT.CHECK);
         ignoreDefaultLibraryPaths.setText("Ignore De&fault");
 
@@ -366,9 +369,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         librariesLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 
         additionalLibrariesText = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
-        additionalLibrariesText.setText("Additional L&ibraries");
         additionalLibrariesText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        
+
         ignoreDefaultLibraries = new Button(buildPaths, SWT.CHECK);
         ignoreDefaultLibraries.setText("I&gnore Default");
 
@@ -406,10 +408,11 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     }
 
     private void initUI() {
+    	listener.setActive(false);
     	IWorkingCopy configProperties = getWorkingCopyOfBuildConfiguration();
-    	
+
     	incrementalBuildStrategy.select(PropertyUtil.getInteger(getProject(), MoSyncProject.DEPENDENCY_STRATEGY, MoSyncProject.GCC_DEPENDENCY_STRATEGY));
-    	
+
         ignoreDefaultIncludePaths.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS));
         setText(additionalIncludePathsText, configProperties.getProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS));
 
@@ -418,7 +421,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         ignoreDefaultLibraries.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES));
         setText(additionalLibrariesText, configProperties.getProperty(MoSyncBuilder.ADDITIONAL_LIBRARIES));
-        
+
         setText(excludeFiles, configProperties.getProperty(MoSyncProject.EXCLUDE_FILTER_KEY));
 
         setText(libOutputPath, configProperties.getProperty(MoSyncBuilder.LIB_OUTPUT_PATH));
@@ -439,15 +442,16 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         gccWerror.setSelection(gcc != null && (gcc & MoSyncBuilder.GCC_WERROR) != 0);
         gccWall.setSelection(gcc != null && (gcc & MoSyncBuilder.GCC_WALL) != 0);
         gccWextra.setSelection(gcc != null && (gcc & MoSyncBuilder.GCC_WEXTRA) != 0);
-        
+
         setText(heapSize, configProperties.getProperty(MoSyncBuilder.MEMORY_HEAPSIZE_KB));
         setText(stackSize, configProperties.getProperty(MoSyncBuilder.MEMORY_STACKSIZE_KB));
         setText(dataSize, configProperties.getProperty(MoSyncBuilder.MEMORY_DATASIZE_KB));
-        
+
         useDebugRuntimes.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS));
         setText(version, configProperties.getProperty(MoSyncBuilder.PROJECT_VERSION));
         setText(vendor, configProperties.getProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP));
         setText(appName, configProperties.getProperty(MoSyncBuilder.APP_NAME));
+        listener.setActive(true);
         updateUI();
     }
 
@@ -492,73 +496,68 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         return result;
     }
 
-    public void updateUI() {
+    @Override
+	public void updateUI() {
+		boolean wasActive = listener.isActive();
         listener.setActive(false);
         boolean isLibraryProject = libraryProjectType.getSelection();
         deadCodeElim.setEnabled(!isLibraryProject);
         libOutputPath.setEnabled(isLibraryProject);
         appOutputPath.setEnabled(!isLibraryProject);
 
-        validate();
-        listener.setActive(true);
+        super.updateUI();
+
+        listener.setActive(wasActive);
     }
 
-    protected void validate() {
-        IMessageProvider message = DefaultMessageProvider.EMPTY;
+    @Override
+	protected void validate() {
+        ValidationMessageProvider message = new ValidationMessageProvider();
 
         if (appName.getText().indexOf('.') != -1) {
-            message = new DefaultMessageProvider("Application name should not have an extension", IMessageProvider.ERROR);
+        	message.setMessage(appName, new DefaultMessageProvider("Application name should not have an extension", IMessageProvider.ERROR));
         }
-        
-        message = validatePathsField(message, "Additional Libraries", additionalLibrariesText, null);
-        message = validatePathsField(message, "Additional Library Paths", additionalLibraryPathsText, null);
-        message = validatePathsField(message, "Additional Include Paths", additionalIncludePathsText, null);
 
-        message = validateMemorySettings(message);
+        validatePathsField(message, "Additional Libraries", additionalLibrariesText, null);
+        validatePathsField(message, "Additional Library Paths", additionalLibraryPathsText, null);
+        validatePathsField(message, "Additional Include Paths", additionalIncludePathsText, null);
+
+        validateMemorySettings(message);
 
         if (libraryProjectType.getSelection()) {
             if (libOutputPath.getText().length() > 0 && Util.getExtension(new File(libOutputPath.getText())).length() == 0) {
-                message = new DefaultMessageProvider("Output file has no extension", IMessageProvider.WARNING);
+            	message.setMessage(libOutputPath, new DefaultMessageProvider("Output file has no extension", IMessageProvider.WARNING));
             }
 
             if (libOutputPath.getText().length() == 0) {
-                message = new DefaultMessageProvider("Library output file must be set", IMessageProvider.ERROR);
+                message.setMessage(libOutputPath, new DefaultMessageProvider("Library output file must be set", IMessageProvider.ERROR));
             }
         }
 
         setMessage(message);
     }
 
-    private IMessageProvider validateMemorySettings(IMessageProvider shortcurcuit) {
-        if (!DefaultMessageProvider.isEmpty(shortcurcuit)) {
-            return shortcurcuit;
+    private void validateMemorySettings(ValidationMessageProvider provider) {
+        if (!new Version(version.getText()).isValid()) {
+            provider.setMessage(version, new DefaultMessageProvider("Invalid version format, must comply to major[.minor][.micro][.qualifier]", IMessageProvider.ERROR));
         }
 
-        if (DefaultMessageProvider.isEmpty(shortcurcuit)) {
-            if (!new Version(version.getText()).isValid()) {
-                shortcurcuit = new DefaultMessageProvider("Invalid version format, must comply to major[.minor][.micro][.qualifier]", IMessageProvider.ERROR);
-            }
-        }
+        provider.setMessage(stackSize, validateInteger(stackSize.getText(), "Stack size", 1L << 22));
+        provider.setMessage(heapSize, validateInteger(heapSize.getText(), "Heap size", 1L << 22));
+        provider.setMessage(dataSize, validateInteger(dataSize.getText(), "Data size", 1L << 22));
 
-        shortcurcuit = validateInteger(shortcurcuit, stackSize.getText(), "Stack size", 1L << 22);
-        shortcurcuit = validateInteger(shortcurcuit, heapSize.getText(), "Heap size", 1L << 22);
-        shortcurcuit = validateInteger(shortcurcuit, dataSize.getText(), "Data size", 1L << 22);
-
-        if (DefaultMessageProvider.isEmpty(shortcurcuit)) { // They're all
-                                                            // integers
+        if (provider.isEmpty(stackSize) && provider.isEmpty(heapSize) && provider.isEmpty(dataSize)) {
+        	// They're all integers
             long stackSize = Long.parseLong(this.stackSize.getText());
             long heapSize = Long.parseLong(this.heapSize.getText());
             long dataSize = Long.parseLong(this.dataSize.getText());
 
             if (dataSize < stackSize + heapSize) {
-                shortcurcuit = new DefaultMessageProvider("Data size must be at least as large as the stack and heap sizes combined", IMessageProvider.ERROR);
+                provider.setMessage(this.dataSize, new DefaultMessageProvider("Data size must be at least as large as the stack and heap sizes combined", IMessageProvider.ERROR));
             } else if (ceil2p(dataSize) != dataSize) {
-                shortcurcuit = new DefaultMessageProvider(MessageFormat.format("Will round up data size to nearest power of 2 ({0} kb)", ceil2p(dataSize)),
-                        IMessageProvider.INFORMATION);
+                provider.setMessage(this.dataSize, new DefaultMessageProvider(MessageFormat.format("Will round up data size to nearest power of 2 ({0} kb)", ceil2p(dataSize)), IMessageProvider.INFORMATION));
             }
         }
-
-        return shortcurcuit;
     }
 
     private long ceil2p(long size) {
@@ -570,11 +569,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         return size;
     }
 
-    private IMessageProvider validateInteger(IMessageProvider shortcurcuit, String value, String fieldName, long max) {
-        if (!DefaultMessageProvider.isEmpty(shortcurcuit)) {
-            return shortcurcuit;
-        }
-
+    private IMessageProvider validateInteger(String value, String fieldName, long max) {
         try {
             long numericalValue = Long.parseLong(value);
             if (numericalValue > max) {
@@ -588,12 +583,14 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         return DefaultMessageProvider.EMPTY;
     }
 
-    public void performDefaults() {
+    @Override
+	public void performDefaults() {
         ignoreDefaultIncludePaths.setSelection(false);
         additionalIncludePathsText.setText("");
     }
 
-    public boolean performOk() {
+    @Override
+	public boolean performOk() {
         // First, update.
         updateCurrentBuildConfiguration();
 
@@ -609,7 +606,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         return true;
     }
 
-    public boolean performCancel() {
+    @Override
+	public boolean performCancel() {
         clearWorkingCopies();
         return super.performCancel();
     }
@@ -659,14 +657,16 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         return changed;
     }
 
-    public void propertyChange(PropertyChangeEvent event) {
+    @Override
+	public void propertyChange(PropertyChangeEvent event) {
         String property = event.getPropertyName();
         if (MoSyncProject.BUILD_CONFIGURATION_SUPPORT_CHANGED.equals(property) || MoSyncProject.BUILD_CONFIGURATION_CHANGED.equals(property)) {
             reinitUI();
         }
     }
 
-    public void dispose() {
+    @Override
+	public void dispose() {
         getProject().removePropertyChangeListener(this);
         super.dispose();
     }
