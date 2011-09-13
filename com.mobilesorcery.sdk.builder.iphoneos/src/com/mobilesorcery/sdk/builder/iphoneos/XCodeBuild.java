@@ -42,7 +42,8 @@ public class XCodeBuild extends AbstractTool {
 	 */
 	public static synchronized XCodeBuild getDefault() {
 		if (instance == null) {
-			instance = new XCodeBuild("xcodebuild");
+			String xcodeBuildCommand = System.getProperty("XCODEBUILD_COMMAND");
+			instance = new XCodeBuild(xcodeBuildCommand == null ? "xcodebuild" : xcodeBuildCommand);
 		}
 		return instance;
 	}

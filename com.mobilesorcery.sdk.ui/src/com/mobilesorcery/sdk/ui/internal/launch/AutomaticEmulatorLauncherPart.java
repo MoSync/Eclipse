@@ -28,7 +28,7 @@ public class AutomaticEmulatorLauncherPart implements IEmulatorLaunchConfigurati
 		result.setLayout(new GridLayout(1, false));
 		Label info = new Label(result, SWT.WRAP);
 		info.setText("This launch configuration will try to match the current target profile with its corresponding native emulator.\n" +
-				"To edit the platform specific behaviour, select another emulator in the drop down, then re-select this item.");
+				"To edit the platform specific behaviour, select another emulator in the drop down, perform your edits, then re-select this item.");
 		info.setFont(MosyncUIPlugin.getDefault().getFont(MosyncUIPlugin.FONT_INFO_TEXT));
 		info.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		return result;
