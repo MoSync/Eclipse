@@ -694,6 +694,10 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 			// We only imported SHARED properties.
 			result.initFromProjectMetaData(projectMetadataLocation,
 					SHARED_PROPERTY);
+			// ... but MOSYNCTWOSIX-344 showed we need the local
+			// ones too
+			IPath localMetaDataLocation = projectMetadataLocation.removeLastSegments(1).append(MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME);
+			result.initFromProjectMetaData(localMetaDataLocation, LOCAL_PROPERTY);
 		}
 
 		return result;
