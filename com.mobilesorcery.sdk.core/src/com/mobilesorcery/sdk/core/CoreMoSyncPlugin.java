@@ -49,6 +49,7 @@ import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.equinox.security.storage.SecurePreferencesFactory;
 import org.eclipse.equinox.security.storage.StorageException;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -97,6 +98,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	public static final String LOG_CONSOLE_NAME = "@@log";
 
 	private static final String WORKSPACE_TOKEN_PREF = PLUGIN_ID + ".w.s.token";
+
+	private static final String PREFERRED_LAUNCER_PREF_PREFIX = PLUGIN_ID + "preferred.launcher.";
 
     // The shared instance
     private static CoreMoSyncPlugin plugin;
@@ -433,6 +436,27 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         return ErrorPackager.getDefault();
     }
 
+    /**
+     * Returns an (unmodifiable) list of all available packagers
+     * @return
+     */
+    public List<IPackager> getPackagers() {
+    	return Collections.unmodifiableList(packagers);
+    }
+
+    /**
+     * Returns a packager with a specific id.
+     * @param id
+     * @return
+     */
+    public IPackager getPackagerById(String id) {
+    	for (IPackager packager : packagers) {
+    		if (Util.equals(packager.getId(), id)) {
+    			return packager;
+    		}
+    	}
+    	return null;
+    }
 	/**
      * Returns a sorted list of all panic error codes.
      * @return
@@ -572,9 +596,41 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		}
 	}
 
+	/**
+	 * For a given launcher id, return the corresponding {@link IEmulatorLauncher}.
+	 * @param launcherId
+	 * @return
+	 */
 	public IEmulatorLauncher getEmulatorLauncher(String launcherId) {
 		return launchers.get(launcherId);
 	}
+
+	/**
+	 * Returns the preferred launcher for a given packager.
+	 * @param packager
+	 * @return {@code null} if no preferred launcher
+	 */
+	public IEmulatorLauncher getPreferredLauncher(String packager) {
+		IPreferenceStore store = getPreferenceStore();
+		String launcherId = store.getString(PREFERRED_LAUNCER_PREF_PREFIX + packager);
+		return getEmulatorLauncher(launcherId);
+	}
+
+	/**
+	 * Sets the preferred launcher for a given packager.
+	 * @param packager
+	 * @param launcherId {@code null} if no preferred launcher should be set
+	 */
+	public void setPreferredLauncher(String packager, String launcherId) {
+		IPreferenceStore store = getPreferenceStore();
+		String pref = PREFERRED_LAUNCER_PREF_PREFIX + packager;
+		if (launcherId == null) {
+			store.setToDefault(pref);
+		} else {
+			store.setValue(pref, launcherId);
+		}
+	}
+
 
 	public Set<String> getEmulatorLauncherIds() {
 		return Collections.unmodifiableSet(launchers.keySet());

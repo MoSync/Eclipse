@@ -14,7 +14,6 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.util.Policy;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -24,12 +23,11 @@ import com.mobilesorcery.sdk.builder.android.AndroidPackager;
 import com.mobilesorcery.sdk.builder.android.ui.dialogs.ConfigureAndroidSDKDialog;
 import com.mobilesorcery.sdk.core.CollectingLineHandler;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.launch.AbstractEmulatorLauncher;
-import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
-import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 
 public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
@@ -46,10 +44,14 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 
 	@Override
 	public int isLaunchable(ILaunchConfiguration launchConfiguration, String mode) {
-		if (!isCorrectPackager(launchConfiguration, AndroidPackager.ID)) {
+		if (!isCorrectPackager(launchConfiguration)) {
 			return IEmulatorLauncher.UNLAUNCHABLE;
-		} else if (isIncorrectlyInstalled()) {
-			return isAutoSelectLaunch(launchConfiguration, mode) && Activator.getDefault().shouldUseFallback() ?
+		} else if (askUserForLauncher(launchConfiguration, mode)) {
+			return IEmulatorLauncher.REQUIRES_CONFIGURATION;
+		} else if (!isCorrectlyInstalled()) {
+			IEmulatorLauncher preferredLauncher = CoreMoSyncPlugin.getDefault().getPreferredLauncher(AndroidPackager.ID);
+			boolean useOtherLauncher = !askUserForLauncher(AndroidPackager.ID) && !Util.equals(preferredLauncher.getId(), ID);
+			return isAutoSelectLaunch(launchConfiguration, mode) && useOtherLauncher ?
 					IEmulatorLauncher.UNLAUNCHABLE :
 					IEmulatorLauncher.REQUIRES_CONFIGURATION;
 		} else if (hasNoAVDs()) {
@@ -59,8 +61,12 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 		}
 	}
 
-	protected boolean isIncorrectlyInstalled() {
-		return !ADB.getExternal().isValid() || !Emulator.getExternal().isValid() || !Android.getExternal().isValid();
+	private boolean askUserForLauncher(ILaunchConfiguration launchConfiguration, String mode) {
+		return isCorrectlyInstalled() && isAutoSelectLaunch(launchConfiguration, mode) && askUserForLauncher(AndroidPackager.ID);
+	}
+
+	protected boolean isCorrectlyInstalled() {
+		return ADB.getExternal().isValid() && Emulator.getExternal().isValid() && Android.getExternal().isValid();
 	}
 
 	protected boolean hasNoAVDs() {
@@ -76,9 +82,6 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
-		// If once again it's not properly conf'ed:
-		Activator.getDefault().setUseFallback(false);
-
 		ADB adb = ADB.getExternal();
 		Android android = Android.getExternal();
 		android.refresh();
@@ -167,30 +170,32 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 	}
 
 	@Override
-	public String configure(ILaunchConfiguration config, String mode) {
+	public IEmulatorLauncher configure(ILaunchConfiguration config, String mode) {
 		Display d = PlatformUI.getWorkbench().getDisplay();
 		// So any changes to the AVDs will be propagated.
 		Android.getExternal().refresh();
 		// If we are not auto-select, don't fallback to MoRe.
-		final boolean showFallbackAlternative = isAutoSelectLaunch(config, mode);
+		final boolean isAutomaticLaunch = isAutoSelectLaunch(config, mode);
+		// And if we are supposed to ask the user, we do not really need to configure anything.
+		final boolean needsConfig = !askUserForLauncher(config, mode);
 
-		final String[] result = new String[] { ID };
+		final IEmulatorLauncher[] result = new IEmulatorLauncher[] { null };
 		d.syncExec(new Runnable() {
 			@Override
 			public void run() {
 				// OK, figure out after 2.6 release where to really put this ui stuff!
 				Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-				if (isIncorrectlyInstalled()) {
-					result[0] = showConfigureDialog(shell, showFallbackAlternative);
-				} else if (hasNoAVDs()) {
+				if (needsConfig && isCorrectlyInstalled() && hasNoAVDs()) {
 					result[0] = showAutoCreateAVD(shell);
+				} else {
+					result[0] = showConfigureDialog(shell, isAutomaticLaunch, needsConfig);
 				}
 			}
 		});
 		return result[0];
 	}
 
-	protected String showAutoCreateAVD(Shell shell) {
+	protected IEmulatorLauncher showAutoCreateAVD(Shell shell) {
 		boolean goAhead = MessageDialog.openConfirm(shell, "No AVD installed",
 				"No AVD (Android Virtual Device) has been installed into your Android SDK.\n" +
 				"Would you like to launch the Android AVD manager to help you create an AVD?");
@@ -204,16 +209,17 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 		return null; // Cancel execution
 	}
 
-	protected String showConfigureDialog(Shell shell, boolean showFallbackAlternative) {
+	protected IEmulatorLauncher showConfigureDialog(Shell shell, boolean showFallbackAlternative, boolean needsConfig) {
 		ConfigureAndroidSDKDialog dialog = new ConfigureAndroidSDKDialog(shell);
-		dialog.setShowFallback(showFallbackAlternative);
-		int dialogResult = dialog.open();
-		if (dialogResult == ConfigureAndroidSDKDialog.FALLBACK_ID) {
-			return MoReLauncher.ID;
-		} else if (dialogResult == ConfigureAndroidSDKDialog.CONFIGURE_ID) {
-			return ID;
-		}
-		return null;
+		dialog.setIsAutomaticSelection(showFallbackAlternative);
+		dialog.setNeedsConfig(needsConfig);
+		dialog.open();
+		return dialog.getSelectedLauncher();
+	}
+
+	@Override
+	public int getLaunchType(IPackager packager) {
+		return Util.equals(packager.getId(), AndroidPackager.ID) ? LAUNCH_TYPE_NATIVE : LAUNCH_TYPE_NONE;
 	}
 
 

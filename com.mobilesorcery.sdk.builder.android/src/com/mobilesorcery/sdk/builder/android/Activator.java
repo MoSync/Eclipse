@@ -30,8 +30,6 @@ public class Activator extends AbstractUIPlugin {
 
 	public static final String EXTERNAL_SDK_PATH = "android.sdk";
 
-	private static final String USE_FALLBACK = "use.fallback";
-
     // The shared instance
     private static Activator plugin;
 
@@ -80,13 +78,5 @@ public class Activator extends AbstractUIPlugin {
 		String activityName = packageName + ".MoSync";
 		String androidComponent = packageName + "/" + activityName;
 		return androidComponent;
-	}
-
-	public void setUseFallback(boolean useFallback) {
-		getPreferenceStore().setValue(USE_FALLBACK, useFallback);
-	}
-
-	public boolean shouldUseFallback() {
-		return getPreferenceStore().getBoolean(USE_FALLBACK);
 	}
 }

@@ -20,12 +20,13 @@ import com.mobilesorcery.sdk.builder.iphoneos.SDK;
 import com.mobilesorcery.sdk.builder.iphoneos.XCodeBuild;
 import com.mobilesorcery.sdk.builder.iphoneos.ui.dialogs.ConfigureXcodeDialog;
 import com.mobilesorcery.sdk.core.BuildVariant;
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.core.launch.AbstractEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
-import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 
 public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
@@ -42,10 +43,14 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 	public int isLaunchable(ILaunchConfiguration launchConfiguration, String mode) {
 		if (!Util.isMac()) {
 			return UNLAUNCHABLE;
-		} else if (!isCorrectPackager(launchConfiguration, IPhoneOSPackager.ID)) {
+		} else if (!isCorrectPackager(launchConfiguration)) {
 			return IEmulatorLauncher.UNLAUNCHABLE;
-		} else if (isIncorrectlyInstalled()) {
-			return isAutoSelectLaunch(launchConfiguration, mode) && Activator.getDefault().shouldUseFallback() ?
+		} if (askUserForLauncher(launchConfiguration, mode)) {
+			return IEmulatorLauncher.REQUIRES_CONFIGURATION;
+		} else if (!isCorrectlyInstalled()) {
+			IEmulatorLauncher preferredLauncher = CoreMoSyncPlugin.getDefault().getPreferredLauncher(IPhoneOSPackager.ID);
+			boolean useOtherLauncher = !askUserForLauncher(IPhoneOSPackager.ID) && !Util.equals(preferredLauncher.getId(), ID);
+			return isAutoSelectLaunch(launchConfiguration, mode) && useOtherLauncher ?
 					IEmulatorLauncher.UNLAUNCHABLE :
 					IEmulatorLauncher.REQUIRES_CONFIGURATION;
 		} else {
@@ -53,13 +58,14 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 		}
 	}
 
+	private boolean askUserForLauncher(ILaunchConfiguration launchConfiguration, String mode) {
+		return isCorrectlyInstalled() && isAutoSelectLaunch(launchConfiguration, mode) && askUserForLauncher(IPhoneOSPackager.ID);
+	}
+
 	@Override
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
-		// If once again it's not properly conf'ed:
-		Activator.getDefault().setUseFallback(false);
-
 		// TODO: Incremental building if we change the SDK!?
 		IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
@@ -87,31 +93,37 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 	}
 
 	@Override
-	public String configure(ILaunchConfiguration config, String mode) {
+	public IEmulatorLauncher configure(ILaunchConfiguration config, String mode) {
 		XCodeBuild.getDefault().refresh();
 
 		Display d = PlatformUI.getWorkbench().getDisplay();
 		// If we are not auto-select, don't fallback to MoRe.
-		final boolean showFallbackAlternative = isAutoSelectLaunch(config, mode);
+		final boolean isAutomaticSelection = isAutoSelectLaunch(config, mode);
+		// And if we are supposed to ask the user, we do not really need to configure anything.
+		final boolean needsConfig = !askUserForLauncher(config, mode);
 
-		final String[] result = new String[] { null };
+		final IEmulatorLauncher[] result = new IEmulatorLauncher[] { null };
 		d.syncExec(new Runnable() {
 			@Override
 			public void run() {
 				// OK, figure out after 2.6 release where to really put this ui stuff!
 				Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 				ConfigureXcodeDialog configureDialog = new ConfigureXcodeDialog(shell);
-				configureDialog.setShowFallback(showFallbackAlternative);
-				int dialogResult = configureDialog.open();
-				if (dialogResult == ConfigureXcodeDialog.FALLBACK_ID) {
-					result[0] = MoReLauncher.ID;
-				}
+				configureDialog.setIsAutomaticSelection(isAutomaticSelection);
+				configureDialog.setNeedsConfig(needsConfig);
+				configureDialog.open();
+				result[0] = configureDialog.getSelectedLauncher();
 			}
 		});
 		return result[0];
 	}
 
-	protected boolean isIncorrectlyInstalled() {
-		return !IPhoneSimulator.getDefault().isValid() || !XCodeBuild.getDefault().isValid() || XCodeBuild.getDefault().listSDKs(XCodeBuild.IOS_SIMULATOR_SDKS).size() == 0;
+	@Override
+	public int getLaunchType(IPackager packager) {
+		return Util.equals(packager.getId(), IPhoneOSPackager.ID) && Util.isMac() ? LAUNCH_TYPE_NATIVE : LAUNCH_TYPE_NONE;
+	}
+
+	protected boolean isCorrectlyInstalled() {
+		return IPhoneSimulator.getDefault().isValid() && XCodeBuild.getDefault().isValid() && XCodeBuild.getDefault().listSDKs(XCodeBuild.IOS_SIMULATOR_SDKS).size() > 0;
 	}
 }

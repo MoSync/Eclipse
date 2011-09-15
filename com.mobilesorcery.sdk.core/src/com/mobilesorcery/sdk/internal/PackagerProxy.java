@@ -26,27 +26,31 @@ public class PackagerProxy implements IPackager {
 
     public final static String PATTERN = "pattern";
     public final static String CLASS = "implementation";
-    
-    private IConfigurationElement element;
+
+    private final IConfigurationElement element;
     private IPackagerDelegate delegate;
-	private String id;
-    
+	private final String id;
+	private final String platform;
+
     public PackagerProxy(IConfigurationElement element) {
         this.element = element;
         this.id = element.getAttribute("id");
+        this.platform = element.getAttribute("platform");
     }
-    
+
     private void initDelegate() throws CoreException {
         if (delegate == null) {
             delegate = (IPackagerDelegate) element.createExecutableExtension(CLASS);
         }
     }
 
-    public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+    @Override
+	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
         initDelegate();
         delegate.createPackage(project, variant, buildResult);
     }
 
+	@Override
 	public void setParameter(String param, String value) throws CoreException {
 		initDelegate();
 		delegate.setParameter(param, value);
@@ -55,6 +59,11 @@ public class PackagerProxy implements IPackager {
 	@Override
 	public String getId() {
 		return id;
+	}
+
+	@Override
+	public String getPlatform() {
+		return platform;
 	}
 
 }

@@ -29,8 +29,6 @@ public class Activator extends AbstractUIPlugin {
 
     public final static String IOS_SIMULATOR_SPECIFIER = "simulator";
 
-	private static final String USE_FALLBACK = "use.fallback";
-
     // The shared instance
     private static Activator plugin;
 
@@ -93,14 +91,6 @@ public class Activator extends AbstractUIPlugin {
 		String sdkId = useDefault || sdk == null ? null : sdk.getId();
 		PropertyUtil.setBoolean(project, sdkType == XCodeBuild.IOS_SDKS ? PropertyInitializer.IOS_SDK_AUTO : PropertyInitializer.IOS_SIM_SDK_AUTO, useDefault);
 		project.setProperty(sdkType == XCodeBuild.IOS_SDKS ? PropertyInitializer.IOS_SDK : PropertyInitializer.IOS_SIM_SDK, sdkId);
-	}
-
-	public void setUseFallback(boolean useFallback) {
-		getPreferenceStore().setValue(USE_FALLBACK, useFallback);
-	}
-
-	public boolean shouldUseFallback() {
-		return getPreferenceStore().getBoolean(USE_FALLBACK);
 	}
 
 

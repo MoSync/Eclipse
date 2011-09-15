@@ -20,6 +20,7 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 
 /**
@@ -42,6 +43,44 @@ public interface IEmulatorLauncher {
     public static final int UNLAUNCHABLE = 1 << 2;
 
     public static final int REQUIRES_CONFIGURATION = 1 << 3;
+
+    /**
+     * Indicates that this launcher cannot launch for a certain platform.
+     * (The value is a score that can be used to pick the best matching
+     * launcher, with the higher score being a better match.)
+     */
+    public static final int LAUNCH_TYPE_NONE = 0;
+
+    /**
+     * Indicates that this launcher is an auto-select launcher.
+     * (The value is a score that can be used to pick the best matching
+     * launcher, with the higher score being a better match.)
+     */
+    public static final int LAUNCH_TYPE_AUTO_SELECT = 10;
+
+    /**
+     * Indicates that this launcher is the default launcher.
+     * (The value is a score that can be used to pick the best matching
+     * launcher, with the higher score being a better match.)
+     */
+    public static final int LAUNCH_TYPE_DEFAULT = 20;
+
+    /**
+     * Indicates that this launcher supports a certain platform, but
+     * it is not native to the platform.
+     * (The value is a score that can be used to pick the best matching
+     * launcher, with the higher score being a better match.)
+     */
+    public static final int LAUNCH_TYPE_SUPPORTED = 30;
+
+    /**
+     * Indicates that this launcher is the native launcher for a
+     * certain platform.
+     * (The value is a score that can be used to pick the best matching
+     * launcher, with the higher score being a better match.)
+     */
+    public static final int LAUNCH_TYPE_NATIVE = 100;
+
 
 	public void launch(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor) throws CoreException;
 
@@ -79,6 +118,15 @@ public interface IEmulatorLauncher {
 	 */
 	public void setDefaultAttributes(ILaunchConfigurationWorkingCopy wc);
 
-	// HACK!
-	public String configure(ILaunchConfiguration config, String mode);
+	// HACK! null if cancel
+	public IEmulatorLauncher configure(ILaunchConfiguration config, String mode);
+
+	/**
+	 * Returns the type of launch that can be performed by this {@link IEmulatorLauncher}.
+	 * @param packager
+	 * @return One of the values {@link #LAUNCH_TYPE_NONE},
+	 * {@link #LAUNCH_TYPE_AUTO_SELECT}, {@link #LAUNCH_TYPE_DEFAULT},{@link #LAUNCH_TYPE_SUPPORTED} or
+	 * {@link #LAUNCH_TYPE_NATIVE}.
+	 */
+	public int getLaunchType(IPackager packager);
 }

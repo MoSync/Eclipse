@@ -24,6 +24,16 @@ package com.mobilesorcery.sdk.core;
  */
 public interface IPackager extends IPackagerDelegate {
 
+	/**
+	 * Returns the id of this packager (may be {@code null}).
+	 * @return
+	 */
 	public String getId();
-	
+
+	/**
+	 * Returns the platform name of this packager (may return {@code null}).
+	 * TODO: Platform and packager might need to be separated!
+	 * @return
+	 */
+	public String getPlatform();
 }

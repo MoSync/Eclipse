@@ -48,15 +48,14 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 		return packageToInstall;
 	}
 
-	protected void assertCorrectPackager(ILaunchConfiguration launchConfig,
-			String packagerId, String errormsg) throws CoreException {
-		if (!isCorrectPackager(launchConfig, packagerId)) {
+	protected void assertCorrectPackager(ILaunchConfiguration launchConfig, String errormsg) throws CoreException {
+		if (!isCorrectPackager(launchConfig)) {
 			throw new CoreException(new Status(IStatus.ERROR,
 					CoreMoSyncPlugin.PLUGIN_ID, errormsg));
 		}
 	}
 
-	protected boolean isCorrectPackager(ILaunchConfiguration launchConfig, String packagerId) {
+	protected boolean isCorrectPackager(ILaunchConfiguration launchConfig) {
 		IProject project;
 		try {
 			project = EmulatorLaunchConfigurationDelegate
@@ -64,7 +63,8 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 			MoSyncProject mosyncProject = MoSyncProject.create(project);
 			IProfile targetProfile = mosyncProject.getTargetProfile();
 			IPackager packager = targetProfile.getPackager();
-			return packagerId.equals(packager.getId());
+			int launchType = getLaunchType(packager);
+			return launchType != LAUNCH_TYPE_NONE;
 		} catch (CoreException e) {
 			return false;
 		}
@@ -91,6 +91,19 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 	 */
 	@Override
 	public IBuildVariant getVariant(ILaunchConfiguration launchConfig, String mode) throws CoreException {
+		return getVariantDefault(launchConfig, mode);
+	}
+
+	/**
+	 * Returns a non-finalizing build with the build
+	 * configuration as per specified by the launch configuration and a target
+	 * profile set to the currently selected profile.
+	 * @param launchConfig
+	 * @param mode
+	 * @return
+	 * @throws CoreException
+	 */
+	protected final IBuildVariant getVariantDefault(ILaunchConfiguration launchConfig, String mode) throws CoreException {
 		IProject project = EmulatorLaunchConfigurationDelegate
 				.getProject(launchConfig);
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
@@ -105,10 +118,16 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 	}
 
 	@Override
-	public String configure(ILaunchConfiguration config, String mode) {
-		return getId();
+	public IEmulatorLauncher configure(ILaunchConfiguration config, String mode) {
+		return this;
 	}
 
+	/**
+	 * Returns whether the launch configuration is an automatic selection launch
+	 * @param config
+	 * @param mode
+	 * @return
+	 */
 	protected boolean isAutoSelectLaunch(ILaunchConfiguration config, String mode) {
 		try {
 			IEmulatorLauncher launcher = EmulatorLaunchConfigurationDelegate.getEmulatorLauncher(config, mode);
@@ -116,6 +135,16 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 		} catch (CoreException e) {
 			throw new IllegalStateException(e);
 		}
+	}
+
+	/**
+	 * For automatic selection launches; checks whether the user should be asked about which launcher to use.
+	 * @param packagerId
+	 * @return
+	 */
+	protected boolean askUserForLauncher(String packagerId) {
+		IEmulatorLauncher preferredLauncher = CoreMoSyncPlugin.getDefault().getPreferredLauncher(packagerId);
+		return preferredLauncher == null;
 	}
 
 	protected void assertWindows() throws CoreException {
