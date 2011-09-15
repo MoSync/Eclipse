@@ -29,6 +29,8 @@ public class Activator extends AbstractUIPlugin {
 
     public final static String IOS_SIMULATOR_SPECIFIER = "simulator";
 
+    public final static String ONLY_GENERATE_XCODE_PROJECT = PLUGIN_ID + ".build.xcode";
+
     // The shared instance
     private static Activator plugin;
 

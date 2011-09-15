@@ -181,12 +181,20 @@ extends AbstractPackager
 		            }
 	            }
 
-	            // Now, if we have XCode, build it as well!
-	            boolean hasXCode = XCodeBuild.getDefault().isValid();
-	            if (hasXCode) {
-	            	out = buildViaXCode(project, intern, variant, out).toFile();
+	            // Should we build?
+	            SDK sdk = getSDK(project, variant);
+	            boolean isSimulatorSDK = sdk != null && sdk.isSimulatorSDK();
+	            boolean shouldBuild = isSimulatorSDK || !Activator.getDefault().getPreferenceStore().getBoolean(Activator.ONLY_GENERATE_XCODE_PROJECT);
+	            if (shouldBuild) {
+		            // Now, if we have XCode, build it as well!
+		            boolean hasXCode = XCodeBuild.getDefault().isValid();
+		            if (hasXCode) {
+		            	out = buildViaXCode(project, intern, variant, out).toFile();
+		            } else {
+		            	intern.getConsole().addMessage("No Xcode, will not build generated project");
+		            }
 	            } else {
-	            	intern.getConsole().addMessage("No XCode, will not build generated project");
+	            	intern.getConsole().addMessage("Xcode building disabled, will not build generated project");
 	            }
 
             }
