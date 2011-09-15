@@ -48,6 +48,7 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.ILaunchConstants;
+import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.IProcessUtil;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -283,6 +284,11 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
 	public void setDefaultAttributes(ILaunchConfigurationWorkingCopy wc) {
         wc.setAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, "220");
         wc.setAttribute(ILaunchConstants.SCREEN_SIZE_WIDTH, "176");
+	}
+
+	@Override
+	public int getLaunchType(IPackager packager) {
+		return LAUNCH_TYPE_DEFAULT;
 	}
 
 

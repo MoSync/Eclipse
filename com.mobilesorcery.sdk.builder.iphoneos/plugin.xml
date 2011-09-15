@@ -6,7 +6,8 @@
       <packager
             implementation="com.mobilesorcery.sdk.builder.iphoneos.IPhoneOSPackager"
             pattern="^profiles[/|\\]runtimes[/|\\]iphoneos.*"
-            id="com.mobilesorcery.sdk.build.ios.packager">
+            id="com.mobilesorcery.sdk.build.ios.packager"
+            platform="iOS">
       </packager>
    </extension>
          <extension

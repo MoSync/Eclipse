@@ -53,23 +53,27 @@ import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 public class BuildState implements IBuildState {
 
     public static class Diff implements IFileTreeDiff {
-        private ArrayList<IPath> added = new ArrayList<IPath>();
-        private ArrayList<IPath> changed = new ArrayList<IPath>();
-        private ArrayList<IPath> removed = new ArrayList<IPath>();
-        
-        public List<IPath> getAdded() {
+        private final ArrayList<IPath> added = new ArrayList<IPath>();
+        private final ArrayList<IPath> changed = new ArrayList<IPath>();
+        private final ArrayList<IPath> removed = new ArrayList<IPath>();
+
+        @Override
+		public List<IPath> getAdded() {
             return added;
         }
-        
-        public List<IPath> getChanged() {
+
+        @Override
+		public List<IPath> getChanged() {
             return changed;
         }
-        
-        public List<IPath> getRemoved() {
+
+        @Override
+		public List<IPath> getRemoved() {
             return removed;
         }
-        
-        public String toString() {
+
+        @Override
+		public String toString() {
             return "ADDED:        " + added + "\n" +
                    "CHANGED:      " + changed + "\n" +
                    "REMOVED:      " + removed;
@@ -80,10 +84,10 @@ public class BuildState implements IBuildState {
 			return added.isEmpty() && changed.isEmpty() && removed.isEmpty();
 		}
     }
-    
+
     class FileInfoTree implements IResourceVisitor {
-        HashMap<IPath, Long> timestampMap = new HashMap<IPath, Long>(); 
-        
+        HashMap<IPath, Long> timestampMap = new HashMap<IPath, Long>();
+
         /**
          * Computes a diff between this tree and another tree,
          * with this tree as the "to" tree, and the other tree
@@ -100,26 +104,27 @@ public class BuildState implements IBuildState {
                 } else if (otherTimestamp.compareTo(timestampMap.get(path)) != 0) {
                     diff.changed.add(path);
                 }
-                
+
                 if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-                    CoreMoSyncPlugin.trace("{0} previous timestamp: {1}, current timestamp: {2}", path, new Date(otherTimestamp), timestampMap.get(path));
+                    CoreMoSyncPlugin.trace("{0} previous timestamp: {1}, current timestamp: {2}", path, otherTimestamp == null ? "N/A" : new Date(otherTimestamp), timestampMap.get(path));
                 }
             }
-            
+
             for (IPath path : other.timestampMap.keySet()) {
                 if (!timestampMap.containsKey(path)) {
                     diff.removed.add(path);
                 }
             }
-            
+
             return diff;
         }
-        
-        public boolean visit(IResource resource) throws CoreException {
+
+        @Override
+		public boolean visit(IResource resource) throws CoreException {
             internalUpdateResource(resource);
             return !resource.isDerived();
         }
-        
+
         private void internalUpdateResource(IResource resource) {
             if (resource.getType() == IResource.FILE) {
                 internalUpdateState(resource.getProjectRelativePath());
@@ -128,7 +133,7 @@ public class BuildState implements IBuildState {
 
         private void internalUpdateState(IPath path) {
         	IResource projectResource = project.getWrappedProject().findMember(path);
- 
+
         	/**
         	 * Ignore virtual folders since they do not have a timestamp and
         	 * getLocation always returns null for them.
@@ -136,8 +141,8 @@ public class BuildState implements IBuildState {
           	if(projectResource.isVirtual()) {
         		return;
         	}
-        	
-        	IPath fullpath = projectResource.getLocation();    	
+
+        	IPath fullpath = projectResource.getLocation();
         	File file = fullpath.toFile();
             long newTimestamp = file.lastModified();
             timestampMap.put(path, newTimestamp);
@@ -147,13 +152,13 @@ public class BuildState implements IBuildState {
             timestampMap.remove(removed);
         }
     }
-    
+
     private FileInfoTree tree;
     private DependencyManager<IResource> dependencies;
-    
+
     private IBuildVariant variant;
-    private MoSyncProject project;
-    private File buildStateFile;
+    private final MoSyncProject project;
+    private final File buildStateFile;
     private IBuildResult buildResult;
 
 
@@ -170,11 +175,12 @@ public class BuildState implements IBuildState {
         clear();
         load();
     }
-    
+
     /* (non-Javadoc)
      * @see com.mobilesorcery.sdk.internal.IBuildState#load()
      */
-    public void load() {
+    @Override
+	public void load() {
         valid = buildStateFile.exists();
         if (valid) {
             try {
@@ -190,31 +196,32 @@ public class BuildState implements IBuildState {
     /* (non-Javadoc)
      * @see com.mobilesorcery.sdk.internal.IBuildState#isValid()
      */
-    public boolean isValid() {
+    @Override
+	public boolean isValid() {
         return valid;
     }
-    
+
     private void parseBuildStateFile(File buildStateFile) throws IOException {
         SectionedPropertiesFile props = SectionedPropertiesFile.parse(buildStateFile);
-        
+
         Section resultSection = props.getDefaultSection();
         parseBuildResult(resultSection);
-        
+
         Section files = props.getFirstSection("files");
         parseFileState(files);
-        
+
         Section dependenciesSection = props.getFirstSection("dependencies");
         parseDependencies(dependenciesSection);
-        
+
         Section buildPropertiesSection = props.getFirstSection("build-properties");
         parseBuildProperties(buildPropertiesSection);
     }
-    
+
     private void parseBuildProperties(Section buildPropertiesSection) {
         if (buildPropertiesSection == null) {
             return;
         }
-     
+
         properties = buildPropertiesSection.getEntriesAsMap();
     }
 
@@ -222,7 +229,7 @@ public class BuildState implements IBuildState {
         if (dependenciesSection == null) {
             return;
         }
-        
+
         List<Entry> dependencyEntries = dependenciesSection.getEntries();
         for (Entry dependencyEntry : dependencyEntries) {
             IPath dependeePath = new Path(dependencyEntry.getKey());
@@ -230,7 +237,7 @@ public class BuildState implements IBuildState {
             // Ehm... TODO: Dependencies should be on absolute paths, not resources...
             IWorkspaceRoot wr = ResourcesPlugin.getWorkspace().getRoot();
             //IFile[] dependeeFiles = wr.findFilesForLocation(dependeePath);
-            IResource dependeeFile = wr.findMember(dependeePath); 
+            IResource dependeeFile = wr.findMember(dependeePath);
             for (int j = 0; j < dependencyPaths.length; j++) {
                 IResource dependencyFile = wr.findMember(dependencyPaths[j]);
                 dependencies.addDependency(dependeeFile, dependencyFile);
@@ -242,7 +249,7 @@ public class BuildState implements IBuildState {
         if (files == null) {
             return;
         }
-        
+
         List<Entry> entries = files.getEntries();
         for (Entry entry : entries) {
             IPath path = new Path(entry.getKey());
@@ -255,7 +262,7 @@ public class BuildState implements IBuildState {
         if (resultSection == null) {
             return;
         }
-        
+
         Map<String, String> resultMap = resultSection.getEntriesAsMap();
         BuildResult buildResult = new BuildResult(project.getWrappedProject());
         IBuildVariant variant = BuildVariant.parse(resultMap.get("variant"));
@@ -273,52 +280,54 @@ public class BuildState implements IBuildState {
         this.buildResult = buildResult;
     }
 
-    public void setValid(boolean valid) {
+    @Override
+	public void setValid(boolean valid) {
         this.valid = valid;
     }
-    
+
     /* (non-Javadoc)
      * @see com.mobilesorcery.sdk.internal.IBuildState#save()
      */
-    public void save() {
+    @Override
+	public void save() {
         FileWriter buildStateWriter = null;
         try {
             buildStateFile.getParentFile().mkdirs();
             buildStateWriter = new FileWriter(buildStateFile);
             SectionedPropertiesFile props = SectionedPropertiesFile.create();
-            
+
             Section resultSection = props.getDefaultSection();
             saveBuildResult(resultSection);
-            
+
             Section files = props.addSection("files");
             saveFileState(files);
-            
+
             Section deps = props.addSection("dependencies");
             saveDependencies(deps);
-            
+
             Section buildPropertiesSection = props.addSection("build-properties");
             saveBuildProperties(buildPropertiesSection);
-            
+
             buildStateWriter.write(props.toString());
         } catch (Exception e) {
             CoreMoSyncPlugin.getDefault().log(e);
             e.printStackTrace();
             // We silently ignore it.
-        } finally {    
-            Util.safeClose(buildStateWriter);    
+        } finally {
+            Util.safeClose(buildStateWriter);
         }
     }
-    
+
     private void saveBuildProperties(Section buildPropertiesSection) {
         buildPropertiesSection.addEntries(properties);
     }
-    
+
     private void saveDependencies(Section deps) {
         for (IResource dependee : dependencies.getAllDependees()) {
             if (dependee != null) {
                 IPath dependeePath = dependee.getFullPath();
                 Set<IResource> dependentResources = dependencies.getDependenciesOf(dependee);
-                deps.addEntry(new Entry(dependeePath.toPortableString(), PropertyUtil.fromPaths(dependentResources.toArray(new IResource[0]))));    
+                deps.addEntry(new Entry(dependeePath.toPortableString(), PropertyUtil.fromPaths(dependentResources.toArray(new IResource[0]))));
             }
         }
     }
@@ -346,67 +355,76 @@ public class BuildState implements IBuildState {
     /* (non-Javadoc)
      * @see com.mobilesorcery.sdk.internal.IBuildState#updateState(org.eclipse.core.resources.IResource)
      */
-    public void updateState(IResource resource) throws CoreException {
+    @Override
+	public void updateState(IResource resource) throws CoreException {
         resource.accept(tree);
     }
-    
+
     /* (non-Javadoc)
      * @see com.mobilesorcery.sdk.internal.IBuildState#updateState(com.mobilesorcery.sdk.core.IFileTreeDiff)
      */
-    public void updateState(IFileTreeDiff diff) {
+    @Override
+	public void updateState(IFileTreeDiff diff) {
         for (IPath added : diff.getAdded()) {
             tree.internalUpdateState(added);
         }
-        
+
         for (IPath changed  : diff.getChanged()) {
             tree.internalUpdateState(changed);
         }
-        
+
         for (IPath removed : diff.getRemoved()) {
             tree.removeState(removed);
         }
     }
-    
+
     /* (non-Javadoc)
      * @see com.mobilesorcery.sdk.internal.IBuildState#updateResult(com.mobilesorcery.sdk.core.IBuildResult)
      */
-    public void updateResult(IBuildResult buildResult) {
+    @Override
+	public void updateResult(IBuildResult buildResult) {
         this.buildResult = buildResult;
     }
-    
-    public IBuildResult getBuildResult() {
+
+    @Override
+	public IBuildResult getBuildResult() {
         return buildResult;
     }
-    
+
     /* (non-Javadoc)
      * @see com.mobilesorcery.sdk.internal.IBuildState#getBuildVariant()
      */
-    public IBuildVariant getBuildVariant() {
+    @Override
+	public IBuildVariant getBuildVariant() {
         return variant;
     }
-    
+
     /* (non-Javadoc)
      * @see com.mobilesorcery.sdk.internal.IBuildState#fullRebuildNeeded()
      */
-    public boolean fullRebuildNeeded() {
+    @Override
+	public boolean fullRebuildNeeded() {
         return fullRebuildNeeded;
     }
-    
-    public void fullRebuildNeeded(boolean fullRebuildNeeded) {
+
+    @Override
+	public void fullRebuildNeeded(boolean fullRebuildNeeded) {
         this.fullRebuildNeeded = fullRebuildNeeded;
     }
-    
+
     /* (non-Javadoc)
      * @see com.mobilesorcery.sdk.internal.IBuildState#getDependencyManager()
      */
-    public DependencyManager<IResource> getDependencyManager() {
+    @Override
+	public DependencyManager<IResource> getDependencyManager() {
         return dependencies;
     }
 
     /* (non-Javadoc)
      * @see com.mobilesorcery.sdk.internal.IBuildState#createDiff()
      */
-    public IFileTreeDiff createDiff() throws CoreException {
+    @Override
+	public IFileTreeDiff createDiff() throws CoreException {
         FileInfoTree currentTree = new FileInfoTree();
         IProject project = this.project.getWrappedProject();
         project.accept(currentTree);
@@ -416,7 +434,8 @@ public class BuildState implements IBuildState {
     /* (non-Javadoc)
      * @see com.mobilesorcery.sdk.internal.IBuildState#clear()
      */
-    public void clear() {
+    @Override
+	public void clear() {
         tree = new FileInfoTree();
         dependencies = new DependencyManager<IResource>();
         properties = new HashMap<String, String>();
@@ -424,11 +443,13 @@ public class BuildState implements IBuildState {
         fullRebuildNeeded = true;
     }
 
-    public void updateBuildProperties(Map<String, String> properties) {
+    @Override
+	public void updateBuildProperties(Map<String, String> properties) {
         this.properties = properties;
     }
 
-    public Set<String> getChangedBuildProperties() {
+    @Override
+	public Set<String> getChangedBuildProperties() {
         Map<String, String> currentBuildProperties = project.getProperties();
         Set<String> changed = new HashSet<String>();
         for (Map.Entry<String, String> entry : currentBuildProperties.entrySet()) {
@@ -440,7 +461,7 @@ public class BuildState implements IBuildState {
                 changed.add(key);
             }
         }
-        
+
         return changed;
     }
 

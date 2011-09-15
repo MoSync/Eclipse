@@ -6,7 +6,8 @@
                <packager
             implementation="com.mobilesorcery.sdk.builder.android.AndroidPackager"
             pattern="^profiles[/|\\]runtimes[/|\\]android.*"
-            id="com.mobilesorcery.sdk.build.android.packager">
+            id="com.mobilesorcery.sdk.build.android.packager"
+            platform="Android">
       </packager>
    </extension>
           <extension

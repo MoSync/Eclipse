@@ -27,15 +27,17 @@ public class NullPackager implements IPackager {
     public static NullPackager getDefault() {
         return instance;
     }
-    
+
     private NullPackager() {
-        
+
     }
-    
-    public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+
+    @Override
+	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
         // Do nothing - at this point, anyhoo.
     }
 
+	@Override
 	public void setParameter(String param, String value) {
         // Do nothing - at this point, anyhoo.
 	}
@@ -43,6 +45,11 @@ public class NullPackager implements IPackager {
 	@Override
 	public String getId() {
 		return "***null***";
-	}    
+	}
+
+	@Override
+	public String getPlatform() {
+		return getId();
+	}
 
 }

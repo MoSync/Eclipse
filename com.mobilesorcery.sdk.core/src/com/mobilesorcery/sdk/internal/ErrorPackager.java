@@ -12,7 +12,7 @@
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
 /**
- * 
+ *
  */
 package com.mobilesorcery.sdk.internal;
 
@@ -31,7 +31,7 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 
 /**
  * The default 'error' packager (or fallback packager), that
- * will be used if no packager is defined for a specific runtime platform. 
+ * will be used if no packager is defined for a specific runtime platform.
  * @author Mattias Bybro, mattias.bybro@purplescout.se
  *
  */
@@ -43,10 +43,11 @@ public class ErrorPackager extends AbstractPackager implements IPackager {
         return instance;
     }
 
-    public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+    @Override
+	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
         DefaultPackager packager = new DefaultPackager(project, variant);
         IProfile targetProfile = variant.getProfile();
-        
+
         IProcessConsole console = packager.getConsole();
         String errorMsg = MessageFormat.format("No packager defined for {0} (Runtime platform: {1})", targetProfile,
                 targetProfile.getPlatform());
@@ -58,5 +59,11 @@ public class ErrorPackager extends AbstractPackager implements IPackager {
 	public String getId() {
 		return "***error***";
 	}
+
+	@Override
+	public String getPlatform() {
+		return getId();
+	}
+
 
 }

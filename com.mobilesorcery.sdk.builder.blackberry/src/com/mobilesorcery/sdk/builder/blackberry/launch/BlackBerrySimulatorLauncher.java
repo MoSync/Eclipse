@@ -17,9 +17,11 @@ import com.mobilesorcery.sdk.builder.blackberry.BlackBerryPackager;
 import com.mobilesorcery.sdk.builder.blackberry.BlackBerryPlugin;
 import com.mobilesorcery.sdk.core.CommandLineExecutor;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.LineReader;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.launch.AbstractEmulatorLauncher;
 
 // BIG PHAT TODO ON THIS CLASS; MAY BE USED AS A STARTING POINT
@@ -83,6 +85,11 @@ public class BlackBerrySimulatorLauncher extends AbstractEmulatorLauncher {
 	public int isLaunchable(ILaunchConfiguration config, String mode) {
 		return UNLAUNCHABLE;
 		//return super.isAvailable(config, mode);
+	}
+
+	@Override
+	public int getLaunchType(IPackager packager) {
+		return Util.equals(packager.getId(), BlackBerryPackager.ID) ? LAUNCH_TYPE_NATIVE : LAUNCH_TYPE_NONE;
 	}
 
 }

@@ -15,6 +15,8 @@ package com.mobilesorcery.sdk.internal.launch;
 
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -61,6 +63,8 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 
     private static int GLOBAL_ID = 1;
 
+    private static HashMap<ILaunchConfiguration, Map<String, Object>> overriddenAttributes = new HashMap<ILaunchConfiguration, Map<String, Object>>();
+
     @Override
 	public void launch(final ILaunchConfiguration launchConfig, final String mode, final ILaunch launch,
             final IProgressMonitor monitor) throws CoreException {
@@ -84,6 +88,9 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 
     @Override
 	public boolean preLaunchCheck(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
+    	// Clear temporary attributes
+    	clearTemporaryAttributes(configuration);
+
     	boolean result = true;
     	IProject project = getProject(configuration);
     	if (!shouldAutoSwitch(configuration, mode)) {
@@ -96,12 +103,15 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     	}
 
     	IEmulatorLauncher launcher = getEmulatorLauncher(configuration, mode);
-		while (launcher.isLaunchable(configuration, mode) == IEmulatorLauncher.REQUIRES_CONFIGURATION) {
-			String launcherId = launcher.configure(configuration, mode);
-			if (launcherId == null) {
+    	int tries = 0;
+		while (launcher.isLaunchable(configuration, mode) == IEmulatorLauncher.REQUIRES_CONFIGURATION && tries < 2) {
+			tries++;
+			IEmulatorLauncher fallbackLauncher = launcher.configure(configuration, mode);
+			if (fallbackLauncher == null) {
 				return false;
-			} else {
-				launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(launcherId);
+			} else if (!fallbackLauncher.getId().equals(launcher.getId())) {
+				launcher = fallbackLauncher;
+				setTemporaryAttribute(configuration, ILaunchConstants.LAUNCH_DELEGATE_ID, fallbackLauncher.getId());
 			}
     	}
 
@@ -109,6 +119,29 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 		assertLaunchable(launcher, configuration, mode);
     	return result && super.preLaunchCheck(configuration, mode, monitor);
     }
+
+	private static void clearTemporaryAttributes(ILaunchConfiguration configuration) {
+		overriddenAttributes.remove(configuration);
+	}
+
+	private static void setTemporaryAttribute(ILaunchConfiguration configuration, String attr, Object value) {
+		Map<String, Object> attributes = overriddenAttributes.get(configuration);
+		if (attributes == null) {
+			attributes = new HashMap<String, Object>();
+			overriddenAttributes.put(configuration, attributes);
+		}
+		attributes.put(attr, value);
+	}
+
+	private static Object getTemporaryAttribute(ILaunchConfiguration configuration, String attr) {
+		Map<String, Object> attributes = overriddenAttributes.get(configuration);
+		return attributes == null ? null : attributes.get(attr);
+	}
+
+	public static IEmulatorLauncher getSessionLauncher(ILaunchConfiguration config) {
+		String launcherId = (String) getTemporaryAttribute(config, ILaunchConstants.LAUNCH_DELEGATE_ID);
+		return CoreMoSyncPlugin.getDefault().getEmulatorLauncher(launcherId);
+	}
 
 	private void assertLaunchable(IEmulatorLauncher launcher, ILaunchConfiguration launchConfig, String mode)
 			throws CoreException {
@@ -222,8 +255,13 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
     }
 
     public static IEmulatorLauncher getEmulatorLauncher(ILaunchConfiguration launchConfig, String mode) throws CoreException {
+    	IEmulatorLauncher launcher = getSessionLauncher(launchConfig);
+    	if (launcher != null) {
+    		return launcher;
+    	}
+
     	String delegateId = getLaunchDelegateId(launchConfig, mode, true);
-    	IEmulatorLauncher launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(delegateId);
+    	launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(delegateId);
     	if (launcher == null) {
     		throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could not find emulator for launching."));
     	}
@@ -236,7 +274,9 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 
 	protected static String getLaunchDelegateId(ILaunchConfiguration launchConfig, String mode, boolean allowExternalEmulators) throws CoreException {
     	if (allowExternalEmulators) {
-			return launchConfig.getAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, MoReLauncher.ID);
+			String delegateId = launchConfig.getAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, MoReLauncher.ID);
+			String temporaryDelegateId = (String) getTemporaryAttribute(launchConfig, ILaunchConstants.LAUNCH_DELEGATE_ID);
+			return temporaryDelegateId == null ? delegateId :  temporaryDelegateId;
     	} else {
     		// Fallback is MoRe.
     		return MoReLauncher.ID;
@@ -318,7 +358,6 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 
     @Override
 	public boolean buildForLaunch(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
-        IEmulatorLauncher launcher = getEmulatorLauncher(configuration, mode);
         final IProject project = getProject(configuration);
         IBuildVariant variant = getVariant(configuration, mode);
         IBuildSession session = new BuildSession(Arrays.asList(variant), BuildSession.DO_SAVE_DIRTY_EDITORS | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (variant.isFinalizerBuild() ? BuildSession.DO_PACK : 0));

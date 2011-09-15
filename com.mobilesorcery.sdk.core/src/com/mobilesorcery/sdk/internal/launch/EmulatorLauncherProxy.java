@@ -9,6 +9,7 @@ import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 
 public class EmulatorLauncherProxy implements IEmulatorLauncher {
@@ -74,8 +75,14 @@ public class EmulatorLauncherProxy implements IEmulatorLauncher {
 	}
 
 	@Override
-	public String configure(ILaunchConfiguration config, String mode) {
+	public IEmulatorLauncher configure(ILaunchConfiguration config, String mode) {
 		initDelegate();
 		return delegate.configure(config, mode);
+	}
+
+	@Override
+	public int getLaunchType(IPackager packager) {
+		initDelegate();
+		return delegate.getLaunchType(packager);
 	}
 }
