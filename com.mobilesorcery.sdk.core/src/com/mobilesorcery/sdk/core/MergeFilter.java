@@ -30,19 +30,28 @@ public class MergeFilter<T> implements IFilter<T> {
     public final static int AND = 2;
     private ArrayList<IFilter<T>> filters;
     private int operation;
-    
-    public MergeFilter(int operation, IFilter<T>... filters) {
+
+    private MergeFilter(int operation, IFilter<T>... filters) {
         this(operation, new ArrayList<IFilter<T>>(Arrays.asList(filters)));
     }
-    
+
+    public static <T> IFilter<T> create(int operation, IFilter<T>... filters) {
+    	if (filters.length == 1) {
+    		return filters[0];
+    	} else {
+    		return (new MergeFilter<T>(operation, filters));
+    	}
+    }
+
     private MergeFilter(int operation, ArrayList<IFilter<T>> filters) {
         this.operation = operation;
-        this.filters = filters; 
+        this.filters = filters;
     }
-    
-    public boolean accept(T obj) {
-        boolean result = operation == AND;
-        
+
+    @Override
+	public boolean accept(T obj) {
+        boolean result = filters.isEmpty() || operation == AND;
+
         for (IFilter<T> filter : filters) {
             switch (operation) {
             case OR:
@@ -60,8 +69,9 @@ public class MergeFilter<T> implements IFilter<T> {
 
         return result;
     }
-    
-    public String toString() {
+
+    @Override
+	public String toString() {
     	// For debugging purposes.
     	String opStr = operation == AND ? "&&" : "||";
     	return Util.join(filters.toArray(), opStr);

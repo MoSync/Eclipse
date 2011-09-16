@@ -17,11 +17,12 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.ParseException;
 import com.mobilesorcery.sdk.profiling.filter.NameFilter;
 import com.mobilesorcery.sdk.profiling.filter.NameFilter.MatchType;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.UpdateListener;
 import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 
 public class EmulatorProfilingLaunchConfigurationTab extends AbstractLaunchConfigurationTab implements IUpdatableControl {
-	
+
 	private Text funcFilter;
 	private Text fileFilter;
 	private Button useRegExp;
@@ -31,6 +32,14 @@ public class EmulatorProfilingLaunchConfigurationTab extends AbstractLaunchConfi
 		Group filterGroup = new Group(parent, SWT.NONE);
 		filterGroup.setText("&Filters");
 		filterGroup.setLayout(new GridLayout(2, false));
+
+		Label info = new Label(filterGroup, SWT.WRAP);
+		info.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, false, false, 2, 1));
+		info.setText("Set function and file names to filter OUT, separate with space.\n" +
+				"Regular expressions require a . (dot) before * (asterisk) to match ANY character.\n" +
+				"To escape spaces, use \\ (backslash); to escape regular expressions use \\\\ (double backslash).");
+		info.setFont(MosyncUIPlugin.getDefault().getFont(MosyncUIPlugin.FONT_INFO_TEXT));
+
 		Label funcFilterLabel = new Label(filterGroup, SWT.NONE);
 		funcFilterLabel.setText("Name filters");
 		funcFilter = new Text(filterGroup, SWT.SINGLE | SWT.BORDER);
@@ -41,12 +50,12 @@ public class EmulatorProfilingLaunchConfigurationTab extends AbstractLaunchConfi
 		fileFilter.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		useRegExp = new Button(filterGroup, SWT.CHECK);
 		useRegExp.setText("Use regular e&xpressions");
-		
+
 		UpdateListener updateListener = new UpdateListener(this);
 		funcFilter.addListener(SWT.Modify, updateListener);
 		fileFilter.addListener(SWT.Modify, updateListener);
 		useRegExp.addListener(SWT.Selection, updateListener);
-		
+
 		setControl(filterGroup);
 	}
 

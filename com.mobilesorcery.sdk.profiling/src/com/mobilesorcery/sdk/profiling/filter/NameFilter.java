@@ -4,10 +4,13 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import org.eclipse.core.runtime.Path;
+
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.MergeFilter;
 import com.mobilesorcery.sdk.core.ParseException;
 import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.core.ReverseFilter;
 import com.mobilesorcery.sdk.profiling.CppFiltName;
 import com.mobilesorcery.sdk.profiling.FunctionDesc;
 import com.mobilesorcery.sdk.profiling.IInvocation;
@@ -20,27 +23,28 @@ public class NameFilter implements IFilter<IInvocation> {
 		REGEXP,
 		CONTAINS
 	}
-	
+
 	public enum Criteria {
 		NAME,
 		FILE
 	}
-	
+
     private Pattern pattern;
     private String match;
-	private MatchType type;
-	private Criteria criteria;
-	private boolean include;
+	private final MatchType type;
+	private final Criteria criteria;
+	private final boolean include;
 
 	public static IFilter<IInvocation> create(String match, Criteria criteria, MatchType matchType, boolean include) throws ParseException {
 		String[] matchStrings = PropertyUtil.toStrings(match);
 		ArrayList<IFilter<IInvocation>> result = new ArrayList<IFilter<IInvocation>>();
 		for (int i = 0; i < matchStrings.length; i++) {
-			result.add(new NameFilter(matchStrings[i], criteria, matchType, include));
+			result.add(new NameFilter(matchStrings[i], criteria, matchType, true));
 		}
-		return new MergeFilter<IInvocation>(MergeFilter.AND, result.toArray(new IFilter[0]));
+		IFilter<IInvocation> filter = MergeFilter.create(MergeFilter.OR, result.toArray(new IFilter[0]));
+		return include || result.isEmpty() ? filter : new ReverseFilter<IInvocation>(filter);
 	}
-	
+
     private NameFilter(String match, Criteria criteria, MatchType matchType, boolean include) throws ParseException {
     	switch (matchType) {
     	case EXACT_MATCH:
@@ -59,11 +63,12 @@ public class NameFilter implements IFilter<IInvocation> {
     	this.type = matchType;
     	this.include = include;
     }
-    
-    public boolean accept(IInvocation obj) {
+
+    @Override
+	public boolean accept(IInvocation obj) {
         if (obj != null && obj.getProfiledEntity() != null) {
         	String matched = getNameToMatch(obj);
-            
+
             if (pattern != null) {
                 return pattern.matcher(matched).matches();
             } else if (match != null) {
@@ -73,7 +78,7 @@ public class NameFilter implements IFilter<IInvocation> {
                 		matched.toUpperCase(Locale.ENGLISH).contains(match.toUpperCase(Locale.ENGLISH));
             }
         }
-        
+
         boolean result =  pattern == null && match == null;
         return include ? result : !result;
     }
@@ -88,13 +93,17 @@ public class NameFilter implements IFilter<IInvocation> {
 	        break;
 		case FILE:
 			matched = fd.getFileName();
+			if (matched != null) {
+				matched = new Path(matched).lastSegment();
+			}
 			break;
 		}
-		
+
         matched = matched == null ? "" : matched;
         return matched;
 	}
-	
+
+	@Override
 	public String toString() {
 		// For debugging purposes.
 		return match + "<" + criteria + "," + type + ">";
