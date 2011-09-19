@@ -45,16 +45,20 @@ public class NFCSupport {
 
 	public static NFCSupport create(MoSyncProject project) throws CoreException {
 		NFCSupport result = new NFCSupport();
-		result.parseEnablements(project);
 		result.project = project;
+		result.parseEnablements();
 		return result;
 	}
 
-	private void parseEnablements(MoSyncProject project) throws CoreException {
-		File nfcInfoLoc = project.getWrappedProject().getLocation().append("nfc.xml").toFile();
+	private void parseEnablements() throws CoreException {
+		File nfcInfoLoc = getNFCDescription();
 		if (nfcInfoLoc.exists()) {
 			parseEnablements(nfcInfoLoc);
 		}
+	}
+
+	public File getNFCDescription() {
+		return project.getWrappedProject().getLocation().append("nfc.xml").toFile();
 	}
 
 	private void parseEnablements(File nfcInfoLoc) throws CoreException {
