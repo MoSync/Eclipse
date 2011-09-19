@@ -24,6 +24,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.AbstractPackager;
+import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildResult;
@@ -31,6 +32,8 @@ import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IconManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.PackageToolPackager;
+import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
@@ -43,187 +46,55 @@ import com.mobilesorcery.sdk.core.Version;
  *
  * @author Ali Mosavian
  */
-public class IPhoneOSPackager
-extends AbstractPackager
+public class IPhoneOSPackager extends PackageToolPackager
 {
 	public final static String ID = "com.mobilesorcery.sdk.build.ios.packager";
 
-	private final String m_iphoneBuildLoc;
-
-	public IPhoneOSPackager ( )
-	{
-		MoSyncTool tool = MoSyncTool.getDefault( );
-		m_iphoneBuildLoc  = tool.getBinary( "iphone-builder" ).toOSString( );
-	}
-
-
-
-    /**
-     * This method is called upon whenever a iphone os package
-     * is to be built.
-     *
-     * @param project
-     * @param targetProfile Profile information i presume.
-     * @param buildResult The build result is returned through this parameter.
-     *
-     * @throws CoreException Error occurred
-     */
     @Override
-	public void createPackage ( MoSyncProject project,
-                                IBuildVariant variant,
-                                IBuildResult buildResult )
+	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult)
     throws CoreException
     {
-    	String appName;
-    	String version;
-    	String company;
-    	String cert;
-    	IconManager     icon;
-        DefaultPackager intern;
-
-
-        // Was used for printing to console
-        intern = new DefaultPackager( project,
-                                      variant );
-
-        //
-        // Custom parameters
-        //
-        appName = intern.getParameters( ).get( DefaultPackager.APP_NAME );
-        version = intern.getParameters( ).get( DefaultPackager.APP_VERSION );
-        company = intern.getParameters( ).get( DefaultPackager.APP_VENDOR_NAME );
-        // We do not yet support configuration specific certs.
-        cert = PropertyUtil.getBoolean(project, PropertyInitializer.IPHONE_PROJECT_SPECIFIC_CERT) ?
-        		project.getProperty(PropertyInitializer.IPHONE_CERT):
-        		Activator.getDefault().getPreferenceStore().getString(PropertyInitializer.IPHONE_CERT);
-
         try
         {
-        	String ver = new Version( version ).asCanonicalString( Version.MICRO );
-        	File   in  = intern.resolveFile( "%runtime-dir%/template" );
-        	File   out = intern.resolveFile( "%package-output-dir%/xcode-proj" );
-        	out.mkdirs( );
+        	DefaultPackager intern = new DefaultPackager(project, variant);
+			File out = intern.resolveFile( "%package-output-dir%/xcode-proj" );
 
-        	// Create XCode template
-			int res = intern.runCommandLineWithRes( m_iphoneBuildLoc,
-                                                    "generate",
-                                                    "-project-name",
-                                                    appName,
-                                                    "-version",
-                                                    ver,
-                                                    "-company-name",
-                                                    company,
-                                                    "-cert",
-                                                    cert,
-					                                "-input",
-					                                in.getAbsolutePath( ),
-					                                "-output",
-					                                out.getAbsolutePath( ) );
+            // Should we build the generated project with Xcode?
+			boolean shouldBuild = shouldBuildWithXcode(project, variant);
 
-			// Did it run successfully?
-			if ( res != 0 )
-				return;
+            super.createPackage(project, variant, buildResult);
 
-			// Copy program files to xcode template
-			Util.copyFile( new NullProgressMonitor( ),
-				           intern.resolveFile( "%compile-output-dir%/data_section.bin" ),
-				           new File( out, "data_section.bin" ) );
-
-			Util.copyFile( new NullProgressMonitor( ),
-			               intern.resolveFile( "%compile-output-dir%/rebuild.build.cpp" ),
-			               new File( out, "Classes/rebuild.build.cpp" ) );
-
-			File resources = intern.resolveFile( "%compile-output-dir%/resources" );
-			if ( resources.exists( ) == true )
-			{
-				Util.copyFile( new NullProgressMonitor( ),
-			                   resources,
-			                   new File( out, "resources" ) );
-			}
-			else
-			{
-				Util.writeToFile( new File( out, "resources" ), "" );
-			}
-
-            //
-            // Set icons here
-            // Note: Always set a 48x48 png at the very least!
-            //
-            try
-            {
-                File f;
-	            icon = new IconManager( intern,
-	            						project );
-
-
-	            // Set PNG icons
-	            if ( icon.hasIcon( "png" ) == true )
-	            {
-		            int[] sizes = {57, 72};
-		            for ( int s : sizes )
-		            {
-			            try
-			            {
-			            	if ( s == 57 )
-			            		f = new File( out, "Icon.png" );
-			            	else
-			            		f = new File( out, "Icon-"+s+".png" );
-
-			                if ( f.exists( ) == true )
-			                	f.delete( );
-
-			                icon.inject( f, s, s, "png" );
-			            }
-			            catch ( Exception e )
-			            {
-			            	buildResult.addError( e.getMessage( ) );
-			            }
-		            }
-	            }
-
-	            // Should we build?
-	            SDK sdk = getSDK(project, variant);
-	            boolean isSimulatorSDK = sdk != null && sdk.isSimulatorSDK();
-	            boolean shouldBuild = isSimulatorSDK || !Activator.getDefault().getPreferenceStore().getBoolean(Activator.ONLY_GENERATE_XCODE_PROJECT);
-	            if (shouldBuild) {
-		            // Now, if we have XCode, build it as well!
-		            boolean hasXCode = XCodeBuild.getDefault().isValid();
-		            if (hasXCode) {
-		            	out = buildViaXCode(project, intern, variant, out).toFile();
-		            } else {
-		            	intern.getConsole().addMessage("No Xcode, will not build generated project");
-		            }
-	            } else {
-	            	intern.getConsole().addMessage("Xcode building disabled, will not build generated project");
-	            }
-
-            }
-            catch ( Exception e )
-            {
-            	buildResult.addError( e.getMessage( ) );
+            if (shouldBuild) {
+            	out = computeBuildResult(project, intern, variant, out).toFile();
+            	if (!XCodeBuild.getDefault().isValid()) {
+            		intern.getConsole().addMessage("No Xcode, will not build generated project");
+            	}
+            } else {
+            	intern.getConsole().addMessage("Xcode building disabled, will not build generated project");
             }
 
-			buildResult.setBuildResult( out );
+            buildResult.setBuildResult(out);
         }
         catch ( Exception e )
         {
-            // Return stack trace in case of error
-            throw new CoreException( new Status( IStatus.ERROR,
-                                                 "com.mobilesorcery.builder.iphoneos",
-                                                 "Failed to build the xcode template." ));
+        	buildResult.addError(e.getMessage());
         }
     }
 
-	private IPath buildViaXCode(MoSyncProject project, DefaultPackager packager, IBuildVariant variant, File xcodeProject) throws CoreException {
-		XCodeBuild xcodeBuild = XCodeBuild.getDefault();
-		xcodeBuild.setParameters(packager.getParameters());
+	private boolean shouldBuildWithXcode(MoSyncProject project, IBuildVariant variant) throws CoreException {
+        SDK sdk = getSDK(project, variant);
+        boolean isSimulatorSDK = sdk != null && sdk.isSimulatorSDK();
+        boolean shouldBuild = isSimulatorSDK || !Activator.getDefault().getPreferenceStore().getBoolean(Activator.ONLY_GENERATE_XCODE_PROJECT);
+        return shouldBuild;
+	}
+
+	private IPath computeBuildResult(MoSyncProject project, DefaultPackager packager, IBuildVariant variant, File xcodeProject) throws CoreException {
 		// Kind of hard-coded in the XCode project template.
 		String cfgId = variant.getConfigurationId();
 		IBuildConfiguration cfg = project.getBuildConfiguration(cfgId);
 		boolean isDebugBuild = cfg != null && cfg.getTypes().contains(IBuildConfiguration.DEBUG_TYPE);
 		String target = isDebugBuild ? "Debug" : "Release";
 		SDK sdk = getSDK(project, variant);
-		xcodeBuild.build(new Path(xcodeProject.getAbsolutePath()), target, sdk.getId());
 
 		String xcodeTarget = target + "-" + sdk.getSDKType();
 		// Hm, is this always true...?
@@ -235,12 +106,34 @@ extends AbstractPackager
 	}
 
 	private SDK getSDK(MoSyncProject project, IBuildVariant variant) throws CoreException {
-		String sdkId = null;
 		int sdkType = isSimulatorBuild(variant) ? XCodeBuild.IOS_SIMULATOR_SDKS : XCodeBuild.IOS_SDKS;
 		SDK sdk = Activator.getDefault().getSDK(project, sdkType);
 		if (sdk == null) {
 			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "No simulator SDK found, cannot build"));
 		}
 		return sdk;
+	}
+
+	@Override
+	protected void addPlatformSpecifics(MoSyncProject project,
+			IBuildVariant variant, CommandLineBuilder commandLine) throws Exception {
+		DefaultPackager internal = new DefaultPackager(project, variant);
+
+        // We do not yet support configuration specific certs.
+        String cert = PropertyUtil.getBoolean(project, PropertyInitializer.IPHONE_PROJECT_SPECIFIC_CERT) ?
+        		project.getProperty(PropertyInitializer.IPHONE_CERT):
+        		Activator.getDefault().getPreferenceStore().getString(PropertyInitializer.IPHONE_CERT);
+        commandLine.flag("--cert").with(cert);
+
+    	String version = internal.get(DefaultPackager.APP_VERSION);
+		String ver = new Version(version).asCanonicalString(Version.MICRO);
+    	commandLine.flag("--version").with(ver);
+
+    	if (!shouldBuildWithXcode(project, variant)) {
+    		commandLine.flag("--project-only");
+    	}
+
+    	SDK sdk = getSDK(project, variant);
+    	commandLine.flag("--sdk").with(sdk.getId());
 	}
 }

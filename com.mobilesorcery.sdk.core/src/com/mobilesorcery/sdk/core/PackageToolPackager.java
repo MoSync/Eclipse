@@ -27,62 +27,19 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			IBuildVariant variant, IBuildResult buildResult)
 			throws CoreException {
 		IProfile profile = variant.getProfile();
+
 		try {
 			IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(MoSyncBuilder.CONSOLE_ID);
-			DefaultPackager internal = new DefaultPackager(project, variant);
-			internal.setParameters(getParameters());
-			/*
-			 -p, --program <file>             Compiled program file.
-			 -r, --resource <file>            Compiled resource file.
-			 -i, --icon <file>                MoSync icon definition file (XML).
-			 -f, --profile <profile name>     Target profile.
-			 -d, --dst <path>                 Target directory.
-			 -n, --name <name>                Application name.
-			     --vendor <name>              Application vendor's name.
-			     --version <version>          Application version, e.g. 1.0.0
-			     --permissions                Comma separated list of permissions
-			     --debug                      Use debug runtime.
-			*/
 			IPath packagerTool = MoSyncTool.getDefault().getBinary("package");
 
-			File program = internal.resolveFile("%program-output%");
-			File resource = internal.resolveFile("%resource-output%");
-			File iconFile = project.getIconFile();
-			String packageOutputDir = internal.get(DefaultPackager.PACKAGE_OUTPUT_DIR);
-			String vendor = internal.get(DefaultPackager.APP_VENDOR_NAME);
-			// TODO: version could be different per platform
-			Version version = new Version(internal.get(DefaultPackager.APP_VERSION));
-			String appName = internal.get(DefaultPackager.APP_NAME);
-			IApplicationPermissions permissions = project.getPermissions();
-			String permissionsStr = Util.join(permissions.getRequestedPermissions().toArray(), ",");
+			DefaultPackager internal = new DefaultPackager(project, variant);
 
 			CommandLineBuilder commandLine = new CommandLineBuilder(packagerTool.toOSString());
-
-			commandLine.flag("-p").with(program);
-			if (resource.exists()) {
-				commandLine.flag("-r").with(resource);
-			}
-			if (iconFile != null && iconFile.exists()) {
-				commandLine.flag("-i").with(iconFile);
-			}
-
-			commandLine.flag("-d").with(packageOutputDir).flag("-m").with(MoSyncTool.toString(profile)).
-			flag("--vendor").with(vendor).flag("-n").with(appName)/*.flag("--version").with(version.asCanonicalString())*/;
-
-			if (!Util.isEmpty(permissionsStr)) {
-				commandLine.flag("--permissions").with(permissionsStr);
-			}
-
-			if (shouldUseDebugRuntimes()) {
-				commandLine.flag("--debug");
-			}
-
-			if (permissions.isPermissionRequested(ICommonPermissions.NFC)) {
-				File nfcDescription = NFCSupport.create(project).getNFCDescription();
-				commandLine.flag("--nfc").with(nfcDescription);
-			}
-
+			addGeneralParameters(project, variant, commandLine);
 			addPlatformSpecifics(project, variant, commandLine);
+
+			String packageOutputDir = internal.get(DefaultPackager.PACKAGE_OUTPUT_DIR);
+			new File(packageOutputDir).mkdirs();
 
 			internal.runCommandLine(commandLine.asArray());
 		} catch (Exception e) {
@@ -91,6 +48,51 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		}
 	}
 
-	protected abstract void addPlatformSpecifics(MoSyncProject project, IBuildVariant variant, CommandLineBuilder commandLine);
+	private void addGeneralParameters(MoSyncProject project,
+			IBuildVariant variant, CommandLineBuilder commandLine) throws Exception {
+		DefaultPackager internal = new DefaultPackager(project, variant);
+		internal.setParameters(getParameters());
+
+		IProfile profile = variant.getProfile();
+
+		File program = internal.resolveFile("%program-output%");
+		File resource = internal.resolveFile("%resource-output%");
+		File iconFile = project.getIconFile();
+		String packageOutputDir = internal.get(DefaultPackager.PACKAGE_OUTPUT_DIR);
+		String vendor = internal.get(DefaultPackager.APP_VENDOR_NAME);
+		Version version = new Version(internal.get(DefaultPackager.APP_VERSION));
+		String appName = internal.get(DefaultPackager.APP_NAME);
+		IApplicationPermissions permissions = project.getPermissions();
+		String permissionsStr = Util.join(permissions.getRequestedPermissions().toArray(), ",");
+
+		commandLine.flag("-p").with(program);
+		if (resource.exists()) {
+			commandLine.flag("-r").with(resource);
+		}
+		if (iconFile != null && iconFile.exists()) {
+			commandLine.flag("-i").with(iconFile);
+		}
+
+		commandLine.flag("-d").with(packageOutputDir).flag("-m").with(MoSyncTool.toString(profile)).
+		flag("--vendor").with(vendor).flag("-n").with(appName).flag("--version").with(version.asCanonicalString());
+
+		if (!Util.isEmpty(permissionsStr)) {
+			commandLine.flag("--permissions").with(permissionsStr);
+		}
+
+		if (shouldUseDebugRuntimes()) {
+			commandLine.flag("--debug");
+		}
+
+		if (permissions.isPermissionRequested(ICommonPermissions.NFC)) {
+			File nfcDescription = NFCSupport.create(project).getNFCDescription();
+			commandLine.flag("--nfc").with(nfcDescription);
+		}
+
+	}
+
+	protected void addPlatformSpecifics(MoSyncProject project, IBuildVariant variant, CommandLineBuilder commandLine) throws Exception {
+
+	}
 
 }
