@@ -29,25 +29,25 @@ public class JDE {
 		JDE jde = new JDE();
 		System.out.println(jde.guessVersion("RAPC Version: 2.2 Build: 6.0.0.141"));
 	}
-	
+
 	public JDE(IPath root, Version version) {
 		this.root = root;
 		this.version = version;
 	}
-	
+
 	private JDE() {
 		// TODO Auto-generated constructor stub
 	}
-	
+
 	public IPath getLocation() {
 		return root;
 	}
 
-	
+
 	public Version getVersion() {
 		return version;
 	}
-	
+
 	/**
 	 * Uses heuristics to guess the version of a JDE at a certain location
 	 * @return <code>null</code> if for some reason the version could not
@@ -61,7 +61,7 @@ public class JDE {
 			return null;
 		}
 	}
-	
+
 	public Version guessVersion() throws IOException {
 		File rapc = getRapc().toFile();
 		CollectingLineHandler lines = new CollectingLineHandler();
@@ -71,17 +71,17 @@ public class JDE {
 			rapc.getAbsolutePath(),
 			"-version"
 		});
-		
+
 		for (String line : lines.getLines()) {
 			Version version = guessVersion(line);
 			if (version != null) {
 				return version;
 			}
 		}
-		
+
 		return null;
 	}
-	
+
 	private Version guessVersion(String version) {
 		Matcher versionMatcher = JDE_RAPC_VERSION_PATTERN.matcher(version);
 		if (versionMatcher.matches()) {
@@ -93,7 +93,7 @@ public class JDE {
 	private IPath getRapc() {
 		return root.append("bin/rapc" + MoSyncTool.getBinExtension());
 	}
-	
+
 	private IPath getPreverifier() {
 		return root.append("bin/preverify" + MoSyncTool.getBinExtension());
 	}
@@ -102,27 +102,28 @@ public class JDE {
 		// Win only
 		return root.append("bin/SignatureTool.jar");
 	}
-	
+
 	public void apply(JDE workingCopy) {
 		this.root = workingCopy.root;
 		this.version = workingCopy.version;
 	}
-	
+
 	/**
 	 * Preverifies a jar and repackages it into a new jar -- will create a number of temporary files
 	 * @param input
 	 * @param output
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public void preverifyJAR(File jar, File output) throws IOException {
 		File tmpJar = new File(jar.getParentFile(), "tmp-jar");
 		Util.deleteFiles(tmpJar, null, Util.INFINITE_DEPTH, new NullProgressMonitor());
 		File tmpPrev = new File(jar.getParentFile(), "tmp-prev");
-		
+
 		try {
 			Util.unjar(jar, tmpJar);
 			// Copy all non-class files!
 			Util.copy(new NullProgressMonitor(), tmpJar, tmpPrev, new FileFilter() {
+				@Override
 				public boolean accept(File file) {
 					return !"class".equalsIgnoreCase(Util.getExtension(file));
 				}
@@ -143,7 +144,7 @@ public class JDE {
 			Util.deleteFiles(tmpPrev, null, Util.INFINITE_DEPTH, new NullProgressMonitor());
 		}
 	}
-	
+
 	public void convertJARToCOD(File jar, File jad, File cod) throws IOException {
 		String codNameParam = getVersion().isOlder(VER_430) ? "codename" : "codname";
 		String[] rapcCommandLine = new String[] {
@@ -168,20 +169,21 @@ public class JDE {
 		if (Util.isEmpty(password)) {
 			throw new IOException("Missing password for signing");
 		}
-		
+
 		// BLURGH!
 		CommandLineBuilder commandLine = new CommandLineBuilder("javaw", true).flag("-jar").with(getSignTool().toFile().getAbsolutePath()).
-			flag("-p").with(password).flag("-C").flag("-a").with(finalOutput);
-		
+			flag("-p", true).with(password).flag("-C").flag("-a").with(finalOutput);
+
 		CommandLineExecutor executor = new CommandLineExecutor(MoSyncBuilder.CONSOLE_ID);
 		executor.setExecutionDirectory(finalOutput.getParent());
-		executor.runCommandLine(commandLine.asArray(), commandLine.toHiddenString("-p"));
+		executor.runCommandLine(commandLine.asArray(), commandLine.toHiddenString());
 	}
-	
+
 	private IPath getBootClasspath() {
 		return root.append("lib/net_rim_api.jar");
 	}
 
+	@Override
 	public String toString() {
 		return "JDE version " + version + " (" + root + ")";
 	}

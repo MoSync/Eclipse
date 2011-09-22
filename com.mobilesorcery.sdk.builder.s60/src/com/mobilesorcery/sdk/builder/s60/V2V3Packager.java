@@ -47,7 +47,6 @@ public class V2V3Packager extends PackageToolPackager {
 			throws CoreException {
 		DefaultPackager internal = new DefaultPackager(project, variant);
 		File packageOutputDir = internal.resolveFile("%package-output-dir%"); //$NON-NLS-1$
-		packageOutputDir.mkdirs();
 		String appName = internal.getParameters( ).get( DefaultPackager.APP_NAME );
 
 		super.createPackage(project, variant, buildResult);

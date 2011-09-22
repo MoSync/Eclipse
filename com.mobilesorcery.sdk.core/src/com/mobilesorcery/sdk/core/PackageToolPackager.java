@@ -41,11 +41,23 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			String packageOutputDir = internal.get(DefaultPackager.PACKAGE_OUTPUT_DIR);
 			new File(packageOutputDir).mkdirs();
 
-			internal.runCommandLine(commandLine.asArray());
+			internal.runCommandLine(commandLine.asArray(), commandLine.toHiddenString());
+			buildResult.setBuildResult(computeBuildResult(project, variant));
 		} catch (Exception e) {
 			String errorMsg = MessageFormat.format("Failed to create package for {0} (platform: {1})", profile, Profile.getAbbreviatedPlatform(profile));
 			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, errorMsg, e));
 		}
+	}
+
+	/**
+	 * Clients override this method and/or the createPackage method.
+	 * @param variant
+	 * @param project
+	 * @return
+	 * @throws ParameterResolverException
+	 */
+	protected File computeBuildResult(MoSyncProject project, IBuildVariant variant) throws ParameterResolverException {
+		return null;
 	}
 
 	private void addGeneralParameters(MoSyncProject project,
@@ -63,7 +75,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		Version version = new Version(internal.get(DefaultPackager.APP_VERSION));
 		String appName = internal.get(DefaultPackager.APP_NAME);
 		IApplicationPermissions permissions = project.getPermissions();
-		String permissionsStr = Util.join(permissions.getRequestedPermissions().toArray(), ",");
+		String permissionsStr = Util.join(permissions.getRequestedPermissions(true).toArray(), ",");
 
 		commandLine.flag("-p").with(program);
 		if (resource.exists()) {

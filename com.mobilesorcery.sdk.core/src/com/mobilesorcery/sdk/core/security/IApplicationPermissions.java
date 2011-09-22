@@ -17,10 +17,10 @@ import java.util.List;
 
 public interface IApplicationPermissions {
 
-    public List<String> getRequestedPermissions();
-    
+    public List<String> getRequestedPermissions(boolean includeChildren);
+
     public void resetRequestedPermissions(List<String> required);
-    
+
     public void setRequestedPermission(String required, boolean set);
 
     public void setRequestedPermissions(List<String> required, boolean set);
@@ -32,11 +32,11 @@ public interface IApplicationPermissions {
      * @return
      */
     public boolean isPermissionRequested(String key);
-    
+
     public List<String> getAvailablePermissions(String parentPermission);
 
     public IApplicationPermissions createWorkingCopy();
-    
+
     public void apply(IApplicationPermissions workingCopy);
 
 }

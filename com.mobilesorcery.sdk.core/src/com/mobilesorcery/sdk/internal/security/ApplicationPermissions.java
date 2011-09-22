@@ -36,38 +36,38 @@ import com.mobilesorcery.sdk.core.security.ICommonPermissions;
  *
  */
 public class ApplicationPermissions implements IApplicationPermissions {
-    
+
     public final static String APPLICATION_PERMISSIONS_PROP = MoSyncBuilder.BUILD_PREFS_PREFIX + "app.permissions";
 
     private final static String ROOT = "__root";
-    
-    private TreeMap<String, Set<String>> availablePermissionLookup = new TreeMap<String, Set<String>>();
+
+    private final TreeMap<String, Set<String>> availablePermissionLookup = new TreeMap<String, Set<String>>();
     private TreeSet<String> requestedPermissions;
-    private MoSyncProject project;
+    private final MoSyncProject project;
 
     private boolean isWorkingCopy = false;
-    
+
     public ApplicationPermissions(MoSyncProject project) {
         this.project = project;
         for (int i = 0; i < ICommonPermissions.ALL_PERMISSIONS.length; i++) {
             addAvailablePermission(ICommonPermissions.ALL_PERMISSIONS[i]);
         }
-        
+
         refresh();
     }
-    
+
     /**
      * Refreshes this application permission object using
      * the associated project's properties.
      */
     public void refresh() {
-        init(project.getProperty(APPLICATION_PERMISSIONS_PROP));    	
+        init(project.getProperty(APPLICATION_PERMISSIONS_PROP));
     }
-    
+
     private void init(String applicationPermissionProperty) {
         requestedPermissions = new TreeSet<String>(Arrays.asList(PropertyUtil.toStrings(applicationPermissionProperty)));
     }
-    
+
     private void addAvailablePermission(String permission) {
         String parent = Util.getParentKey(permission);
         if (parent == null) {
@@ -78,34 +78,48 @@ public class ApplicationPermissions implements IApplicationPermissions {
             lookupSet = new TreeSet<String>();
             availablePermissionLookup.put(parent, lookupSet);
         }
-    
+
         lookupSet.add(permission);
     }
-    
-    public List<String> getRequestedPermissions() {
-        return new ArrayList<String>(requestedPermissions);
+
+    @Override
+	public List<String> getRequestedPermissions(boolean includeChildren) {
+    	if (includeChildren) {
+    		ArrayList<String> result = new ArrayList<String>();
+    		for (String requestedPermission : requestedPermissions) {
+    			List<String> children = getAvailablePermissions(requestedPermission);
+    			result.add(requestedPermission);
+    			result.addAll(children);
+    		}
+    		return result;
+    	} else {
+    		return new ArrayList<String>(requestedPermissions);
+    	}
     }
 
-    public void resetRequestedPermissions(List<String> requested) {
+    @Override
+	public void resetRequestedPermissions(List<String> requested) {
         this.requestedPermissions = new TreeSet<String>(requested);
         save();
     }
 
-    public void setRequestedPermission(String requested, boolean set) {
+    @Override
+	public void setRequestedPermission(String requested, boolean set) {
         setRequestedPermission(requested, set, true);
     }
-    
-    public void setRequestedPermissions(List<String> requested, boolean set) {
+
+    @Override
+	public void setRequestedPermissions(List<String> requested, boolean set) {
         for (String oneRequested : requested) {
         	setRequestedPermission(oneRequested, set);
         }
     }
-    
+
     private void setRequestedPermission(String requested, boolean set, boolean setSubPermissions) {
         if (requested == null) {
             return;
         }
-        
+
         if (set) {
             requestedPermissions.add(requested);
             if (setSubPermissions) {
@@ -119,12 +133,12 @@ public class ApplicationPermissions implements IApplicationPermissions {
                 requestedPermissions.removeAll(subPermissions);
             }
         }
-        
+
         String parentPermission = Util.getParentKey(requested);
         setRequestedPermission(parentPermission, allSubPermissionsSet(parentPermission), false);
         save();
     }
-    
+
     private boolean allSubPermissionsSet(String parentPermission) {
         TreeSet<String> available = new TreeSet<String>(getAvailablePermissions(parentPermission));
         available.removeAll(requestedPermissions);
@@ -137,16 +151,17 @@ public class ApplicationPermissions implements IApplicationPermissions {
             project.setProperty(APPLICATION_PERMISSIONS_PROP, propertyString);
         }
     }
-    
+
     public final static String toPropertyString(String... permissions) {
         return PropertyUtil.fromStrings(permissions);
     }
 
-    public List<String> getAvailablePermissions(String parentPermission) {
+    @Override
+	public List<String> getAvailablePermissions(String parentPermission) {
         if (parentPermission == null) {
             parentPermission = ROOT;
         }
-        
+
         Set<String> availablePermissions = availablePermissionLookup.get(parentPermission);
         ArrayList<String> result = new ArrayList<String>();
         if (availablePermissions != null) {
@@ -154,26 +169,30 @@ public class ApplicationPermissions implements IApplicationPermissions {
         }
         return result;
     }
-    
-    public boolean isPermissionRequested(String key) {
+
+    @Override
+	public boolean isPermissionRequested(String key) {
         if (key == null) {
             return false;
         }
-        
+
         return requestedPermissions.contains(key) || isPermissionRequested(Util.getParentKey(key));
     }
 
-    public IApplicationPermissions createWorkingCopy() {
+    @Override
+	public IApplicationPermissions createWorkingCopy() {
         ApplicationPermissions copy = new ApplicationPermissions(project);
         copy.isWorkingCopy = true;
         return copy;
     }
 
-    public void apply(IApplicationPermissions workingCopy) {
-        resetRequestedPermissions(workingCopy.getRequestedPermissions());
+    @Override
+	public void apply(IApplicationPermissions workingCopy) {
+        resetRequestedPermissions(workingCopy.getRequestedPermissions(false));
     }
-    
-    public String toString() {
+
+    @Override
+	public String toString() {
         return requestedPermissions.toString();
     }
 
@@ -183,5 +202,5 @@ public class ApplicationPermissions implements IApplicationPermissions {
         result.init(project.getDefaultProperty(APPLICATION_PERMISSIONS_PROP));
         return result;
     }
-    
+
 }

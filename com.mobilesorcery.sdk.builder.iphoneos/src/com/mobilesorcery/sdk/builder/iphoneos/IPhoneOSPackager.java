@@ -123,17 +123,17 @@ public class IPhoneOSPackager extends PackageToolPackager
         String cert = PropertyUtil.getBoolean(project, PropertyInitializer.IPHONE_PROJECT_SPECIFIC_CERT) ?
         		project.getProperty(PropertyInitializer.IPHONE_CERT):
         		Activator.getDefault().getPreferenceStore().getString(PropertyInitializer.IPHONE_CERT);
-        commandLine.flag("--cert").with(cert);
+        commandLine.flag("--ios-cert").with(cert);
 
     	String version = internal.get(DefaultPackager.APP_VERSION);
 		String ver = new Version(version).asCanonicalString(Version.MICRO);
     	commandLine.flag("--version").with(ver);
 
     	if (!shouldBuildWithXcode(project, variant)) {
-    		commandLine.flag("--project-only");
+    		commandLine.flag("--ios-project-only");
     	}
 
     	SDK sdk = getSDK(project, variant);
-    	commandLine.flag("--sdk").with(sdk.getId());
+    	commandLine.flag("--ios-sdk").with(sdk.getId());
 	}
 }

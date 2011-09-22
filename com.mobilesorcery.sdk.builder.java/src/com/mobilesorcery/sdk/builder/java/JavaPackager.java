@@ -158,22 +158,22 @@ public class JavaPackager extends AbstractPackager {
             addCertCmd.flag("-keystore").with(keystore);
             addCertCmd.flag("-inputjad").with(projectJad);
             addCertCmd.flag("-outputjad").with(projectJad);
-            addCertCmd.flag("-storepass").with(storepass);
+            addCertCmd.flag("-storepass", true).with(storepass);
 
-            assertOk(internal.runCommandLine(addCertCmd.asArray(), addCertCmd.toHiddenString("-storepass")));
+            assertOk(internal.runCommandLine(addCertCmd.asArray(), addCertCmd.toHiddenString()));
 
             CommandLineBuilder addJarSigCmd = new CommandLineBuilder(javaPath);
             addJarSigCmd.flag("-jar").with(jadToolPath);
             addJarSigCmd.flag("-addjarsig");
             addJarSigCmd.flag("-jarfile").with(projectJar);
             addJarSigCmd.flag("-keystore").with(keystore);
-            addJarSigCmd.flag("-storepass").with(storepass);
+            addJarSigCmd.flag("-storepass", true).with(storepass);
             addJarSigCmd.flag("-alias").with(alias);
-            addJarSigCmd.flag("-keypass").with(keypass);
+            addJarSigCmd.flag("-keypass", true).with(keypass);
             addJarSigCmd.flag("-inputjad").with(projectJad);
             addJarSigCmd.flag("-outputjad").with(projectJad);
 
-            assertOk(internal.runCommandLine(addJarSigCmd.asArray(), addJarSigCmd.toHiddenString("-storepass", "-keypass")));
+            assertOk(internal.runCommandLine(addJarSigCmd.asArray(), addJarSigCmd.toHiddenString()));
         }
     }
 
