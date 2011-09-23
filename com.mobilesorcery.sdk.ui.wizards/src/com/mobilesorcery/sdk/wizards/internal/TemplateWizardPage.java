@@ -13,6 +13,9 @@
 */
 package com.mobilesorcery.sdk.wizards.internal;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CellLabelProvider;
@@ -48,6 +51,7 @@ public class TemplateWizardPage extends WizardPage {
 		    return "?";
 		}
 
+		@Override
 		public String getToolTipText(Object element) {
 			if (element instanceof ProjectTemplate) {
 				String desc = ((ProjectTemplate) element).getDescription();
@@ -55,10 +59,11 @@ public class TemplateWizardPage extends WizardPage {
 					return desc;
 				}
 			}
-			
+
 			return "";
 		}
 
+		@Override
 		public void update(ViewerCell cell) {
 			Object element = cell.getElement();
 			cell.setText(getText(element));
@@ -66,11 +71,13 @@ public class TemplateWizardPage extends WizardPage {
 	}
 
 	private final class InnerSelectionListener implements SelectionListener {
-        public void widgetDefaultSelected(SelectionEvent e) {
+        @Override
+		public void widgetDefaultSelected(SelectionEvent e) {
             widgetSelected(e);
         }
 
-        public void widgetSelected(SelectionEvent e) {
+        @Override
+		public void widgetSelected(SelectionEvent e) {
         	if (!templateTable.getControl().isDisposed()) {
         		descriptionText.setVisible(useTemplate.getSelection());
         		templateTable.getControl().setEnabled(useTemplate.getSelection());
@@ -89,69 +96,85 @@ public class TemplateWizardPage extends WizardPage {
     private Button useTemplate;
     private TableViewer templateTable;
 	private Text descriptionText;
+	private List<String> templateTypes;
 
     public ProjectTemplate getProjectTemplate() {
         IStructuredSelection selection = (IStructuredSelection) templateTable.getSelection();
         return useTemplate.getSelection() ? (ProjectTemplate) selection.getFirstElement() : null;
     }
 
-    public void createControl(Composite parent) {
+    @Override
+	public void createControl(Composite parent) {
         Composite control = new Composite(parent, SWT.NONE);
         control.setLayout(new GridLayout(1, false));
-        
+
         useTemplate = new Button(control, SWT.CHECK);
         useTemplate.setText("Use template");
         useTemplate.setSelection(true);
         setPageComplete(false);
-        
+
         templateTable = new TableViewer(control);
         templateTable.setLabelProvider(new ProjectTemplateLabelProvider());
-        
+
         templateTable.setContentProvider(new ArrayContentProvider());
-        templateTable.setInput(Activator.getDefault().getProjectTemplates(null).toArray());
-        
+        templateTable.setInput(getTemplates());
+
         templateTable.getControl().setLayoutData(new GridData(GridData.FILL_BOTH));
-        
+
         SelectionListener listener = new InnerSelectionListener();
         useTemplate.addSelectionListener(listener);
         templateTable.getTable().addSelectionListener(listener);
         templateTable.addDoubleClickListener(new IDoubleClickListener() {
-            public void doubleClick(DoubleClickEvent event) {
-                if (getWizard().canFinish()) {        // Kind of ugly...            
+            @Override
+			public void doubleClick(DoubleClickEvent event) {
+                if (getWizard().canFinish()) {        // Kind of ugly...
                     if (getWizard().performFinish()) {
                         getWizard().getContainer().getShell().dispose();
                     }
                 }
-            }            
+            }
         });
 
         ColumnViewerToolTipSupport.enableFor(templateTable, SWT.NONE);
-        
+
         descriptionText = new Text(control, SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL);
         GridData descriptionTextData = new GridData(GridData.FILL_HORIZONTAL);
         descriptionTextData.heightHint = UIUtils.getRowHeight(3);
         descriptionText.setLayoutData(descriptionTextData);
         updateDescriptionText(null);
-        
+
         templateTable.addSelectionChangedListener(new ISelectionChangedListener() {
+			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				IStructuredSelection selection = (IStructuredSelection) event.getSelection();
 				ProjectTemplate template = (ProjectTemplate) selection.getFirstElement();
 				updateDescriptionText(template);
 			}
-		});        
+		});
 
         setControl(control);
     }
-    
-    private void updateDescriptionText(ProjectTemplate template) {
-    	String description = "";
-    	
-    	if (template != null && template.getDescription() != null) {
-    		description = template.getDescription();    	
+
+    private ProjectTemplate[] getTemplates() {
+    	ArrayList<ProjectTemplate> result = new ArrayList<ProjectTemplate>();
+    	for (String templateType : templateTypes) {
+    		result.addAll(Activator.getDefault().getProjectTemplates(templateType));
     	}
-    	
+    	return result.toArray(new ProjectTemplate[result.size()]);
+	}
+
+	private void updateDescriptionText(ProjectTemplate template) {
+    	String description = "";
+
+    	if (template != null && template.getDescription() != null) {
+    		description = template.getDescription();
+    	}
+
     	descriptionText.setText(description);
     }
+
+	public void setTemplateTypes(List<String> templateTypes) {
+		this.templateTypes = templateTypes;
+	}
 
 }
