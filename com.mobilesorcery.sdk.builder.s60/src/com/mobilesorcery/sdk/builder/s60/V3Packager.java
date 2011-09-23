@@ -22,7 +22,7 @@ package com.mobilesorcery.sdk.builder.s60;
 public class V3Packager extends V2V3Packager
 {
 	public V3Packager() {
-		super(PropertyInitializer.S60V3_UID, ".sisx");
+		super(PropertyInitializer.S60V3_UID, ".sisx", "--s60v3uid");
 	}
 
 }

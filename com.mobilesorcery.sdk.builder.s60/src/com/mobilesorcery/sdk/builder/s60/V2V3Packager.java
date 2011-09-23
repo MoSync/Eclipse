@@ -29,16 +29,19 @@ public class V2V3Packager extends PackageToolPackager {
 
 	String resultExtension;
 
+	private final String uidParameter;
+
 	/**
 	 * Creates a builder for either Symbian 2nd or 3d edition.
 	 *
 	 * @param uidString Defines which Symbian UID string to use.
 	 * @param resultExtension The extension of the resulting package.
 	 */
-	public V2V3Packager(String uidString, String resultExtension)
+	public V2V3Packager(String uidString, String resultExtension, String uidParameter)
 	{
 		uidPropertyName = uidString;
 		this.resultExtension = resultExtension;
+		this.uidParameter = uidParameter;
 	}
 
 	@Override
@@ -73,7 +76,7 @@ public class V2V3Packager extends PackageToolPackager {
 	protected void addPlatformSpecifics(MoSyncProject project,
 			IBuildVariant variant, CommandLineBuilder commandLine) {
 		/* Symbian UID */
-		String uid = formatUID(project.getProperty(uidPropertyName) );
-		commandLine.flag( "--uid" ).with( uid );
+		String uid = formatUID(project.getProperty(uidPropertyName));
+		commandLine.flag(uidParameter).with( uid );
 	}
 }
