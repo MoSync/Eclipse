@@ -89,7 +89,7 @@ public class AndroidPackager extends PackageToolPackager {
 
 		char invalidChar = Character.isJavaIdentifierStart(packagePartCh[0]) ? '\0' : packagePartCh[0];
 
-		for (int i = 1; i < packagePartCh.length; i++) {
+		for (int i = 1; invalidChar == '\0' && i < packagePartCh.length; i++) {
 			invalidChar = Character.isJavaIdentifierPart(packagePartCh[i]) ? '\0' : packagePartCh[i];
 		}
 
