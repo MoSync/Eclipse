@@ -14,8 +14,8 @@
 #####################
 
 #equinoxLauncherPluginVersion=1.0.200.v20090520
-equinoxLauncherPluginVersion=1.1.0.v20100507
-pdeBuildPluginVersion=3.6.1.R36x_v20100823
+equinoxLauncherPluginVersion=1.2.0.v20110502
+pdeBuildPluginVersion=3.7.0.v20110512-1320
 #eclipse.pdebuild.scripts=%%target-platform%%/eclipse/plugins/org.eclipse.pde.build_${pdeBuildPluginVersion}/scripts
 #eclipse.pdebuild.templates=%%target-platform%%/eclipse/plugins/org.eclipse.pde.build_${pdeBuildPluginVersion}/templates
 

@@ -24,32 +24,38 @@ import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
 public class PermissionsPropertyPage extends MoSyncPropertyPage {
 
     public class PermissionsContentProvider implements ITreeContentProvider {
-        private IApplicationPermissions permissions;
+        private final IApplicationPermissions permissions;
 
         public PermissionsContentProvider(IApplicationPermissions permissions) {
             this.permissions = permissions;
         }
-        
-        public Object[] getChildren(Object element) {
+
+        @Override
+		public Object[] getChildren(Object element) {
             return permissions.getAvailablePermissions(element == null ? null : element.toString()).toArray();
         }
 
-        public Object getParent(Object element) {
+        @Override
+		public Object getParent(Object element) {
             return null;
         }
 
-        public boolean hasChildren(Object element) {
+        @Override
+		public boolean hasChildren(Object element) {
             return getChildren(element).length > 0;
         }
 
-        public Object[] getElements(Object input) {
+        @Override
+		public Object[] getElements(Object input) {
             return getChildren(null);
         }
 
-        public void dispose() {
+        @Override
+		public void dispose() {
         }
 
-        public void inputChanged(Viewer viewer, Object obj, Object obj1) {
+        @Override
+		public void inputChanged(Viewer viewer, Object obj, Object obj1) {
         }
 
     }
@@ -58,16 +64,18 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
     private IApplicationPermissions permissionsWorkingCopy;
     private IApplicationPermissions permissions;
 
-    protected Control createContents(Composite parent) {
+    @Override
+	protected Control createContents(Composite parent) {
         Composite main = new Composite(parent, SWT.NONE);
         main.setLayout(new GridLayout(1, false));
-        
+
         Label permissionsLabel = new Label(main, SWT.NONE);
         permissionsLabel.setText("&Select permissions for this project");
-        
+
         permissionsList = new CheckboxTreeViewer(main);
         permissionsList.setLabelProvider(new LabelProvider() {
-            public String getText(Object element) {
+            @Override
+			public String getText(Object element) {
                 String permission = (String) element;
                 Path permissionPath = new Path(permission);
                 return permissionPath.lastSegment();
@@ -77,21 +85,23 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
         permissionsWorkingCopy = permissions.createWorkingCopy();
         permissionsList.setContentProvider(new PermissionsContentProvider(permissionsWorkingCopy));
         permissionsList.setCheckStateProvider(new ICheckStateProvider() {
-            public boolean isGrayed(Object element) {
+            @Override
+			public boolean isGrayed(Object element) {
                 String permission = (String) element;
                 TreeSet<String> available = new TreeSet<String>(permissionsWorkingCopy.getAvailablePermissions(permission));
                 if (available.isEmpty()) {
                     return false;
                 }
                 int availablePermissionCount = available.size();
-                available.removeAll(permissionsWorkingCopy.getRequestedPermissions());
+                available.removeAll(permissionsWorkingCopy.getRequestedPermissions(false));
                 int notRequiredPermissionCount = available.size();
                 boolean shouldBeGrayed = availablePermissionCount != notRequiredPermissionCount && notRequiredPermissionCount > 0;
 
                 return shouldBeGrayed;
             }
-            
-            public boolean isChecked(Object element) {
+
+            @Override
+			public boolean isChecked(Object element) {
                 String permission = (String) element;
                 return isGrayed(element) || permissionsWorkingCopy.isPermissionRequested(permission);
             }
@@ -99,9 +109,10 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
 
         setPermissionsWorkingCopy(permissionsWorkingCopy);
         permissionsList.getTree().setLayoutData(new GridData(GridData.FILL_BOTH));
-        
+
         permissionsList.addCheckStateListener(new ICheckStateListener() {
-            public void checkStateChanged(CheckStateChangedEvent event) {
+            @Override
+			public void checkStateChanged(CheckStateChangedEvent event) {
                 String permission = (String) event.getElement();
                 permissionsWorkingCopy.setRequestedPermission(permission, event.getChecked());
                 permissionsList.refresh(true);
@@ -116,11 +127,13 @@ public class PermissionsPropertyPage extends MoSyncPropertyPage {
         permissionsList.expandAll();
     }
 
-    public void performDefaults() {
+    @Override
+	public void performDefaults() {
         setPermissionsWorkingCopy(CoreMoSyncPlugin.getDefault().getDefaultPermissions(getProject()));
     }
-    
-    public boolean performOk() {
+
+    @Override
+	public boolean performOk() {
         permissions.apply(permissionsWorkingCopy);
         return true;
     }

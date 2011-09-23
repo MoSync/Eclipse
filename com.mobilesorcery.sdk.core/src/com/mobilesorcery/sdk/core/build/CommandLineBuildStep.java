@@ -1,6 +1,7 @@
 package com.mobilesorcery.sdk.core.build;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,7 +59,7 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 			if (command != null) {
 				script = command.getTextData();
 				Boolean runPerFile = command.getBoolean("pf");
-				this.runPerFile = runPerFile == null ? false : runPerFile;  
+				this.runPerFile = runPerFile == null ? false : runPerFile;
 				filePattern = command.getString("pt");
 				name = command.getString("name");
 				Boolean failOnError = command.getBoolean("foe");
@@ -129,7 +130,7 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 	public static final class BuildStepParameterResolver extends ParameterResolver {
 
 		private IResource currentResource;
-		private ParameterResolver fallback;
+		private final ParameterResolver fallback;
 		private String[] allResources;
 
 		public BuildStepParameterResolver(ParameterResolver fallback) {
@@ -173,14 +174,14 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 			result.add("@files");
 			return result;
 		}
-		
+
 		@Override
 		public List<String> listAvailableParameters(String prefix) {
 			return fallback.listAvailableParameters(prefix);
 		}
 	}
 
-	private Factory prototype;
+	private final Factory prototype;
 
 	public CommandLineBuildStep(Factory prototype) {
 		this.prototype = prototype;
@@ -191,7 +192,7 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 	class Visitor extends IncrementalBuilderVisitor {
 
 		private PathExclusionFilter filter;
-		private boolean runPerFile;
+		private final boolean runPerFile;
 
 		public Visitor(String filePattern, boolean runPerFile) {
 			this.runPerFile = runPerFile;
@@ -200,6 +201,7 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 			}
 		}
 
+		@Override
 		public boolean doesAffectBuild(IResource resource) {
 			return filter == null || filter.inverseAccept(resource);
 		}
@@ -218,14 +220,14 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 				CommandLineBuildStep.this.executeScript(resolver);
 			}
 		}
-		
+
 		@Override
 		public ParameterResolver getParameterResolver() {
 			BuildStepParameterResolver resolver = createParameterResolver(super.getParameterResolver());
 			return resolver;
 		}
 	}
-	
+
 	@Override
 	public int incrementalBuild(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff,
@@ -235,7 +237,7 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 		visitor.setParameterResolver(getParameterResolver());
 		project.getWrappedProject().accept(visitor);
 		visitor.executeScript();
-        
+
         return CONTINUE;
 	}
 
@@ -251,7 +253,9 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 					.parseCommandLine(resolvedCommandLine));
 			if (prototype.failOnError && exitCode != 0) {
 				throw new IOException(
-						"External command failed: returned error code <> 0");
+						MessageFormat.format(
+								"External command \"{0}\" failed: returned error code <> 0",
+								prototype.name));
 			}
 		}
 	}

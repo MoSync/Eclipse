@@ -64,6 +64,12 @@
             id="com.mobilesorcery.sdk.builder.iphoneos.preferences"
             name="IPhone Signing">
       </page>
+      <page
+            category="com.mobilesorcery.sdk.preferences.main"
+            class="com.mobilesorcery.sdk.builder.iphoneos.ui.preferences.XCodePreferencePage"
+            id="com.mobilesorcery.sdk.builder.iphoneos.preferences.xcode"
+            name="Xcode">
+      </page>
       </extension>
             <extension
          point="org.eclipse.core.runtime.preferences">

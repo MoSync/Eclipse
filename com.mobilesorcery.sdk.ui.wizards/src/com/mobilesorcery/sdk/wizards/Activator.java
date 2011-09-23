@@ -16,6 +16,8 @@ package com.mobilesorcery.sdk.wizards;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.TreeMap;
 
@@ -45,10 +47,10 @@ public class Activator extends AbstractUIPlugin {
 	// The shared instance
 	private static Activator plugin;
 
-    private TreeMap<String, ITemplate> templates = new TreeMap<String, ITemplate>();
+    private final TreeMap<String, ITemplate> templates = new TreeMap<String, ITemplate>();
 
-    private TreeMap<String, ProjectTemplate> projectTemplates = new TreeMap<String, ProjectTemplate>();
-	
+    private final TreeMap<String, ProjectTemplate> projectTemplates = new TreeMap<String, ProjectTemplate>();
+
 	/**
 	 * The constructor
 	 */
@@ -59,6 +61,7 @@ public class Activator extends AbstractUIPlugin {
 	 * (non-Javadoc)
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext)
 	 */
+	@Override
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
@@ -69,6 +72,7 @@ public class Activator extends AbstractUIPlugin {
 	 * (non-Javadoc)
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
 	 */
+	@Override
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
@@ -82,7 +86,7 @@ public class Activator extends AbstractUIPlugin {
 	public static Activator getDefault() {
 		return plugin;
 	}
-	
+
 	private void initTemplates() {
 		IPath templateDir = MoSyncTool.getDefault().getTemplatesPath();
 		File[] subdirs = templateDir.toFile().listFiles();
@@ -94,7 +98,7 @@ public class Activator extends AbstractUIPlugin {
 					try {
 						ProjectTemplateDescription desc = ProjectTemplateDescription.parse(descFile);
 						ProjectTemplate template = new ProjectTemplate(subdir, desc);
-						String validationResult = template.validate(); 
+						String validationResult = template.validate();
 						if (validationResult == null) {
 							addProjectTemplate(template);
 						} else {
@@ -107,10 +111,10 @@ public class Activator extends AbstractUIPlugin {
 				}
 			}
 		}
-		
+
         addTemplate(new Template(RESOURCE_TEMPLATE_ID, "Resource File",  "New Resource File", getClass().getResource("/templates/resources.lst.template"), "resource.lst", null));
 	}
-	
+
     private void addProjectTemplate(ProjectTemplate template) {
         projectTemplates.put(template.getId(), template);
     }
@@ -130,10 +134,18 @@ public class Activator extends AbstractUIPlugin {
 		}
 	    return result;
 	}
-	
+
+	public Collection<String> getTemplateTypes() {
+		HashSet<String> result = new HashSet<String>();
+		for (ProjectTemplate projectTemplate : projectTemplates.values()) {
+			result.add(projectTemplate.getType());
+		}
+		return result;
+	}
+
 	public ITemplate getTemplate(String id) {
 	    return templates.get(id);
 	}
-	
-	
+
+
 }

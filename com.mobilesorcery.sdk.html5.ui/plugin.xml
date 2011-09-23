@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+     <extension
+         point="org.eclipse.ui.newWizards">
+      <wizard
+            category="com.mobilesorcery.wizard.category"
+            class="com.mobilesorcery.sdk.html5.wizards.NewHTML5MoSyncProjectWizard"
+            finalPerspective="com.mobilesorcery.ui.perspective"
+            icon="icons/mosyncproject.png"
+            id="com.mobilesorcery.wizard.mosync.project.html5"
+            name="MoSync HTML5/JavaScript Project"
+            project="true"/>
+      <primaryWizard
+            id="com.mobilesorcery.wizard.mosync.project.html5">
+      </primaryWizard>
+      
+   </extension>
+</plugin>

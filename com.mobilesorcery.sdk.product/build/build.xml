@@ -82,6 +82,8 @@
 				<include name="com.mobilesorcery.sdk.finalizer.ui/**" />
 				<include name="com.mobilesorcery.sdk.fontsupport/**" />
 				<include name="com.mobilesorcery.sdk.help/**" />
+				<include name="com.mobilesorcery.sdk.html5/**" />
+				<include name="com.mobilesorcery.sdk.html5.ui/**" />
 				<include name="com.mobilesorcery.sdk.importproject/**" />
 				<include name="com.mobilesorcery.sdk.lib/**" />
 				<include name="com.mobilesorcery.sdk.product/**" />

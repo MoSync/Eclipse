@@ -13,30 +13,16 @@
 */
 package com.mobilesorcery.sdk.builder.s60;
 
-import org.eclipse.core.runtime.CoreException;
-
-import com.mobilesorcery.sdk.core.IBuildResult;
-import com.mobilesorcery.sdk.core.IBuildVariant;
-import com.mobilesorcery.sdk.core.IPackager;
-import com.mobilesorcery.sdk.core.MoSyncProject;
 
 /**
  * Packager for Symbian 2nd edition applications.
- * 
+ *
  * @author Mattias
  */
-public class V2Packager 
-extends S60Packager 
+public class V2Packager extends V2V3Packager
 {
-	/**
-	 * @see IPackager
-	 */
-	public void createPackage ( MoSyncProject project, 
-            IBuildVariant variant, 
-            IBuildResult buildResult )
-	throws CoreException
-	{
-		V2V3Builder builder = new V2V3Builder( PropertyInitializer.S60V2_UID, ".sis" );
-		builder.createPackage( project, variant, buildResult, shouldUseDebugRuntimes( ) );
+	public V2Packager() {
+		super(PropertyInitializer.S60V2_UID, ".sis", "--s60v2uid");
 	}
+
 }

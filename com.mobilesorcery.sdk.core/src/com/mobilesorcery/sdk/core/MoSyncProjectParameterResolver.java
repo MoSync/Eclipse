@@ -10,10 +10,12 @@ public class MoSyncProjectParameterResolver extends ParameterResolver {
 	//TODO: Variable support?
 	//TODO: Support for general split at colon
 	private final static String PROJECT_ROOT = "project:";
-	
-	private MoSyncProject project;
 
-	private ParameterResolver fallbackResolver;
+	private final static String CURRENT_PROJECT = "current-project";
+
+	private final MoSyncProject project;
+
+	private final ParameterResolver fallbackResolver;
 
 	private MoSyncProjectParameterResolver(MoSyncProject project, ParameterResolver fallbackResolver) {
 		this.project = project;
@@ -22,7 +24,9 @@ public class MoSyncProjectParameterResolver extends ParameterResolver {
 
 	@Override
 	public String get(String key) throws ParameterResolverException {
-		if (PROJECT_ROOT.equals(getPrefix(key))) {
+		if (CURRENT_PROJECT.equals(key)) {
+			return project.getWrappedProject().getLocation().toOSString();
+		} else if (PROJECT_ROOT.equals(getPrefix(key))) {
 			String projectName = getParameter(key);
 			IProject referencedProject = project.getWrappedProject().getWorkspace().getRoot().getProject(projectName);
 			if (referencedProject == null || !referencedProject.exists()) {
@@ -30,7 +34,7 @@ public class MoSyncProjectParameterResolver extends ParameterResolver {
 			}
 			return referencedProject.getLocation().toOSString();
 		}
-		
+
 		return fallbackResolver == null ? null : fallbackResolver.get(key);
 	}
 
@@ -40,17 +44,18 @@ public class MoSyncProjectParameterResolver extends ParameterResolver {
 		if (fallbackResolver != null) {
 			result.addAll(fallbackResolver.listPrefixes());
 		}
-		
+
+		result.add(CURRENT_PROJECT);
 		result.add(PROJECT_ROOT);
 		return result;
 	}
-	
+
 	@Override
 	public List<String> listAvailableParameters(String prefix) {
 		if (PROJECT_ROOT.equals(prefix)) {
 			return MoSyncProject.listAllProjects();
 		}
-		
+
 		return null;
 	}
 

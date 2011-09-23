@@ -316,6 +316,7 @@ Creative Commons 3.0 Attribution License covers the Android Icon, a &quot;modifi
       <feature id="com.mobilesorcery.sdk.builder.s60.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.builder.winmobile.feature" version="1.0.0.qualifier"/>
       <feature id="com.mobilesorcery.sdk.cdt.feature" version="1.0.0.qualifier"/>
+      <feature id="com.mobilesorcery.sdk.html5.feature" version="1.0.0.qualifier"/>
       <feature id="org.eclipse.platform"/>
       <feature id="org.eclipse.help"/>
       <feature id="org.eclipse.equinox.p2.user.ui"/>

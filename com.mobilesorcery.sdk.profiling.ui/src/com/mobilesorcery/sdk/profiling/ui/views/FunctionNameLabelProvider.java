@@ -19,38 +19,39 @@ import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class FunctionNameLabelProvider extends StyledCellLabelProvider {
 
-    private Font prefixFont;
-    private Font lastNameFont;
-    private Styler prefixStyler;
-    private Styler lastNameStyle;
-    private Styler disabledStyle;
+    private final Font prefixFont;
+    private final Font lastNameFont;
+    private final Styler prefixStyler;
+    private final Styler lastNameStyle;
+    private final Styler disabledStyle;
     private IProfilingSession session;
-    
+
     public FunctionNameLabelProvider() {
         prefixFont = UIUtils.modifyFont(null, SWT.ITALIC);
         lastNameFont = UIUtils.modifyFont(null, SWT.BOLD);
         Color disabledColor = Display.getCurrent().getSystemColor(SWT.COLOR_GRAY);
-        
+
         prefixStyler = createStyler(prefixFont, null);
         lastNameStyle = createStyler(lastNameFont, null);
         disabledStyle = createStyler(null, disabledColor);
     }
-    
-    public void dispose() {
+
+    @Override
+	public void dispose() {
         UIUtils.dispose(prefixFont, lastNameFont);
     }
-    
-    public void update(ViewerCell cell) {
+
+    @Override
+	public void update(ViewerCell cell) {
         Object obj = cell.getElement();
         IInvocation invocation = (IInvocation) obj;
         boolean enabled = session.getFilter().accept(invocation);
-        System.err.println("ENABLED? " + enabled + "; " + invocation + ";" + session.getFilter());
         StyledString styledFunctionName = styleFunctionName(enabled, invocation.getProfiledEntity().toString());
         cell.setStyleRanges(styledFunctionName.getStyleRanges());
         cell.setText(styledFunctionName.getString());
         cell.setImage(ProfilingUiPlugin.getDefault().getImageRegistry().get(ProfilingUiPlugin.METHOD_IMG));
     }
-    
+
     private StyledString styleFunctionName(boolean enabled, String fn) {
         CppFiltName name = CppFiltName.parse(fn);
         StyledString result = new StyledString();
@@ -68,19 +69,20 @@ public class FunctionNameLabelProvider extends StyledCellLabelProvider {
 
     private StyledString.Styler createStyler(final Font font, final Color fgColor) {
         Styler result = new StyledString.Styler() {
-            public void applyStyles(TextStyle textstyle) {
+            @Override
+			public void applyStyles(TextStyle textstyle) {
                 if (fgColor != null) {
                     textstyle.foreground = fgColor;
                 }
                 if (font != null) {
                     textstyle.font = font;
                 }
-            }          
-         }; 
-         
+            }
+         };
+
          return result;
     }
-    
+
     public void setSession(IProfilingSession session) {
         this.session = session;
     }
