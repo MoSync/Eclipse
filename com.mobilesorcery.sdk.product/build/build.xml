@@ -115,17 +115,17 @@
 		
 	</target>
 
-	<target name="unzip-target-platform" depends="unzip-target-platform.precondition" if="do-unzip-target-platform">
+	<target name="unzip-target-platform" depends="unzip-target-platform.precondition" unless="dont-unzip-target-platform">
+		<delete dir="${buildDirectory}/../target-platform" />
 		<unzip src="./target-platform.zip" dest="${buildDirectory}/../target-platform" />
 		<unzip src="${buildDirectory}\..\lib\swtbot-dropin.zip" dest="${buildDirectory}/../target-platform/eclipse/dropins" overwrite="yes" />
 	</target>
 
 	<target name="unzip-target-platform.precondition">
-		<condition property="do-unzip-target-platform">
-			<not>
-				<available file="${buildDirectory}/../target-platform" />
-			</not>
-		</condition>
+	    <uptodate property="dont-unzip-target-platform"
+	              targetfile="${buildDirectory}/../target-platform">
+	        <srcfiles dir="." includes="target-platform.zip"/>
+	    </uptodate>
 	</target>
 
 	<target name="pde-build" depends="init">
