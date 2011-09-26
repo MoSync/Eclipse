@@ -21,6 +21,25 @@
          id="org.eclipse.wst.jsdt.feature"
          version="0.0.0"/>
 
+   <requires>
+      <import plugin="org.eclipse.wst.jsdt.web.core"/>
+      <import plugin="org.eclipse.wst.jsdt.web.ui"/>
+      <import plugin="org.eclipse.ui"/>
+      <import plugin="org.eclipse.core.runtime"/>
+      <import plugin="com.mobilesorcery.sdk.core"/>
+      <import plugin="org.eclipse.wst.jsdt.core"/>
+      <import plugin="org.eclipse.wst.jsdt.debug.core"/>
+      <import plugin="org.eclipse.wst.jsdt.debug.transport"/>
+      <import plugin="org.eclipse.wst.jsdt.debug.ui"/>
+      <import plugin="org.eclipse.wst.jsdt.doc"/>
+      <import plugin="org.eclipse.wst.jsdt.manipulation"/>
+      <import plugin="org.eclipse.wst.jsdt.ui"/>
+      <import plugin="com.mobilesorcery.sdk.core" version="1.0.0" match="greaterOrEqual"/>
+      <import plugin="com.mobilesorcery.sdk.ui" version="1.0.0" match="greaterOrEqual"/>
+      <import plugin="com.mobilesorcery.sdk.ui.wizards" version="1.0.0" match="greaterOrEqual"/>
+      <import plugin="com.mobilesorcery.sdk.html5" version="1.0.0" match="greaterOrEqual"/>
+   </requires>
+
    <plugin
          id="com.mobilesorcery.sdk.html5"
          download-size="0"

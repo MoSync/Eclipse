@@ -1,7 +1,8 @@
 <project default="replace-plugin-xmls">
 	<!--
-	     REQUIRED PROPERTY:
+	     REQUIRED PROPERTIES:
 		 buildDirectory - the same buildDirectory as the main build script defines
+		 platform - the platform to build for (Eclipse style; eg win32.win32.x86)
 	-->
 	
 	<!-- This macro will replace plugin.xml of "plugin-jar" with "replacement-folder"/plugin.xml -->
@@ -39,7 +40,7 @@
     	
     	<!-- Explicit version numbers by design; way too easy to inadvertently destroy the entire build otherwise... -->
         <replace-plugin-xml-of-jar
-    	    plugin-jar="${built-rcp-plugin-dir}/org.eclipse.cdt.ui_5.2.1.201009241320.jar"
+    	    plugin-jar="${built-rcp-plugin-dir}/org.eclipse.cdt.ui_5.3.0.201106081058.jar"
     	    replacement-folder="${replacement-root}/org.eclipse.cdt.ui" />
 
 		<!-- Another hack before rezipping: let's put the console version of eclipse in there -->
