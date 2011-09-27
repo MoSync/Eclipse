@@ -135,5 +135,7 @@ public class IPhoneOSPackager extends PackageToolPackager
 
     	SDK sdk = getSDK(project, variant);
     	commandLine.flag("--ios-sdk").with(sdk.getId());
+
+    	commandLine.flag("--cpp-output").with(internal.resolveFile("%package-output-dir%").getParent());
 	}
 }
