@@ -66,6 +66,6 @@ public class JavaPackager extends PackageToolPackager {
 	protected File computeBuildResult(MoSyncProject project,
 			IBuildVariant variant) throws ParameterResolverException {
 		DefaultPackager intern = new DefaultPackager(project, variant);
-		return new File(intern.get(DefaultPackager.PACKAGE_OUTPUT_DIR), intern.get(DefaultPackager.PROJECT_NAME) + ".jar");
+		return new File(intern.get(DefaultPackager.PACKAGE_OUTPUT_DIR), intern.get(DefaultPackager.APP_NAME) + ".jar");
 	}
 }

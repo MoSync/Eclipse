@@ -98,7 +98,7 @@ public class IPhoneOSPackager extends PackageToolPackager
 
 		String xcodeTarget = target + "-" + sdk.getSDKType();
 		// Hm, is this always true...?
-		return new Path(packager.resolve(xcodeProject.getAbsolutePath() + "/build/" + xcodeTarget + "/%project-name%.app"));
+		return new Path(packager.resolve(xcodeProject.getAbsolutePath() + "/build/" + xcodeTarget + "/%app-name%.app"));
 	}
 
 	private boolean isSimulatorBuild(IBuildVariant variant) {
