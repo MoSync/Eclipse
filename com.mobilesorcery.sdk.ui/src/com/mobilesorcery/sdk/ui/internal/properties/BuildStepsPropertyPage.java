@@ -95,6 +95,7 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 			failOnError = new Button(main, SWT.CHECK);
 			failOnError.setText("&Fail on build error");
 			failOnError.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false, 2, 1));
+			failOnError.setSelection(factory.shouldFailOnError());
 
 			ParameterResolver resolver = CommandLineBuildStep.createParameterResolver(
 					MoSyncBuilder.createParameterResolver(getProject(), null));
