@@ -13,7 +13,7 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PrivilegedAccess;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
-import com.mobilesorcery.sdk.core.build.CommandLineBuildStep.Factory;
+import com.mobilesorcery.sdk.core.build.BundleBuildStep.Factory;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.core.build.PackBuildStep;
 
@@ -96,11 +96,10 @@ public class Html5Plugin extends AbstractUIPlugin {
 
 	private IBuildStepFactory createHTML5PackagerBuildStep() {
 		Factory factory = new Factory();
-		factory.setRunPerFile(false);
 		factory.setFailOnError(true);
 		factory.setName("HTML5/JavaScript bundling");
-		// Consider wrapping this into own build step...
-		factory.setScript("mkdir %current-project%/Resources/\n%mosync-bin%/Bundle -in %current-project%/LocalFiles -out %current-project%/Resources/LocalFiles.bin");
+		factory.setInFile("%current-project%/LocalFiles");
+		factory.setOutFile("%current-project%/Resources/LocalFiles.bin");
 		return factory;
 	}
 }

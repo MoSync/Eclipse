@@ -67,6 +67,8 @@ public class BuildSequence implements IBuildSequence {
 			return new PackBuildStep.Factory();
 		} else if (CommandLineBuildStep.ID.equals(id)) {
 			return new CommandLineBuildStep.Factory();
+		} else if (BundleBuildStep.ID.equals(id)) {
+			return new BundleBuildStep.Factory();
 		}
 
 		return null;

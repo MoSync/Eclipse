@@ -232,7 +232,9 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 	public int incrementalBuild(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff,
 			IBuildResult result, IProgressMonitor monitor) throws Exception {
-		PrivilegedAccess.getInstance().assertAccess(project);
+		if (prototype.requiresPrivilegedAccess()) {
+			PrivilegedAccess.getInstance().assertAccess(project);
+		}
 		Visitor visitor = new Visitor(prototype.filePattern, prototype.runPerFile);
 		visitor.setParameterResolver(getParameterResolver());
 		project.getWrappedProject().accept(visitor);
