@@ -57,7 +57,7 @@ public class AndroidPackager extends PackageToolPackager {
 	protected File computeBuildResult(MoSyncProject project,
 			IBuildVariant variant) throws ParameterResolverException {
 		DefaultPackager intern = new DefaultPackager(project, variant);
-		return new File(intern.get(DefaultPackager.PACKAGE_OUTPUT_DIR), intern.get(DefaultPackager.PROJECT_NAME) + ".apk");
+		return new File(intern.get(DefaultPackager.PACKAGE_OUTPUT_DIR), intern.get(DefaultPackager.APP_NAME) + ".apk");
 	}
 
 	/**
