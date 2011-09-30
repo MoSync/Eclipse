@@ -33,8 +33,11 @@ public class BundleBuildStep extends CommandLineBuildStep {
 		}
 
 		@Override
-		public String getScript() {
-			return "%mosync-bin%/Bundle -in \"" + inFile + "\" -out \"" + outFile + "\"";
+		public Script getScript() {
+			Script script = new Script(new String[][] {{
+				"%mosync-bin%/Bundle", "-in", inFile, "-out", outFile
+			}});
+			return script;
 		}
 
 		@Override

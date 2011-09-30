@@ -90,7 +90,7 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 			name.setText(factory.getName() == null ? "" : factory.getName());
 			runPerFile.setSelection(factory.shouldRunPerFile());
 			filePattern.setText(factory.getFilePattern() == null ? "" : factory.getFilePattern());
-			script.setText(factory.getScript() == null ? "" : factory.getScript());
+			script.setText(factory.getRawScript() == null ? "" : factory.getRawScript());
 
 			failOnError = new Button(main, SWT.CHECK);
 			failOnError.setText("&Fail on build error");
@@ -117,7 +117,7 @@ public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 		public void okPressed() {
 			factory.setFilePattern(filePattern.getText());
 			factory.setRunPerFile(runPerFile.getSelection());
-			factory.setScript(script.getText());
+			factory.setRawScript(script.getText());
 			factory.setName(name.getText());
 			factory.setFailOnError(failOnError.getSelection());
 			super.okPressed();

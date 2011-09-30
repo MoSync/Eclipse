@@ -27,19 +27,48 @@ import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PathExclusionFilter;
 import com.mobilesorcery.sdk.core.PrivilegedAccess;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.build.CommandLineBuildStep.Script;
 import com.mobilesorcery.sdk.internal.builder.IncrementalBuilderVisitor;
 
 public class CommandLineBuildStep extends AbstractBuildStep {
 
 	public final static String ID = "cmd";
 
+	public static class Script {
+
+		private String[][] commandLines;
+
+		public Script(String rawScript) {
+			parseRawScript(rawScript);
+		}
+
+		public Script(String[][] commandLines) {
+			this.commandLines = commandLines;
+		}
+
+		private void parseRawScript(String rawScript) {
+			String[] cmdLines = rawScript == null ? new String[0]  :
+					rawScript.split("\\n");
+			this.commandLines = new String[cmdLines.length][];
+			for (int i = 0; i < cmdLines.length; i++) {
+				commandLines[i] = CommandLineExecutor.parseCommandLine(cmdLines[i]);
+			}
+		}
+
+		public String[][] getCommandLines() {
+			return commandLines;
+		}
+
+	}
+
 	public static class Factory implements IBuildStepFactory {
 
-		String script;
+		String rawScript;
 		boolean runPerFile = false;
 		String filePattern;
 		String name;
 		boolean failOnError = false;
+		private Script script;
 
 		public boolean shouldFailOnError() {
 			return failOnError;
@@ -57,7 +86,8 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 		public void load(IMemento memento) {
 			IMemento command = memento.getChild("cmd");
 			if (command != null) {
-				script = command.getTextData();
+				String rawScript = command.getTextData();
+				setRawScript(rawScript);
 				Boolean runPerFile = command.getBoolean("pf");
 				this.runPerFile = runPerFile == null ? false : runPerFile;
 				filePattern = command.getString("pt");
@@ -74,7 +104,7 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 			command.putString("pt", filePattern);
 			command.putString("name", name);
 			command.putBoolean("foe", failOnError);
-			command.putTextData(script);
+			command.putTextData(rawScript);
 		}
 
 		@Override
@@ -87,12 +117,17 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 			return ID;
 		}
 
-		public String getScript() {
+		public Script getScript() {
 			return script;
 		}
 
-		public void setScript(String script) {
-			this.script = script;
+		public String getRawScript() {
+			return rawScript;
+		}
+
+		public void setRawScript(String script) {
+			this.rawScript = script;
+			this.script = new Script(rawScript);
 		}
 
 		public boolean shouldRunPerFile() {
@@ -245,19 +280,23 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 
 	public void executeScript(ParameterResolver resolver) throws IOException,
 			ParameterResolverException {
-		String[] cmdLines = prototype.script == null ? new String[0]
-				: prototype.script.split("\\n");
+		Script script = prototype.getScript();
+		String[][] cmdLines = script.getCommandLines();
 		for (int i = 0; i < cmdLines.length; i++) {
-			String resolvedCommandLine = Util.replace(cmdLines[i], resolver);
-			CommandLineExecutor executor = new CommandLineExecutor(
-					MoSyncBuilder.CONSOLE_ID);
-			int exitCode = executor.runCommandLine(executor
-					.parseCommandLine(resolvedCommandLine));
-			if (prototype.failOnError && exitCode != 0) {
+			String[] cmdLine = cmdLines[i];
+			String[] resolvedCmdLine = new String[cmdLine.length];
+			for (int j = 0; j < cmdLine.length; j++) {
+				String arg = cmdLine[j];
+				String resolvedArg = Util.replace(arg, resolver);
+				resolvedCmdLine[j] = resolvedArg;
+			}
+			CommandLineExecutor executor = new CommandLineExecutor(MoSyncBuilder.CONSOLE_ID);
+			int exitCode = executor.runCommandLine(resolvedCmdLine);
+			if (prototype.shouldFailOnError() && exitCode != 0) {
 				throw new IOException(
 						MessageFormat.format(
-								"External command \"{0}\" failed: returned error code <> 0",
-								prototype.name));
+								"External command \"{0}\" failed: returned error code {1}",
+								prototype.name, exitCode));
 			}
 		}
 	}

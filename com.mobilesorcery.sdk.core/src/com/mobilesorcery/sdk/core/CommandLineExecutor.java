@@ -27,13 +27,13 @@ import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 public class CommandLineExecutor {
 
 	private static final int MAX_DEPTH = 100;
-    private ArrayList<String[]> lines = new ArrayList<String[]>();
-    private ArrayList<String> consoleMsgs = new ArrayList<String>();
+    private final ArrayList<String[]> lines = new ArrayList<String[]>();
+    private final ArrayList<String> consoleMsgs = new ArrayList<String>();
 	private CascadingProperties parameters;
 	private String dir;
 	private Process currentProcess;
-	private boolean killed = false;
-	private String consoleName;
+	private final boolean killed = false;
+	private final String consoleName;
 	private ILineHandler stdoutHandler;
 	private ILineHandler stderrHandler;
 
@@ -43,16 +43,16 @@ public class CommandLineExecutor {
 
     /**
      * Adds a <emph>parameterized</emph> command line
-     * 
+     *
      * @param line
      */
     public void addCommandLine(String[] line) {
         addCommandLine(line, null);
     }
-   
+
    /**
     * Adds a <emph>parameterized</emph> command line
-    * 
+    *
     * @param line
 	 * @param consoleMsg the line to display in the console, or <code>null</code> for
 	 * just outputting the resolved <code>line</code>. Any parameters in <code>consoleMsg</code>
@@ -65,7 +65,7 @@ public class CommandLineExecutor {
 
 	/**
 	 * Convenience method for running exactly one line.
-	 * 
+	 *
 	 * @param commandLine
 	 * @throws IOException
 	 */
@@ -79,30 +79,30 @@ public class CommandLineExecutor {
         consoleMsgs.clear();
         return res;
 	}
-	
+
     public int runCommandLine(String[] commandLine, String consoleMsg) throws IOException {
         int res;
         lines.clear();
         consoleMsgs.clear();
         addCommandLine(commandLine, consoleMsg);
         res = execute();
-        lines.clear(); 
+        lines.clear();
         consoleMsgs.clear();
         return res;
     }
-    
+
 	/**
 	 * Convenience method for running exactly one line.
-	 * 
+	 *
 	 * @param commandLine
 	 * @return Exit code of the process
 	 * @throws IOException
 	 */
-	public int runCommandLineWithRes ( String[] commandLine ) 
-	throws IOException 
+	public int runCommandLineWithRes ( String[] commandLine )
+	throws IOException
 	{
 	    return runCommandLine(commandLine);
-	}	
+	}
 
 	public void setParameters(CascadingProperties parameters) {
 		this.parameters = parameters;
@@ -115,25 +115,25 @@ public class CommandLineExecutor {
 	/**
 	 * Splits a command line string into an array of string, splitting on
 	 * space and other whitespace. But unlike the way exec does this, it
-	 * actually takes quotation into consideration, treating it as a single 
+	 * actually takes quotation into consideration, treating it as a single
 	 * argument independently from any whitespace it might contain. This is
 	 * necessary on Mac OS X, and perhaps even Linux.
-	 * 
+	 *
 	 * @param cmd Command line to split
 	 * @return Array that contains the result
 	 */
-	public String[] parseCommandLine ( String cmd )
+	public static String[] parseCommandLine ( String cmd )
 	{
 		ArrayList<String> cmdarray = new ArrayList<String>();
 		StringTokenizer tok = new StringTokenizer( cmd, " \t\n\r\f", true );
-		
+
 		while ( tok.hasMoreTokens() == true )
 		{
 			// Is token whitespace ?
 			String t = tok.nextToken( );
 			if ( t.matches( "[ \t\n\r\f]" )  == true )
 				continue;
-			
+
 			// Does it start with a quotation mark?, if
 			// so, go into merge state
 			if ( t.startsWith( "\"" ) == true )
@@ -146,27 +146,27 @@ public class CommandLineExecutor {
 						break;
 				}
 			}
-			
+
 			// Add new token to result
 			cmdarray.add( t );
 		}
-		
+
 		return cmdarray.toArray( new String[0] );
 	}
-	
+
 	public void fork() throws IOException {
 		execute(true);
 	}
-	
+
 	public int execute() throws IOException {
 		return execute(false);
 	}
-	
+
 	private int execute(boolean fork) throws IOException {
 		IProcessConsole console = createConsole();
 
 		int result = -1;
-		
+
 		for (int i = 0; !killed && i < lines.size(); i++) {
 			String[] line = lines.get(i);
 			String[] resolvedLine = new String[line.length];
@@ -181,7 +181,7 @@ public class CommandLineExecutor {
 			} else {
 			    console.addMessage(replace(consoleMsg, parameters));
 			}
-			
+
 			/* It is better to pass the command as an array here since then Java will
 			 * fix all problems with quotations and such that are suitable for the
 			 * platform. */
@@ -190,20 +190,20 @@ public class CommandLineExecutor {
 			} else {
 			    currentProcess = Runtime.getRuntime().exec(resolvedLine, null, new File(dir));
 			}
-			
+
 			console.attachProcess(currentProcess, stdoutHandler, stderrHandler);
-			
+
 			// Ok, we're up and running
 			if (stdoutHandler != null) { stdoutHandler.start(currentProcess); }
 			if (stderrHandler != null) { stderrHandler.start(currentProcess); }
-			
+
 			try {
 				result = fork ? 0 : currentProcess.waitFor();
 			} catch (InterruptedException e) {
 				throw new IOException("Process interrupted.");
 			}
 		}
-		
+
 		return result;
 	}
 
@@ -219,7 +219,8 @@ public class CommandLineExecutor {
 	}
 
 	private String assertQuoted(String str) {
-		if (str.indexOf(' ') != -1 || str.indexOf('\t') != -1) {
+		boolean isQuoted = str.length() > 0 && str.charAt(0) == '\"' && str.charAt(str.length() - 1) == '\"';
+		if (!isQuoted && (str.indexOf(' ') != -1 || str.indexOf('\t') != -1)) {
 			return "\"" + str + "\"";
 		}
 
@@ -244,13 +245,13 @@ public class CommandLineExecutor {
 				return originalString; // Circular dependencies, but we want no exception thrown.
 			}
 		}
-		
+
 		return result;
 	}
-	
+
 	/**
 	 * Replaces and string in %'s with a parameter in <code>parameters</code>.
-	 * 
+	 *
 	 * @param originalString
 	 * @param parameters
 	 * @return

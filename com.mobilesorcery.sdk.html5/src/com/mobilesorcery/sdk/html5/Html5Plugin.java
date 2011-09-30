@@ -16,6 +16,7 @@ import com.mobilesorcery.sdk.core.build.BuildSequence;
 import com.mobilesorcery.sdk.core.build.BundleBuildStep.Factory;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.core.build.PackBuildStep;
+import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -77,7 +78,7 @@ public class Html5Plugin extends AbstractUIPlugin {
 			List<IBuildStepFactory> factories = sequence.getBuildStepFactories();
 			ArrayList<IBuildStepFactory> newFactories = new ArrayList<IBuildStepFactory>();
 			for (IBuildStepFactory factory : factories) {
-				if (PackBuildStep.ID.equals(factory.getId())) {
+				if (ResourceBuildStep.ID.equals(factory.getId())) {
 					newFactories.add(createHTML5PackagerBuildStep());
 				}
 				newFactories.add(factory);
