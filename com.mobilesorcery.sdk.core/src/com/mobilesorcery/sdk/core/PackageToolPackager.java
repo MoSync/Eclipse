@@ -6,6 +6,7 @@ import java.text.MessageFormat;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.apisupport.nfc.NFCSupport;
@@ -38,8 +39,9 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			addGeneralParameters(project, variant, commandLine);
 			addPlatformSpecifics(project, variant, commandLine);
 
-			String packageOutputDir = internal.get(DefaultPackager.PACKAGE_OUTPUT_DIR);
-			new File(packageOutputDir).mkdirs();
+			String packageOutputDirStr = internal.get(DefaultPackager.PACKAGE_OUTPUT_DIR);
+			File packageOutputDir = new File(packageOutputDirStr);
+			packageOutputDir.mkdirs();
 
 			internal.runCommandLine(commandLine.asArray(), commandLine.toHiddenString());
 			buildResult.setBuildResult(computeBuildResult(project, variant));

@@ -57,6 +57,7 @@ public class Util {
 			this.ext = ext;
 		}
 
+		@Override
 		public boolean accept(File pathname) {
 			return ext.equals(Util.getExtension(pathname));
 		}
@@ -135,7 +136,7 @@ public class Util {
 		if (str == null) {
 			return null;
 		}
-		
+
 		String result = str.toString();
 		if (result.length() > 0 && result.charAt(0) == ch) {
 			result = result.substring(1);
@@ -143,10 +144,10 @@ public class Util {
 		if (result.length() > 0 && result.charAt(result.length() - 1) == ch) {
 			result = result.substring(0, result.length() - 1);
 		}
-		
+
 		return result;
 	}
-	
+
 	public static String fill(char c, int length) {
 		char[] result = new char[length];
 		Arrays.fill(result, c);
@@ -160,7 +161,7 @@ public class Util {
 	public static void unzip(File zip, File targetDir) throws IOException {
 		unzip(zip, targetDir, false);
 	}
-	
+
 	private static void unzip(File zip, File targetDir, boolean isJar) throws IOException {
 		ZipInputStream input = createZipInputStream(new FileInputStream(zip), isJar);
 		OutputStream currentOutput = null;
@@ -194,7 +195,7 @@ public class Util {
 		}
 
 	}
-	
+
 	private static void zip(File sourceDir, File targetZip, boolean isJar) throws IOException {
 		ZipOutputStream output = createZipOutputStream(new FileOutputStream(targetZip), isJar);
 		try {
@@ -216,11 +217,11 @@ public class Util {
 			Util.safeClose(output);
 		}
 	}
-	
+
 	private static ZipOutputStream createZipOutputStream(OutputStream output, boolean isJar) throws IOException {
 		return isJar ? new JarOutputStream(output) : new ZipOutputStream(output);
 	}
-	
+
 	private static ZipInputStream createZipInputStream(InputStream input, boolean isJar) throws IOException {
 		//return isJar ? new JarInputStream(input) : new ZipInputStream(input);
 		// We usually want to unjar the manifest as well
@@ -238,7 +239,7 @@ public class Util {
 	public static void jar(File sourceDir, File targetZip) throws IOException {
 		zip(sourceDir, targetZip, true);
 	}
-	
+
 	public static void zip(File sourceDir, File targetZip) throws IOException {
 		zip(sourceDir, targetZip, false);
 	}
@@ -248,7 +249,7 @@ public class Util {
 		innerListFiles(directory, result, recursive);
 		return result.toArray(new File[result.size()]);
 	}
-	
+
 	private static void innerListFiles(File directory, ArrayList<File> result, boolean recursive) {
 		File[] files = directory.listFiles();
 		for (File file : files) {
@@ -319,7 +320,7 @@ public class Util {
 		if (monitor == null) {
 			monitor = new NullProgressMonitor();
 		}
-		
+
 		monitor.beginTask("Copying...", src.length);
 
 		for (int i = 0; i < src.length; i++) {
@@ -334,15 +335,15 @@ public class Util {
 			monitor.worked(1);
 		}
 	}
-	
+
 	public static void transfer(InputStream src, OutputStream dest) throws IOException {
 		byte[] buffer = new byte[65536];
 		for (int read = src.read(buffer); read != -1; read = src
 				.read(buffer)) {
 			dest.write(buffer, 0, read);
-		}		
+		}
 	}
-	
+
 	public static void copy(IProgressMonitor monitor, File src, File dest, FileFilter filter) throws IOException {
 		if (src.isDirectory()) {
 			copyDir(monitor, src, dest, filter);
@@ -384,7 +385,7 @@ public class Util {
 			}
 		}
 	}
-	
+
 	public static byte[] fromBase16(String data) {
 		boolean extraByte = data.length() % 2 == 1;
 		byte[] result = new byte[data.length() / 2 + (extraByte ? 1 : 0)];
@@ -415,7 +416,7 @@ public class Util {
 	/**
 	 * Returns a simple string representation of data size, eg "23 bytes",
 	 * "2 KB", "11 MB", etc
-	 * 
+	 *
 	 * @param size
 	 * @return
 	 */
@@ -425,7 +426,7 @@ public class Util {
 		}
 
 		String unit = "";
-		float value = (float) size;
+		float value = size;
 
 		if (size > _1GB) {
 			unit = "GB";
@@ -555,7 +556,7 @@ public class Util {
 			}
 		}
 	}
-	
+
 	public static void safeClose(Reader input) {
 		if (input != null) {
 			try {
@@ -648,7 +649,7 @@ public class Util {
 
 	/**
 	 * A utility method for handling <code>equals</code> of
-	 * <code>null</code> objects. 
+	 * <code>null</code> objects.
 	 * @param o1
 	 * @param o2
 	 */
@@ -656,7 +657,7 @@ public class Util {
 		if (o1 == null) {
 			return o2 == null;
 		}
-		
+
 		return o1.equals(o2);
 	}
 
@@ -674,10 +675,10 @@ public class Util {
 		if (c2 == null) {
 			return +1;
 		}
-		
+
 		return c1.compareTo(c2);
 	}
-	
+
 	/**
 	 * Replaces parameters tagged with <code>%</code>s and returns
 	 * the resolved string.
@@ -693,19 +694,19 @@ public class Util {
 			throw new RuntimeException(e);
 		}
     }
-    
+
 	/**
 	 * Replaces parameters tagged with <code>%</code>s and returns
 	 * the resolved string.
 	 * @param input
 	 * @param map
 	 * @return
-	 * @throws ParameterResolverException 
+	 * @throws ParameterResolverException
 	 */
     public static String replace(String input, ParameterResolver resolver) throws ParameterResolverException {
         return innerReplace(input, resolver, 0).toString();
     }
-    
+
 	public static String[] replace(String[] input, ParameterResolver resolver) throws ParameterResolverException {
 		String[] output = new String[input.length];
 		for (int i = 0; i < input.length; i++) {
@@ -713,17 +714,17 @@ public class Util {
 		}
 		return output;
 	}
-    
+
     private static StringBuffer innerReplace(String input, ParameterResolver map, int depth) throws ParameterResolverException {
         if (depth > 12) {
             throw new IllegalArgumentException("Cyclic parameters"); //$NON-NLS-1$
         }
-        
+
         StringBuffer result = new StringBuffer();
         char[] chars = input.toCharArray();
         boolean inParam = false;
         int paramStart = 0;
-        
+
         for (int i = 0; i < chars.length; i++) {
             if ('%' == chars[i]) {
                 if (!inParam) {
@@ -748,13 +749,13 @@ public class Util {
                         }
                     }
                 }
-                
+
                 inParam = !inParam;
             } else if (!inParam) {
                 result.append(chars[i]);
             }
         }
-        
+
         return result;
     }
 
@@ -787,7 +788,7 @@ public class Util {
     }
 
     /**
-     * Returns a 'parent' key of a key using path separators. So, if the input key is A/B/C, this 
+     * Returns a 'parent' key of a key using path separators. So, if the input key is A/B/C, this
      * method returns A/B
      * @param key
      * @return <code>null</code> if <code>key</code> has no path separator
@@ -797,6 +798,10 @@ public class Util {
         return permissionPath.segmentCount() > 1 ? permissionPath.removeLastSegments(1).toPortableString() : null;
     }
 
+	public static String convertSlashes(String abbreviatedPlatform) {
+		return abbreviatedPlatform.replace('\\', File.separatorChar).replace('/', File.separatorChar);
+	}
 
-	
+
+
 }

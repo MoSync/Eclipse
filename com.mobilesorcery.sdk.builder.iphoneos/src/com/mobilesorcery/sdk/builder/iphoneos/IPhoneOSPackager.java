@@ -82,8 +82,11 @@ public class IPhoneOSPackager extends PackageToolPackager
     }
 
 	private boolean shouldBuildWithXcode(MoSyncProject project, IBuildVariant variant) throws CoreException {
-        SDK sdk = getSDK(project, variant);
-        boolean isSimulatorSDK = sdk != null && sdk.isSimulatorSDK();
+		boolean isSimulatorSDK = false;
+		if (XCodeBuild.getDefault().isValid()) {
+			SDK sdk = getSDK(project, variant);
+			isSimulatorSDK = sdk != null && sdk.isSimulatorSDK();
+		}
         boolean shouldBuild = isSimulatorSDK || !Activator.getDefault().getPreferenceStore().getBoolean(Activator.ONLY_GENERATE_XCODE_PROJECT);
         return shouldBuild;
 	}

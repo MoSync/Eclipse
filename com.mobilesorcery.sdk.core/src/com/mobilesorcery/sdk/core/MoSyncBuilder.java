@@ -325,7 +325,8 @@ public class MoSyncBuilder extends ACBuilder {
             return getFinalOutputPath(project, variant).append("package");
         } else {
         	IProfile profile = variant.getProfile() == null ? MoSyncProject.create(project).getTargetProfile() : variant.getProfile();
-            return getOutputPath(project, variant).append(Profile.getAbbreviatedPlatform(profile));
+            String abbrProfile = Util.convertSlashes(Profile.getAbbreviatedPlatform(profile));
+        	return getOutputPath(project, variant).append(abbrProfile);
         }
     }
 
