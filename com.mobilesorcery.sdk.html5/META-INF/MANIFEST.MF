@@ -1,12 +1,13 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Html5
-Bundle-SymbolicName: com.mobilesorcery.sdk.html5
+Bundle-SymbolicName: com.mobilesorcery.sdk.html5;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: com.mobilesorcery.sdk.html5.Html5Plugin
 Bundle-Vendor: MOBILESORCERY
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
+ org.eclipse.core.resources,
  com.mobilesorcery.sdk.core,
  org.eclipse.wst.jsdt.core,
  org.eclipse.wst.jsdt.debug.core,
@@ -16,7 +17,8 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.wst.jsdt.manipulation,
  org.eclipse.wst.jsdt.ui,
  org.eclipse.wst.jsdt.web.core,
- org.eclipse.wst.jsdt.web.ui
+ org.eclipse.wst.jsdt.web.ui,
+ org.eclipse.wst.jsdt.support.firefox;bundle-version="1.0.400"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Export-Package: com.mobilesorcery.sdk.html5

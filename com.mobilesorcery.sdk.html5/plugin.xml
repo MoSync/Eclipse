@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+  <!-- <extension
+      point="org.eclipse.wst.jsdt.core.JsGlobalScopeContainerInitializer">
+      <JsGlobalScopeContainerInitializer
+            class="com.mobilesorcery.sdk.html5.libraries.JoSyncLibInitializer"
+            id="com.mobilesorcery.sdk.html5.library.josync">
+      </JsGlobalScopeContainerInitializer>
+   </extension>
+-->
+</plugin>

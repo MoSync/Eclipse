@@ -16,4 +16,19 @@
       </primaryWizard>
       
    </extension>
+   
+ <!--     <extension point="org.eclipse.wst.jsdt.ui.JsGlobalScopeContainerPage">
+  	  <JsGlobalScopeContainerPage
+            name="JoSync Library"
+            class="com.mobilesorcery.sdk.html5.ui.jsdt.JoSyncLibraryWizardPage"
+            id="com.mobilesorcery.sdk.html5.josync">
+      </JsGlobalScopeContainerPage>
+   </extension>
+      
+   <extension point="org.eclipse.wst.jsdt.ui.JsGlobalScopeUIInitializer">
+     <JsGlobalScopeUIInitializer
+     	id="com.mobilesorcery.sdk.html5.josync"
+     	class="com.mobilesorcery.sdk.html5.ui.jsdt.JoSyncUiInitializer">
+     </JsGlobalScopeUIInitializer>
+   </extension>-->
 </plugin>
