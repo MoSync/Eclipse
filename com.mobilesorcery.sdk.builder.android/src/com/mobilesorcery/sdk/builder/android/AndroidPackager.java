@@ -11,7 +11,6 @@ import org.eclipse.jface.dialogs.IMessageProvider;
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.DefaultPackager;
-import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
@@ -31,13 +30,14 @@ public class AndroidPackager extends PackageToolPackager {
 		String packageName = project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME);
 		String versionCode = project.getProperty(PropertyInitializer.ANDROID_VERSION_CODE);
 
-		KeystoreCertificateInfo keystoreCertInfo = null;
-		keystoreCertInfo = KeystoreCertificateInfo.loadOne(
-        			PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO,
-        			project, project.getSecurePropertyOwner());
+		KeystoreCertificateInfo keystoreCertInfo = KeystoreCertificateInfo.loadOne(
+				PropertyInitializer.ANDROID_KEYSTORE_CERT_INFO,
+				PropertyInitializer.ANDROID_PROJECT_SPECIFIC_KEYS,
+				project,
+				Activator.getDefault().getPreferenceStore());
 
         if (keystoreCertInfo == null || !DefaultMessageProvider.isEmpty(keystoreCertInfo.validate(false))) {
-        	throw new CoreException(new Status(IStatus.OK, Activator.PLUGIN_ID, "No or invalid key/keystore password for android signing. Please note that for security reasons, passwords are locally stored. You may need to set the password in the Android preference page."));
+        	throw new CoreException(new Status(IStatus.OK, Activator.PLUGIN_ID, keystoreCertInfo.validate(false).getMessage()));
         }
 
         String keystore = keystoreCertInfo.getKeystoreLocation();

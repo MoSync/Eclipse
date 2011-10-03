@@ -15,7 +15,9 @@ import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
 import com.mobilesorcery.sdk.core.ParameterResolverException;
+import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 
 public class JavaPackager extends PackageToolPackager {
 
@@ -27,9 +29,23 @@ public class JavaPackager extends PackageToolPackager {
 
 	@Override
 	protected void addPlatformSpecifics(MoSyncProject project, IBuildVariant variant, CommandLineBuilder commandLine) throws Exception {
-        KeystoreCertificateInfo keystoreCertInfo = KeystoreCertificateInfo.loadOne(
-        		PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS,
-        		project, project.getSecurePropertyOwner());
+		KeystoreCertificateInfo keystoreCertInfo = null;
+
+		boolean useProjectSpecific = PropertyUtil.getBoolean(project, PropertyInitializer.JAVAME_PROJECT_SPECIFIC_KEYS);
+		boolean doSign = useProjectSpecific ?
+				PropertyUtil.getBoolean(project, PropertyInitializer.JAVAME_DO_SIGN) :
+				Activator.getDefault().getPreferenceStore().getBoolean(PropertyInitializer.JAVAME_DO_SIGN);
+
+		if (doSign) {
+			keystoreCertInfo = KeystoreCertificateInfo.loadOne(
+					PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS,
+					PropertyInitializer.JAVAME_PROJECT_SPECIFIC_KEYS,
+					project,
+					Activator.getDefault().getPreferenceStore());
+			if (keystoreCertInfo == null || !DefaultMessageProvider.isEmpty(keystoreCertInfo.validate(false))) {
+	        	throw new CoreException(new Status(IStatus.OK, Activator.PLUGIN_ID, keystoreCertInfo.validate(false).getMessage()));
+	        }
+		}
 
         if (keystoreCertInfo != null) {
             String keystore = keystoreCertInfo.getKeystoreLocation();

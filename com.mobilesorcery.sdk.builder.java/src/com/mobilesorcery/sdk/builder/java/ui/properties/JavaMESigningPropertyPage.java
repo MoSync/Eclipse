@@ -35,6 +35,9 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 	private KeystoreCertificateInfo currentCertInfo;
 	private KeystoreCertificateInfo globalCertInfo;
 	private UpdateListener listener;
+	private boolean globalDoSign;
+	private boolean projectDoSign;
+	private boolean currentDoSign;
 
 	@Override
 	protected Control createContents(Composite parent) {
@@ -45,8 +48,6 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 		useProjectSpecific = new Button(main, SWT.CHECK);
 		useProjectSpecific.setText("Enable Pr&oject Specific Settings");
 
-		useProjectSpecific.setSelection(PropertyUtil.getBoolean(getProject(),
-				PropertyInitializer.JAVAME_PROJECT_SPECIFIC_KEYS));
 		listener = new UpdateListener(this);
 		useProjectSpecific.addListener(SWT.Selection, listener);
 
@@ -67,21 +68,29 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 		keyCertUI.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
 		init();
-		doSign.setSelection(projectCertInfo != null);
 		updateUI();
 		return main;
 	}
 
 	private void init() {
+		boolean doUseProjectSpecific = PropertyUtil.getBoolean(getProject(),
+				PropertyInitializer.JAVAME_PROJECT_SPECIFIC_KEYS);
+		useProjectSpecific.setSelection(doUseProjectSpecific);
+
 		globalCertInfo = KeystoreCertificateInfo.loadOne(
 				PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS,
 				new PreferenceStorePropertyOwner(Activator.getDefault()
 						.getPreferenceStore()), CoreMoSyncPlugin.getDefault()
 						.getSecureProperties());
+		globalDoSign = Activator.getDefault().getPreferenceStore().getBoolean(PropertyInitializer.JAVAME_DO_SIGN);
 		projectCertInfo = KeystoreCertificateInfo.loadOne(
 				PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS, getProject(),
 				getProject().getSecurePropertyOwner());
-		currentCertInfo = globalCertInfo;
+		projectDoSign = PropertyUtil.getBoolean(getProject(), PropertyInitializer.JAVAME_DO_SIGN);
+		currentCertInfo = doUseProjectSpecific ? projectCertInfo : globalCertInfo;
+		currentDoSign = doUseProjectSpecific ? projectDoSign : globalDoSign;
+		keyCertUI.setKeystoreCertInfo(currentCertInfo);
+		doSign.setSelection(currentDoSign);
 	}
 
 	@Override
@@ -95,21 +104,33 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 				|| isProjectSpecificEnabled != wasProjectSpecificEnabled;
 		if (changedState) {
 			wasProjectSpecificEnabled = isProjectSpecificEnabled;
-			if (isProjectSpecificEnabled) {
-				keyCertUI.setKeystoreCertInfo(projectCertInfo);
-			} else {
-				projectCertInfo = currentCertInfo;
-				keyCertUI.setKeystoreCertInfo(globalCertInfo);
-			}
-			// We need to set this explicitly here
-			currentCertInfo = keyCertUI.getKeystoreCertInfo();
-			doSign.setSelection(currentCertInfo != null);
+			doSign.setSelection(currentDoSign);
+			switchTo(isProjectSpecificEnabled);
 		}
+
 		keyCertUI.setEnabled(isProjectSpecificEnabled && doSign.getSelection());
-		currentCertInfo = keyCertUI.getKeystoreCertInfo();
 		setMessage(currentCertInfo == null ? DefaultMessageProvider.EMPTY : currentCertInfo.validate(true));
 		listener.setActive(true);
 		super.updateUI();
+	}
+
+	private void switchTo(boolean isProjectSpecificEnabled) {
+		if (isProjectSpecificEnabled) {
+			currentCertInfo = projectCertInfo;
+			currentDoSign = projectDoSign;
+		} else {
+			currentCertInfo = globalCertInfo;
+			currentDoSign = globalDoSign;
+			// We switched FROM project specific, so store them.
+			updateFromUI();
+		}
+	}
+
+	private void updateFromUI() {
+		if (useProjectSpecific.getSelection()) {
+			projectCertInfo = keyCertUI.getKeystoreCertInfo();
+			projectDoSign = doSign.getSelection();
+		}
 	}
 
 	private void handleSecurePropertyException(SecurePropertyException e) {
@@ -119,25 +140,28 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 
 	@Override
 	public boolean performOk() {
+		updateFromUI();
+		boolean doUseProjectSpecific = useProjectSpecific.getSelection();
 		PropertyUtil.setBoolean(getProject(),
 				PropertyInitializer.JAVAME_PROJECT_SPECIFIC_KEYS,
-				useProjectSpecific.getSelection());
+				doUseProjectSpecific);
+
 		ArrayList<KeystoreCertificateInfo> infos = new ArrayList<KeystoreCertificateInfo>();
-		if (doSign.getSelection()) {
-			infos.add(keyCertUI.getKeystoreCertInfo());
+		if (projectCertInfo != null) {
+			infos.add(projectCertInfo);
 		}
 
-		if (useProjectSpecific.getSelection()) {
-			try {
-				KeystoreCertificateInfo.store(infos,
-						PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS,
-						getProject(), getProject().getSecurePropertyOwner());
-			} catch (SecurePropertyException e) {
-				handleSecurePropertyException(e);
-				return false;
-			}
-		}
+		PropertyUtil.setBoolean(getProject(), PropertyInitializer.JAVAME_DO_SIGN, projectDoSign);
 
+		try {
+			KeystoreCertificateInfo.store(infos,
+					PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS,
+					getProject(), getProject().getSecurePropertyOwner());
+		} catch (SecurePropertyException e) {
+			handleSecurePropertyException(e);
+			return false;
+		}
+System.err.println("SIGN? " + projectDoSign + " PROJECT SPEC? " + useProjectSpecific.getSelection() + " INFOS: " + infos);
 		return super.performOk();
 	}
 

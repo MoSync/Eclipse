@@ -1,9 +1,12 @@
 package com.mobilesorcery.sdk.builder.java;
 
+import java.io.File;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jface.dialogs.IMessageProvider;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -11,6 +14,7 @@ import org.json.simple.parser.JSONParser;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.ISecurePropertyOwner;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PreferenceStorePropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
@@ -99,6 +103,15 @@ public class KeystoreCertificateInfo {
         } else if (Util.isEmpty(keyPassword) || Util.isEmpty(keystorePassword)) {
             msg = "Empty passwords are not allowed (shared projects do not share passwords for security reasons)";
             type = IMessageProvider.WARNING;
+        } else if (Util.isEmpty(alias)) {
+        	msg = "Empty aliases are not allowed";
+        	type = IMessageProvider.WARNING;
+        } else if (Util.isEmpty(keystoreLocation)) {
+        	msg = "Keystore location must be provided";
+        	type = IMessageProvider.WARNING;
+        } else if (!new File(keystoreLocation).exists()) {
+        	msg = MessageFormat.format("Keystore {0} does not exist", keystoreLocation);
+        	type = IMessageProvider.WARNING;
         } else if (strict && CoreMoSyncPlugin.getDefault().usesEclipseSecureStorage()) {
         	msg = "Un-encrypted passwords, see Preferences > MoSync Tool > Security";
         	type = IMessageProvider.WARNING;
@@ -148,8 +161,27 @@ public class KeystoreCertificateInfo {
         return result.size() > 0 ? result.get(0) : null;
     }
 
+    /**
+     * Utility method to loads a {@link KeystoreCertificateInfo} for a project. It also supports loading a workspace default
+     * certificate if the value of the project specific property defined by {@code projectSpecificKey} is set to {@code true}.
+     * @param baseKey
+     * @param projectSpecificKey {@code null} if this should be ignored
+     * @param project
+     * @return
+     */
+    public static KeystoreCertificateInfo loadOne(String baseKey, String projectSpecificKey, MoSyncProject project, IPreferenceStore store) {
+    	if (projectSpecificKey == null || PropertyUtil.getBoolean(project, projectSpecificKey)) {
+    		return loadOne(baseKey, project, project.getSecurePropertyOwner());
+    	} else {
+    		return loadOne(baseKey, new PreferenceStorePropertyOwner(store), CoreMoSyncPlugin.getDefault().getSecureProperties());
+    	}
+    }
+
     private boolean load(String baseKey, IPropertyOwner storage, ISecurePropertyOwner secureStorage, int ordinal) {
         keystoreLocation = storage.getProperty(baseKey + KEYSTORE_LOCATION_SUFFIX + "." + ordinal);
+        if (Util.isEmpty(keystoreLocation)) {
+        	return false;
+        }
         alias = storage.getProperty(baseKey + ALIAS_SUFFIX + "." + ordinal);
         shouldEncryptPasswords = !PropertyUtil.getBoolean(storage, baseKey + PASSWORDS_IN_CLEARTEXT + "." + ordinal);
 
@@ -165,7 +197,8 @@ public class KeystoreCertificateInfo {
             keyPassword = storage.getProperty(baseKey + KEY_PWD_SUFFIX + "." + ordinal);
         }
 
-        return !(Util.isEmpty(keystoreLocation) && Util.isEmpty(alias) && Util.isEmpty(keyPassword) && Util.isEmpty(keystorePassword));
+        return true;
+       // return !(Util.isEmpty(keystoreLocation) && Util.isEmpty(alias) && Util.isEmpty(keyPassword) && Util.isEmpty(keystorePassword));
     }
 
     public static void store(List<KeystoreCertificateInfo> infoList, String baseKey, IPropertyOwner storage, ISecurePropertyOwner secureStorage)

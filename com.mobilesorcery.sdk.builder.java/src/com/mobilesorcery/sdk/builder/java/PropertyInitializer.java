@@ -30,32 +30,41 @@ import com.mobilesorcery.sdk.core.SecurePropertyException;
 public class PropertyInitializer extends AbstractPreferenceInitializer implements IPropertyInitializerDelegate {
 
     private static final String PREFIX = "javame:"; //$NON-NLS-1$
-    
+
     public static final String JAVAME_KEYSTORE_CERT_INFOS = PREFIX + "keystore.cert.infos"; //$NON-NLS-1$
-    
+
     public static final String JAVAME_PROJECT_SPECIFIC_KEYS = PREFIX + "proj.spec.keys"; //$NON-NLS-1$
 
+    public static final String JAVAME_DO_SIGN = PREFIX + "do.sign"; //$NON-NLS-1$
+
     private static Random rnd = new Random(System.currentTimeMillis());
-    
+
     public PropertyInitializer() {
     }
 
-    public String getDefaultValue(IPropertyOwner p, String key) {
+    @Override
+	public String getDefaultValue(IPropertyOwner p, String key) {
         if (key.equals(JAVAME_PROJECT_SPECIFIC_KEYS)) {
             return PropertyUtil.fromBoolean(false);
-        } else {
-            return Activator.getDefault().getPreferenceStore().getString(key);
+        } else if (key.equals(JAVAME_DO_SIGN)) {
+        	return PropertyUtil.fromBoolean(false);
         }
+        return null;
     }
 
-    public void initializeDefaultPreferences() {
+    @Override
+	public void initializeDefaultPreferences() {
         IPreferenceStore store = Activator.getDefault().getPreferenceStore();
         // By default, java me apps are NOT signed.
         try {
-			KeystoreCertificateInfo.store(new ArrayList<KeystoreCertificateInfo>(),
+        	store.setDefault(JAVAME_DO_SIGN, false);
+        	KeystoreCertificateInfo defaultCert = KeystoreCertificateInfo.createDefault();
+        	ArrayList<KeystoreCertificateInfo> defaultCerts = new ArrayList<KeystoreCertificateInfo>();
+        	defaultCerts.add(defaultCert);
+			KeystoreCertificateInfo.store(defaultCerts,
 					JAVAME_KEYSTORE_CERT_INFOS,
 					new PreferenceStorePropertyOwner(store, true),
-					null);
+					CoreMoSyncPlugin.getDefault().getSecureProperties());
 		} catch (SecurePropertyException e) {
 			CoreMoSyncPlugin.getDefault().log(e);
 		}

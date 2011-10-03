@@ -36,8 +36,10 @@ public class JavaMESigningPreferencePage extends PreferencePage implements IWork
 	public boolean performOk() {
         ArrayList<KeystoreCertificateInfo> infos = new ArrayList<KeystoreCertificateInfo>();
         if (doSign.getSelection()) {
-            infos.add(editor.getKeystoreCertInfo());
+        	infos.add(editor.getKeystoreCertInfo());
         }
+
+        Activator.getDefault().getPreferenceStore().setValue(PropertyInitializer.JAVAME_DO_SIGN, doSign.getSelection());
 
         try {
 			KeystoreCertificateInfo.store(infos,
@@ -81,7 +83,7 @@ public class JavaMESigningPreferencePage extends PreferencePage implements IWork
         		CoreMoSyncPlugin.getDefault().getSecureProperties());
         editor.setKeystoreCertInfo(info);
         editor.setUpdatable(this);
-        doSign.setSelection(info != null);
+        doSign.setSelection(Activator.getDefault().getPreferenceStore().getBoolean(PropertyInitializer.JAVAME_DO_SIGN));
 
         updateUI();
         return editor;
