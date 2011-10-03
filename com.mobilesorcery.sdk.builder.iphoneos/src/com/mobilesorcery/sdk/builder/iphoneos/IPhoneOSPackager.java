@@ -57,28 +57,27 @@ public class IPhoneOSPackager extends PackageToolPackager
         try
         {
         	DefaultPackager intern = new DefaultPackager(project, variant);
-			File out = intern.resolveFile( "%package-output-dir%/xcode-proj" );
-
-            // Should we build the generated project with Xcode?
-			boolean shouldBuild = shouldBuildWithXcode(project, variant);
 
             super.createPackage(project, variant, buildResult);
-
-            if (shouldBuild) {
-            	out = computeBuildResult(project, intern, variant, out).toFile();
-            	if (!XCodeBuild.getDefault().isValid()) {
-            		intern.getConsole().addMessage("No Xcode, will not build generated project");
-            	}
-            } else {
-            	intern.getConsole().addMessage("Xcode building disabled, will not build generated project");
-            }
-
+            File out = computeBuildResult(project, intern, variant);
             buildResult.setBuildResult(out);
+
+            // Notify user if we did not build the generated project and say why
+            if (!XCodeBuild.isMac()) {
+            	intern.getConsole().addMessage("Xcode building only available in Mac OS X, will not build generated project");
+            } else if (!shouldBuildWithXcodePref()) {
+            	intern.getConsole().addMessage("Xcode building disabled, will not build generated project");
+            } else if (!XCodeBuild.getDefault().isValid()) {
+        		intern.getConsole().addMessage("No Xcode, will not build generated project");
+            }
         }
-        catch ( Exception e )
-        {
+        catch (Exception e) {
         	buildResult.addError(e.getMessage());
         }
+    }
+
+    private boolean shouldBuildWithXcodePref() {
+    	return !Activator.getDefault().getPreferenceStore().getBoolean(Activator.ONLY_GENERATE_XCODE_PROJECT);
     }
 
 	private boolean shouldBuildWithXcode(MoSyncProject project, IBuildVariant variant) throws CoreException {
@@ -88,21 +87,26 @@ public class IPhoneOSPackager extends PackageToolPackager
 			SDK sdk = getSDK(project, variant);
 			isSimulatorSDK = sdk != null && sdk.isSimulatorSDK();
 		}
-        boolean shouldBuild = isValid && (isSimulatorSDK || !Activator.getDefault().getPreferenceStore().getBoolean(Activator.ONLY_GENERATE_XCODE_PROJECT));
+        boolean shouldBuild = isValid && (isSimulatorSDK || shouldBuildWithXcodePref());
         return shouldBuild;
 	}
 
-	private IPath computeBuildResult(MoSyncProject project, DefaultPackager packager, IBuildVariant variant, File xcodeProject) throws CoreException {
-		// Kind of hard-coded in the XCode project template.
-		String cfgId = variant.getConfigurationId();
-		IBuildConfiguration cfg = project.getBuildConfiguration(cfgId);
-		boolean isDebugBuild = cfg != null && cfg.getTypes().contains(IBuildConfiguration.DEBUG_TYPE);
-		String target = isDebugBuild ? "Debug" : "Release";
-		SDK sdk = getSDK(project, variant);
+	private File computeBuildResult(MoSyncProject project, DefaultPackager packager, IBuildVariant variant) throws CoreException {
+		File xcodeProject = packager.resolveFile( "%package-output-dir%/xcode-proj" );
+		if (shouldBuildWithXcode(project, variant)) {
+			// Kind of hard-coded in the XCode project template.
+			String cfgId = variant.getConfigurationId();
+			IBuildConfiguration cfg = project.getBuildConfiguration(cfgId);
+			boolean isDebugBuild = cfg != null && cfg.getTypes().contains(IBuildConfiguration.DEBUG_TYPE);
+			String target = isDebugBuild ? "Debug" : "Release";
+			SDK sdk = getSDK(project, variant);
 
-		String xcodeTarget = target + "-" + sdk.getSDKType();
-		// Hm, is this always true...?
-		return new Path(packager.resolve(xcodeProject.getAbsolutePath() + "/build/" + xcodeTarget + "/%app-name%.app"));
+			String xcodeTarget = target + "-" + sdk.getSDKType();
+			// Hm, is this always true...?
+			return packager.resolveFile(xcodeProject.getAbsolutePath() + "/build/" + xcodeTarget + "/%app-name%.app");
+		} else {
+			return xcodeProject;
+		}
 	}
 
 	private boolean isSimulatorBuild(IBuildVariant variant) {
@@ -135,10 +139,10 @@ public class IPhoneOSPackager extends PackageToolPackager
 
     	if (!shouldBuildWithXcode(project, variant)) {
     		commandLine.flag("--ios-project-only");
+    	} else {
+    		SDK sdk = getSDK(project, variant);
+    		commandLine.flag("--ios-sdk").with(sdk.getId());
     	}
-
-    	SDK sdk = getSDK(project, variant);
-    	commandLine.flag("--ios-sdk").with(sdk.getId());
 
     	commandLine.flag("--cpp-output").with(internal.resolveFile("%package-output-dir%").getParent());
 	}
