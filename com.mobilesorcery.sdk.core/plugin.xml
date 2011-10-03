@@ -66,6 +66,12 @@
             properties="isExcludableFromBuild"
             type="java.lang.Object"/>
        <propertyTester
+            class="com.mobilesorcery.sdk.internal.OSTester"
+            id="com.mobilesorcery.sdk.testers.os"
+            namespace="com.mobilesorcery.sdk.testers"
+            properties="os-regexp,os-family"
+            type="java.lang.Object"/>
+       <propertyTester
              class="com.mobilesorcery.sdk.core.IsExperimentalTester"
              id="com.mobilesorcery.sdk.testers.isExperimental"
              namespace="com.mobilesorcery.sdk.testers"
