@@ -106,7 +106,8 @@ public class BuildState implements IBuildState {
                 }
 
                 if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-                    CoreMoSyncPlugin.trace("{0} previous timestamp: {1}, current timestamp: {2}", path, otherTimestamp == null ? "N/A" : new Date(otherTimestamp), timestampMap.get(path));
+                	Long timeStamp = timestampMap.get(path);
+                    CoreMoSyncPlugin.trace("{0} previous timestamp: {1}, current timestamp: {2}", path, otherTimestamp == null ? "N/A" : new Date(otherTimestamp), timeStamp == null ? "N/A" : new Date(timeStamp));
                 }
             }
 

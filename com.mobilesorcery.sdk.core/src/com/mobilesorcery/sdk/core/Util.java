@@ -639,6 +639,13 @@ public class Util {
 		return new File(peer.getParent(), filename);
 	}
 
+	public static boolean isParent(File potentialParent, File potentialChild) {
+		if (potentialParent == null || potentialChild == null) {
+			return false;
+		}
+		return potentialChild.getAbsolutePath().startsWith(potentialParent.getAbsolutePath());
+	}
+
 	public static boolean isEmpty(String text) {
 		return text == null || text.isEmpty();
 	}
@@ -801,7 +808,4 @@ public class Util {
 	public static String convertSlashes(String abbreviatedPlatform) {
 		return abbreviatedPlatform.replace('\\', File.separatorChar).replace('/', File.separatorChar);
 	}
-
-
-
 }
