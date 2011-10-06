@@ -33,6 +33,12 @@ public class MoSyncPathInitializer extends PathEntryContainerInitializer {
     }
 
 	public static MoSyncPathInitializer getInstance() {
+		// OK - there *could* be a race condition if for some weird
+		// reason this MoSyncPathInitializer was never executed in a path initialization
+		// context.
+		if (instance == null) {
+			instance = new MoSyncPathInitializer();
+		}
 		return instance;
 	}
 
