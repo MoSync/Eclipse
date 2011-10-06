@@ -16,6 +16,8 @@ import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class XCodePreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
 
+	private BooleanFieldEditor editor;
+
 	public XCodePreferencePage() {
 		setPreferenceStore(Activator.getDefault().getPreferenceStore());
 	}
@@ -28,7 +30,9 @@ public class XCodePreferencePage extends PreferencePage implements IWorkbenchPre
 	protected Control createContents(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(UIUtils.newPrefsLayout(2));
-		BooleanFieldEditor editor = new BooleanFieldEditor(Activator.ONLY_GENERATE_XCODE_PROJECT, "Only generate Xcode project for iOS devices (do not build it)", main);
+		editor = new BooleanFieldEditor(Activator.ONLY_GENERATE_XCODE_PROJECT, "Only generate Xcode project for iOS devices (do not build it)", main);
+		editor.setPreferenceStore(getPreferenceStore());
+		editor.load();
 		boolean isMac = Util.isMac();
 		if (!isMac) {
 			Label info = new Label(main, SWT.NONE);
@@ -38,4 +42,14 @@ public class XCodePreferencePage extends PreferencePage implements IWorkbenchPre
 		return main;
 	}
 
+	@Override
+	public boolean performOk() {
+		editor.store();
+		return true;
+	}
+
+	@Override
+	public void performDefaults() {
+		editor.loadDefault();
+	}
 }
