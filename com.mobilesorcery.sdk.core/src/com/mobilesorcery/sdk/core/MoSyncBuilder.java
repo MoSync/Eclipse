@@ -543,6 +543,7 @@ public class MoSyncBuilder extends ACBuilder {
             PipeTool pipeTool = new PipeTool();
             pipeTool.setAppCode(getCurrentAppCode(session));
             pipeTool.setProject(project);
+            pipeTool.setVariant(variant);
             pipeTool.setConsole(console);
             pipeTool.setLineHandler(linehandler);
             pipeTool.setArguments(buildProperties);
@@ -644,7 +645,7 @@ public class MoSyncBuilder extends ACBuilder {
 			MoSyncProject mosyncProject, IBuildVariant variant) {
 		CompoundDependencyProvider<IResource> dependencyProvider = new CompoundDependencyProvider<IResource>(new GCCDependencyProvider(mosyncProject, variant),
         																	   new ProjectResourceDependencyProvider(mosyncProject.getWrappedProject(), variant),
-        																	   new ResourceFileDependencyProvider());
+        																	   new ResourceFileDependencyProvider(mosyncProject, variant));
 
     	return dependencyProvider;
 	}

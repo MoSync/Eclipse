@@ -28,6 +28,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
@@ -91,6 +92,7 @@ public class PipeTool {
 	private String appCode;
 	private IPropertyOwner argumentMap;
 	private ParameterResolver resolver;
+	private IBuildVariant variant;
 
     public PipeTool() {
 
@@ -118,6 +120,10 @@ public class PipeTool {
 
     public void setGenerateSLD(boolean sld) {
         this.sld = sld;
+    }
+
+    public void setVariant(IBuildVariant variant) {
+    	this.variant = variant;
     }
 
     /**
@@ -193,7 +199,7 @@ public class PipeTool {
         	args.add( a );
 
         if (BUILD_RESOURCES_MODE == mode) {
-        	IPath depsFile = getResourcesDependencyFile(project);
+        	IPath depsFile = getResourcesDependencyFile(project, variant);
         	depsFile.toFile().getParentFile().mkdirs();
         	// Pipetool only accepts -depend files in exeuction dir
         	args.add("-depend=" + depsFile.toOSString());
@@ -300,8 +306,8 @@ public class PipeTool {
     	}*/
 	}
 
-	public static IPath getResourcesDependencyFile(IProject project) {
-    	return MoSyncBuilder.getOutputPath(project, MoSyncBuilder.getActiveVariant(MoSyncProject.create(project), false)).append(RESOURCE_DEPENDENCY_FILE_NAME);
+	public static IPath getResourcesDependencyFile(IProject project, IBuildVariant variant) {
+    	return MoSyncBuilder.getOutputPath(project, variant).append(RESOURCE_DEPENDENCY_FILE_NAME);
     }
 
 	private String[] assembleLibraryPathArgs(IPath[] libraryPaths) throws ParameterResolverException {

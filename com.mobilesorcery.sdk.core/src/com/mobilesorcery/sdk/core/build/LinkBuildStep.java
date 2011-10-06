@@ -41,7 +41,7 @@ public class LinkBuildStep extends AbstractBuildStep {
 		public IBuildStep create() {
 			return new LinkBuildStep();
 		}
-		
+
 		@Override
 		public String getId() {
 			return ID;
@@ -60,13 +60,13 @@ public class LinkBuildStep extends AbstractBuildStep {
 		setId(ID);
 		setName("Link");
 	}
-	
+
 	@Override
 	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff,
 			IBuildResult result, IProgressMonitor monitor) throws Exception {
 		int continueFlag = IBuildStep.CONTINUE;
-		
+
 		IProcessConsole console = getConsole();
 		IPropertyOwner buildProperties = getBuildProperties();
 		PipeTool pipeTool = getPipeTool();
@@ -109,7 +109,7 @@ public class LinkBuildStep extends AbstractBuildStep {
             if (objectFiles.length > 0) {
             	// TODO: Dependencies?
                 continueFlag = (pipeTool.run() == PipeTool.SKIP_RETURN_CODE ? IBuildStep.SKIP : IBuildStep.CONTINUE);
-                
+
                 // If needed, run a second time to generate IL
                 if (isLib == false && pipeToolMode.equals(PipeTool.BUILD_C_MODE) == false) {
                 	pipeTool.setMode(PipeTool.BUILD_C_MODE);
@@ -120,6 +120,7 @@ public class LinkBuildStep extends AbstractBuildStep {
             if (elim) {
                 PipeTool elimPipeTool = new PipeTool();
                 elimPipeTool.setProject(project);
+                elimPipeTool.setVariant(variant);
                 elimPipeTool.setLineHandler(lineHandler);
                 elimPipeTool.setNoVerify(true);
                 elimPipeTool.setGenerateSLD(false);
@@ -153,10 +154,10 @@ public class LinkBuildStep extends AbstractBuildStep {
                 Util.mergeFiles(new SubProgressMonitor(monitor, 1), parts.toArray(new File[parts.size()]), programComb.toFile());
             }
         }
-        
+
         return continueFlag;
 	}
-	
+
     private String[] getResourceFiles(IBuildSession session) {
 		String[] result = (String[]) session.getProperties().get(ResourceBuildStep.RESOURCE_FILES);
 		return result == null ? new String[0] : result;
@@ -170,11 +171,11 @@ public class LinkBuildStep extends AbstractBuildStep {
 	/**
      * Returns true if any of the libraries that the given project depends
      * on have changed.
-     * 
-     * @param mosyncProject Project to check for changes. 
+     *
+     * @param mosyncProject Project to check for changes.
      * @param buildProperties Build properties of project.
      * @param programComb Latest built program file.
-     * @return true if any of the libraries have changed, false otherwise. 
+     * @return true if any of the libraries have changed, false otherwise.
      */
     private boolean haveLibrariesChanged(MoSyncProject mosyncProject, IPropertyOwner buildProperties, IPath programComb)
     {
@@ -182,12 +183,12 @@ public class LinkBuildStep extends AbstractBuildStep {
         long programCombTouched = programComb.toFile().exists() ? programComb.toFile().lastModified() : Long.MAX_VALUE;
         return librariesTouched > programCombTouched;
     }
-	
+
 	@Override
 	public boolean shouldAdd(IBuildSession session) {
 		return session.doLink();
 	}
-	
+
 	@Override
 	public String[] getDependees() {
 		return new String[] { CompileBuildStep.ID };

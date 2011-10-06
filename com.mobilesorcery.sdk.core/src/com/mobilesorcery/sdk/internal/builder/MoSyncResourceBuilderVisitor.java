@@ -12,7 +12,7 @@
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
 /**
- * 
+ *
  */
 package com.mobilesorcery.sdk.internal.builder;
 
@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -41,6 +42,7 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 
 	private IDependencyProvider<IResource> dependencyProvider;
 
+	@Override
 	public boolean visit(IResource resource) throws CoreException {
 		super.visit(resource);
 
@@ -94,20 +96,28 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 			} catch (ParameterResolverException e) {
 				throw ParameterResolverException.toCoreException(e);
 			}
-			
+
 			// Explicitly add dependencies for the pipetool output file -- TODO:
 			// outputfile must equal getresourceoutput; remove one.
-			dependencyDelta.addDependencies(ResourceFileDependencyProvider.getResourceOutput(project), dependencyProvider);
-			dependencyDelta.addDependencies(resourceFiles, dependencyProvider);
+			IPath resourcePath = MoSyncBuilder.getResourceOutputPath(project, getVariant());
+			IFile[] resourceFiles = ResourcesPlugin.getWorkspace().getRoot().findFilesForLocationURI(resourcePath.toFile().toURI());
+			for (IFile resourceFile : resourceFiles) {
+				dependencyDelta.addDependencies(resourceFile, dependencyProvider);
+			}
+			dependencyDelta.addDependencies(this.resourceFiles, dependencyProvider);
 		}
 	}
 
+	@Override
 	public void setDependencyProvider(IDependencyProvider<IResource> dependencyProvider) {
 		this.dependencyProvider = dependencyProvider;
 	}
 
+	@Override
 	public boolean isBuildable(IResource resource) {
-		return isResourceFile(resource);
+		// Ok, I added the 'resource' file just so it will not get filtered out -- what we'd really
+		// like is the dependency files of pipe-tool resource compilation to work properly
+		return isResourceFile(resource) || MoSyncBuilder.getResourceOutputPath(project, getVariant()).equals(resource.getLocation());
 	}
 
 	protected String getName() {
