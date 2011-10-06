@@ -144,6 +144,6 @@ public class IPhoneOSPackager extends PackageToolPackager
     		commandLine.flag("--ios-sdk").with(sdk.getId());
     	}
 
-    	commandLine.flag("--cpp-output").with(internal.resolveFile("%package-output-dir%").getParent());
+    	commandLine.flag("--cpp-output").with(internal.resolveFile("%program-output%").getParent());
 	}
 }
