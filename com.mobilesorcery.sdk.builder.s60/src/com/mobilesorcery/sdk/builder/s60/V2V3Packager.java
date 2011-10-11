@@ -6,6 +6,7 @@ import java.io.IOException;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.preference.IPreferenceStore;
 
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.DefaultPackager;
@@ -15,6 +16,7 @@ import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
+import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 /**
@@ -78,5 +80,20 @@ public class V2V3Packager extends PackageToolPackager {
 		/* Symbian UID */
 		String uid = formatUID(project.getProperty(uidPropertyName));
 		commandLine.flag(uidParameter).with( uid );
+
+		boolean useProjectSpecificKeys = PropertyUtil.getBoolean(project, PropertyInitializer.S60_PROJECT_SPECIFIC_KEYS);
+		IPreferenceStore prefs = Activator.getDefault().getPreferenceStore();
+		String certFile = useProjectSpecificKeys ?
+				project.getProperty(PropertyInitializer.S60_CERT_FILE) :
+				prefs.getString(PropertyInitializer.S60_CERT_FILE);
+		String pass = useProjectSpecificKeys ?
+				project.getProperty(PropertyInitializer.S60_PASS_KEY) :
+				prefs.getString(PropertyInitializer.S60_PASS_KEY);
+		String keyFile = useProjectSpecificKeys ?
+				project.getProperty(PropertyInitializer.S60_KEY_FILE) :
+				prefs.getString(PropertyInitializer.S60_KEY_FILE);
+		commandLine.flag("--s60cert").with(new File(certFile));
+		commandLine.flag("--s60key").with(new File(keyFile));
+		commandLine.flag("--s60pass", true).with(pass);
 	}
 }

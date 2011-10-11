@@ -48,27 +48,29 @@ public class SymbianSigningPropertyPage extends PropertyPage implements IWorkben
     public SymbianSigningPropertyPage() {
     }
 
-    protected Control createContents(Composite parent) {
+    @Override
+	protected Control createContents(Composite parent) {
         Composite main = new Composite(parent, SWT.NONE);
         main.setLayout(new GridLayout(1, false));
-        
+
         useProjectSpecific = new Button(main, SWT.CHECK);
         useProjectSpecific.setText(Messages.SymbianSigningPropertyPage_EnableProjectSpecific);
-        
+
         useProjectSpecific.setSelection(PropertyUtil.getBoolean(getProject(), PropertyInitializer.S60_PROJECT_SPECIFIC_KEYS));
         useProjectSpecific.addListener(SWT.Selection, new Listener() {
-            public void handleEvent(Event event) {
+            @Override
+			public void handleEvent(Event event) {
                 updateUI();
             }
         });
-        
+
         Label separator = new Label(main, SWT.SEPARATOR | SWT.HORIZONTAL);
         separator.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        
+
         signingGroup = new Group(main, SWT.NONE);
         signingGroup.setText(Messages.SymbianSigningPropertyPage_Signing);
         signingGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        
+
         keyFile = new FileFieldEditor("dummy.1", Messages.SymbianSigningPropertyPage_KeyFile, signingGroup); //$NON-NLS-1$
         keyFile.setPage(this);
         certFile = new FileFieldEditor("dummy.2", Messages.SymbianSigningPropertyPage_CertificateFile, signingGroup); //$NON-NLS-1$
@@ -82,42 +84,46 @@ public class SymbianSigningPropertyPage extends PropertyPage implements IWorkben
 
         passkeyLabel = new Label(signingGroup, SWT.NONE);
         passkeyLabel.setText(Messages.SymbianSigningPropertyPage_Passkey);
-        
+
         passkey = new Text(signingGroup, SWT.BORDER | SWT.SINGLE);
         passkeyDec = new PasswordTextFieldDecorator(passkey);
         GridData passkeyData = new GridData(GridData.FILL_HORIZONTAL);
         passkeyData.horizontalSpan = 2;
         passkey.setLayoutData(passkeyData);
-        
+
+        String passKeyValue = getProject().getProperty(PropertyInitializer.S60_PASS_KEY);
+        passkey.setText(passKeyValue == null ? "" : passKeyValue);
+
         setMessage("The passkey will be stored as clear text", IMessageProvider.WARNING);
 
         updateUI();
-        
+
         return main;
     }
-    
+
     private void updateUI() {
         keyFile.setEnabled(useProjectSpecific.getSelection(), signingGroup);
         certFile.setEnabled(useProjectSpecific.getSelection(), signingGroup);
         passkeyLabel.setEnabled(useProjectSpecific.getSelection());
         passkeyDec.setEnabled(useProjectSpecific.getSelection());
-        
+
         if (!useProjectSpecific.getSelection()) {
             keyFile.setStringValue(getProject().getDefaultProperty(PropertyInitializer.S60_KEY_FILE));
             certFile.setStringValue(getProject().getDefaultProperty(PropertyInitializer.S60_CERT_FILE));
             passkey.setText(getProject().getDefaultProperty(PropertyInitializer.S60_PASS_KEY));
         }
     }
-    
-    public boolean performOk() {
+
+    @Override
+	public boolean performOk() {
         PropertyUtil.setBoolean(getProject(), PropertyInitializer.S60_PROJECT_SPECIFIC_KEYS, useProjectSpecific.getSelection());
         getProject().setProperty(PropertyInitializer.S60_KEY_FILE, useProjectSpecific.getSelection() ? keyFile.getStringValue() : null);
         getProject().setProperty(PropertyInitializer.S60_CERT_FILE, useProjectSpecific.getSelection() ? certFile.getStringValue() : null);
         getProject().setProperty(PropertyInitializer.S60_PASS_KEY, useProjectSpecific.getSelection() ? passkey.getText() : null);
-        
+
         return true;
     }
-    
+
     private MoSyncProject getProject() {
         IProject wrappedProject = (IProject) getElement();
         MoSyncProject project = MoSyncProject.create(wrappedProject);
@@ -125,5 +131,5 @@ public class SymbianSigningPropertyPage extends PropertyPage implements IWorkben
         return project;
     }
 
-    
+
 }
