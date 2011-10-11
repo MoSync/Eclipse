@@ -14,9 +14,9 @@
    </configIni>
 
    <launcherArgs>
-      <vmArgsLin>-Xmx1280m</vmArgsLin>
-      <vmArgsMac>-XstartOnFirstThread -Dorg.eclipse.swt.internal.carbon.smallFonts -Xdock:icon=../Resources/mosync.icns -Dosgi.instance.area.default=@user.home/workspace -Xmx1280m</vmArgsMac>
-      <vmArgsWin>-Xmx1280m</vmArgsWin>
+      <vmArgsLin>-Xmx768m</vmArgsLin>
+      <vmArgsMac>-XstartOnFirstThread -Dorg.eclipse.swt.internal.carbon.smallFonts -Xdock:icon=../Resources/mosync.icns -Dosgi.instance.area.default=@user.home/workspace -Xmx768m</vmArgsMac>
+      <vmArgsWin>-Xmx768m</vmArgsWin>
    </launcherArgs>
 
    <windowImages i16="/com.mobilesorcery.sdk.product/icons/mosync_16x16.png" i32="/com.mobilesorcery.sdk.product/icons/mosync_32x32.png" i48="/com.mobilesorcery.sdk.product/icons/mosync_48x48.png" i64="/com.mobilesorcery.sdk.product/icons/mosync_64x64.png" i128="/com.mobilesorcery.sdk.product/icons/mosync_128x128.png"/>
