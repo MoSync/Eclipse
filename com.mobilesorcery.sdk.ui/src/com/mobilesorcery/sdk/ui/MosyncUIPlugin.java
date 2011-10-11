@@ -160,7 +160,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         listeners = new PropertyChangeSupport(this);
         CoreMoSyncPlugin.getDefault().setIDEProcessConsoleProvider(this);
         registerGlobalProjectListener();
-        CoreMoSyncPlugin.getLowMemoryManager().addMemoryLowListener(this);
+        CoreMoSyncPlugin.getLowMemoryManager().addMemoryLowListener(this, 1);
         UIUtils.awaitWorkbenchStartup(new IWorkbenchStartupListener() {
 			@Override
 			public void started() {
@@ -215,7 +215,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 	public void stop(BundleContext context) throws Exception {
         plugin = null;
         super.stop(context);
-        CoreMoSyncPlugin.getLowMemoryManager().addMemoryLowListener(this);
+        CoreMoSyncPlugin.getLowMemoryManager().removeMemoryLowListener(this);
         deregisterGlobalProjectListener();
     }
 

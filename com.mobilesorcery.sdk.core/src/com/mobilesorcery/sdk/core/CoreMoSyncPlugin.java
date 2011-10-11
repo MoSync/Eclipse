@@ -62,6 +62,7 @@ import sun.security.action.GetLongAction;
 import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
+import com.mobilesorcery.sdk.core.memory.LowMemoryManager;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.ErrorPackager;
 import com.mobilesorcery.sdk.internal.PID;
@@ -103,6 +104,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
     // The shared instance
     private static CoreMoSyncPlugin plugin;
+
+	private static LowMemoryManager lowMemoryManager;
 
     private final ArrayList<Pattern> patterns = new ArrayList<Pattern>();
 
@@ -868,4 +871,14 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		this.workspaceToken = getPreferenceStore().getString(WORKSPACE_TOKEN_PREF);
 	}
 
+	/**
+	 * Returns the 'low memory manager' for notifications on low memory
+	 * @return
+	 */
+	public static synchronized LowMemoryManager getLowMemoryManager() {
+		if (lowMemoryManager == null) {
+			lowMemoryManager = new LowMemoryManager(0.85);
+		}
+		return lowMemoryManager;
+	}
 }
