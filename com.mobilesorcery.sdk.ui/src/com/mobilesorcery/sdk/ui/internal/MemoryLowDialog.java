@@ -78,7 +78,7 @@ public class MemoryLowDialog extends IconAndMessageDialog {
 		StringBuffer result = new StringBuffer();
 		List<MemoryPoolMXBean> monitoredPools = CoreMoSyncPlugin.getLowMemoryManager().getMonitoredPools();
 		for (MemoryPoolMXBean monitoredPool : monitoredPools) {
-			boolean exceeded = monitoredPool.isUsageThresholdSupported() && monitoredPool.isUsageThresholdExceeded();
+			boolean exceeded = CoreMoSyncPlugin.getLowMemoryManager().isUsageExceeded(monitoredPool);
 			String exceededStr = exceeded ? "*" : "";
 			MemoryUsage usage = monitoredPool.getUsage();
 			String used = usage == null ? "?" : Util.dataSize(usage.getUsed());
