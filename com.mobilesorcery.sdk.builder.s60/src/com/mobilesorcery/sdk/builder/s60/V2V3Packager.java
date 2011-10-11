@@ -96,4 +96,9 @@ public class V2V3Packager extends PackageToolPackager {
 		commandLine.flag("--s60key").with(new File(keyFile));
 		commandLine.flag("--s60pass", true).with(pass);
 	}
+
+	@Override
+	protected File getDefaultIconFile() {
+		return null;
+	}
 }

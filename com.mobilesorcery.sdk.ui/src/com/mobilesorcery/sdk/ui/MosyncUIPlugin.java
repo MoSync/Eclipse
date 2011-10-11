@@ -84,6 +84,8 @@ import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
 import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
+import com.mobilesorcery.sdk.core.memory.MemoryLowListener;
+import com.mobilesorcery.sdk.ui.internal.MemoryLowDialog;
 import com.mobilesorcery.sdk.ui.internal.console.IDEProcessConsole;
 import com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator;
 import com.mobilesorcery.sdk.ui.internal.launch.AutomaticEmulatorLauncherPart;
@@ -94,7 +96,7 @@ import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
 /**
  * The activator class controls the plug-in life cycle
  */
-public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener, ISelectionListener, IProvider<IProcessConsole, String> {
+public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener, ISelectionListener, IProvider<IProcessConsole, String>, MemoryLowListener {
 
     // The plug-in ID
     public static final String PLUGIN_ID = "com.mobilesorcery.sdk.ui";
@@ -158,6 +160,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         listeners = new PropertyChangeSupport(this);
         CoreMoSyncPlugin.getDefault().setIDEProcessConsoleProvider(this);
         registerGlobalProjectListener();
+        CoreMoSyncPlugin.getLowMemoryManager().addMemoryLowListener(this);
         UIUtils.awaitWorkbenchStartup(new IWorkbenchStartupListener() {
 			@Override
 			public void started() {
@@ -167,7 +170,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 		});
     }
 
-    private void initializeLauncherParts() {
+	private void initializeLauncherParts() {
     	IConfigurationElement[] launcherParts = Platform.getExtensionRegistry().getConfigurationElementsFor(IEmulatorLaunchConfigurationPart.EXTENSION_POINT_ID);
     	for (int i = 0; i < launcherParts.length; i++) {
     		IConfigurationElement launcherPart = launcherParts[i];
@@ -212,6 +215,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 	public void stop(BundleContext context) throws Exception {
         plugin = null;
         super.stop(context);
+        CoreMoSyncPlugin.getLowMemoryManager().addMemoryLowListener(this);
         deregisterGlobalProjectListener();
     }
 
@@ -592,6 +596,12 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 		registry.put(FONT_INFO_TEXT, UIUtils.modifyFont((FontData[]) null, SWT.DEFAULT, infoTextSizeDelta));
 		registry.put(FONT_DEFAULT_BOLD, UIUtils.modifyFont((FontData[]) null, SWT.BOLD, 0));
 		registry.put(FONT_DEFAULT_ITALIC, UIUtils.modifyFont((FontData[]) null, SWT.ITALIC, 0));
+	}
+
+	@Override
+	public void memoryUsageLow() {
+		final Display d = PlatformUI.getWorkbench().getDisplay();
+		MemoryLowDialog.open(d);
 	}
 
 }

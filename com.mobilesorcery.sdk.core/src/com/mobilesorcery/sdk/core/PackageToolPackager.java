@@ -72,6 +72,9 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		File program = internal.resolveFile("%program-output%");
 		File resource = internal.resolveFile("%resource-output%");
 		File iconFile = project.getIconFile();
+		if (iconFile == null) {
+			iconFile = getDefaultIconFile();
+		}
 		String packageOutputDir = internal.get(DefaultPackager.PACKAGE_OUTPUT_DIR);
 		String vendor = internal.get(DefaultPackager.APP_VENDOR_NAME);
 		Version version = new Version(internal.get(DefaultPackager.APP_VERSION));
@@ -103,6 +106,11 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			commandLine.flag("--nfc").with(nfcDescription);
 		}
 
+	}
+
+	protected File getDefaultIconFile() {
+		File iconFile = MoSyncTool.getDefault().getMoSyncHome().append("etc/default.icon").toFile();
+		return iconFile.exists() ? iconFile : null;
 	}
 
 	protected void addPlatformSpecifics(MoSyncProject project, IBuildVariant variant, CommandLineBuilder commandLine) throws Exception {
