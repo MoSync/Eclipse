@@ -97,6 +97,10 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format("No AVD found with name {0} (modify your launch configuration).", avd)));
 		}
 
+		boolean mightNeedADBRestart = mightNeedADBRestart(adb, emulator);
+		if (mightNeedADBRestart) {
+			adb.killServer();
+		}
 		List<IAndroidEmulatorProcess> runningEmulators = emulator.getRunningProcesses(avd);
 		IAndroidEmulatorProcess process = runningEmulators.size() > 0 ? runningEmulators.get(0) : null;
 		if (process == null) {
@@ -117,6 +121,20 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
         } else {
         	throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Project not built or build failed"));
         }
+	}
+
+	private boolean mightNeedADBRestart(ADB adb, Emulator emulator) throws CoreException {
+		// Sometimes we loose the adb connection and then we will not see any emulators.
+		// But since we keep track of emulator processes we can detect this condition
+		// if at least one process is running. Which is ok, since that's usually when
+		// the problem manifests itself
+		List<String> adbEmulators = adb.listEmulators(false);
+		List<IAndroidEmulatorProcess> runningProcesses = emulator.getAllRunningProcesses();
+		// So... if no emulators according to adb but process according to ourselves -> restart!
+		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+			CoreMoSyncPlugin.trace("ADB processes: {0}\nEmulator tracked processes: {1}", adbEmulators, runningProcesses);
+		}
+		return (adbEmulators.isEmpty() && !runningProcesses.isEmpty());
 	}
 
 	private String getAVD(Android android, ILaunchConfiguration launchConfig) throws CoreException {

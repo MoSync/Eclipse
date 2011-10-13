@@ -225,4 +225,10 @@ public class ADB extends AbstractTool {
 			"logcat"
 		}, null, null, true);
 	}
+
+	public void killServer() throws CoreException {
+		execute(new String[] { getToolPath().getAbsolutePath(),
+				"kill-server"
+		}, null, null, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
+	}
 }
