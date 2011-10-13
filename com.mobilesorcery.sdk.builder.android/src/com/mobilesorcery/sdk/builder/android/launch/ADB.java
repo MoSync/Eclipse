@@ -199,12 +199,24 @@ public class ADB extends AbstractTool {
 	}
 
 	public boolean isBootComplete(String serialNumberOfDevice) throws CoreException {
+		String reply = getProp(serialNumberOfDevice, "dev.bootcomplete");
+		return "1".equals(reply);
+	}
+
+	public String getProp(String serialNumberOfDevice, String prop) throws CoreException {
 		CollectingLineHandler cl = new CollectingLineHandler();
 		execute(new String[] { getToolPath().getAbsolutePath(), "-s",
-				serialNumberOfDevice, "shell", "getprop", "dev.bootcomplete"
+				serialNumberOfDevice, "shell", "getprop", prop
 		}, cl, cl, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
 		String reply = cl.getFirstLine().trim();
-		return "1".equals(reply);
+		return reply;
+	}
+
+	public void setProp(String serialNumberOfDevice, String propKey, String propValue) throws CoreException {
+		CollectingLineHandler cl = new CollectingLineHandler();
+		execute(new String[] { getToolPath().getAbsolutePath(), "-s",
+				serialNumberOfDevice, "shell", "setprop", propKey, propValue
+		}, cl, cl, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
 	}
 
 	public void startLogCat() throws CoreException {

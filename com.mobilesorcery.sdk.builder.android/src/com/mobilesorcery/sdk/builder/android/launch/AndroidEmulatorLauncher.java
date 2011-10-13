@@ -2,6 +2,7 @@ package com.mobilesorcery.sdk.builder.android.launch;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -20,8 +21,8 @@ import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.AndroidPackager;
+import com.mobilesorcery.sdk.builder.android.launch.Emulator.IAndroidEmulatorProcess;
 import com.mobilesorcery.sdk.builder.android.ui.dialogs.ConfigureAndroidSDKDialog;
-import com.mobilesorcery.sdk.core.CollectingLineHandler;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -85,30 +86,32 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 		ADB adb = ADB.getExternal();
 		Android android = Android.getExternal();
 		android.refresh();
+		Emulator emulator = Emulator.getExternal();
+		emulator.assertValid();
 
-		List<String> emulators = adb.listEmulators(true);
-		if (emulators.size() == 0) {
-			Emulator emulator = Emulator.getExternal();
-			emulator.assertValid();
-			String avd = getAVD(android, launchConfig);
-			if (Util.isEmpty(avd)) {
-				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format("No AVD specified (modify your launch configuration).", avd)));
-			}
-			if (!android.hasAVD(avd)) {
-				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format("No AVD found with name {0} (modify your launch configuration).", avd)));
-			}
-			CollectingLineHandler handler = emulator.start(avd, true);
-			emulators = awaitEmulatorStarted(adb, handler, 2, TimeUnit.MINUTES);
-			//startLogCat(adb);
-		} else if (emulators.size() > 1) {
-			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "This launcher only supports launching if exactly one Android emulator is started"));
+		String avd = getAVD(android, launchConfig);
+		if (Util.isEmpty(avd)) {
+			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format("No AVD specified (modify your launch configuration).", avd)));
 		}
+		if (!android.hasAVD(avd)) {
+			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, MessageFormat.format("No AVD found with name {0} (modify your launch configuration).", avd)));
+		}
+
+		List<IAndroidEmulatorProcess> runningEmulators = emulator.getRunningProcesses(avd);
+		IAndroidEmulatorProcess process = runningEmulators.size() > 0 ? runningEmulators.get(0) : null;
+		if (process == null) {
+			process = emulator.start(avd, true);
+			//startLogCat(adb);
+		}
+
+		// We need to wait until we're started.
+		process.awaitEmulatorStarted(2, TimeUnit.MINUTES);
 
 		IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
 
     	File packageToInstall = getPackageToInstall(launchConfig, mode);
     	if (packageToInstall != null) {
-    		String serialNumberOfDevice = emulators.get(0);
+    		String serialNumberOfDevice = process.getEmulatorId();
     		adb.install(packageToInstall, serialNumberOfDevice);
     		adb.launch(Activator.getAndroidComponentName(MoSyncProject.create(project)), serialNumberOfDevice);
         } else {
@@ -135,33 +138,6 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 
 	private void startLogCat(ADB adb) throws CoreException {
 		adb.startLogCat();
-	}
-
-	private List<String> awaitEmulatorStarted(ADB adb, CollectingLineHandler emulatorProcess, int timeout, TimeUnit unit) throws CoreException {
-		// Hm... better ways to do this? Ok, here is an adb command to wait.
-		// However, the problem is still the boot time!
-		long now = System.currentTimeMillis();
-		long timeoutInMs = TimeUnit.MILLISECONDS.convert(timeout, unit);
-		boolean wasStopped = emulatorProcess.isStopped();
-		while (!wasStopped && System.currentTimeMillis() - now < timeoutInMs) {
-			List<String> emulators = adb.listEmulators(false);
-			if (emulators.size() == 1) {
-				adb.awaitBoot(emulators.get(0), TimeUnit.MILLISECONDS.convert(2, TimeUnit.MINUTES));
-				return emulators;
-			}
-			try {
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-				break;
-			}
-			wasStopped = emulatorProcess.isStopped();
-		}
-
-		if (!emulatorProcess.isStopped()) {
-			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Timeout occurred -- could not connect to Android Emulator"));
-		} else {
-			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Could not launch Android Emulator; wrong arguments?"));
-		}
 	}
 
 	@Override
