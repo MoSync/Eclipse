@@ -14,6 +14,8 @@
    </configIni>
 
    <launcherArgs>
+      <programArgs>--launcher.XXMaxPermSize
+256m</programArgs>
       <vmArgsLin>-Xmx768m</vmArgsLin>
       <vmArgsMac>-XstartOnFirstThread -Dorg.eclipse.swt.internal.carbon.smallFonts -Xdock:icon=../Resources/mosync.icns -Dosgi.instance.area.default=@user.home/workspace -Xmx768m</vmArgsMac>
       <vmArgsWin>-Xmx768m</vmArgsWin>
