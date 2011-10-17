@@ -18,6 +18,7 @@ public class LowMemoryManager implements NotificationListener {
 	private final CopyOnWriteArrayList<MemoryLowListener> listeners = new CopyOnWriteArrayList<MemoryLowListener>();
 	private final IdentityHashMap<MemoryLowListener, Integer> notificationCounts = new IdentityHashMap<MemoryLowListener, Integer>();
 	private final double thresholdPercentage;
+	private boolean active = false;
 
 	public LowMemoryManager(double thresholdPercentage) {
 		this.thresholdPercentage = thresholdPercentage;
@@ -47,16 +48,19 @@ public class LowMemoryManager implements NotificationListener {
 		MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
 		NotificationEmitter emitter = (NotificationEmitter) mbean;
 		emitter.addNotificationListener(this, null, null);
+		active = true;
 	}
 
 	private void deactivate() {
-		MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
-		NotificationEmitter emitter = (NotificationEmitter) mbean;
-		try {
-			emitter.removeNotificationListener(this);
-		} catch (ListenerNotFoundException e) {
-			// Ignore & log
-			CoreMoSyncPlugin.getDefault().log(e);
+		if (active) {
+			MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
+			NotificationEmitter emitter = (NotificationEmitter) mbean;
+			try {
+				emitter.removeNotificationListener(this);
+			} catch (ListenerNotFoundException e) {
+				// Ignore & log
+				CoreMoSyncPlugin.getDefault().log(e);
+			}
 		}
 	}
 
