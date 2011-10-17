@@ -32,6 +32,25 @@
             name="Import Legacy MoSync Project into workspace"
             project="true"/>
    </extension>
-   
+   <extension
+         point="org.eclipse.ui.activities">
+      <activityPatternBinding
+            activityId="com.mobilesorcery.sdk.ui.ide.activity"
+            isEqualityPattern="false"
+            pattern="org\.eclipse\.ui\.ide/org\.eclipse\.ui\.wizards\.import\.ExternalProject.*">
+      </activityPatternBinding>
+     <category
+            id="com.mobilesorcery.sdk.ui.ide.category"
+            name="MoSync-disabled Basic Eclipse IDE UI elements">
+      </category>
+      <activity
+            id="com.mobilesorcery.sdk.ui.ide.activity"
+            name="MoSync-disabled Basic Eclipse IDE UI elements">
+      </activity>
+      <categoryActivityBinding
+            activityId="com.mobilesorcery.sdk.ui.ide.activity"
+            categoryId="com.mobilesorcery.sdk.ui.ide.category">
+      </categoryActivityBinding>
+   </extension>
 
 </plugin>
