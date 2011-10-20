@@ -144,7 +144,7 @@ public class BundleBuildStep extends CommandLineBuildStep {
 		}
 		Set<IResource> rebuildTheseResources = visitor.computeResourcesToRebuild(deps);
 		if (!rebuildTheseResources.isEmpty()) {
-			new File(factory.outFile).mkdirs();
+			outFile.getParentFile().mkdirs();
 			super.incrementalBuild(project, session, variant, diff, buildResult, monitor);
 		}
 		return CONTINUE;
