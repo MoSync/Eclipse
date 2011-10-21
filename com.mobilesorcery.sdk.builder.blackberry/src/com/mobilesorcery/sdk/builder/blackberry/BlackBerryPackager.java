@@ -14,7 +14,9 @@ import com.mobilesorcery.sdk.builder.java.JavaPackager2;
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PreferenceStorePropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
@@ -26,8 +28,8 @@ public class BlackBerryPackager extends JavaPackager2 {
 	public static final String ID = "com.mobilesorcery.sdk.builder.blackberry";
 
 	@Override
-	public void createPackage(MoSyncProject project,
-			IBuildVariant variant, IBuildResult buildResult)
+	public void createPackage(MoSyncProject project, IBuildSession session,
+			IBuildVariant variant, IFileTreeDiff diff, IBuildResult buildResult)
 			throws CoreException {
 		// Create a MIDlet
 		super.createPackage(project, variant, buildResult, false);

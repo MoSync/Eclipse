@@ -23,7 +23,9 @@ import org.eclipse.core.runtime.CoreException;
 import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -44,7 +46,7 @@ public class ErrorPackager extends AbstractPackager implements IPackager {
     }
 
     @Override
-	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+	public void createPackage(MoSyncProject project, IBuildSession session, IBuildVariant variant, IFileTreeDiff diff, IBuildResult buildResult) throws CoreException {
         DefaultPackager packager = new DefaultPackager(project, variant);
         IProfile targetProfile = variant.getProfile();
 

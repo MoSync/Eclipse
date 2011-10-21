@@ -865,7 +865,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 		IPath outputPath = MoSyncBuilder.getOutputPath(
 				project,
 				new BuildVariant(target, buildConfiguration == null ? null
-						: buildConfiguration.getId(), false)).append(
+						: buildConfiguration.getId())).append(
 				"stabs.tab");
 		return outputPath;
 	}
@@ -882,7 +882,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 		IPath outputPath = MoSyncBuilder.getOutputPath(
 				project,
 				new BuildVariant(target, buildConfiguration == null ? null
-						: buildConfiguration.getId(), false)).append("Sld.tab");
+						: buildConfiguration.getId())).append("Sld.tab");
 		SLD sld = slds.get(outputPath.toPortableString());
 		if (sld == null) {
 			sld = new SLD(this, outputPath);
@@ -1184,7 +1184,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 			result = new BuildState(this, variant);
 		}
 
-		if (wasNull && !variant.isFinalizerBuild()) {
+		if (wasNull) {
 			cachedBuildStates.put(variant, result);
 		}
 

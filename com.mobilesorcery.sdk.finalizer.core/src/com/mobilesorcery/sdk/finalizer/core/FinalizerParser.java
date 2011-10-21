@@ -44,12 +44,12 @@ import com.mobilesorcery.sdk.profiles.IVendor;
 public class FinalizerParser {
 
 	public static final String FINALIZER_PROPERTY_PREFIX = "finalizer";
-	
+
 	public static final String AUTO_CHANGE_CONFIG = FINALIZER_PROPERTY_PREFIX + ":auto.change.config";
-	
+
 	public static final String BUILD_CONFIG = FINALIZER_PROPERTY_PREFIX + ":build.config";
-	
-	public class ParseException extends Exception {	
+
+	public class ParseException extends Exception {
 
 		private static final long serialVersionUID = -9055537164752470136L;
 
@@ -57,14 +57,14 @@ public class FinalizerParser {
 			super("Line " + line + ": " + msg); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 	}
-	
+
 	private static final String PATTERN_STR = "begin (.*)/(.*) end"; //$NON-NLS-1$
 
 	final static Pattern finalizerPattern = Pattern.compile(PATTERN_STR);
 
-	private IProject project;
+	private final IProject project;
 
-	private String cfgId;
+	private final String cfgId;
 
 	/**
 	 * Creates a new parser
@@ -87,14 +87,14 @@ public class FinalizerParser {
 
 	    MoSyncProject project = MoSyncProject.create(this.project);
 	    //autoSwitchConfiguration(project);
-	        
+
 		int lineNo = 1;
 		LineNumberReader lines = new LineNumberReader(script);
 		for (String line = lines.readLine(); line != null; line = lines.readLine()) {
 			IProfile profileToBuild = parse(line, lineNo);
 			if (profileToBuild != null) {
 			    IBuildConfiguration cfg = this.cfgId == null ? project.getActiveBuildConfiguration() : project.getBuildConfiguration(cfgId);
-				IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, profileToBuild, cfg);
+				IBuildVariant variant = MoSyncBuilder.getVariant(project, profileToBuild, cfg);
 			    variantsToBuild.add(variant);
 			}
 			lineNo++;
@@ -107,7 +107,7 @@ public class FinalizerParser {
 		}
 
         IBuildSession buildSession = MoSyncBuilder.createFinalizerBuildSession(variantsToBuild);
-        
+
 		for (IBuildVariant variantToBuild : variantsToBuild) {
 			SubProgressMonitor jobMonitor = new SubProgressMonitor(monitor, 1);
 			if (!monitor.isCanceled()) {
@@ -161,6 +161,7 @@ public class FinalizerParser {
 
 	private IRunnableWithProgress createBuildJob(final IProject project, final IBuildSession session, final IBuildVariant variant) {
 		return new IRunnableWithProgress() {
+			@Override
 			public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
 				try {
 					IBuildResult buildResult = new MoSyncBuilder().build(project, session, variant, null, monitor);

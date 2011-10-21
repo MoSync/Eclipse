@@ -27,7 +27,7 @@ public interface IBuildResult {
 	 * @return
 	 */
 	public abstract boolean success();
-	
+
 	/**
 	 * Adds an error to this build result.
 	 * @param errorMsg The error message describing the error
@@ -68,19 +68,34 @@ public interface IBuildResult {
      * @return The timestamp as UTC
      */
     public abstract long getTimestamp();
-    
+
     /**
      * Sets the timestamp of this build result
      * @param utc
      */
     public abstract void setTimestamp(long utc);
-    
+
     /**
      * Returns the set of resources that needed to be rebuilt
      * during this build.
      * @return
      */
 	public abstract Delta<IResource> getDependencyDelta();
+
+
+	/**
+	 * Gets an 'intermediate build step'
+	 * @param buildStepId
+	 * @param file
+	 */
+	public abstract File getIntermediateBuildResult(String buildStepId);
+
+	/**
+	 * Sets an 'intermediate build step'
+	 * @param buildStepId
+	 * @param file
+	 */
+	public abstract void setIntermediateBuildResult(String buildStepId, File file);
 
 
 }

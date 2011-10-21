@@ -69,7 +69,7 @@ public class MoSyncProjectParameterResolver extends ParameterResolver {
 	public static MoSyncProjectParameterResolver create(MoSyncProject project,
 			IBuildVariant variant) {
     	if (variant == null) {
-    		variant = MoSyncBuilder.getActiveVariant(project, false);
+    		variant = MoSyncBuilder.getActiveVariant(project);
     	}
     	// We re-use the default packager; it really should NOT be here -- but hey, it works :)
     	return new MoSyncProjectParameterResolver(project, new DefaultPackager(project, variant));

@@ -18,7 +18,7 @@ import java.util.SortedMap;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 /**
- * <p>An interface representing a 'build variant' - each 
+ * <p>An interface representing a 'build variant' - each
  * build variant will produce a different build result,
  * typically the location of the build result should depend
  * only on the build variant</p>
@@ -26,25 +26,19 @@ import com.mobilesorcery.sdk.profiles.IProfile;
  *
  */
 public interface IBuildVariant {
-	
+
 	/**
 	 * Returns the configuration of this variant. (As a string identifier).
 	 * @return
 	 */
     public String getConfigurationId();
-    
+
     /**
      * Returns the {@link IProfile} of this variant.
      * @return
      */
     public IProfile getProfile();
-    
-    /**
-     * Returns whether this is a finalizer build (ie the app will be properly packaged, signed, etc).
-     * @return
-     */
-    public boolean isFinalizerBuild();
-    
+
     /**
      * <p>Returns the set of specifiers used for this variant.</p>
      * <p>A specifier allows for specialized builds where a separate binary

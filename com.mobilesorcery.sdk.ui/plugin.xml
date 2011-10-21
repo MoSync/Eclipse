@@ -372,24 +372,29 @@ icon="icons/launchshortcut.png">
                   <handler
                class="com.mobilesorcery.sdk.ui.internal.handlers.CompileFilesHandler"
                commandId="com.mobilesorcery.sdk.ui.compilefiles">
-               <activeWhen>
+               <!-- <activeWhen>
                <and>
                      <with
             variable="selection">
          <iterate
                ifEmpty="false"
                operator="and">
+            <or>
             <instanceof
                   value="org.eclipse.cdt.core.model.ITranslationUnit">
             </instanceof>
-         </iterate>
+            <instanceof
+                  value="org.eclipse.core.resources.IProject">
+            </instanceof>
+            </or>
+         </iterate> 
       </with>
       <test
                            forcePluginActivation="true"
                      property="com.mobilesorcery.sdk.testers.hasMoreNature">
       </test>
       </and>
-                     </activeWhen>
+                     </activeWhen> -->
          </handler>
                   <handler
                class="com.mobilesorcery.sdk.ui.internal.handlers.BuildProjectHandler"
@@ -398,7 +403,7 @@ icon="icons/launchshortcut.png">
       </extension>
       <extension
             point="org.eclipse.ui.menus">
-                     <menuContribution
+             <menuContribution
                locationURI="popup:org.eclipse.ui.popup.any?after=additions">
             <command
                   commandId="com.mobilesorcery.sdk.ui.compilefiles"
@@ -408,7 +413,17 @@ icon="icons/launchshortcut.png">
                      checkEnabled="true">
                </visibleWhen>
             </command>
-         </menuContribution>
+            </menuContribution>
+   	 	<menuContribution locationURI="popup:#CEditorContext?after=additions">
+            <command
+                  commandId="com.mobilesorcery.sdk.ui.compilefiles"
+                  label="Quick Compile"
+                  style="push">
+               <visibleWhen
+                     checkEnabled="true">
+               </visibleWhen>
+            </command>
+    </menuContribution>
          <menuContribution
                locationURI="popup:org.eclipse.ui.popup.any?after=additions">
             <command
@@ -439,23 +454,23 @@ icon="icons/launchshortcut.png">
                   commandId="com.mobilesorcery.sdk.ui.build"
                   label="Rebuild Project"
                   style="push">
-            </command>
             <visibleWhen
                      checkEnabled="true">
             </visibleWhen>
+            </command>
          </menuContribution>  
-         <!-- TODO: Activate this when enablement is properly handled             
             <menuContribution
                locationURI="menu:project?after=buildProject">
             <command
                   commandId="com.mobilesorcery.sdk.ui.build"
                   label="Rebuild Project"
                   style="push">
-            </command>
             <visibleWhen
                      checkEnabled="true">
             </visibleWhen>
-         </menuContribution> -->
+            </command>
+
+         </menuContribution>
     <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
     <toolbar id="com.mobilesorcery.sdk.ui.changeActiveConfigToolbar">
         <control id="com.mobilesorcery.sdk.ui.changeActiveConfig"
@@ -474,4 +489,11 @@ icon="icons/launchshortcut.png">
    name="MoSync Experimental Activities" />
  </extension>
       
+      <extension point="org.eclipse.ui.bindings">
+  <key
+        commandId="com.mobilesorcery.sdk.ui.compilefiles"
+        schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+        sequence="M1+M2+I">
+  </key>
+</extension>
 </plugin>

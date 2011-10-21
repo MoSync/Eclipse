@@ -15,6 +15,7 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.eclipse.core.resources.IProject;
@@ -25,34 +26,39 @@ import com.mobilesorcery.sdk.internal.dependencies.DependencyManager.Delta;
 public class BuildResult implements IBuildResult {
 
     private File buildResult;
-    private ArrayList<String> errors = new ArrayList<String>();
-    private IProject project;
+    private final ArrayList<String> errors = new ArrayList<String>();
+    private final IProject project;
 	private boolean success;
 	private IBuildVariant variant;
     private long timestamp;
 	private Delta<IResource> dependencyDelta;
+	private final HashMap<String, File> intermediateBuildResults = new HashMap<String, File>();
 
     public BuildResult(IProject project) {
         this.project = project;
     }
 
-    public void addError(String errorMsg) {
+    @Override
+	public void addError(String errorMsg) {
         this.errors.add(errorMsg);
     }
-    
+
     @Override
 	public List<String> getErrors() {
     	return errors;
     }
-    
-    public File getBuildResult() {
+
+    @Override
+	public File getBuildResult() {
         return buildResult;
     }
-    
-    public void setBuildResult(File buildResult) {
+
+    @Override
+	public void setBuildResult(File buildResult) {
         this.buildResult = buildResult;
     }
 
+	@Override
 	public boolean success() {
 		return success && errors.isEmpty();
 	}
@@ -60,32 +66,46 @@ public class BuildResult implements IBuildResult {
 	public void setSuccess(boolean success) {
 		this.success = success;
 	}
-    
+
 	public IProject getProject() {
 		return project;
 	}
 
+	@Override
 	public IBuildVariant getVariant() {
 		return variant;
 	}
-	
+
 	public void setVariant(IBuildVariant variant) {
 		this.variant = variant;
 	}
 
-    public long getTimestamp() {
+    @Override
+	public long getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(long utc) {
+    @Override
+	public void setTimestamp(long utc) {
         this.timestamp = utc;
     }
 
 	public void setDependencyDelta(Delta<IResource> dependencyDelta) {
 		this.dependencyDelta = dependencyDelta;
 	}
-	
+
+	@Override
 	public Delta<IResource> getDependencyDelta() {
 		return dependencyDelta;
+	}
+
+	@Override
+	public File getIntermediateBuildResult(String buildStepId) {
+		return intermediateBuildResults.get(buildStepId);
+	}
+
+	@Override
+	public void setIntermediateBuildResult(String buildStepId, File file) {
+		intermediateBuildResults.put(buildStepId, file);
 	}
 }

@@ -155,7 +155,7 @@ public class FTPDeploymentStrategy implements IDeploymentStrategy {
 
 	private IBuildResult buildBeforeDeploy(MoSyncProject project,
 			IProfile profile, IProgressMonitor monitor) throws CoreException {
-	    IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, profile);
+	    IBuildVariant variant = MoSyncBuilder.createVariant(project, profile);
 		IBuildSession session = MoSyncBuilder.createDefaultBuildSession(variant);
 		
         IBuildResult buildResult = new MoSyncBuilder().build(project

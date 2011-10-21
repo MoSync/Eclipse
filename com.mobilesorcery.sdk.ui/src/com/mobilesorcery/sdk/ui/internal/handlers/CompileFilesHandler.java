@@ -21,15 +21,16 @@ import java.util.List;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.MultiRule;
+import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.actions.BuildAction;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.mobilesorcery.sdk.core.IBuildSession;
@@ -56,40 +57,44 @@ public class CompileFilesHandler extends MoSyncCommandHandler {
 			this.resources = resources;
 		}
 
+		@Override
 		protected IStatus run(IProgressMonitor monitor) {
 			try {
 				HashMap<MoSyncProject, List<IResource>> projectResourceMap = new HashMap<MoSyncProject, List<IResource>>();
+				HashSet<MoSyncProject> projectsToCompileEntirely = new HashSet<MoSyncProject>();
 
 				int resourceCount = 0;
 
 				MoSyncBuilder builder = new MoSyncBuilder();
 				for (IResource resource : resources) {
-					MoSyncProject project = MoSyncProject.create(resource
-							.getProject());
+					MoSyncProject project = MoSyncProject.create(resource.getProject());
 					if (project != null) {
-						List<IResource> resourceList = projectResourceMap
-								.get(project);
+						List<IResource> resourceList = projectResourceMap.get(project);
 						if (resourceList == null) {
 							resourceList = new ArrayList<IResource>();
 							projectResourceMap.put(project, resourceList);
 						}
-						resourceList.add(resource);
+						if (resource.getType() == IResource.PROJECT) {
+							projectsToCompileEntirely.add(project);
+						} else {
+							resourceList.add(resource);
+						}
 						resourceCount++;
 					}
 				}
 
 				monitor.beginTask("Quick Compile", resourceCount);
-                
+
 				boolean cancelled = !MoSyncBuilder.saveAllEditors(resources);
 
 				if (!cancelled) {
-    				for (MoSyncProject project : projectResourceMap.keySet()) {
+  					for (MoSyncProject project : projectResourceMap.keySet()) {
+  						boolean compileEntireProject = projectsToCompileEntirely.contains(project);
     					List<IResource> resources = projectResourceMap.get(project);
-    					HashSet<IResource> resourceSet = new HashSet<IResource>(
-    							resources);
-    					ResourceSet resourcesToCompile = new ResourceSet(resourceSet);
-    					IBuildVariant variant = MoSyncBuilder.getActiveVariant(project, false);
-                        IBuildSession session = MoSyncBuilder.createCompileOnlySession(variant);
+    					HashSet<IResource> resourceSet = new HashSet<IResource>(resources);
+    					ResourceSet resourcesToCompile = compileEntireProject ? null : new ResourceSet(resourceSet);
+    					IBuildVariant variant = MoSyncBuilder.getActiveVariant(project);
+    					IBuildSession session = MoSyncBuilder.createCompileOnlySession(variant);
     					builder.build(project.getWrappedProject(), session, variant, resourcesToCompile, new SubProgressMonitor(monitor, resourceSet.size()));
     				}
     				return Status.OK_STATUS;
@@ -109,10 +114,14 @@ public class CompileFilesHandler extends MoSyncCommandHandler {
 
 	}
 
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		List<IResource> resources = extractResources(HandlerUtil
-				.getCurrentSelection(event));
 		Shell shell = HandlerUtil.getActiveShell(event);
+		// Hmm, very weird hack again.
+		BuildAction dummy = new BuildAction(shell, IncrementalProjectBuilder.INCREMENTAL_BUILD);
+		dummy.isEnabled();
+		IStructuredSelection selection = dummy.getStructuredSelection();
+		List<IResource> resources = extractResources(selection);
 		CompileFilesJob job = new CompileFilesJob();
 		job.setShell(shell);
 		job.setResources(resources);

@@ -19,6 +19,7 @@ import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.actions.BuildAction;
 import org.eclipse.ui.handlers.HandlerUtil;
 
@@ -35,10 +36,11 @@ import com.mobilesorcery.sdk.ui.MoSyncCommandHandler;
 public class BuildProjectHandler extends MoSyncCommandHandler {
 
     public BuildProjectHandler() {
-        
+
     }
-    
-    public Object execute(ExecutionEvent event) throws ExecutionException {
+
+    @Override
+	public Object execute(ExecutionEvent event) throws ExecutionException {
         ISelection selection = HandlerUtil.getCurrentSelection(event);
         // TODO: command parameter not fully impl
         String buildType = event.getParameter("com.mobilesorcery.sdk.buildtype");
@@ -52,22 +54,25 @@ public class BuildProjectHandler extends MoSyncCommandHandler {
         }
         if (selection != null) {
             BuildAction fullBuildAction = new BuildAction(HandlerUtil.getActiveWorkbenchWindow(event), buildTypeVal);
-            fullBuildAction.selectionChanged((IStructuredSelection) selection);
+            // This will actually init the correct set of projects to build:
+            fullBuildAction.isEnabled();
             fullBuildAction.run();
         }
         return null;
     }
-    
-    public void setEnabled(Object context) {
+
+    @Override
+	public void setEnabled(Object context) {
         setBaseEnabled(isEnabled());
     }
-    
-    public boolean isEnabled() {
+
+    @Override
+	public boolean isEnabled() {
         // TODO: Support menu commands.
         boolean enabled = !ResourcesPlugin.getWorkspace().isAutoBuilding();
         return enabled;
     }
-    
+
 
 
 }

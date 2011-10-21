@@ -11,7 +11,9 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -47,14 +49,14 @@ public class V2V3Packager extends PackageToolPackager {
 	}
 
 	@Override
-	public void createPackage(MoSyncProject project,
-			IBuildVariant variant, IBuildResult buildResult)
+	public void createPackage(MoSyncProject project, IBuildSession session,
+			IBuildVariant variant, IFileTreeDiff diff, IBuildResult buildResult)
 			throws CoreException {
 		DefaultPackager internal = new DefaultPackager(project, variant);
 		File packageOutputDir = internal.resolveFile("%package-output-dir%"); //$NON-NLS-1$
 		String appName = internal.getParameters( ).get( DefaultPackager.APP_NAME );
 
-		super.createPackage(project, variant, buildResult);
+		super.createPackage(project, session, variant, diff, buildResult);
 		// TODO: Extract build result from packager?
 		buildResult.setBuildResult(new File(packageOutputDir, appName + resultExtension));
 	}

@@ -95,7 +95,7 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 	}
 
 	/**
-	 * Returns a non-finalizing build with the build
+	 * Returns a build with the build
 	 * configuration as per specified by the launch configuration and a target
 	 * profile set to the currently selected profile.
 	 * @param launchConfig
@@ -109,7 +109,7 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
 		IBuildConfiguration cfg = EmulatorLaunchConfigurationDelegate
 				.getAutoSwitchBuildConfiguration(launchConfig, mode);
-		return new BuildVariant(mosyncProject.getTargetProfile(), cfg, true);
+		return new BuildVariant(mosyncProject.getTargetProfile(), cfg);
 	}
 
 	@Override

@@ -11,31 +11,29 @@ public class BuildVariant implements IBuildVariant {
 
     private IProfile profile;
     private String cfgId;
-    private boolean isFinalizerBuild;
 	private TreeMap<String, String> specifiers = new TreeMap<String,String>();
-    
+
     private final static String NULL_CFG = "@null";
 
-    public BuildVariant(IProfile profile, String cfgId, boolean isFinalizerBuild) {
-    	this(profile, cfgId, isFinalizerBuild, null);
+    public BuildVariant(IProfile profile, String cfgId) {
+    	this(profile, cfgId, null);
     }
-    
-    public BuildVariant(IProfile profile, IBuildConfiguration cfg, boolean isFinalizerBuild) {
-        this(profile, cfg == null ? null : cfg.getId(), isFinalizerBuild);
+
+    public BuildVariant(IProfile profile, IBuildConfiguration cfg) {
+        this(profile, cfg == null ? null : cfg.getId());
     }
-    
-    public BuildVariant(IProfile profile, String cfgId, boolean isFinalizerBuild, Map<String, String> specifiers) {
+
+    public BuildVariant(IProfile profile, String cfgId, Map<String, String> specifiers) {
         this.profile = profile;
         this.cfgId = cfgId;
-        this.isFinalizerBuild = isFinalizerBuild;
         this.specifiers = new TreeMap<String,String>();
         if (specifiers != null) {
         	specifiers.putAll(specifiers);
         }
 	}
-    
+
     public BuildVariant(IBuildVariant prototype) {
-    	this(prototype.getProfile(), prototype.getConfigurationId(), prototype.isFinalizerBuild(), prototype.getSpecifiers());
+    	this(prototype.getProfile(), prototype.getConfigurationId(), prototype.getSpecifiers());
     }
 
 	public void setSpecifier(String specifier, String value) {
@@ -45,59 +43,54 @@ public class BuildVariant implements IBuildVariant {
     		specifiers.remove(specifier);
     	}
     }
-    
+
     private BuildVariant copy() {
-		BuildVariant result = new BuildVariant(profile, cfgId, isFinalizerBuild);
+		BuildVariant result = new BuildVariant(profile, cfgId);
 		result.specifiers = new TreeMap<String, String>(specifiers);
 		return result;
 	}
 
+	@Override
 	public String getConfigurationId() {
         return cfgId;
     }
-	
+
 	public void setConfigurationId(String cfgId) {
 		this.cfgId = cfgId;
 	}
 
-    public IProfile getProfile() {
+    @Override
+	public IProfile getProfile() {
         return profile;
     }
-    
+
     public void setProfile(IProfile profile) {
     	this.profile = profile;
     }
 
-    public boolean isFinalizerBuild() {
-        return isFinalizerBuild;
-    }
-    
-    public void setFinalizerBuild(boolean isFinalizerBuild) {
-    	this.isFinalizerBuild = isFinalizerBuild;
-    }
-    
+	@Override
 	public SortedMap<String, String> getSpecifiers() {
 		return specifiers;
 	}
-    
-    public boolean equals(Object o) {
+
+    @Override
+	public boolean equals(Object o) {
         if (o instanceof IBuildVariant) {
             IBuildVariant bv = (IBuildVariant) o;
             return Util.equals(bv.getProfile(), getProfile()) &&
                    Util.equals(bv.getConfigurationId(), getConfigurationId()) &&
-                   bv.isFinalizerBuild() == isFinalizerBuild() &&
                    Util.equals(bv.getSpecifiers(), getSpecifiers());
         }
-        
+
         return false;
     }
 
-    public int hashCode() {
+    @Override
+	public int hashCode() {
         int profileHC = profile == null ? 0 : profile.hashCode();
         int cfgHC = cfgId == null ? 0 : cfgId.hashCode();
-        int finHC = new Boolean(isFinalizerBuild).hashCode();
         int specHC = specifiers == null ? 0 : specifiers.hashCode();
-        return profileHC ^ cfgHC ^ finHC ^ specHC;
+        return profileHC ^ cfgHC ^ specHC;
     }
 
     /**
@@ -111,26 +104,25 @@ public class BuildVariant implements IBuildVariant {
         if (variantStr == null) {
             return null;
         }
-        
+
         String[] variantComponents = PropertyUtil.toStrings(variantStr);
-        if (variantComponents.length == 3 || variantComponents.length == 4) {
+        if (variantComponents.length == 2 || variantComponents.length == 3) {
             String profileStr = variantComponents[0];
             IProfile profile = MoSyncTool.getDefault().getProfile(profileStr);
             String cfgId = variantComponents[1];
             if (NULL_CFG.equals(cfgId)) {
                 cfgId = null;
             }
-            boolean isFinalizerBuild = "Finalizer".equals(variantComponents[2]);
-        	SortedMap<String, String> specifiers = parseSpecifiers(variantComponents.length > 3 ? variantComponents[3] : null);
-            
+        	SortedMap<String, String> specifiers = parseSpecifiers(variantComponents.length > 2 ? variantComponents[2] : null);
+
             if (profile != null) {
-                return new BuildVariant(profile, cfgId, isFinalizerBuild, specifiers);
+                return new BuildVariant(profile, cfgId, specifiers);
             }
         }
-        
+
         return null;
     }
-    
+
     private static SortedMap<String, String> parseSpecifiers(String specifierStr) {
 		TreeMap<String, String> result = new TreeMap<String,String>();
 		if (specifierStr != null) {
@@ -142,7 +134,7 @@ public class BuildVariant implements IBuildVariant {
 				}
 			}
 		}
-		
+
 		return result;
 	}
 
@@ -153,9 +145,9 @@ public class BuildVariant implements IBuildVariant {
             cfgId = NULL_CFG;
         }
         String specifierPairs = toString(variant.getSpecifiers());
-        return PropertyUtil.fromStrings(new String[] { profileStr, cfgId, variant.isFinalizerBuild() ? "Finalizer" : "Non-finalizer", specifierPairs });
+        return PropertyUtil.fromStrings(new String[] { profileStr, cfgId, specifierPairs });
     }
-    
+
     private static String toString(SortedMap<String, String> specifiers) {
 		ArrayList<String> serializedPairs = new ArrayList<String>();
     	for (Map.Entry<String, String> specifier : specifiers.entrySet()) {
@@ -164,6 +156,7 @@ public class BuildVariant implements IBuildVariant {
     	return PropertyUtil.fromStrings(serializedPairs.toArray(new String[0]));
 	}
 
+	@Override
 	public String toString() {
         return toString(this);
     }
