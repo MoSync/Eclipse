@@ -1,5 +1,7 @@
 package com.mobilesorcery.sdk.core.build;
 
+import java.io.IOException;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
@@ -34,7 +36,7 @@ public class ResourceBuildStep extends AbstractBuildStep {
 		public String getId() {
 			return ID;
 		}
-		
+
 		@Override
 		public String getName() {
 			return "Compile resources";
@@ -45,11 +47,11 @@ public class ResourceBuildStep extends AbstractBuildStep {
 		setId(ID);
 		setName("Build Resources");
 	}
-	
+
 	@Override
 	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff,
-			IBuildResult result, IProgressMonitor monitor) throws CoreException {
+			IBuildResult result, IProgressMonitor monitor) throws CoreException, IOException {
 		IProject project = mosyncProject.getWrappedProject();
 		MoSyncResourceBuilderVisitor resourceVisitor = new MoSyncResourceBuilderVisitor();
         resourceVisitor.setProject(project);
@@ -64,9 +66,9 @@ public class ResourceBuildStep extends AbstractBuildStep {
 
         monitor.setTaskName("Assembling resources");
         resourceVisitor.incrementalCompile(monitor, getBuildState().getDependencyManager(), result.getDependencyDelta());
-        
+
         session.getProperties().put(RESOURCE_FILES, resourceVisitor.getResourceFiles());
-        
+
         return CONTINUE;
 	}
 
