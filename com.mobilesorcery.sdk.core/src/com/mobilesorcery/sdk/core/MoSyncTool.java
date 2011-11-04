@@ -57,11 +57,12 @@ public class MoSyncTool {
 	public final static String CONSTANT_PREFIX = "MA_PROF_CONST_";
 
     public static final int UNVERSIONED = -1;
-    
+
 	/**
 	 * A filter for excluding constants from the constants.
 	 */
 	public final static Filter<String> INCLUDE_CONSTANTS_FILTER = new Filter<String>() {
+		@Override
 		public boolean accept(String obj) {
 			return obj != null && obj.startsWith(CONSTANT_PREFIX);
 		}
@@ -81,6 +82,7 @@ public class MoSyncTool {
 	/**
 	 * @deprecated This property is obsolete since the 'new' update/registration process
 	 */
+	@Deprecated
 	public static final String USER_HASH_PROP = "hash";
 
 	/**
@@ -99,7 +101,7 @@ public class MoSyncTool {
 
 	private boolean inited = false;
 
-	private TreeMap<String, IVendor> vendors = new TreeMap<String, IVendor>(
+	private final TreeMap<String, IVendor> vendors = new TreeMap<String, IVendor>(
 			String.CASE_INSENSITIVE_ORDER);
 
 	private Map<String, String> featureDescriptions = new TreeMap<String, String>();
@@ -109,11 +111,11 @@ public class MoSyncTool {
 	 * because of 'old' project format storing the descriptions instead of the
 	 * id's.
 	 */
-	private Map<String, String> featureDescriptionToIdMap = new TreeMap<String, String>();
+	private final Map<String, String> featureDescriptionToIdMap = new TreeMap<String, String>();
 
 	private TreeMap<String, String> properties = new TreeMap<String, String>();
 
-	private PropertyChangeSupport listeners = new PropertyChangeSupport(this);
+	private final PropertyChangeSupport listeners = new PropertyChangeSupport(this);
 
 	private IPath overrideHome;
 
@@ -133,6 +135,7 @@ public class MoSyncTool {
 		if (CoreMoSyncPlugin.getDefault() != null) {
 			CoreMoSyncPlugin.getDefault().getPreferenceStore()
 					.addPropertyChangeListener(new IPropertyChangeListener() {
+						@Override
 						public void propertyChange(
 								org.eclipse.jface.util.PropertyChangeEvent event) {
 							reinit();
@@ -161,7 +164,7 @@ public class MoSyncTool {
 
 	/**
 	 * Determines whether a specified home directory constitutes
-	 * a proper mosync home directory 
+	 * a proper mosync home directory
 	 * @param home
 	 * @return
 	 */
@@ -207,7 +210,7 @@ public class MoSyncTool {
     public IPath getMoSyncExamplesDirectory() {
         return getMoSyncHome().append("examples");
     }
-    
+
     /**
      * Returns the directory of the example workspace.
      * @return
@@ -215,7 +218,7 @@ public class MoSyncTool {
     public IPath getMoSyncExamplesWorkspace() {
         return getMoSyncExamplesDirectory().append("workspace");
     }
-    
+
 	public IPath[] getMoSyncDefaultIncludes() {
 		return new IPath[] { getMoSyncHome().append("include") };
 	}
@@ -260,7 +263,7 @@ public class MoSyncTool {
 		IProfile[] profiles = getProfiles();
 		return filterProfiles(profiles, filter);
 	}
-	
+
 	public IProfile[] filterProfiles(IProfile[] profiles, IDeviceFilter filter) {
 		if (filter != null) {
 			ArrayList<IProfile> filtered = new ArrayList<IProfile>();
@@ -289,7 +292,9 @@ public class MoSyncTool {
 	}
 
 	public void reinit() {
-		saveProperties();
+		if (inited) {
+			saveProperties();
+		}
 		inited = false;
 		init();
 	}
@@ -474,7 +479,7 @@ public class MoSyncTool {
 	/**
 	 * Given a name of the format <code>vendor/profile</code>, will return an
 	 * instance of <code>IProfile</code>
-	 * 
+	 *
 	 * @param fullName
 	 * @return <code>null</code> if <code>fullName</code> is <code>null</code>,
 	 *         or does not properly represent a profile
@@ -580,7 +585,7 @@ public class MoSyncTool {
 	 * <p>
 	 * If no emulator profile exists, an arbitrary profile is returned.
 	 * </p>
-	 * 
+	 *
 	 * @return
 	 */
 	public IProfile getDefaultTargetProfile() {
@@ -598,7 +603,7 @@ public class MoSyncTool {
 
 	/**
 	 * Returns the default emulator profile.
-	 * 
+	 *
 	 * @return
 	 */
 	public IProfile getDefaultEmulatorProfile() {
@@ -614,7 +619,7 @@ public class MoSyncTool {
 	public IPath getRuntimePath(IProfile targetProfile) {
 		return getRuntimePath(targetProfile.getPlatform());
 	}
-	
+
 	public IPath getRuntimePath(String platform) {
 		init();
 		// The platform is always a /-separated path
@@ -647,7 +652,7 @@ public class MoSyncTool {
 	/**
 	 * Validate this tool, and returns a proper error message if it's not
 	 * configured properly.
-	 * 
+	 *
 	 * @return
 	 */
 	public String validate() {
@@ -671,11 +676,11 @@ public class MoSyncTool {
 	public boolean isValid() {
 		return validate() == null;
 	}
-	
+
 	/**
 	 * Returns a path to the binary with the given name. If no such
 	 * binary can be found, null will be returned.
-	 * 
+	 *
 	 * @param name Name of the binary, it should not contain the platform
 	 * specific extension, e.g. ".exe".
 	 * @return Path to the binary
@@ -685,19 +690,19 @@ public class MoSyncTool {
 		String extension = getBinExtension();
 		return getMoSyncBin().append(name + extension);
 	}
-	
+
 	/**
 	 * Returns the path to java binary defined by the java.home property.
-	 * 
+	 *
 	 * @return the path to java binary defined by the java.home property.
 	 */
 	public IPath getJava() {
 		IPath javaHome = new Path(System.getProperty("java.home"));
 		IPath javaBin = javaHome.append("bin/java" + getBinExtension());
-		
+
 		return javaBin;
 	}
-	
+
 	/**
 	 * Returns the extension of executables on the current platform,
 	 * including the period sign (.) if applicable.
@@ -705,14 +710,14 @@ public class MoSyncTool {
 	public static String getBinExtension()
 	{
 		String extension = "";
-		
+
 		if(System.getProperty("os.name").toLowerCase().indexOf("win") >= 0) {
 			extension = ".exe";
 		}
-		
+
 		return extension;
 	}
-	
+
 	/**
      * Returns the version (build number) of the current set of MoSync binaries.
      * @return
@@ -760,7 +765,7 @@ public class MoSyncTool {
             }
         }
     }
-    
+
     /**
      * Returns the registration key for this MoSync tool installation.
      * @return
@@ -774,10 +779,10 @@ public class MoSyncTool {
 
         return "unregistered";
     }
-    
+
 	/**
 	 * The 'inverse' of getProfile(fullName).
-	 * 
+	 *
 	 * @param preferredProfile
 	 * @return
 	 */
