@@ -36,6 +36,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
@@ -52,13 +53,14 @@ import com.mobilesorcery.sdk.profiles.ui.internal.SelectFilterTypeDialog;
 public class DeviceFilterComposite extends Composite {
 
     private ICompositeDeviceFilter filter;
-    private TableViewer filterTable;
-    private Button remove;
-    private Button edit;
-    private Button add;
-    
+    private final TableViewer filterTable;
+    private final Button remove;
+    private final Button edit;
+    private final Button add;
+
     PropertyChangeSupport listeners = new PropertyChangeSupport(this);
-    private Label deviceCountLabel;
+    private final Label deviceCountLabel;
+	private MoSyncProject currentProject;
 
     public DeviceFilterComposite(Composite parent, int style) {
         super(parent, style);
@@ -76,59 +78,65 @@ public class DeviceFilterComposite extends Composite {
         remove = new Button(buttonRow, SWT.PUSH);
         remove.setText(Messages.DeviceFilterComposite_Remove);
         constrainSize(remove, 85, SWT.DEFAULT);
-        
+
         edit = new Button(buttonRow, SWT.PUSH);
         edit.setText(Messages.DeviceFilterComposite_Edit);
         constrainSize(edit, 85, SWT.DEFAULT);
 
         add.addSelectionListener(new SelectionAdapter() {
-            public void widgetSelected(SelectionEvent e) {
+            @Override
+			public void widgetSelected(SelectionEvent e) {
                 SelectFilterTypeDialog dialog = new SelectFilterTypeDialog(getShell());
                 int result = dialog.open();
                 if (result == IDialogConstants.OK_ID && dialog.getFilter() != null) {
                     filter.addFilter(dialog.getFilter());
                     updateUI(true);
                 }
-            }            
+            }
         });
-        
+
         edit.addSelectionListener(new SelectionAdapter() {
-            public void widgetSelected(SelectionEvent e) {
+            @Override
+			public void widgetSelected(SelectionEvent e) {
                 editSelectedFilter();
             }
         });
-        
+
         filterTable = new TableViewer(this);
         filterTable.setContentProvider(new ArrayContentProvider());
         filterTable.setLabelProvider(new LabelProvider());
         filterTable.addSelectionChangedListener(new ISelectionChangedListener() {
-            public void selectionChanged(SelectionChangedEvent event) {
+            @Override
+			public void selectionChanged(SelectionChangedEvent event) {
                 updateUI(false);
-            }            
+            }
         });
-        
+
         GridData filterTableData = new GridData(SWT.FILL, SWT.FILL, true, true);
         filterTable.getControl().setLayoutData(filterTableData);
         filterTable.getControl().addKeyListener(new KeyListener() {
-            public void keyPressed(KeyEvent e) {
+            @Override
+			public void keyPressed(KeyEvent e) {
                 if (e.keyCode == SWT.DEL) {
                     removeSelectedFilters();
                 }
             }
 
-            public void keyReleased(KeyEvent e) {
-            }            
+            @Override
+			public void keyReleased(KeyEvent e) {
+            }
         });
 
         remove.addSelectionListener(new SelectionAdapter() {
-            public void widgetSelected(SelectionEvent e) {
+            @Override
+			public void widgetSelected(SelectionEvent e) {
                 removeSelectedFilters();
-            }            
+            }
         });
-        
+
         deviceCountLabel = new Label(this, SWT.TRAIL);
         deviceCountLabel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        
+
         updateUI(true);
     }
 
@@ -142,10 +150,10 @@ public class DeviceFilterComposite extends Composite {
                 this.filter.update(filter);
                 updateUI(true);
                 updateDeviceCount();
-            }            
+            }
         }
-    }            
-    
+    }
+
     private DeviceFilterDialog createDialogForFilter(IDeviceFilter filter) {
         // TODO! Hard-coded?
         DeviceFilterDialog dialog = null;
@@ -158,12 +166,12 @@ public class DeviceFilterComposite extends Composite {
         } else {
             return null;
         }
-        
+
         dialog.setFilter(filter);
-        
+
         return dialog;
     }
-    
+
     protected boolean isEditable(IDeviceFilter filter) {
 		return filter instanceof FeatureFilter ||
 		       filter instanceof ConstantFilter ||
@@ -181,25 +189,25 @@ public class DeviceFilterComposite extends Composite {
     /**
      * Will only set the filter if it is an <code>ICompositeDeviceFilter</code>,
      * will ignore otherwise.
-     * @param filter
+     * @param currentProject
      */
-    public void setDeviceFilter(IDeviceFilter filter) {
-        if (filter instanceof ICompositeDeviceFilter) {
-            this.filter = (ICompositeDeviceFilter) filter;
-            updateUI(true);
-        }
+    public void setCurrentProject(MoSyncProject currentProject) {
+    	this.filter = currentProject.getDeviceFilter();
+    	this.currentProject = currentProject;
+        updateUI(true);
     }
 
     private void updateUI(final boolean updateCount) {
         filterTable.getControl().getDisplay().asyncExec(new Runnable() {
-            public void run() {
+            @Override
+			public void run() {
                 boolean noFilters = filter == null || filter.getFilters().length == 0;
-                filterTable.setInput(noFilters ?  
+                filterTable.setInput(noFilters ?
                         new String[] { Messages.DeviceFilterComposite_NoFilter } :
                         filter.getFilters());
-                
+
                 remove.setEnabled(!noFilters);
-                
+
                 IStructuredSelection selection = (IStructuredSelection) filterTable.getSelection();
                 edit.setEnabled(selection.size() == 1 &&
                 		selection.getFirstElement() instanceof IDeviceFilter &&
@@ -213,23 +221,24 @@ public class DeviceFilterComposite extends Composite {
     }
 
 	private void updateDeviceCount() {
-        deviceCountLabel.setText(getDeviceCountText());        
+        deviceCountLabel.setText(getDeviceCountText());
     }
-    
+
     protected String getDeviceCountText() {
-        int selected = MoSyncTool.getDefault().getProfiles(filter).length;
-        int total = MoSyncTool.getDefault().getProfiles().length;
+        int selected = currentProject.getProfileManager().getProfiles(filter).length;
+        int total = currentProject.getProfileManager().getProfiles().length;
         return MessageFormat.format("{0} of {1} included", selected, total);
     }
 
-    public void setEnabled(boolean enabled) {
+    @Override
+	public void setEnabled(boolean enabled) {
         filterTable.getControl().setEnabled(enabled);
         add.setEnabled(enabled);
         remove.setEnabled(enabled);
         edit.setEnabled(enabled);
         super.setEnabled(enabled);
     }
-    
+
     /**
      * <p>
      * Utility method for setting the layout data of a control to have a certain
@@ -238,7 +247,7 @@ public class DeviceFilterComposite extends Composite {
      * <p>
      * <emph>Works only with GridLayouts</emph>
      * </p>
-     * 
+     *
      * @param control
      *      the control
      * @param hSize

@@ -7,10 +7,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.mobilesorcery.sdk.capabilities.core.Capabilities;
-import com.mobilesorcery.sdk.capabilities.core.ICapabilities;
-import com.mobilesorcery.sdk.capabilities.core.Capabilities.MergeCapabilities;
+import com.mobilesorcery.sdk.core.Capabilities;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.ICapabilities;
+import com.mobilesorcery.sdk.core.MergeCapabilities;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
@@ -20,10 +20,10 @@ public class APICapabilitiesMap {
 
 	private static APICapabilitiesMap instance = new APICapabilitiesMap();
 
-	private HashMap<Pair<URI, String>, Capabilities> capabilitiesMap = new HashMap<Pair<URI, String>, Capabilities>();
-	private HashMap<URI, Capabilities> fileCapabilitiesMap = new HashMap<URI, Capabilities>();
+	private final HashMap<Pair<URI, String>, Capabilities> capabilitiesMap = new HashMap<Pair<URI, String>, Capabilities>();
+	private final HashMap<URI, Capabilities> fileCapabilitiesMap = new HashMap<URI, Capabilities>();
 
-	private Set<File> initedDirectories = new HashSet<File>();
+	private final Set<File> initedDirectories = new HashSet<File>();
 
 	public static APICapabilitiesMap getInstance() {
 		return instance;

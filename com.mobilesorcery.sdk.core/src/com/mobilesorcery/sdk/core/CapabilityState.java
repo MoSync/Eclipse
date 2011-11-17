@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.capabilities.devices;
+package com.mobilesorcery.sdk.core;
 
 public enum CapabilityState {
 

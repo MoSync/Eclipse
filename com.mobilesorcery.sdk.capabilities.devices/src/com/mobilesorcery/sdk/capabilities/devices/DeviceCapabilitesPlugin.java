@@ -3,8 +3,8 @@ package com.mobilesorcery.sdk.capabilities.devices;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
-import com.mobilesorcery.sdk.capabilities.core.ICapabilities;
 import com.mobilesorcery.sdk.capabilities.devices.internal.DeviceCapabilitiesParser;
+import com.mobilesorcery.sdk.core.ICapabilities;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 /**

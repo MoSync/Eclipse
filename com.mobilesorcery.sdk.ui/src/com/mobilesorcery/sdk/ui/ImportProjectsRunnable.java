@@ -66,16 +66,17 @@ import com.mobilesorcery.sdk.profiles.filter.ProfileFilter;
 import com.mobilesorcery.sdk.profiles.filter.ConstantFilter.RelationalOp;
 
 /**
- * 
+ *
  * @author Mattias Bybro
  * @deprecated Modify this to ignore .mopro files, until then it's deprecated.
  */
+@Deprecated
 public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 
 	public final static int COPY_ALL_FILES = 0;
 	public final static int COPY_ONLY_FILES_IN_PROJECT_DESC = 1;
 	public final static int DO_NOT_COPY = 2;
-	
+
 	/**
 	 * A constant indicating we should use the .mosyncproject file (if it exists)
 	 * rather than the legacy .msp/.mopro file format.
@@ -83,32 +84,33 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 	public final static int USE_NEW_PROJECT_IF_AVAILABLE = 1 << 12;
 
 	private FileFilter copyFilter = new FileFilter() {
+		@Override
 		public boolean accept(File file) {
 			String name = file.getName();
-			return !name.equals(".project") && !name.equals(".cproject") && !name.equals(MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME); //$NON-NLS-1$ //$NON-NLS-2$ 
+			return !name.equals(".project") && !name.equals(".cproject") && !name.equals(MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-	}; 
+	};
 
-	private File[] projectDescriptions;
-    private String[] preferredProjectNames;
+	private final File[] projectDescriptions;
+    private final String[] preferredProjectNames;
 	private Map<String, String> keyMap;
-	private int copyStrategy;
-	private boolean useNewProjectIfAvailable;
-	private List<IProject> result;
+	private final int copyStrategy;
+	private final boolean useNewProjectIfAvailable;
+	private final List<IProject> result;
     private boolean showDialogOnSuccess = false;
 
     public ImportProjectsRunnable(File[] projectDescriptions, int strategy) {
         this(projectDescriptions, null, strategy, null);
     }
-    
+
     public ImportProjectsRunnable(File[] projectDescriptions, String[] preferredProjectNames, int strategy) {
         this(projectDescriptions, preferredProjectNames, strategy, null);
     }
-    
+
     public ImportProjectsRunnable(File[] projectDescriptions, int strategy, List<IProject> result) {
         this(projectDescriptions, null, strategy, result);
     }
-        
+
     public ImportProjectsRunnable(File[] projectDescriptions, String[] preferredProjectNames, int strategy, List<IProject> result) {
     	this.projectDescriptions = projectDescriptions;
     	this.preferredProjectNames = preferredProjectNames;
@@ -116,36 +118,38 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		this.useNewProjectIfAvailable = (strategy & USE_NEW_PROJECT_IF_AVAILABLE) == USE_NEW_PROJECT_IF_AVAILABLE;
 		this.result = result == null ? new ArrayList<IProject>() : result;
 	}
-    
+
     /**
      * Temporary fix for using the new copy filter only when
-     * importing from the welcome screen. 
+     * importing from the welcome screen.
      */
     public void useNewCopyFilter()
     {
     	copyFilter = new FileFilter() {
-    		public boolean accept(File file) {
+    		@Override
+			public boolean accept(File file) {
     			String name = file.getName();
-    			return !name.equals(".project") && !name.equals(".cproject"); //$NON-NLS-1$ //$NON-NLS-2$ 
+    			return !name.equals(".project") && !name.equals(".cproject"); //$NON-NLS-1$ //$NON-NLS-2$
     		}
     	};
     }
 
 	public Job createJob(boolean schedule) {
 	    Job importJob = new Job("Import projects") {
-            protected IStatus run(IProgressMonitor monitor) {
+            @Override
+			protected IStatus run(IProgressMonitor monitor) {
                 try {
                     execute(monitor);
                     if (showDialogOnSuccess) {
-                       showImportSuccessDialog(result.size()); 
+                       showImportSuccessDialog(result.size());
                     }
                     return Status.OK_STATUS;
                 } catch (CoreException e) {
                     return e.getStatus();
-                } 
-            }	        
+                }
+            }
 	    };
-	    
+
 	    importJob.setUser(true);
 	    importJob.setRule(ResourcesPlugin.getWorkspace().getRoot());
 	    if (schedule) {
@@ -158,7 +162,8 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
         if (newProjectCount > 0) {
             final Display d = PlatformUI.getWorkbench().getDisplay();
             d.syncExec(new Runnable() {
-                public void run() {
+                @Override
+				public void run() {
                     Shell shell = new Shell(d);
                     MessageDialog.openInformation(new Shell(d),
                             "Imported Example Projects",
@@ -168,7 +173,8 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
             });
         }
     }
-    
+
+	@Override
 	protected void execute(IProgressMonitor monitor) throws CoreException {
 		monitor.beginTask(Messages.ImportProjectsRunnable_ImportProgress,
 				projectDescriptions.length);
@@ -210,11 +216,11 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		if (projectDescription.isDirectory()) {
 			throw new CoreException(new Status(IStatus.ERROR, MosyncUIPlugin.PLUGIN_ID, "Project description must not be a directory"));
 		}
-		
+
 		/*if (shouldUseNewFormatIfAvailable() && copyStrategy != COPY_ALL_FILES) {
 			throw new CoreException(new Status(IStatus.ERROR, MosyncUIPlugin.PLUGIN_ID, "\'Use new format if available\' can only be used with copy all files"));
 		}*/
-		
+
 		monitor = new SubProgressMonitor(monitor, 4);
 		String projectName = preferredProjectName == null ? Util.getNameWithoutExtension(projectDescription) : preferredProjectName;
 
@@ -243,7 +249,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 
 		project.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(
 				monitor, 1));
-		
+
 		if (result != null) {
 			result.add(project);
 		}
@@ -613,6 +619,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 				ProfileFilter requiredProfileFilter = new ProfileFilter();
 				requiredProfileFilter.setStyle(ProfileFilter.REQUIRE);
 				requiredProfileFilter.setProfiles(MoSyncTool.getDefault()
+						.getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER)
 						.getProfiles(requiredProfile), true);
 				filter.addFilter(requiredProfileFilter);
 			}
@@ -621,6 +628,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 				ProfileFilter disallowedProfileFilter = new ProfileFilter();
 				disallowedProfileFilter.setStyle(ProfileFilter.DISALLOW);
 				disallowedProfileFilter.setProfiles(MoSyncTool.getDefault()
+						.getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER)
 						.getProfiles(disallowedProfile), true);
 				filter.addFilter(disallowedProfileFilter);
 			}

@@ -13,9 +13,16 @@
 */
 package com.mobilesorcery.sdk.core;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
+
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
+import org.xml.sax.InputSource;
+import org.xml.sax.helpers.DefaultHandler;
 
 public class LineReader implements Runnable {
 
@@ -32,33 +39,73 @@ public class LineReader implements Runnable {
 		 */
         public void stop(IOException e);
     }
-    
+
     public static class LineAdapter implements ILineHandler {
-    	public void start(Process process) {
-    		
+    	@Override
+		public void start(Process process) {
+
     	}
+		@Override
 		public void newLine(String line) {
 		}
 
+		@Override
 		public void stop(IOException e) {
-		}    	
+		}
     }
 
-    private Reader from;
-    private ILineHandler callback;
-    
+    public static class XMLLineAdapter extends DefaultHandler implements ILineHandler {
+
+    	StringBuffer buffer = new StringBuffer();
+
+		@Override
+		public void start(Process process) {
+		}
+
+		@Override
+		public void newLine(String line) {
+			buffer.append(line);
+			buffer.append('\n');
+		}
+
+		@Override
+		public final void stop(IOException ioe) {
+			Exception ex = ioe;
+			if (ioe == null) {
+				try {
+					SAXParserFactory factory = SAXParserFactory.newInstance();
+					SAXParser parser = factory.newSAXParser();
+					parser.parse(new ByteArrayInputStream(buffer.toString().getBytes()), this);
+				} catch (Exception e) {
+					ex = e;
+				}
+			}
+			doStop(ex);
+		}
+
+		protected void doStop(Exception e) {
+
+		}
+
+    }
+
+    private final Reader from;
+    private final ILineHandler callback;
+
     public LineReader(Reader from, ILineHandler callback) {
         this.from = from;
         this.callback = callback;
     }
-    
+
     public void start() {
         Thread thread = new Thread(this);
         thread.setDaemon(true);
         thread.start();
     }
-    
-    public void run() {
+
+    @Override
+	public void run() {
+    	IOException ex = null;
         try {
             LineNumberReader reader = new LineNumberReader(from);
             for (String line = reader.readLine(); line != null; line = reader.readLine()) {
@@ -66,16 +113,13 @@ public class LineReader implements Runnable {
                 	callback.newLine(line);
                 }
             }
-            
-            if (callback != null) {
-            	callback.stop(null);	
-            }
-            
         } catch (IOException e) {
-        	if (callback != null) {
-        		callback.stop(e);
-        	}
+        	ex = e;
             e.printStackTrace();
+        } finally {
+            if (callback != null) {
+            	callback.stop(ex);
+            }
         }
     }
 }

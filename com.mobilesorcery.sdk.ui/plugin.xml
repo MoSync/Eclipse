@@ -344,6 +344,12 @@ icon="icons/launchshortcut.png">
                id="com.mobilesorcery.sdk.ui.build"
                name="Rebuild Project">
          </command>
+         <command
+               categoryId="com.mobilesorcery.sdk.ui.category.main"
+               description="Filter Profiles"
+               id="com.mobilesorcery.sdk.ui.profilefilter"
+               name="Filter Profiles">
+         </command>
          </extension>
       <extension
             point="org.eclipse.ui.handlers">
@@ -399,6 +405,10 @@ icon="icons/launchshortcut.png">
                   <handler
                class="com.mobilesorcery.sdk.ui.internal.handlers.BuildProjectHandler"
                commandId="com.mobilesorcery.sdk.ui.build">
+               </handler>
+               <handler
+               class="com.mobilesorcery.sdk.ui.internal.handlers.FilterProfilesHandler"
+               commandId="com.mobilesorcery.sdk.ui.profilefilter">
                </handler>
       </extension>
       <extension
@@ -468,9 +478,32 @@ icon="icons/launchshortcut.png">
             <visibleWhen
                      checkEnabled="true">
             </visibleWhen>
+            </command></menuContribution>  
+ 			<menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+             <toolbar
+               id="com.mobilesorcery.sdk.ui.profile.toolbar">
+                <command
+                  commandId="com.mobilesorcery.sdk.ui.profilefilter"
+                  label="Filter Profiles"
+                  tooltip="Filter Profiles for this project"
+                  icon="icons/filter.gif"
+                  style="push">
+            <!--<visibleWhen
+                     checkEnabled="true">
+            </visibleWhen>-->
             </command>
-
+            </toolbar>
          </menuContribution>
+                 <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+    <toolbar id="com.mobilesorcery.sdk.ui.changeActiveProfileToolbar">
+        <control id="com.mobilesorcery.sdk.ui.changeActiveProfile"
+                class="com.mobilesorcery.sdk.ui.internal.actions.ChangeProfileWidget">
+            <visibleWhen 
+            		checkEnabled="true">
+            </visibleWhen>
+        </control>
+    </toolbar>
+    </menuContribution>
     <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
     <toolbar id="com.mobilesorcery.sdk.ui.changeActiveConfigToolbar">
         <control id="com.mobilesorcery.sdk.ui.changeActiveConfig"

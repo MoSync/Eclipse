@@ -15,10 +15,10 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.widgets.Shell;
 
-import com.mobilesorcery.sdk.capabilities.core.ICapabilities;
 import com.mobilesorcery.sdk.capabilities.core.ICapabilitiesAnalyzer;
 import com.mobilesorcery.sdk.capabilities.core.ICapabilitiesMatcher;
 import com.mobilesorcery.sdk.capabilities.core.IChangeRequest;
+import com.mobilesorcery.sdk.core.ICapabilities;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 
 public class CapabilitiesJob extends Job {

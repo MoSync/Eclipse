@@ -20,44 +20,28 @@ import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
-public class ChangeBuildConfigWidget extends WorkbenchWindowControlContribution implements PropertyChangeListener, ISelectionChangedListener {
+public class ChangeBuildConfigWidget extends MoSyncProjectWidget {
 
-    private MoSyncProject project;
-    private ComboViewer combo;
-
-    protected Control createControl(Composite parent) {
-        combo = new ComboViewer(parent, SWT.READ_ONLY);
-        combo.addSelectionChangedListener(this);
-        MosyncUIPlugin.getDefault().addListener(this);
-        MoSyncProject.addGlobalPropertyChangeListener(this);
-        updateProject();
-        return combo.getControl();
-    }
-    
-    private void noProjectSelected() {
-        combo.getCombo().setItems( new String[] {"No project selected"} );
-        combo.getCombo().select(0);   
-    }
-    
-    public void dispose() {
-        MosyncUIPlugin.getDefault().removeListener(this);
-        MoSyncProject.removeGlobalPropertyChangeListener(this);
-        super.dispose();
-    }
-
-    public void propertyChange(PropertyChangeEvent event) {
+    @Override
+	public boolean shouldUpdateProject(PropertyChangeEvent event) {
         // Project changed
-        if (MosyncUIPlugin.CURRENT_PROJECT_CHANGED == event.getPropertyName() || MoSyncProject.BUILD_CONFIGURATION_CHANGED == event.getPropertyName()) {
-            updateProject();
+        return MosyncUIPlugin.CURRENT_PROJECT_CHANGED == event.getPropertyName() || MoSyncProject.BUILD_CONFIGURATION_CHANGED == event.getPropertyName();
+    }
+
+    @Override
+	public void selectionChanged(SelectionChangedEvent event) {
+        IStructuredSelection selection = (IStructuredSelection) event.getSelection();
+        String cfgId = (String) selection.getFirstElement();
+        if (cfgId != null) {
+            project.setActiveBuildConfiguration(cfgId);
         }
     }
 
-
-    private void updateProject() {
-        project = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(getWorkbenchWindow());
-        
+	@Override
+	public void updateUI() {
         boolean activeCombo = project != null && project.areBuildConfigurationsSupported() && !project.getBuildConfigurations().isEmpty();
-        if (activeCombo) {
+        ComboViewer combo = (ComboViewer) ui;
+		if (activeCombo) {
             combo.setContentProvider(new BuildConfigurationsContentProvider(project));
             combo.setLabelProvider(new BuildConfigurationsLabelProvider(project, false));
             combo.setInput(project);
@@ -68,14 +52,6 @@ public class ChangeBuildConfigWidget extends WorkbenchWindowControlContribution 
             noProjectSelected();
         }
         combo.getControl().setEnabled(activeCombo);
-    }
-
-    public void selectionChanged(SelectionChangedEvent event) {
-        IStructuredSelection selection = (IStructuredSelection) event.getSelection();
-        String cfgId = (String) selection.getFirstElement();
-        if (cfgId != null) {
-            project.setActiveBuildConfiguration(cfgId);
-        }
-    }
+	}
 
 }

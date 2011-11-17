@@ -28,17 +28,17 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 
 /**
  * Sort of an AND filter.
- * 
+ *
  * @author Mattias
- * 
+ *
  */
 public class CompositeDeviceFilter extends AbstractDeviceFilter implements ICompositeDeviceFilter, PropertyChangeListener {
 
-    private static final String CRITERIA = "criteria";    
+    private static final String CRITERIA = "criteria";
 
-    private static final String FILTER = "filter";    
+    private static final String FILTER = "filter";
 
-    private ArrayList<IDeviceFilter> filters = new ArrayList<IDeviceFilter>();
+    private final ArrayList<IDeviceFilter> filters = new ArrayList<IDeviceFilter>();
 
     public CompositeDeviceFilter() {
 
@@ -48,41 +48,54 @@ public class CompositeDeviceFilter extends AbstractDeviceFilter implements IComp
         this.filters.addAll(Arrays.asList(filters));
     }
 
-    public void addFilter(IDeviceFilter filter) {
+    @Override
+	public void addFilter(IDeviceFilter filter) {
         this.filters.add(filter);
         filter.addPropertyChangeListener(this);
         notifyListeners(new PropertyChangeEvent(this, FILTER_ADDED, null, filter));
     }
 
-    public void removeFilter(IDeviceFilter filter) {
+    @Override
+	public void removeFilter(IDeviceFilter filter) {
         this.filters.remove(filter);
         filter.removePropertyChangeListener(this);
         notifyListeners(new PropertyChangeEvent(this, FILTER_REMOVED, filter, null));
     }
 
-    public IDeviceFilter[] getFilters() {
+    @Override
+	public void removeAllFilters() {
+    	for (IDeviceFilter filter : new ArrayList<IDeviceFilter>(filters)) {
+    		removeFilter(filter);
+    	}
+    }
+
+    @Override
+	public IDeviceFilter[] getFilters() {
         return filters.toArray(new IDeviceFilter[0]);
     }
 
-    public void update(IDeviceFilter child) {
+    @Override
+	public void update(IDeviceFilter child) {
         notifyListeners(new PropertyChangeEvent(this, FILTER_CHANGED, null, child));
     }
-    
-    public boolean acceptProfile(IProfile profile) {
+
+    @Override
+	public boolean acceptProfile(IProfile profile) {
         for (Iterator<IDeviceFilter> filterIterator = filters.iterator(); filterIterator.hasNext();) {
             IDeviceFilter filter = filterIterator.next();
             if (!filter.accept(profile)) {
                 return false;
             }
         }
-        
+
         return true;
     }
-        
-    public void saveState(IMemento memento) {
+
+    @Override
+	public void saveState(IMemento memento) {
     	if (filters.size() > 0) {
     		IMemento criteria = memento.createChild(CRITERIA);
-      
+
 	        for (Iterator<IDeviceFilter> filterIterator = filters.iterator(); filterIterator.hasNext();) {
 	            IDeviceFilter filter = filterIterator.next();
 	            IMemento child = criteria.createChild(FILTER);
@@ -110,14 +123,16 @@ public class CompositeDeviceFilter extends AbstractDeviceFilter implements IComp
                 }
             }
         }
-        
+
         return result;
     }
 
-    public String getFactoryId() {
+    @Override
+	public String getFactoryId() {
         return "com.mobilesorcery.mosync.filters.composite";
     }
 
+	@Override
 	public void propertyChange(PropertyChangeEvent event) {
 		// Propagate.
 		notifyListeners(event);

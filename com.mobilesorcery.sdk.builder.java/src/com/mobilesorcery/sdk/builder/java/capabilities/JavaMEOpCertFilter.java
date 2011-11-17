@@ -7,7 +7,7 @@ import java.util.HashSet;
 import org.eclipse.ui.IMemento;
 
 import com.mobilesorcery.sdk.builder.java.Activator;
-import com.mobilesorcery.sdk.capabilities.core.ICapabilities;
+import com.mobilesorcery.sdk.core.ICapabilities;
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.filter.AbstractDeviceFilter;

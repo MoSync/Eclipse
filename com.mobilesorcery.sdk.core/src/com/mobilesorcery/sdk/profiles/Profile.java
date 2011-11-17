@@ -24,9 +24,9 @@ import com.mobilesorcery.sdk.core.MoSyncTool;
 
 public class Profile implements IProfile, Comparable<IProfile> {
 
-    private IVendor vendor;
-    private String name;
-    private Map<String, Object> properties = new HashMap<String, Object>();
+    private final IVendor vendor;
+    private final String name;
+    private final Map<String, Object> properties = new HashMap<String, Object>();
     private String platform;
     private IPackager packager;
 
@@ -35,26 +35,31 @@ public class Profile implements IProfile, Comparable<IProfile> {
         this.name = name;
     }
 
-    public String getName() {
+    @Override
+	public String getName() {
         return name;
     }
 
-    public IVendor getVendor() {
+    @Override
+	public IVendor getVendor() {
         return vendor;
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         return MoSyncTool.toString(this);
     }
-    
-    public int hashCode() {
+
+    @Override
+	public int hashCode() {
         return getName().hashCode() ^ getVendor().hashCode();
     }
-    
-    public boolean equals(Object o) {
+
+    @Override
+	public boolean equals(Object o) {
         if (o instanceof IProfile) {
             IProfile profile = (IProfile) o;
-            return profile.getVendor().equals(this.getVendor()) && profile.getName().equals(this.getName());            
+            return profile.getVendor().equals(this.getVendor()) && profile.getName().equals(this.getName());
         }
         return false;
     }
@@ -67,15 +72,18 @@ public class Profile implements IProfile, Comparable<IProfile> {
         return properties;
     }
 
-    public Map<String, Object> getProperties() {
+    @Override
+	public Map<String, Object> getProperties() {
         return Collections.unmodifiableMap(properties);
     }
-    
-    public Map<String, Object> getProperties(Filter<String> filter) {
+
+    @Override
+	public Map<String, Object> getProperties(Filter<String> filter) {
         return Filter.filterMap(getProperties(), filter);
     }
 
-    public String getPlatform() {
+    @Override
+	public String getPlatform() {
         return platform;
     }
 
@@ -83,21 +91,27 @@ public class Profile implements IProfile, Comparable<IProfile> {
         this.platform = platform;
     }
 
-    public IPackager getPackager() {
+    @Override
+	public IPackager getPackager() {
         return CoreMoSyncPlugin.getDefault().getPackager(platform);
     }
 
-    public int compareTo(IProfile o) {
+    @Override
+	public int compareTo(IProfile o) {
         return toString().compareTo(o.toString());
     }
 
-    public boolean isEmulator() {
-    	return "MoSync/Emulator".equals(toString()); 
+    @Override
+	public boolean isEmulator() {
+    	return "MoSync/Emulator".equals(toString());
     }
-    
+
     public static String getAbbreviatedPlatform(IProfile targetProfile) {
         String platform = targetProfile.getPlatform();
-        String abbrPlatform = platform.substring("profiles\\runtime\\".length() + 1, platform.length());
+        String abbrPlatform = platform;
+        if (platform.startsWith("profiles\\runtime\\")) {
+        	abbrPlatform = platform.substring("profiles\\runtime\\".length() + 1, platform.length());
+        }
         return abbrPlatform;
     }
 }

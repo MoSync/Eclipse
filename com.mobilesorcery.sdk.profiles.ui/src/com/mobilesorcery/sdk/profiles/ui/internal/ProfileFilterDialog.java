@@ -27,7 +27,7 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.filter.FeatureFilter;
 import com.mobilesorcery.sdk.profiles.filter.ProfileFilter;
 import com.mobilesorcery.sdk.profiles.ui.ProfileContentProvider;
-import com.mobilesorcery.sdk.profiles.ui.ProfileLabelProvider;
+import com.mobilesorcery.sdk.ui.ProfileLabelProvider;
 import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class ProfileFilterDialog extends DeviceFilterDialog<ProfileFilter> {
@@ -43,15 +43,16 @@ public class ProfileFilterDialog extends DeviceFilterDialog<ProfileFilter> {
         setFilter(filter);
     }
 
-    public Control createDialogArea(Composite parent) {
+    @Override
+	public Control createDialogArea(Composite parent) {
         getShell().setText(getName());
         Composite contents = new Composite(parent, SWT.NONE);
         contents.setLayout(new GridLayout(1, false));
-        
+
         require = new Button(contents, SWT.RADIO);
         require.setText(Messages.ProfileFilterDialog_Require);
         require.setSelection(filter.getStyle() == ProfileFilter.REQUIRE);
-        
+
         disallow = new Button(contents, SWT.RADIO);
         disallow.setText(Messages.ProfileFilterDialog_Disallow);
         require.setSelection(filter.getStyle() == ProfileFilter.DISALLOW);
@@ -63,14 +64,15 @@ public class ProfileFilterDialog extends DeviceFilterDialog<ProfileFilter> {
         profiles.setContentProvider(contentProvider);
         profiles.getControl().setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), UIUtils.getDefaultListHeight()));
 
-        profiles.setInput(MoSyncTool.getDefault().getVendors());
+        profiles.setInput(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER).getVendors());
 
         profiles.setCheckedElements(filter.getProfiles());
-        
+
         return contents;
     }
 
-    public void okPressed() {
+    @Override
+	public void okPressed() {
         filter.clear();
 
         Object[] checkedElements = profiles.getCheckedElements();
@@ -82,7 +84,7 @@ public class ProfileFilterDialog extends DeviceFilterDialog<ProfileFilter> {
             }
         }
 
-        filter.setStyle(require.getSelection() ? FeatureFilter.REQUIRE : FeatureFilter.DISALLOW);        
+        filter.setStyle(require.getSelection() ? FeatureFilter.REQUIRE : FeatureFilter.DISALLOW);
         super.okPressed();
     }
 

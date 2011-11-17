@@ -153,6 +153,11 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	public static final String STANDARD_EXCLUDES_FILTER_KEY = "standard.excludes";
 
 	/**
+	 * The key for the profile manager type associated with this project.
+	 */
+	public static final String PROFILE_MANAGER_TYPE_KEY = "profile.mgr.type";
+
+	/**
 	 * The project type of MoSync Projects (used only by CDT).
 	 */
 	public static final String C_PROJECT_ID = CoreMoSyncPlugin.PLUGIN_ID
@@ -228,11 +233,11 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 *
 	 * @see MoSyncProject#getFormatVersion()
 	 */
-	public static final Version CURRENT_VERSION = new Version("1.2");
+	public static final Version CURRENT_VERSION = new Version("1.3");
 
 	private static final Version VERSION_1_0 = new Version("1");
 
-	private static final Version VERSION_1_1 = new Version("1.1");
+	private static final Version VERSION_1_2 = new Version("1.2");
 
 	/**
 	 * The name of the file where this project's <b>shared</b> meta data is
@@ -637,6 +642,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
         addDefaultResourceFilter(project, new NullProgressMonitor());
         MoSyncProject result = create(project);
         result.activateBuildConfigurations();
+        result.setProperty(PROFILE_MANAGER_TYPE_KEY, PropertyUtil.fromInteger(MoSyncTool.DEFAULT_PROFILE_MANAGER));
         return result;
     }
 
@@ -974,8 +980,14 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * @return
 	 */
 	public IVendor[] getFilteredVendors() {
-		IVendor[] allVendors = MoSyncTool.getDefault().getVendors();
+		IVendor[] allVendors = getProfileManager().getVendors();
 		return AbstractDeviceFilter.filterVendors(allVendors, deviceFilter);
+	}
+
+	public ProfileManager getProfileManager() {
+		int mgrType = PropertyUtil.getInteger(this,
+				PROFILE_MANAGER_TYPE_KEY, MoSyncTool.LEGACY_PROFILE_MANAGER);
+		return MoSyncTool.getDefault().getProfileManager(mgrType);
 	}
 
 	/**
@@ -990,7 +1002,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * @return
 	 */
 	public IProfile[] getFilteredProfiles() {
-		IProfile[] profiles = MoSyncTool.getDefault().getProfiles(deviceFilter);
+		IProfile[] profiles = getProfileManager().getProfiles(deviceFilter);
 		return profiles;
 	}
 

@@ -45,6 +45,7 @@ import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jface.resource.FontRegistry;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.jface.util.Util;
 import org.eclipse.jface.viewers.ISelection;
@@ -53,6 +54,8 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
@@ -121,6 +124,10 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
 	public static final String FONT_DEFAULT_BOLD = "b";
 
 	public static final String FONT_DEFAULT_ITALIC = "i";
+
+    public static final String PHONE_IMAGE = "phone"; //$NON-NLS-1$
+
+    public static final String TARGET_PHONE_IMAGE = "target.phone"; //$NON-NLS-1$
 
     // The shared instance
     private static MosyncUIPlugin plugin;
@@ -313,7 +320,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
     private void updateCurrentlySelectedProject(final IWorkbenchWindow window) {
         initProjectChangeListener();
 
-        window.getWorkbench().getDisplay().asyncExec(new Runnable() {
+        Runnable r = new Runnable() {
             @Override
 			public void run() {
                 ISelection selection = window.getSelectionService().getSelection();
@@ -322,11 +329,12 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
                     setCurrentProject(window, selectedResource.getProject());
                 }
             }
-        });
+        };
+        UIUtils.onUiThread(window.getWorkbench().getDisplay(), r);
     }
 
     private void updateCurrentlySelectedProject(final IWorkbenchWindow window, final IEditorPart editor) {
-        window.getWorkbench().getDisplay().asyncExec(new Runnable() {
+    	Runnable r = new Runnable() {
             @Override
 			public void run() {
                 if (editor != null) {
@@ -344,13 +352,16 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
                     }
                 }
             }
-        });
+        };
+        UIUtils.onUiThread(window.getWorkbench().getDisplay(), r);
     }
 
     private void setCurrentProject(IWorkbenchWindow window, IProject project) {
         IProject oldProject = currentProjects.get(window);
         currentProjects.put(window, project);
-        listeners.firePropertyChange(new PropertyChangeEvent(this, CURRENT_PROJECT_CHANGED, oldProject, project));
+        if (oldProject != project) {
+        	listeners.firePropertyChange(new PropertyChangeEvent(this, CURRENT_PROJECT_CHANGED, oldProject, project));
+        }
     }
 
     IResource getResource(ISelection selection) {
@@ -485,7 +496,25 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements IWindowListener,
         reg.put(PASSWORD_SHOW, AbstractUIPlugin.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID, "$nl$/icons/show_pwd.png"));
         reg.put(COLLAPSE_ALL, AbstractUIPlugin.imageDescriptorFromPlugin(PLUGIN_ID, "$nl$/icons/collapseall.gif"));
         reg.put(EXPAND_ALL, AbstractUIPlugin.imageDescriptorFromPlugin(PLUGIN_ID, "$nl$/icons/expandall.gif"));
+        reg.put(PHONE_IMAGE, ImageDescriptor.createFromFile(getClass(), "/icons/phone.png")); //$NON-NLS-1$
+        reg.put(TARGET_PHONE_IMAGE, ImageDescriptor.createFromFile(getClass(), "/icons/phoneTarget.png")); //$NON-NLS-1$
     }
+
+	public static Image resize(Image original, int width, int height, boolean disposeOriginal) {
+	    Display display = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell().getDisplay();
+
+	    Image scaled = new Image(display, width, height);
+	    GC gc = new GC(scaled);
+	    gc.setAntialias(SWT.ON);
+        gc.drawImage(original, 0, 0, original.getBounds().width, original.getBounds().height, 0, 0, width, height);
+        gc.dispose();
+
+        if (disposeOriginal) {
+            original.dispose();
+        }
+
+        return scaled;
+	}
 
     public void showHelp(String helpResource, boolean showInExternalBrowser) {
         if (helpResource != null) {

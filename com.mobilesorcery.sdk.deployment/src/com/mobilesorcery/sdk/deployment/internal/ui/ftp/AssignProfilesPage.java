@@ -22,18 +22,21 @@ public class AssignProfilesPage extends WizardPage {
 	public void setDeviceFilter(IDeviceFilter filter) {
 		this.filter = filter == null ? new CompositeDeviceFilter() : filter;
 	}
-	
+
 	public IDeviceFilter getDeviceFilter() {
-		return filter; 
+		return filter;
 	}
-	
+
+	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(1, false));
 		filterComposite = new DeviceFilterComposite(main, SWT.NONE);
-		filterComposite.setDeviceFilter(filter);
+
+		//filterComposite.setCurrentProject(filter);
 		filterComposite.setLayoutData(new GridData(GridData.FILL_BOTH));
 		setControl(main);
+		throw new UnsupportedOperationException("NOT UPDATED WITH THE NOW PROFILE MANAGER CONCEPT");
 	}
 
 }
