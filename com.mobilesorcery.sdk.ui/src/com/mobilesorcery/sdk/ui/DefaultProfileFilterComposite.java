@@ -1,8 +1,10 @@
 package com.mobilesorcery.sdk.ui;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
@@ -29,14 +31,15 @@ import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 import com.mobilesorcery.sdk.profiles.filter.ProfileFilter;
 import com.mobilesorcery.sdk.ui.DefaultProfileFilterComposite.PlatformControl;
 
-public class DefaultProfileFilterComposite extends Composite implements DisposeListener, Listener {
+public class DefaultProfileFilterComposite extends Composite implements
+		DisposeListener, Listener {
 
 	class PlatformControl {
 		Composite main;
 		Label image;
 		Button selected;
-		public PlatformControl(Composite main, Label image,
-				Button selected) {
+
+		public PlatformControl(Composite main, Label image, Button selected) {
 			this.main = main;
 			this.image = image;
 			this.selected = selected;
@@ -47,7 +50,9 @@ public class DefaultProfileFilterComposite extends Composite implements DisposeL
 		Composite main;
 		Button required;
 		Button optional;
-		public CapabilityControl(Composite main, Button required, Button optional) {
+
+		public CapabilityControl(Composite main, Button required,
+				Button optional) {
 			this.main = main;
 			this.required = required;
 			this.optional = optional;
@@ -84,35 +89,45 @@ public class DefaultProfileFilterComposite extends Composite implements DisposeL
 		main.setLayoutData(new GridData(GridData.FILL_BOTH));
 		form.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-		Section platformSection = toolkit.createSection(form.getBody(), Section.DESCRIPTION);
+		Section platformSection = toolkit.createSection(form.getBody(),
+				Section.DESCRIPTION);
 		platformSection.setText("Platforms");
-		platformSection.setDescription("Select the platforms to associate with this project.");
-		platformSection.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
+		platformSection
+				.setDescription("Select the platforms to associate with this project.");
+		platformSection.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true,
+				false));
 		platformSection.setLayout(UIUtils.newPrefsLayout(1));
-		Composite platformSectionMain = toolkit.createComposite(platformSection);
+		Composite platformSectionMain = toolkit
+				.createComposite(platformSection);
 		platformSection.setClient(platformSectionMain);
 
 		ColumnLayout platformSectionLayout = new ColumnLayout();
 		platformSectionLayout.minNumColumns = 2;
 		platformSectionLayout.maxNumColumns = 8;
 		platformSectionMain.setLayout(platformSectionLayout);
-		ProfileManager mgr = MoSyncTool.getDefault().getProfileManager(MoSyncTool.DEFAULT_PROFILE_MANAGER);
+		ProfileManager mgr = MoSyncTool.getDefault().getProfileManager(
+				MoSyncTool.DEFAULT_PROFILE_MANAGER);
 		IVendor[] vendors = mgr.getVendors();
 		for (IVendor vendor : vendors) {
-			PlatformControl platformComposite = createPlatformSelector(toolkit, platformSectionMain, vendor);
+			PlatformControl platformComposite = createPlatformSelector(toolkit,
+					platformSectionMain, vendor);
 			platformControls.put(vendor, platformComposite);
 		}
 
-		Section capabilitiesSection = toolkit.createSection(form.getBody(), Section.DESCRIPTION);
+		Section capabilitiesSection = toolkit.createSection(form.getBody(),
+				Section.DESCRIPTION);
 		capabilitiesSection.setText("Capabilities");
-		capabilitiesSection.setDescription("Select capabilities and features for this project. " +
-				"Check 'Optional' if your app should still run without the capability. " +
-				"This will make sure that platforms that do not support the 'Optional' capability " +
-				"will still be built.");
+		capabilitiesSection
+				.setDescription("Select capabilities and features for this project. "
+						+ "Check 'Optional' if your app should still run without the capability. "
+						+ "This will make sure that platforms that do not support the 'Optional' capability "
+						+ "will still be built.");
 
-		capabilitiesSection.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
+		capabilitiesSection.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT,
+				true, false));
 		capabilitiesSection.setLayout(UIUtils.newPrefsLayout(1));
-		Composite capabilitiesSectionMain = toolkit.createComposite(capabilitiesSection);
+		Composite capabilitiesSectionMain = toolkit
+				.createComposite(capabilitiesSection);
 		capabilitiesSection.setClient(capabilitiesSectionMain);
 
 		ColumnLayout capabilitiesSectionLayout = new ColumnLayout();
@@ -120,18 +135,21 @@ public class DefaultProfileFilterComposite extends Composite implements DisposeL
 		capabilitiesSectionLayout.maxNumColumns = 12;
 		capabilitiesSectionMain.setLayout(capabilitiesSectionLayout);
 
-		String[] availableCapabilities =
-				MoSyncTool.getDefault().getProfileManager(MoSyncTool.DEFAULT_PROFILE_MANAGER).getAvailableCapabilities();
+		String[] availableCapabilities = MoSyncTool.getDefault()
+				.getProfileManager(MoSyncTool.DEFAULT_PROFILE_MANAGER)
+				.getAvailableCapabilities();
 
 		for (String capability : availableCapabilities) {
-			CapabilityControl capabilityComposite = createCapabilitiesSelector(toolkit, capabilitiesSectionMain, capability);
+			CapabilityControl capabilityComposite = createCapabilitiesSelector(
+					toolkit, capabilitiesSectionMain, capability);
 			capabilityControls.put(capability, capabilityComposite);
 		}
 
 		form.reflow(true);
 	}
 
-	private CapabilityControl createCapabilitiesSelector(FormToolkit toolkit, Composite parent, String capability) {
+	private CapabilityControl createCapabilitiesSelector(FormToolkit toolkit,
+			Composite parent, String capability) {
 		Composite result = toolkit.createComposite(parent);
 		result.setLayout(new GridLayout(2, false));
 		Button requiredButton = new Button(result, SWT.CHECK);
@@ -142,14 +160,16 @@ public class DefaultProfileFilterComposite extends Composite implements DisposeL
 			boldFont = UIUtils.modifyFont(nameLabel.getFont(), SWT.BOLD);
 		}
 
-		nameLabel.setLayoutData(new GridData(SWT.LEFT, SWT.DEFAULT, true, false));
+		nameLabel
+				.setLayoutData(new GridData(SWT.LEFT, SWT.DEFAULT, true, false));
 		nameLabel.setFont(boldFont);
 
 		Label spacer = toolkit.createLabel(result, "");
 
 		Button optionalButton = new Button(result, SWT.CHECK);
 		optionalButton.setText("Optional");
-		optionalButton.setLayoutData(new GridData(SWT.LEFT, SWT.DEFAULT, true, false));
+		optionalButton.setLayoutData(new GridData(SWT.LEFT, SWT.DEFAULT, true,
+				false));
 		optionalButton.setData(capability);
 		optionalButton.addListener(SWT.Selection, this);
 		toolkit.adapt(requiredButton, true, true);
@@ -158,22 +178,25 @@ public class DefaultProfileFilterComposite extends Composite implements DisposeL
 		return new CapabilityControl(result, requiredButton, optionalButton);
 	}
 
-	private PlatformControl createPlatformSelector(FormToolkit toolkit, Composite parent, IVendor platform) {
+	private PlatformControl createPlatformSelector(FormToolkit toolkit,
+			Composite parent, IVendor platform) {
 		Composite result = toolkit.createComposite(parent);
 		result.setLayout(new GridLayout(1, false));
-		Image icon = platform.getIcon().createImage(); // TODO: LEAK, LEAK!
+		ImageDescriptor icon = platform.getIcon();
+		Image image = icon == null ? null : icon.createImage();// TODO: LEAK, LEAK!
 		String name = platform.getName();
 		Label iconLabel = null;
-		if (icon != null) {
-			iconLabel = new Label(result, SWT.NONE);
-			iconLabel.setAlignment(SWT.CENTER);
-			iconLabel.setImage(icon);
-			iconLabel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		iconLabel = new Label(result, SWT.NONE);
+		iconLabel.setAlignment(SWT.CENTER);
+		iconLabel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		if (image != null) {
+			iconLabel.setImage(image);
 		}
 		Button nameButton = new Button(result, SWT.CHECK);
 		nameButton.setText(name);
 		nameButton.addListener(SWT.Selection, this);
-		nameButton.setLayoutData(new GridData(SWT.CENTER, SWT.DEFAULT, true, false));
+		nameButton.setLayoutData(new GridData(SWT.CENTER, SWT.DEFAULT, true,
+				false));
 		toolkit.adapt(nameButton, true, true);
 		nameButton.setData(platform);
 
@@ -184,15 +207,30 @@ public class DefaultProfileFilterComposite extends Composite implements DisposeL
 	public void setProject(MoSyncProject project) {
 		this.project = project;
 		IDeviceFilter[] filters = project.getDeviceFilter().getFilters();
+		// No filter = all platforms!
+		HashSet<IVendor> platforms = null;
 		for (int i = 0; i < filters.length; i++) {
 			IDeviceFilter filter = filters[i];
 			if (filter instanceof ProfileFilter) {
-				platforms = new HashSet<IVendor>(((ProfileFilter) filter).getVendorsWithAllProfilesAccepted());
+				platforms = new HashSet<IVendor>(
+						((ProfileFilter) filter)
+								.getVendorsWithAllProfilesAccepted());
 			} else if (filter instanceof DeviceCapabilitiesFilter) {
-				requiredCapabilities = new HashSet<String>(((DeviceCapabilitiesFilter) filter).getRequiredCapabilities());
-				optionalCapabilities = new HashSet<String>(((DeviceCapabilitiesFilter) filter).getOptionalCapabilities());
+				requiredCapabilities = new HashSet<String>(
+						((DeviceCapabilitiesFilter) filter)
+								.getRequiredCapabilities());
+				optionalCapabilities = new HashSet<String>(
+						((DeviceCapabilitiesFilter) filter)
+								.getOptionalCapabilities());
 			}
 		}
+		if (platforms == null) {
+			platforms = new HashSet<IVendor>(Arrays.asList(MoSyncTool
+					.getDefault()
+					.getProfileManager(MoSyncTool.DEFAULT_PROFILE_MANAGER)
+					.getVendors()));
+		}
+		this.platforms = platforms;
 		updateUI(true);
 	}
 
@@ -205,7 +243,8 @@ public class DefaultProfileFilterComposite extends Composite implements DisposeL
 			for (String capability : capabilityControls.keySet()) {
 				CapabilityControl control = capabilityControls.get(capability);
 				boolean isOptional = optionalCapabilities.contains(capability);
-				boolean isRequired = isOptional || requiredCapabilities.contains(capability);
+				boolean isRequired = isOptional
+						|| requiredCapabilities.contains(capability);
 				control.required.setSelection(isRequired);
 				control.optional.setSelection(isOptional);
 				updateCapabilityUI(capability);
@@ -226,14 +265,11 @@ public class DefaultProfileFilterComposite extends Composite implements DisposeL
 		for (IVendor platform : platforms) {
 			platformFilter.setVendor(platform, true);
 		}
-		if (platforms.size() > 0) {
-			project.getDeviceFilter().addFilter(platformFilter);
-		}
+		project.getDeviceFilter().addFilter(platformFilter);
 
-		DeviceCapabilitiesFilter capabilitiesFilter =
-				new DeviceCapabilitiesFilter(
-						requiredCapabilities.toArray(new String[0]),
-						optionalCapabilities.toArray(new String[0]));
+		DeviceCapabilitiesFilter capabilitiesFilter = new DeviceCapabilitiesFilter(
+				requiredCapabilities.toArray(new String[0]),
+				optionalCapabilities.toArray(new String[0]));
 		if (optionalCapabilities.size() > 0 || requiredCapabilities.size() > 0) {
 			project.getDeviceFilter().addFilter(capabilitiesFilter);
 		}
@@ -252,7 +288,8 @@ public class DefaultProfileFilterComposite extends Composite implements DisposeL
 		if (data instanceof String) {
 			// Capability
 			String capability = (String) data;
-			CapabilityControl capabilityControl = this.capabilityControls.get(capability);
+			CapabilityControl capabilityControl = this.capabilityControls
+					.get(capability);
 			if (event.widget == capabilityControl.optional) {
 				if (capabilityControl.optional.getSelection()) {
 					optionalCapabilities.add(capability);
@@ -270,7 +307,8 @@ public class DefaultProfileFilterComposite extends Composite implements DisposeL
 			updateCapabilityUI(capability);
 		} else if (data instanceof IVendor) {
 			IVendor platform = (IVendor) data;
-			PlatformControl platformControl = this.platformControls.get(platform);
+			PlatformControl platformControl = this.platformControls
+					.get(platform);
 			if (platformControl != null) {
 				if (platformControl.selected.getSelection()) {
 					platforms.add(platform);
@@ -280,7 +318,5 @@ public class DefaultProfileFilterComposite extends Composite implements DisposeL
 			}
 		}
 	}
-
-
 
 }

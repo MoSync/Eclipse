@@ -15,6 +15,7 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.text.DateFormat;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -50,6 +51,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.BuildAction;
@@ -68,7 +70,6 @@ import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
 import com.mobilesorcery.sdk.internal.dependencies.ProjectResourceDependencyProvider;
 import com.mobilesorcery.sdk.internal.dependencies.ResourceFileDependencyProvider;
 import com.mobilesorcery.sdk.profiles.IProfile;
-import com.mobilesorcery.sdk.profiles.Profile;
 
 /**
  * The main builder. This builder extends ACBuilder for its implementation of
@@ -929,6 +930,46 @@ public class MoSyncBuilder extends ACBuilder {
 
         return project;
     }
+
+	public static IRunnableWithProgress createBuildJob(final IProject project, final IBuildSession buildSession,
+			final List<IBuildVariant> variantsToBuild) {
+		return new IRunnableWithProgress() {
+
+			@Override
+			public void run(IProgressMonitor monitor) throws InvocationTargetException,
+					InterruptedException {
+				monitor.beginTask(MessageFormat.format("Building {0} variants", variantsToBuild.size()), variantsToBuild.size());
+
+				for (IBuildVariant variantToBuild : variantsToBuild) {
+					SubProgressMonitor jobMonitor = new SubProgressMonitor(monitor, 1);
+					if (!monitor.isCanceled()) {
+		                IRunnableWithProgress buildJob = createBuildJob(project, buildSession, variantToBuild);
+						buildJob.run(jobMonitor);
+					}
+				}
+			}
+		};
+	}
+
+	public static IRunnableWithProgress createBuildJob(final IProject project, final IBuildSession session, final IBuildVariant variant) {
+		return new IRunnableWithProgress() {
+			@Override
+			public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
+				try {
+					IBuildResult buildResult = new MoSyncBuilder().build(project, session, variant, null, monitor);
+					if (!buildResult.success()) {
+						throw new InvocationTargetException(new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Build failed")));
+					}
+				} catch (CoreException e) {
+					throw new InvocationTargetException(e, variant.getProfile() + ": " + e.getMessage()); //$NON-NLS-1$
+				} finally {
+					monitor.done();
+				}
+			}
+		};
+	}
+
+
 
     public static boolean saveAllEditors(IResource resource) {
         ArrayList<IResource> resourceList = new ArrayList<IResource>();

@@ -267,7 +267,7 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
         getSite().setSelectionProvider(selectionProvider);
 
         projectChanged(null, null);
-        currentProjectChanged();
+        currentProjectChanged(false);
     }
 
     private void initMenu(Control control) {
@@ -293,9 +293,9 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
     	MosyncUIPlugin.getDefault().addListener(this);
     }
 
-    private void currentProjectChanged() {
+    private void currentProjectChanged(boolean force) {
         MoSyncProject newProject = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(getSite().getWorkbenchWindow());
-        if (currentProject != newProject) { // So we really changed to another
+        if (force || currentProject != newProject) { // So we really changed to another
                                             // project!
             projectChanged(currentProject, newProject);
         }
@@ -352,7 +352,7 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
 	public void propertyChange(PropertyChangeEvent event) {
     	MoSyncProject currentProject = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(getSite().getWorkbenchWindow());
     	if (event.getPropertyName() == MosyncUIPlugin.CURRENT_PROJECT_CHANGED) {
-    	    currentProjectChanged();
+    	    currentProjectChanged(false);
     	} else
         if (event.getPropertyName() == MoSyncTool.MOSYNC_HOME_UPDATED) {
             updateVisiblePane();
@@ -376,11 +376,12 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
         	deviceFilter.setCurrentProject(currentProject);
             profileTree.setFilters(new ViewerFilter[] { new DeviceViewerFilter(currentProject.getDeviceFilter()) });
             profileTree.setInput(currentProject == null ? MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER).getVendors() : currentProject.getFilteredVendors());
-        } else if (event.getPropertyName() == MoSyncTool.PROFILES_UPDATED) {
+        } else if (event.getPropertyName() == MoSyncTool.PROFILES_UPDATED ||
+        		event.getPropertyName() == MoSyncProject.PROFILE_MANAGER_TYPE_KEY) {
             profileTree.getControl().getDisplay().asyncExec(new Runnable() {
                 @Override
 				public void run() {
-                    profileTree.refresh();
+                	currentProjectChanged(true);
                 }
             });
         }

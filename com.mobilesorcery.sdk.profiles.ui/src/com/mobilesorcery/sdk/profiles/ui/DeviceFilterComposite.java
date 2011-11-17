@@ -38,8 +38,10 @@ import org.eclipse.swt.widgets.Label;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.ProfileManager;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
+import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.filter.ConstantFilter;
 import com.mobilesorcery.sdk.profiles.filter.FeatureFilter;
 import com.mobilesorcery.sdk.profiles.filter.ProfileFilter;
@@ -225,8 +227,11 @@ public class DeviceFilterComposite extends Composite {
     }
 
     protected String getDeviceCountText() {
-        int selected = currentProject.getProfileManager().getProfiles(filter).length;
-        int total = currentProject.getProfileManager().getProfiles().length;
+    	ProfileManager mgr = currentProject == null ?
+    			MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER) :
+				currentProject.getProfileManager();
+        int selected = mgr.getProfiles(filter).length;
+        int total = mgr.getProfiles().length;
         return MessageFormat.format("{0} of {1} included", selected, total);
     }
 
