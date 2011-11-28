@@ -56,10 +56,7 @@ public interface ICommonPermissions {
 
 	public static final String NFC = "NFC";
 
-	public static final String C2DM = "C2DM";
-	public static final String C2DM_MESSAGES = C2DM + "/Messages";
-	public static final String C2DM_RECEIVER = C2DM + "/Receiver";
-
+	public static final String PUSH_NOTIFICATIONS = "Push Notifications";
 
     public final static String[] ALL_PERMISSIONS = new String[] {
         BLUETOOTH,
@@ -75,6 +72,6 @@ public interface ICommonPermissions {
 		HOMESCREEN,
 		AUTOSTART,
 		NFC,
-		C2DM, C2DM_MESSAGES, C2DM_RECEIVER
+		PUSH_NOTIFICATIONS
     };
 }
