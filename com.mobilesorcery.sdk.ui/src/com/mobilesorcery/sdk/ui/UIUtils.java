@@ -74,14 +74,14 @@ public class UIUtils {
 			} catch (InterruptedException e) {
 		        // Ignore.
 		    	Thread.currentThread().interrupt();
-		    }            		
+		    }
 		}
 	}
 
 	public static void setDefaultShellBounds(Shell shell) {
         Rectangle displayBounds = shell.getDisplay().getBounds();
         shell.setSize(320, 480);
-        
+
         int x = (displayBounds.width - shell.getBounds().width) / 2;
         int y = (displayBounds.height - shell.getBounds().height) / 2;
         shell.setLocation(x, y);
@@ -105,7 +105,7 @@ public class UIUtils {
 			gc.dispose();
 		}
 	}
-	
+
     /**
      * Opens the editor in the workbench for a specific file.
      * @param workbench
@@ -115,13 +115,14 @@ public class UIUtils {
         if (window != null) {
             final IWorkbenchPage activePage =
                 window.getActivePage();
-                
+
             if (activePage != null) {
                 final Display display = window.getShell().getDisplay();
-                
+
                 if (display != null) {
                     display.asyncExec(new Runnable() {
-                        public void run() {
+                        @Override
+						public void run() {
                             try {
                                 IDE.openEditor(activePage, file, true);
                             } catch (PartInitException e) {
@@ -130,14 +131,14 @@ public class UIUtils {
                         }
                     });
                 }
-            }       
+            }
         }
     }
 
     public static void openResource(IWorkbench workbench, IFile file) {
         openResource(workbench.getActiveWorkbenchWindow(), file);
     }
-    
+
     public static void openResource(IPath path, int lineNumber) {
     	// Minor hack :)
         IFile[] files = ResourcesPlugin.getWorkspace().getRoot().findFilesForLocation(path);
@@ -147,7 +148,7 @@ public class UIUtils {
     		new PathLink(path, null, -1, -1, lineNumber).linkActivated();
     	}
     }
-    
+
     public static void setTransparency(ImageData data, int alpha) {
     	for (int x = 0; x < data.width; x++) {
     		for (int y = 0; y < data.height; y++) {
@@ -156,12 +157,12 @@ public class UIUtils {
     	}
     }
 
-    public static ImageData mix(ImageData data, RGB mixRGB, int alpha) {    	
+    public static ImageData mix(ImageData data, RGB mixRGB, int alpha) {
     	Image image = new Image(Display.getCurrent(), data);
     	GC gc = new GC(image);
     	Color mixColor = new Color(Display.getCurrent(), mixRGB);
     	try {
-    		gc.setAlpha(alpha); 	
+    		gc.setAlpha(alpha);
     		gc.setBackground(mixColor);
     		gc.fillRectangle(image.getBounds());
     		return image.getImageData();
@@ -169,15 +170,15 @@ public class UIUtils {
     		image.dispose();
     		gc.dispose();
     		mixColor.dispose();
-    	}    	    	
+    	}
     }
-    
+
     public static void safeDispose(GC gc) {
         if (gc != null && !gc.isDisposed()) {
             gc.dispose();
         }
     }
-    
+
     public static void safeDispose(Image image) {
         if (image != null && !image.isDisposed()) {
             image.dispose();
@@ -189,7 +190,7 @@ public class UIUtils {
             shell.dispose();
         }
     }
-    
+
     /**
      * Returns a password property; if no such property is defined (or empty),
      * a password dialog is popped up.
@@ -203,7 +204,8 @@ public class UIUtils {
             final String[] result = new String[1];
             Display display = PlatformUI.getWorkbench().getDisplay();
             display.syncExec(new Runnable() {
-                public void run() {
+                @Override
+				public void run() {
                     Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
                     PasswordDialog dialog = new PasswordDialog(shell);
                     if (dialog.open() == PasswordDialog.OK) {
@@ -231,7 +233,7 @@ public class UIUtils {
     public static Font modifyFont(Font original, int style)  {
     	return modifyFont(original, style, 0);
     }
-    
+
     /**
      * <p>Creates a new {@link Font} based on a prototype font.</p>
      * <p>Clients must dispose of the new font.</p>
@@ -245,15 +247,15 @@ public class UIUtils {
         if (original == null) {
             original = JFaceResources.getDefaultFont();
         }
-        
+
         FontData[] fd = original.getFontData();
         fd = modifyFont(fd, style, relativeHeight);
         return new Font(original.getDevice(), fd);
     }
-    
+
     /**
      * <p>Modifies an array of {@link FontData} based on a new style and relative height.</p>
-     * @param original 
+     * @param original
      * @param style The style(ie <code>SWT.BOLD</code>) to apply to
      * the new font, or <code>SWT.DEFAULT</code> if the current style should be kept
      * @param relativeHeight
@@ -264,17 +266,17 @@ public class UIUtils {
         if (fd == null) {
             fd = JFaceResources.getDefaultFont().getFontData();
         }
-        
+
         for (int i = 0; i < fd.length; i++) {
         	if (style != SWT.DEFAULT) {
         		fd[i].setStyle(style);
         	}
             fd[i].setHeight(fd[i].getHeight() + relativeHeight);
         }
-        
+
         return fd;
     }
-    
+
     /**
      * <p>Waits for the workbench to startup (if <code>null</code> is passed
      * as the listener) or asynchronously sends a message to the listener
@@ -284,14 +286,15 @@ public class UIUtils {
      */
     public synchronized static void awaitWorkbenchStartup(IWorkbenchStartupListener listener) {
     	final WorkbenchJob workbenchStartupJob = new WorkbenchJob("Awaiting workbench") {
-            public IStatus runInUIThread(IProgressMonitor monitor) {
+            @Override
+			public IStatus runInUIThread(IProgressMonitor monitor) {
                 // Do nothing; actually we'll never get here.
                 return Status.OK_STATUS;
             }
         };
         workbenchStartupJob.setSystem(true);
         workbenchStartupJob.schedule();
-        
+
         Runnable awaitWorkbenchRunnable = new AwaitWorkbenchJobRunnable(workbenchStartupJob, listener);
     	if (listener == null) {
     		awaitWorkbenchRunnable.run();
@@ -303,7 +306,7 @@ public class UIUtils {
 
     public static void main(String[] args) {
     	Image i = new Image(Display.getCurrent(), "C:\\development\\projects\\mobilesorcery-4\\com.mobilesorcery.sdk.ui\\icons\\mosyncproject.png");
-    	ImageData d = i.getImageData(); 
+    	ImageData d = i.getImageData();
     	ImageData d2 = mix(d, new RGB(0xff, 0xff, 0xff), 0x7f);
     	ImageLoader il = new ImageLoader();
     	il.data = new ImageData[] { d2 };
@@ -336,5 +339,27 @@ public class UIUtils {
 		result.marginHeight = 0;
 		return result;
 	}
-    
+
+	/**
+	 * Runs a runnable on the current UI thread, or if the
+	 * thread this method is called from is NOT a UI thread,
+	 * it will be posted to the UI thread.
+	 * @param display
+	 * @param r
+	 */
+	public static void onUiThread(Display display, Runnable r) {
+		if (display == Display.getCurrent()) {
+			r.run();
+		} else {
+			display.asyncExec(r);
+		}
+	}
+
+	public static void centerShell(Shell newShell) {
+		Rectangle screenSize = Display.getCurrent().getPrimaryMonitor().getBounds();
+		int x = (screenSize.width - newShell.getSize().x) / 2;
+		int y = (screenSize.height - newShell.getSize().y) / 2;
+		newShell.setLocation(x, y);
+	}
+
 }

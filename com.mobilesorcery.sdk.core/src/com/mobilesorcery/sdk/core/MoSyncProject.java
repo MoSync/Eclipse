@@ -70,6 +70,7 @@ import com.mobilesorcery.sdk.profiles.ITargetProfileProvider;
 import com.mobilesorcery.sdk.profiles.IVendor;
 import com.mobilesorcery.sdk.profiles.filter.AbstractDeviceFilter;
 import com.mobilesorcery.sdk.profiles.filter.CompositeDeviceFilter;
+import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 
 /**
  * This is a wrapper to provider mosync-specific capabilities to a vanilla
@@ -78,7 +79,8 @@ import com.mobilesorcery.sdk.profiles.filter.CompositeDeviceFilter;
  * @author Mattias
  *
  */
-public class MoSyncProject extends PropertyOwnerBase implements ITargetProfileProvider {
+public class MoSyncProject extends PropertyOwnerBase implements
+		ITargetProfileProvider {
 
 	/**
 	 * An interface for converting older {@link MoSyncProject}s into a newer
@@ -95,8 +97,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 		 * @param project
 		 * @throws CoreException
 		 */
-		public void convert(MoSyncProject project)
-				throws CoreException;
+		public void convert(MoSyncProject project) throws CoreException;
 
 	}
 
@@ -151,6 +152,11 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 */
 	@Deprecated
 	public static final String STANDARD_EXCLUDES_FILTER_KEY = "standard.excludes";
+
+	/**
+	 * The key for the profile manager type associated with this project.
+	 */
+	public static final String PROFILE_MANAGER_TYPE_KEY = "profile.mgr.type";
 
 	/**
 	 * The project type of MoSync Projects (used only by CDT).
@@ -228,11 +234,11 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 *
 	 * @see MoSyncProject#getFormatVersion()
 	 */
-	public static final Version CURRENT_VERSION = new Version("1.2");
+	public static final Version CURRENT_VERSION = new Version("1.3");
 
 	private static final Version VERSION_1_0 = new Version("1");
 
-	private static final Version VERSION_1_1 = new Version("1.1");
+	private static final Version VERSION_1_2 = new Version("1.2");
 
 	/**
 	 * The name of the file where this project's <b>shared</b> meta data is
@@ -261,7 +267,8 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	private static PropertyChangeSupport globalListeners = new PropertyChangeSupport(
 			new Object());
 
-	private final PropertyChangeSupport listeners = new PropertyChangeSupport(this);
+	private final PropertyChangeSupport listeners = new PropertyChangeSupport(
+			this);
 
 	private ICompositeDeviceFilter deviceFilter = new CompositeDeviceFilter(
 			new IDeviceFilter[0]);
@@ -280,8 +287,9 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	private final Map<String, String> workspaceLocalProperties = new HashMap<String, String>();
 
-	private final CascadingProperties properties = new CascadingProperties(new Map[] {
-			sharedProperties, localProperties, workspaceLocalProperties });
+	private final CascadingProperties properties = new CascadingProperties(
+			new Map[] { sharedProperties, localProperties,
+					workspaceLocalProperties });
 
 	private final DeviceFilterListener deviceFilterListener;
 
@@ -315,7 +323,9 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 		initFromProjectMetaData(null, WORKSPACE_LOCAL_PROPERTY);
 		permissions = new ApplicationPermissions(this);
 		addDeviceFilterListener();
-		securePropertyOwner = new SecureProperties(this, CoreMoSyncPlugin.getDefault().getPasswordProvider(), SecureProperties.DEFAULT_SECURE_PROPERTY_SUFFIX);
+		securePropertyOwner = new SecureProperties(this, CoreMoSyncPlugin
+				.getDefault().getPasswordProvider(),
+				SecureProperties.DEFAULT_SECURE_PROPERTY_SUFFIX);
 	}
 
 	private void addDeviceFilterListener() {
@@ -344,7 +354,8 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 			input = new FileReader(projectMetaDataPath.toFile());
 			XMLMemento memento = XMLMemento.createReadRoot(input);
 			String formatVersionStr = memento.getString(VERSION_KEY);
-			formatVersion = formatVersionStr == null ? VERSION_1_0 : new Version(formatVersionStr);
+			formatVersion = formatVersionStr == null ? VERSION_1_0
+					: new Version(formatVersionStr);
 
 			initTargetProfileFromProjectMetaData(memento);
 			// Special case; device filters are always shared.
@@ -502,8 +513,11 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	private boolean requiresUpdate(int store) {
 		IPath projectMetaDataPath = getMoSyncProjectMetaDataLocation(store);
-		// Special case: the local properties; if it exists, we always write it anew regardless.
-		return store != WORKSPACE_LOCAL_PROPERTY || projectMetaDataPath.toFile().exists() || !getProperties(store).isEmpty();
+		// Special case: the local properties; if it exists, we always write it
+		// anew regardless.
+		return store != WORKSPACE_LOCAL_PROPERTY
+				|| projectMetaDataPath.toFile().exists()
+				|| !getProperties(store).isEmpty();
 	}
 
 	private void saveActiveBuildConfiguration(XMLMemento root) {
@@ -552,11 +566,16 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	public IPath getMoSyncProjectMetaDataLocation(int store) {
 		switch (store) {
 		case SHARED_PROPERTY:
-			return project.getLocation().append(MOSYNC_PROJECT_META_DATA_FILENAME);
+			return project.getLocation().append(
+					MOSYNC_PROJECT_META_DATA_FILENAME);
 		case LOCAL_PROPERTY:
-			return project.getLocation().append(MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME);
+			return project.getLocation().append(
+					MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME);
 		case WORKSPACE_LOCAL_PROPERTY:
-			return project.getLocation().append(MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME + "." + CoreMoSyncPlugin.getDefault().getWorkspaceToken());
+			return project
+					.getLocation()
+					.append(MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME + "."
+							+ CoreMoSyncPlugin.getDefault().getWorkspaceToken());
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -587,7 +606,8 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 				if (result == null) {
 					result = new MoSyncProject(project);
 					projects.put(project, result);
-					upgrade = !CURRENT_VERSION.equals(result.getFormatVersion());
+					upgrade = !CURRENT_VERSION
+							.equals(result.getFormatVersion());
 				}
 			}
 
@@ -601,51 +621,66 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 		}
 	}
 
-	private static void upgrade(MoSyncProject project)
-			throws CoreException {
+	private static void upgrade(MoSyncProject project) throws CoreException {
 		// TODO: Whenever the need arises we may want to fix something smarter
 		MoSyncProjectConverter1_2.getInstance().convert(project);
 	}
 
-    /**
-     * Convenience method for creating a <code>MoSyncProject</code> at the
-     * requested location, or in the workspace if location is <code>null</code>.
-     *
-     * @param project
-     * @param location
-     * @param monitor
-     * @return
-     * @throws CoreException
-     */
-    public static MoSyncProject createNewProject(IProject project, URI location, IProgressMonitor monitor) throws CoreException {
-        IWorkspace workspace = ResourcesPlugin.getWorkspace();
-        IProjectDescription description = workspace.newProjectDescription(project.getName());
-        description.setLocationURI(location);
+	/**
+	 * Convenience method for creating a <code>MoSyncProject</code> at the
+	 * requested location, or in the workspace if location is <code>null</code>.
+	 *
+	 * @param project
+	 * @param location
+	 * @param monitor
+	 * @return
+	 * @throws CoreException
+	 */
+	public static MoSyncProject createNewProject(IProject project,
+			URI location, IProgressMonitor monitor) throws CoreException {
+		IWorkspace workspace = ResourcesPlugin.getWorkspace();
+		IProjectDescription description = workspace
+				.newProjectDescription(project.getName());
+		description.setLocationURI(location);
 
-        CreateProjectOperation op = new CreateProjectOperation(description, "Create Project");
-        try {
-            op.execute(monitor, null);
-        } catch (ExecutionException e) {
-            if (e.getCause() instanceof CoreException) {
-                throw (CoreException) e.getCause();
-            } else {
-                throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
-            }
-        }
+		CreateProjectOperation op = new CreateProjectOperation(description,
+				"Create Project");
+		try {
+			op.execute(monitor, null);
+		} catch (ExecutionException e) {
+			if (e.getCause() instanceof CoreException) {
+				throw (CoreException) e.getCause();
+			} else {
+				throw new CoreException(new Status(IStatus.ERROR,
+						CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
+			}
+		}
 
-        addNatureToProject(project);
-        addDefaultResourceFilter(project, new NullProgressMonitor());
-        MoSyncProject result = create(project);
-        result.activateBuildConfigurations();
-        return result;
-    }
+		addNatureToProject(project);
+		addDefaultResourceFilter(project, new NullProgressMonitor());
+		MoSyncProject result = create(project);
+		result.activateBuildConfigurations();
+		result.setProperty(PROFILE_MANAGER_TYPE_KEY,
+				PropertyUtil.fromInteger(MoSyncTool.DEFAULT_PROFILE_TYPE));
+		result.getDeviceFilter().addFilter(
+				new DeviceCapabilitiesFilter(new String[0], new String[0]));
+		return result;
+	}
 
-	private static void addDefaultResourceFilter(IProject project, IProgressMonitor monitor) throws CoreException {
+	private static void addDefaultResourceFilter(IProject project,
+			IProgressMonitor monitor) throws CoreException {
 		// TODO: Hmmm.... maybe we should consider filtering out output folders?
-		//FileInfoMatcherDescription filter = new FileInfoMatcherDescription("org.eclipse.core.resources.regexFilterMatcher", ".*rebuild.build.cpp");
-		// Very internal format, but the version number should help us be a bit future proof.
-		FileInfoMatcherDescription filter = new FileInfoMatcherDescription("org.eclipse.ui.ide.multiFilter", "1.0-name-matches-false-true-.*rebuild.build.cpp");
-		IResourceFilterDescription created = project.createFilter(IResourceFilterDescription.EXCLUDE_ALL | IResourceFilterDescription.FILES, filter, 0, monitor);
+		// FileInfoMatcherDescription filter = new
+		// FileInfoMatcherDescription("org.eclipse.core.resources.regexFilterMatcher",
+		// ".*rebuild.build.cpp");
+		// Very internal format, but the version number should help us be a bit
+		// future proof.
+		FileInfoMatcherDescription filter = new FileInfoMatcherDescription(
+				"org.eclipse.ui.ide.multiFilter",
+				"1.0-name-matches-false-true-.*rebuild.build.cpp");
+		IResourceFilterDescription created = project.createFilter(
+				IResourceFilterDescription.EXCLUDE_ALL
+						| IResourceFilterDescription.FILES, filter, 0, monitor);
 	}
 
 	/**
@@ -656,7 +691,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 */
 	public void dispose() {
 		synchronized (projects) {
-			projects.remove(this);
+			projects.remove(this.project);
 		}
 
 		disposed = true;
@@ -696,8 +731,11 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 					SHARED_PROPERTY);
 			// ... but MOSYNCTWOSIX-344 showed we need the local
 			// ones too
-			IPath localMetaDataLocation = projectMetadataLocation.removeLastSegments(1).append(MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME);
-			result.initFromProjectMetaData(localMetaDataLocation, LOCAL_PROPERTY);
+			IPath localMetaDataLocation = projectMetadataLocation
+					.removeLastSegments(1).append(
+							MOSYNC_LOCAL_PROJECT_META_DATA_FILENAME);
+			result.initFromProjectMetaData(localMetaDataLocation,
+					LOCAL_PROPERTY);
 		}
 
 		return result;
@@ -865,8 +903,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 		IPath outputPath = MoSyncBuilder.getOutputPath(
 				project,
 				new BuildVariant(target, buildConfiguration == null ? null
-						: buildConfiguration.getId(), false)).append(
-				"stabs.tab");
+						: buildConfiguration.getId())).append("stabs.tab");
 		return outputPath;
 	}
 
@@ -882,7 +919,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 		IPath outputPath = MoSyncBuilder.getOutputPath(
 				project,
 				new BuildVariant(target, buildConfiguration == null ? null
-						: buildConfiguration.getId(), false)).append("Sld.tab");
+						: buildConfiguration.getId())).append("Sld.tab");
 		SLD sld = slds.get(outputPath.toPortableString());
 		if (sld == null) {
 			sld = new SLD(this, outputPath);
@@ -916,7 +953,6 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 		return property;
 	}
-
 
 	/**
 	 * <p>
@@ -961,7 +997,6 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 		return true;
 	}
 
-
 	/**
 	 * <p>
 	 * Returns the list of vendors to use for this project, using the device
@@ -974,8 +1009,19 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * @return
 	 */
 	public IVendor[] getFilteredVendors() {
-		IVendor[] allVendors = MoSyncTool.getDefault().getVendors();
+		IVendor[] allVendors = getProfileManager().getVendors();
 		return AbstractDeviceFilter.filterVendors(allVendors, deviceFilter);
+	}
+
+	public ProfileManager getProfileManager() {
+		return MoSyncTool.getDefault().getProfileManager(
+				getProfileManagerType());
+	}
+
+	public int getProfileManagerType() {
+		int mgrType = PropertyUtil.getInteger(this, PROFILE_MANAGER_TYPE_KEY,
+				MoSyncTool.LEGACY_PROFILE_TYPE);
+		return mgrType;
 	}
 
 	/**
@@ -990,7 +1036,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * @return
 	 */
 	public IProfile[] getFilteredProfiles() {
-		IProfile[] profiles = MoSyncTool.getDefault().getProfiles(deviceFilter);
+		IProfile[] profiles = getProfileManager().getProfiles(deviceFilter);
 		return profiles;
 	}
 
@@ -1027,7 +1073,8 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	private int getStoreForKey(String key) {
 		// As of this moment, only workspace local or shared...
-		return key.endsWith(SecureProperties.DEFAULT_SECURE_PROPERTY_SUFFIX) ? WORKSPACE_LOCAL_PROPERTY : SHARED_PROPERTY;
+		return key.endsWith(SecureProperties.DEFAULT_SECURE_PROPERTY_SUFFIX) ? WORKSPACE_LOCAL_PROPERTY
+				: SHARED_PROPERTY;
 	}
 
 	/**
@@ -1039,7 +1086,8 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 * @param value
 	 *            If <code>null</code>, then the entry is removed
 	 * @param store
-	 *            The store that this key should be set in, ie LOCAL, SHARED or WORKSPACE_LOCAL
+	 *            The store that this key should be set in, ie LOCAL, SHARED or
+	 *            WORKSPACE_LOCAL
 	 */
 	public void initProperty(String key, String value, int store, boolean save) {
 		if (value == null) {
@@ -1184,7 +1232,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 			result = new BuildState(this, variant);
 		}
 
-		if (wasNull && !variant.isFinalizerBuild()) {
+		if (wasNull) {
 			cachedBuildStates.put(variant, result);
 		}
 
@@ -1365,6 +1413,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	/**
 	 * Returns the secure property owner of this project.
+	 *
 	 * @return
 	 */
 	public ISecurePropertyOwner getSecurePropertyOwner() {

@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.capabilities.core;
+package com.mobilesorcery.sdk.core;
 
 import java.util.Set;
 

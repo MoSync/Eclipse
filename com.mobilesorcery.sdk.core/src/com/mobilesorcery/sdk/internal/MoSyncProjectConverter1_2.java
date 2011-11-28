@@ -25,13 +25,13 @@ import com.mobilesorcery.sdk.core.MoSyncProject.IConverter;
 public class MoSyncProjectConverter1_2 implements MoSyncProject.IConverter {
 
 	public final static Version VERSION = new Version("1.2");
-	
+
 	private static IConverter instance = new MoSyncProjectConverter1_2();
 
 	public static MoSyncProject.IConverter getInstance() {
 		return instance;
 	}
-	
+
 	@Override
 	public void convert(MoSyncProject project) throws CoreException {
     	try {
@@ -57,21 +57,21 @@ public class MoSyncProjectConverter1_2 implements MoSyncProject.IConverter {
     	if (!getBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS, false)) {
     		prependPaths(project, id, MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS, new IPath[] { new Path("%mosync-home%/include") });
     	}
-		
+
 		if (!getBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES, false)) {
         	IPath stdLib = IBuildConfiguration.DEBUG_ID.equals(id) ? new Path("mastdD.lib") : new Path("mastd.lib");
-    		prependPaths(project, id, MoSyncBuilder.ADDITIONAL_LIBRARIES, new IPath[] { stdLib });        	
+    		prependPaths(project, id, MoSyncBuilder.ADDITIONAL_LIBRARIES, new IPath[] { stdLib });
     	}
-		
+
 		if (!getBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS, false)) {
-    		prependPaths(project, id, MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS, new IPath[] { new Path("%mosync-home%/lib/pipe") });    		
+    		prependPaths(project, id, MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS, new IPath[] { new Path("%mosync-home%/lib/pipe") });
     	}
-		
+
 		// ...and then make sure to ignore default paths
 		PropertyUtil.setBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS, true);
 		PropertyUtil.setBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES, true);
 		PropertyUtil.setBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS, true);
-    
+
 		// DCE should be disabled for old projects unless they say they want it
 		if (!getBoolean(properties, MoSyncBuilder.DEAD_CODE_ELIMINATION, false)) {
 			PropertyUtil.setBoolean(properties, MoSyncBuilder.DEAD_CODE_ELIMINATION, false);
@@ -82,7 +82,7 @@ public class MoSyncProjectConverter1_2 implements MoSyncProject.IConverter {
 		if (properties.isDefault(key)) {
 			return overrideDefault;
 		}
-		
+
 		return PropertyUtil.getBoolean(properties, key);
 	}
 
@@ -101,7 +101,7 @@ public class MoSyncProjectConverter1_2 implements MoSyncProject.IConverter {
 		HashSet<String> resolvedPaths = new HashSet<String>();
 		ArrayList<IPath> result = new ArrayList<IPath>();
 		// We'll assume the current target profile (we do not use it anyway so no problemo)
-		BuildVariant variant = new BuildVariant(null, cfg, false);
+		BuildVariant variant = new BuildVariant(null, cfg);
 		ParameterResolver resolver = MoSyncProjectParameterResolver.create(project, variant);
 		for (int i = 0; i < paths.length; i++) {
 		     String resolvedPath = Util.replace(paths[i].toOSString(), resolver);

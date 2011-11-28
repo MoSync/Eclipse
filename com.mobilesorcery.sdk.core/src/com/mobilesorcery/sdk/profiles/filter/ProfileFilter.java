@@ -28,12 +28,12 @@ import com.mobilesorcery.sdk.profiles.filter.elementfactories.ProfileFilterFacto
 
 public class ProfileFilter extends AbstractDeviceFilter {
 
-    private TreeSet<IProfile> profiles = new TreeSet<IProfile>();
-       
+    private final TreeSet<IProfile> profiles = new TreeSet<IProfile>();
+
     public ProfileFilter() {
 
     }
-    
+
     public void setVendors(IVendor[] vendorsToAccept, boolean add) {
         for (int i = 0; i < vendorsToAccept.length; i++) {
             setVendor(vendorsToAccept[i], add);
@@ -78,12 +78,13 @@ public class ProfileFilter extends AbstractDeviceFilter {
         }
     }
 
-    public boolean acceptProfile(IProfile profile) {
+    @Override
+	public boolean acceptProfile(IProfile profile) {
         boolean acceptIfRequired = profiles.contains(profile);
         return required == acceptIfRequired;
     }
 
-    private Set<IVendor> getVendorsWithAllProfilesAccepted() {
+    public Set<IVendor> getVendorsWithAllProfilesAccepted() {
         TreeSet<IVendor> result = new TreeSet<IVendor>();
 
         TreeSet<IProfile> copyOfProfiles = new TreeSet<IProfile>(profiles);
@@ -141,7 +142,8 @@ public class ProfileFilter extends AbstractDeviceFilter {
         return profileCaption + profileList;
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         String vendors = vendorString(getVendorsWithAllProfilesAccepted());
         String profiles = profileString(getProfilesWithoutVendor(getVendorsWithAllProfilesAccepted()));
 
@@ -150,7 +152,8 @@ public class ProfileFilter extends AbstractDeviceFilter {
         return (required ? "Required " : "Disallowed ") + vendors + delim + profiles;
     }
 
-    public void saveState(IMemento memento) {
+    @Override
+	public void saveState(IMemento memento) {
         Set<IVendor> vendors = getVendorsWithAllProfilesAccepted();
         memento.putString("vendors", Util.join(vendors.toArray(new IVendor[vendors.size()]), ","));
         memento.putString("profiles", Util.join(getProfilesWithoutVendor(vendors), ","));
@@ -165,7 +168,8 @@ public class ProfileFilter extends AbstractDeviceFilter {
         return profiles.toArray(new IProfile[profiles.size()]);
     }
 
-    public String getFactoryId() {
+    @Override
+	public String getFactoryId() {
         return ProfileFilterFactory.ID;
     }
 

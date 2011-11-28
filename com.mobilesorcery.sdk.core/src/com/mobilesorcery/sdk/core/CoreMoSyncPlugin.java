@@ -81,6 +81,7 @@ import com.mobilesorcery.sdk.lib.JNALibInitializer;
 import com.mobilesorcery.sdk.profiles.filter.DeviceFilterFactoryProxy;
 import com.mobilesorcery.sdk.profiles.filter.IDeviceFilterFactory;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.ConstantFilterFactory;
+import com.mobilesorcery.sdk.profiles.filter.elementfactories.DeviceCapabilitiesFilterFactory;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.FeatureFilterFactory;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.ProfileFilterFactory;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.VendorFilterFactory;
@@ -542,6 +543,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		factories.put(VendorFilterFactory.ID, new VendorFilterFactory());
 		factories.put(FeatureFilterFactory.ID, new FeatureFilterFactory());
 		factories.put(ProfileFilterFactory.ID, new ProfileFilterFactory());
+		factories.put(DeviceCapabilitiesFilterFactory.ID, new DeviceCapabilitiesFilterFactory());
 
 		IConfigurationElement[] factoryCEs = Platform.getExtensionRegistry().getConfigurationElementsFor(PLUGIN_ID + ".filter.factories");
 		for (int i = 0; i < factoryCEs.length; i++) {
@@ -560,7 +562,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	}
 
 	private void installResourceListener() {
-		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.PRE_DELETE | IResourceChangeEvent.PRE_BUILD);
+		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.PRE_DELETE | IResourceChangeEvent.PRE_BUILD | IResourceChangeEvent.PRE_CLOSE);
 	}
 
 	private void deinstallResourceListener() {
@@ -760,7 +762,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
-		if (event.getType() == IResourceChangeEvent.PRE_DELETE) {
+		if (event.getType() == IResourceChangeEvent.PRE_DELETE || event.getType() == IResourceChangeEvent.PRE_CLOSE) {
 		    IResource resource = event.getResource();
 	        IProject project = (resource != null && resource.getType() == IResource.PROJECT) ? (IProject) resource : null;
 

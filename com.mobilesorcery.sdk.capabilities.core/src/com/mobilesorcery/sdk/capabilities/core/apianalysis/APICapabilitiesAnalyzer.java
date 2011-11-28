@@ -16,9 +16,9 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
-import com.mobilesorcery.sdk.capabilities.core.ICapabilities;
 import com.mobilesorcery.sdk.capabilities.core.ICapabilitiesAnalyzer;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.ICapabilities;
 
 public class APICapabilitiesAnalyzer implements ICapabilitiesAnalyzer {
 

@@ -273,14 +273,6 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
 	}
 
 	@Override
-	public IBuildVariant getVariant(ILaunchConfiguration launchConfig, String mode) throws CoreException {
-		IBuildVariant prototype = super.getVariant(launchConfig, mode);
-		BuildVariant modified = new BuildVariant(prototype);
-		modified.setFinalizerBuild(false);
-		return modified;
-	}
-
-	@Override
 	public void setDefaultAttributes(ILaunchConfigurationWorkingCopy wc) {
         wc.setAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, "220");
         wc.setAttribute(ILaunchConstants.SCREEN_SIZE_WIDTH, "176");

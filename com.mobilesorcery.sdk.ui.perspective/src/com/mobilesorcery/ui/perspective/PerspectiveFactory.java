@@ -59,8 +59,9 @@ public class PerspectiveFactory implements IPerspectiveFactory {
         IFolderLayout topRight =
         	layout.createFolder("topRight", IPageLayout.RIGHT, 0.70f, layout.getEditorArea());
 
-        topRight.addView("com.mobilesorcery.sdk.profiles.ui.view");
-        topRight.addView("com.mobilesorcery.sdk.finalizer.ui.view");
+        topRight.addPlaceholder("com.mobilesorcery.sdk.profiles.ui.view");
+        topRight.addPlaceholder("com.mobilesorcery.sdk.finalizer.ui.view");
+        topRight.addView("org.eclipse.ui.views.ContentOutline");
     }
 
     private void addPerspectiveShortcuts() {

@@ -2,6 +2,7 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.List;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -24,31 +25,49 @@ import com.mobilesorcery.sdk.profiles.Profile;
 public abstract class PackageToolPackager extends AbstractPackager {
 
 	@Override
-	public void createPackage(MoSyncProject project,
-			IBuildVariant variant, IBuildResult buildResult)
+	public void createPackage(MoSyncProject project, IBuildSession session,
+			IBuildVariant variant, IFileTreeDiff diff, IBuildResult buildResult)
 			throws CoreException {
 		IProfile profile = variant.getProfile();
 
 		try {
-			IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(MoSyncBuilder.CONSOLE_ID);
-			IPath packagerTool = MoSyncTool.getDefault().getBinary("package");
+			if (needsPackaging(diff)) {
+				IPath packagerTool = MoSyncTool.getDefault().getBinary("package");
 
-			DefaultPackager internal = new DefaultPackager(project, variant);
+				DefaultPackager internal = new DefaultPackager(project, variant);
 
-			CommandLineBuilder commandLine = new CommandLineBuilder(packagerTool.toOSString());
-			addGeneralParameters(project, variant, commandLine);
-			addPlatformSpecifics(project, variant, commandLine);
+				CommandLineBuilder commandLine = new CommandLineBuilder(packagerTool.toOSString());
+				addGeneralParameters(project, variant, commandLine);
+				addPlatformSpecifics(project, variant, commandLine);
 
-			String packageOutputDirStr = internal.get(DefaultPackager.PACKAGE_OUTPUT_DIR);
-			File packageOutputDir = new File(packageOutputDirStr);
-			packageOutputDir.mkdirs();
+				String packageOutputDirStr = internal.get(DefaultPackager.PACKAGE_OUTPUT_DIR);
+				File packageOutputDir = new File(packageOutputDirStr);
+				packageOutputDir.mkdirs();
 
-			internal.runCommandLine(commandLine.asArray(), commandLine.toHiddenString());
+				internal.runCommandLine(commandLine.asArray(), commandLine.toHiddenString());
+			}
 			buildResult.setBuildResult(computeBuildResult(project, variant));
 		} catch (Exception e) {
 			String errorMsg = MessageFormat.format("Failed to create package for {0} (platform: {1})", profile, Profile.getAbbreviatedPlatform(profile));
 			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, errorMsg, e));
 		}
+	}
+
+	private boolean needsPackaging(IFileTreeDiff diff) {
+		// Poor man's dependency check -- if any file is touched with the exception
+		// of .* resources, then rebuild. This is because we have no dependency
+		// file output from the package tool (yet?)
+		if (diff == null) {
+			return true;
+		}
+
+		List<IPath> changeSet = diff.getChanged();
+		for (IPath changed : changeSet) {
+			if (!changed.lastSegment().startsWith(".")) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -81,6 +100,10 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		String appName = internal.get(DefaultPackager.APP_NAME);
 		IApplicationPermissions permissions = project.getPermissions();
 		String permissionsStr = Util.join(permissions.getRequestedPermissions(true).toArray(), ",");
+
+		if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
+			commandLine.flag("-t").with("device");
+		}
 
 		commandLine.flag("-p").with(program);
 		if (resource.exists()) {

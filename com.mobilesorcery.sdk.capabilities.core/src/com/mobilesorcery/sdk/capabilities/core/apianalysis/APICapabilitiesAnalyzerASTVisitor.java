@@ -1,23 +1,14 @@
 package com.mobilesorcery.sdk.capabilities.core.apianalysis;
 
-import java.io.File;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 import org.eclipse.cdt.core.dom.ast.ASTVisitor;
 import org.eclipse.cdt.core.dom.ast.IASTDeclaration;
-import org.eclipse.cdt.core.dom.ast.IASTFileLocation;
 import org.eclipse.cdt.core.dom.ast.IASTName;
 import org.eclipse.cdt.core.dom.ast.IASTNode;
 import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit;
 import org.eclipse.cdt.core.dom.ast.IBinding;
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLinkageSpecification;
 import org.eclipse.cdt.core.index.IIndex;
 import org.eclipse.cdt.core.index.IIndexFile;
 import org.eclipse.cdt.core.index.IIndexFileLocation;
@@ -26,8 +17,6 @@ import org.eclipse.cdt.core.model.ICContainer;
 import org.eclipse.cdt.core.model.ICElement;
 import org.eclipse.cdt.core.model.ICElementVisitor;
 import org.eclipse.cdt.core.model.ITranslationUnit;
-import org.eclipse.core.resources.IContainer;
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -36,24 +25,20 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 
-import com.mobilesorcery.sdk.capabilities.core.Capabilities;
-import com.mobilesorcery.sdk.capabilities.core.ICapabilities;
+import com.mobilesorcery.sdk.core.Capabilities;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.ICapabilities;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
-import com.mobilesorcery.sdk.core.Pair;
-import com.mobilesorcery.sdk.core.SectionedPropertiesFile;
-import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
-import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section.Entry;
 
 public class APICapabilitiesAnalyzerASTVisitor extends ASTVisitor implements
 		ICElementVisitor {
 
 	private IIndex index;
-	private Capabilities requiredCapabilites = new Capabilities();
-	private IProject project;
-	private APICapabilitiesMap capabilitesMap;
+	private final Capabilities requiredCapabilites = new Capabilities();
+	private final IProject project;
+	private final APICapabilitiesMap capabilitesMap;
 	private IProgressMonitor monitor;
-	
+
 	public APICapabilitiesAnalyzerASTVisitor(IProject project, APICapabilitiesMap capabilitiesMap) {
 		super(true);
 		this.project = project;
@@ -64,6 +49,7 @@ public class APICapabilitiesAnalyzerASTVisitor extends ASTVisitor implements
 		this.index = index;
 	}
 
+	@Override
 	public int visit(IASTName name) {
 		IBinding binding = name.resolveBinding();
 
@@ -115,6 +101,7 @@ public class APICapabilitiesAnalyzerASTVisitor extends ASTVisitor implements
 		System.out.println(new String(spaces) + node.getContainingFilename());
 	}
 
+	@Override
 	public int visit(IASTDeclaration declaration) {
 		return PROCESS_CONTINUE; /*(declaration instanceof ICPPASTLinkageSpecification) ? PROCESS_SKIP
 				: PROCESS_CONTINUE;*/
@@ -128,6 +115,7 @@ public class APICapabilitiesAnalyzerASTVisitor extends ASTVisitor implements
 		return capabilitesMap.get(location, refid);
 	}
 
+	@Override
 	public boolean visit(ICElement element) throws CoreException {
 		if (element instanceof ICContainer) {
 			return shouldVisit(((ICContainer) element).getResource());
@@ -140,7 +128,7 @@ public class APICapabilitiesAnalyzerASTVisitor extends ASTVisitor implements
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 					CoreMoSyncPlugin.trace("Parsing translation unit {0}", ast.getFilePath());
 				}
-						
+
 				if (ast != null) {
 					ast.accept(this);
 				}

@@ -11,7 +11,9 @@ import org.eclipse.core.runtime.Status;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
 import com.mobilesorcery.sdk.core.ParameterResolverException;
@@ -60,8 +62,10 @@ public class JavaPackager extends PackageToolPackager {
 	}
 
 	@Override
-	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
-		super.createPackage(project, variant, buildResult);
+	public void createPackage(MoSyncProject project, IBuildSession session,
+			IBuildVariant variant, IFileTreeDiff diff, IBuildResult buildResult)
+			throws CoreException {
+		super.createPackage(project, session, variant, diff, buildResult);
 		FileInputStream mdStream = null;
 		try {
 			// We can remove this once we are sure we produce correct manifests.

@@ -77,8 +77,10 @@ public class LinkBuildStep extends AbstractBuildStep {
 		IPath resource = MoSyncBuilder.getResourceOutputPath(project, variant);
 		ParameterResolver resolver = getParameterResolver();
 
+        boolean isLib = MoSyncBuilder.isLib(mosyncProject);
 		IPath program = MoSyncBuilder.getProgramOutputPath(project, variant);
         IPath programComb = MoSyncBuilder.getProgramCombOutputPath(project, variant);
+        IPath libraryOutput = isLib ? MoSyncBuilder.computeLibraryOutput(mosyncProject, buildProperties) : null;
 
         boolean librariesHaveChanged = haveLibrariesChanged(mosyncProject, buildProperties, programComb);
         boolean requiresLinking = librariesHaveChanged || diff == null || !diff.isEmpty();
@@ -89,13 +91,11 @@ public class LinkBuildStep extends AbstractBuildStep {
         /**
          * Perform linking.
          */
-        boolean isLib = MoSyncBuilder.isLib(mosyncProject);
         if (requiresLinking) {
             String[] objectFiles = getObjectFilesForProject(session);
             pipeTool.setInputFiles(objectFiles);
-            String pipeToolMode = MoSyncBuilder.getPipeToolMode(targetProfile, isLib);
+            String pipeToolMode = MoSyncBuilder.getPipeToolMode(mosyncProject, targetProfile, isLib);
             pipeTool.setMode(pipeToolMode);
-            IPath libraryOutput = MoSyncBuilder.computeLibraryOutput(mosyncProject, buildProperties);
             pipeTool.setOutputFile(isLib ? libraryOutput : program);
             pipeTool.setLibraryPaths(MoSyncBuilder.resolvePaths(MoSyncBuilder.getLibraryPaths(project, buildProperties), resolver));
             pipeTool.setLibraries(MoSyncBuilder.getLibraries(buildProperties));
@@ -154,6 +154,9 @@ public class LinkBuildStep extends AbstractBuildStep {
                 Util.mergeFiles(new SubProgressMonitor(monitor, 1), parts.toArray(new File[parts.size()]), programComb.toFile());
             }
         }
+
+        IPath buildResult = isLib ? libraryOutput : programComb;
+    	result.setIntermediateBuildResult(ID, buildResult.toFile());
 
         return continueFlag;
 	}

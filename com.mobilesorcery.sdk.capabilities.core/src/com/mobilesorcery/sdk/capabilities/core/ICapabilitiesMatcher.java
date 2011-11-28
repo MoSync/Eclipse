@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.capabilities.core;
 
+import com.mobilesorcery.sdk.core.ICapabilities;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 
 /**

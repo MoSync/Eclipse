@@ -36,4 +36,5 @@ public interface IPackager extends IPackagerDelegate {
 	 * @return
 	 */
 	public String getPlatform();
+
 }

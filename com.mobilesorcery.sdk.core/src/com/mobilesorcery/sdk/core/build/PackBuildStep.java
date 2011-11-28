@@ -63,19 +63,25 @@ public class PackBuildStep extends AbstractBuildStep {
 		IPropertyOwner buildProperties = getBuildProperties();
 		IProfile targetProfile = variant.getProfile();
 
-        monitor.setTaskName(MessageFormat.format("Packaging for {0}", targetProfile));
+		// Special hack for MoRe (I don't think this is how it should work though.
+		if (targetProfile.isEmulator() && buildResult.getBuildResult() == null) {
+			buildResult.setBuildResult(buildResult.getIntermediateBuildResult(LinkBuildStep.ID));
+		} else {
+	        monitor.setTaskName(MessageFormat.format("Packaging for {0}", targetProfile));
 
-        IPackager packager = targetProfile.getPackager();
-        packager.setParameter(MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS, Boolean.toString(PropertyUtil
-                .getBoolean(buildProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)));
-        packager.createPackage(mosyncProject, variant, buildResult);
+	        IPackager packager = targetProfile.getPackager();
+	        packager.setParameter(MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS, Boolean.toString(PropertyUtil
+	                .getBoolean(buildProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)));
+	        packager.createPackage(mosyncProject, session, variant, diff, buildResult);
+		}
 
         if (buildResult.getBuildResult() == null || !buildResult.getBuildResult().exists()) {
         	if (buildResult.getBuildResult() != null) {
         		CoreMoSyncPlugin.getDefault().getLog().log(new Status(IStatus.WARNING, CoreMoSyncPlugin.PLUGIN_ID,
         			MessageFormat.format("Expected build result at {0}, but did not find it", buildResult.getBuildResult())));
         	}
-            throw new IOException(MessageFormat.format("Failed to create package for {0} (platform: {1})", targetProfile, Profile.getAbbreviatedPlatform(targetProfile)));
+        	String platform = targetProfile.isEmulator() ? "N/A" : Profile.getAbbreviatedPlatform(targetProfile);
+            throw new IOException(MessageFormat.format("Failed to create package for {0} (platform: {1})", targetProfile, platform));
         } else {
             console.addMessage(MessageFormat.format("Created package: {0} (platform: {1})", buildResult.getBuildResult(), Profile.getAbbreviatedPlatform(targetProfile)));
         }

@@ -15,12 +15,16 @@ package com.mobilesorcery.sdk.internal;
 
 import org.eclipse.core.runtime.CoreException;
 
+import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.profiles.IProfile;
 
-public class NullPackager implements IPackager {
+public class NullPackager extends AbstractPackager implements IPackager {
 
     private static NullPackager instance = new NullPackager();
 
@@ -32,9 +36,11 @@ public class NullPackager implements IPackager {
 
     }
 
-    @Override
-	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
-        // Do nothing - at this point, anyhoo.
+	@Override
+	public void createPackage(MoSyncProject project, IBuildSession session,
+			IBuildVariant targetProfile, IFileTreeDiff diff,
+			IBuildResult buildResult) throws CoreException {
+		// Do nothing - at this point, anyhoo.
     }
 
 	@Override

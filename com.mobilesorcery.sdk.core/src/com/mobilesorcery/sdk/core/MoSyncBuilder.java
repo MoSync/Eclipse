@@ -15,6 +15,7 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.text.DateFormat;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -50,6 +51,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.BuildAction;
@@ -68,7 +70,6 @@ import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
 import com.mobilesorcery.sdk.internal.dependencies.ProjectResourceDependencyProvider;
 import com.mobilesorcery.sdk.internal.dependencies.ResourceFileDependencyProvider;
 import com.mobilesorcery.sdk.profiles.IProfile;
-import com.mobilesorcery.sdk.profiles.Profile;
 
 /**
  * The main builder. This builder extends ACBuilder for its implementation of
@@ -80,8 +81,6 @@ import com.mobilesorcery.sdk.profiles.Profile;
 public class MoSyncBuilder extends ACBuilder {
 
     public static final String OUTPUT = "Output";
-
-	public static final String FINAL_OUTPUT = "FinalOutput";
 
 	public final static String ID = CoreMoSyncPlugin.PLUGIN_ID + ".builder";
 
@@ -215,32 +214,6 @@ public class MoSyncBuilder extends ACBuilder {
     }
 
     /**
-     * Returns the output path for a project + build variant. Please note that
-     * there is another method for returning final output paths
-     *
-     * @param project
-     * @param variant
-     * @return
-     * @throws IllegalStateException
-     *             If the variant is a finalizer variant
-     */
-    private static IPath getNoFinalizerOutputPath(IProject project, IBuildVariant variant) {
-    	IPropertyOwner buildProperties = getPropertyOwner(MoSyncProject.create(project), variant.getConfigurationId());
-        String outputPath = buildProperties.getProperty(APP_OUTPUT_PATH);
-        if (outputPath == null) {
-            throw new IllegalArgumentException("No output path specified");
-        }
-
-        // Specifier variants end up one level below...
-        IPath outputRoot = project.getLocation().append(OUTPUT);
-        String specifierPathFragment = getSpecifierPathFragment(variant);
-        if (!Util.isEmpty(specifierPathFragment)) {
-        	outputRoot = outputRoot.append(specifierPathFragment);
-        }
-        return toAbsolute(outputRoot, outputPath);
-    }
-
-    /**
      * <p>Returns a fragment/prefix/suffix that may be used in file names, based
      * on the specifiers of a given variant.</p>
      * @see {@link IBuildVariant#getSpecifiers()}
@@ -271,7 +244,7 @@ public class MoSyncBuilder extends ACBuilder {
      */
     public static boolean isInOutput(IProject project, IResource res) {
     	IPath projectRelativePath = res.getProjectRelativePath();
-    	return new Path(FINAL_OUTPUT).isPrefixOf(projectRelativePath) || new Path(OUTPUT).isPrefixOf(projectRelativePath);
+    	return new Path(OUTPUT).isPrefixOf(projectRelativePath);
     }
 
     /**
@@ -285,11 +258,7 @@ public class MoSyncBuilder extends ACBuilder {
         return root.append(path);
     }
 
-    public static IPath getFinalOutputPath(IProject project, IBuildVariant variant) {
-        if (!variant.isFinalizerBuild()) {
-            throw new IllegalStateException("Finalizer variant required allowed here");
-        }
-
+    private static IPath getFinalOutputPath(IProject project, IBuildVariant variant) {
         IProfile targetProfile = variant.getProfile();
         String outputPath = getPropertyOwner(MoSyncProject.create(project), variant.getConfigurationId()).getProperty(APP_OUTPUT_PATH);
         if (outputPath == null) {
@@ -301,11 +270,11 @@ public class MoSyncBuilder extends ACBuilder {
         if (!Util.isEmpty(specifierSuffix)) {
         	variantPath += "_" + specifierSuffix;
         }
-        return toAbsolute(project.getLocation().append(FINAL_OUTPUT), outputPath).append(targetProfile.getVendor().getName()).append(variantPath);
+        return toAbsolute(project.getLocation().append(OUTPUT), outputPath).append(targetProfile.getVendor().getName()).append(variantPath);
     }
 
     public static IPath getOutputPath(IProject project, IBuildVariant variant) {
-        return variant.isFinalizerBuild() ? getFinalOutputPath(project, variant) : getNoFinalizerOutputPath(project, variant);
+        return getFinalOutputPath(project, variant);
     }
 
     public static IPath getProgramOutputPath(IProject project, IBuildVariant variant) {
@@ -321,13 +290,7 @@ public class MoSyncBuilder extends ACBuilder {
     }
 
     public static IPath getPackageOutputPath(IProject project, IBuildVariant variant) {
-        if (variant.isFinalizerBuild()) {
-            return getFinalOutputPath(project, variant).append("package");
-        } else {
-        	IProfile profile = variant.getProfile() == null ? MoSyncProject.create(project).getTargetProfile() : variant.getProfile();
-            String abbrProfile = Util.convertSlashes(Profile.getAbbreviatedPlatform(profile));
-        	return getOutputPath(project, variant).append(abbrProfile);
-        }
+        return getFinalOutputPath(project, variant).append("package");
     }
 
     @Override
@@ -341,9 +304,7 @@ public class MoSyncBuilder extends ACBuilder {
             kind = FULL_BUILD;
         }
 
-        // Default incremental build does link but does not ask for confirmation
-        // if it's an autobuild
-        IBuildVariant variant = getActiveVariant(MoSyncProject.create(project), false);
+        IBuildVariant variant = getActiveVariant(MoSyncProject.create(project));
         IBuildSession session = createIncrementalBuildSession(project, kind);
         if (kind == FULL_BUILD) {
             build(project, session, variant, null, monitor);
@@ -370,7 +331,7 @@ public class MoSyncBuilder extends ACBuilder {
         forgetLastBuiltState();
         IProject project = getProject();
         MoSyncProject mosyncProject = MoSyncProject.create(project);
-        IBuildVariant variant = getActiveVariant(mosyncProject, false);
+        IBuildVariant variant = getActiveVariant(mosyncProject);
         clean(project, variant, monitor);
     }
 
@@ -446,27 +407,31 @@ public class MoSyncBuilder extends ACBuilder {
      * @param profile The profile we want to use pipe-tool for.
      * @param isLib Indicates whether we are building a library or not.
      * @return The appropriate mode for the given profile.
+     * @throws CoreException
      */
-    public static String getPipeToolMode(IProfile profile, boolean isLib)
+    public static String getPipeToolMode(MoSyncProject project, IProfile profile, boolean isLib) throws CoreException
     {
         if ( isLib )
         {
         	return PipeTool.BUILD_LIB_MODE;
         }
 
-        Map<String, Object> properties = profile.getProperties( );
-        if ( properties.containsKey( "MA_PROF_OUTPUT_CPP" ) )
-        {
-        	return PipeTool.BUILD_GEN_CPP_MODE ;
+        if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
+	        Map<String, Object> properties = profile.getProperties( );
+	        if ( properties.containsKey( "MA_PROF_OUTPUT_CPP" ) )
+	        {
+	        	return PipeTool.BUILD_GEN_CPP_MODE ;
+	        }
+	        else if ( properties.containsKey( "MA_PROF_OUTPUT_JAVA" ) )
+	        {
+	        	return PipeTool.BUILD_GEN_JAVA_MODE;
+	        }
+        } else {
+        	return profile.getPackager().getGenerateMode(profile);
         }
-        else if ( properties.containsKey( "MA_PROF_OUTPUT_JAVA" ) )
-        {
-        	return PipeTool.BUILD_GEN_JAVA_MODE;
-        }
-        else
-        {
-        	return PipeTool.BUILD_C_MODE;
-        }
+
+        // The default mode
+        return PipeTool.BUILD_C_MODE;
     }
 
     /**
@@ -612,9 +577,7 @@ public class MoSyncBuilder extends ACBuilder {
             e.printStackTrace();
             throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
         } finally {
-            if (!variant.isFinalizerBuild()) {
-                epm.reportProblems();
-            }
+            epm.reportProblems();
             if (!monitor.isCanceled() && !buildResult.success() && !hasErrorMarkers(project)) {
                 addBuildFailedMarker(project);
             } else if (buildResult.success()) {
@@ -686,11 +649,6 @@ public class MoSyncBuilder extends ACBuilder {
 
     private String createBuildMessage(String buildType, MoSyncProject project, IBuildVariant variant) {
         StringBuffer result = new StringBuffer();
-
-        if (variant.isFinalizerBuild()) {
-            result.append("*** FINALIZER BUILD ***\n");
-        }
-
         result.append(MessageFormat.format("{0}: Project {1} for profile {2}", buildType, project.getName(), variant.getProfile()));
         if (project.areBuildConfigurationsSupported() && variant.getConfigurationId() != null) {
             result.append(MessageFormat.format("\nConfiguration: {0}", variant.getConfigurationId()));
@@ -727,7 +685,6 @@ public class MoSyncBuilder extends ACBuilder {
     }
 
     private void ensureOutputIsMarkedDerived(IProject project, IBuildVariant variant) throws CoreException {
-        ensureFolderIsMarkedDerived(project.getFolder(FINAL_OUTPUT));
         ensureFolderIsMarkedDerived(project.getFolder(OUTPUT));
 
         IPath outputPath = getOutputPath(project, variant);
@@ -907,7 +864,9 @@ public class MoSyncBuilder extends ACBuilder {
             result.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
         }
 
-        result.addAll(Arrays.asList(MoSyncBuilder.getProfileIncludes(variant.getProfile())));
+        if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
+        	result.addAll(Arrays.asList(MoSyncBuilder.getProfileIncludes(variant.getProfile())));
+        }
 
         IPath[] additionalIncludePaths = PropertyUtil.getPaths(buildProperties, ADDITIONAL_INCLUDE_PATHS);
         for (int i = 0; i < additionalIncludePaths.length; i++) {
@@ -978,6 +937,46 @@ public class MoSyncBuilder extends ACBuilder {
         return project;
     }
 
+	public static IRunnableWithProgress createBuildJob(final IProject project, final IBuildSession buildSession,
+			final List<IBuildVariant> variantsToBuild) {
+		return new IRunnableWithProgress() {
+
+			@Override
+			public void run(IProgressMonitor monitor) throws InvocationTargetException,
+					InterruptedException {
+				monitor.beginTask(MessageFormat.format("Building {0} variants", variantsToBuild.size()), variantsToBuild.size());
+
+				for (IBuildVariant variantToBuild : variantsToBuild) {
+					SubProgressMonitor jobMonitor = new SubProgressMonitor(monitor, 1);
+					if (!monitor.isCanceled()) {
+		                IRunnableWithProgress buildJob = createBuildJob(project, buildSession, variantToBuild);
+						buildJob.run(jobMonitor);
+					}
+				}
+			}
+		};
+	}
+
+	public static IRunnableWithProgress createBuildJob(final IProject project, final IBuildSession session, final IBuildVariant variant) {
+		return new IRunnableWithProgress() {
+			@Override
+			public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
+				try {
+					IBuildResult buildResult = new MoSyncBuilder().build(project, session, variant, null, monitor);
+					if (!buildResult.success()) {
+						throw new InvocationTargetException(new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Build failed")));
+					}
+				} catch (CoreException e) {
+					throw new InvocationTargetException(e, variant.getProfile() + ": " + e.getMessage()); //$NON-NLS-1$
+				} finally {
+					monitor.done();
+				}
+			}
+		};
+	}
+
+
+
     public static boolean saveAllEditors(IResource resource) {
         ArrayList<IResource> resourceList = new ArrayList<IResource>();
         resourceList.add(resource);
@@ -1017,11 +1016,11 @@ public class MoSyncBuilder extends ACBuilder {
      * @param isFinalizerBuild
      * @return
      */
-    public static IBuildVariant getActiveVariant(MoSyncProject project, boolean isFinalizerBuild) {
+    public static IBuildVariant getActiveVariant(MoSyncProject project) {
         IBuildConfiguration cfg = project.getActiveBuildConfiguration();
         String cfgId = project.areBuildConfigurationsSupported() && cfg != null ? cfg.getId() : null;
 
-        return new BuildVariant(project.getTargetProfile(), cfgId, isFinalizerBuild);
+        return new BuildVariant(project.getTargetProfile(), cfgId);
     }
 
     /**
@@ -1031,22 +1030,9 @@ public class MoSyncBuilder extends ACBuilder {
      * @param profile
      * @return The created {@link IBuildVariant}
      */
-    public static IBuildVariant getFinalizerVariant(MoSyncProject project, IProfile profile) {
+    public static IBuildVariant createVariant(MoSyncProject project, IProfile profile) {
     	IBuildConfiguration cfg = project.getActiveBuildConfiguration();
-        return getFinalizerVariant(project, profile, cfg);
-    }
-
-
-    /**
-     * Creates a {@link IBuildVariant} for finalizing, based on a specified {@link IProfile}
-     * and a specified {@link IBuildConfiguration} id.
-     * @param project
-     * @param profile
-     * @param cfg
-     * @return The created {@link IBuildVariant}
-     */
-    public static IBuildVariant getFinalizerVariant(MoSyncProject project, IProfile profile, String cfgId) {
-    	return new BuildVariant(profile, cfgId, true);
+        return getVariant(project, profile, cfg);
     }
 
     /**
@@ -1057,13 +1043,13 @@ public class MoSyncBuilder extends ACBuilder {
      * @param cfg
      * @return The created {@link IBuildVariant}
      */
-    public static IBuildVariant getFinalizerVariant(MoSyncProject project, IProfile profile, IBuildConfiguration cfg) {
+    public static IBuildVariant getVariant(MoSyncProject project, IProfile profile, IBuildConfiguration cfg) {
         String cfgId = project.areBuildConfigurationsSupported() && cfg != null ? cfg.getId() : null;
-    	return new BuildVariant(profile, cfgId, true);
+    	return new BuildVariant(profile, cfgId);
     }
 
     public static IBuildSession createFinalizerBuildSession(List<IBuildVariant> variants) {
-        return new BuildSession(variants, BuildSession.DO_LINK | BuildSession.DO_PACK | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_CLEAN);
+        return new BuildSession(variants, BuildSession.DO_LINK | BuildSession.DO_PACK | BuildSession.DO_BUILD_RESOURCES);
     }
 
     public static IBuildSession createCompileOnlySession(IBuildVariant variant) {
@@ -1090,11 +1076,9 @@ public class MoSyncBuilder extends ACBuilder {
      * @return
      */
     public static IBuildSession createIncrementalBuildSession(IProject project, int kind) {
-        boolean doClean = kind == FULL_BUILD;
-        // MOSYNCTWOSIX-328: until we've decided upon how the device db should work...
-        boolean doPack = kind == FULL_BUILD;
-        IBuildVariant variant = getActiveVariant(MoSyncProject.create(project), false);
-        return new BuildSession(Arrays.asList(variant), BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (doClean ? BuildSession.DO_CLEAN : 0) | (doPack ? BuildSession.DO_PACK : 0));
+        IBuildVariant variant = getActiveVariant(MoSyncProject.create(project));
+        int clean = kind == FULL_BUILD ? BuildSession.DO_CLEAN : 0;
+        return new BuildSession(Arrays.asList(variant), clean | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | BuildSession.DO_PACK);
     }
 
     public static IPath getMetaDataPath(MoSyncProject project, IBuildVariant variant) {

@@ -46,6 +46,7 @@ public class PipeTool {
     public static final String BUILD_C_MODE = "-B";
     public static final String BUILD_LIB_MODE = "-L";
     public static final String BUILD_GEN_CPP_MODE = "-B -cpp";
+    public static final String BUILD_GEN_CS_MODE = "-B -cs";
     public static final String BUILD_GEN_JAVA_MODE = "-B -java";
 
     /**

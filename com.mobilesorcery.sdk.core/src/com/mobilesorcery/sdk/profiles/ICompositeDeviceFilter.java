@@ -17,12 +17,14 @@ public interface ICompositeDeviceFilter extends IDeviceFilter {
 
     public static final String FILTER_ADDED = "filter.added";
 
-    public static final String FILTER_REMOVED = "filter.removed";    
-    
-    void addFilter(IDeviceFilter filter);    
-    
-    void removeFilter(IDeviceFilter filter);    
-    
+    public static final String FILTER_REMOVED = "filter.removed";
+
+    void addFilter(IDeviceFilter filter);
+
+    void removeFilter(IDeviceFilter filter);
+
+    void removeAllFilters();
+
     IDeviceFilter[] getFilters();
 
     /**
@@ -30,5 +32,5 @@ public interface ICompositeDeviceFilter extends IDeviceFilter {
      * @param filter
      */
     void update(IDeviceFilter child);
-    
+
 }

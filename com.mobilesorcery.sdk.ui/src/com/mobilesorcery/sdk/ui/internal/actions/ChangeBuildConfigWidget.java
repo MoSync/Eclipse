@@ -1,7 +1,6 @@
 package com.mobilesorcery.sdk.ui.internal.actions;
 
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.text.MessageFormat;
 
 import org.eclipse.jface.viewers.ComboViewer;
@@ -12,7 +11,6 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.ui.menus.WorkbenchWindowControlContribution;
 
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -20,44 +18,45 @@ import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
-public class ChangeBuildConfigWidget extends WorkbenchWindowControlContribution implements PropertyChangeListener, ISelectionChangedListener {
+public class ChangeBuildConfigWidget extends MoSyncProjectWidget implements ISelectionChangedListener {
 
-    private MoSyncProject project;
     private ComboViewer combo;
 
-    protected Control createControl(Composite parent) {
-        combo = new ComboViewer(parent, SWT.READ_ONLY);
-        combo.addSelectionChangedListener(this);
-        MosyncUIPlugin.getDefault().addListener(this);
-        MoSyncProject.addGlobalPropertyChangeListener(this);
-        updateProject();
-        return combo.getControl();
-    }
-    
-    private void noProjectSelected() {
-        combo.getCombo().setItems( new String[] {"No project selected"} );
-        combo.getCombo().select(0);   
-    }
-    
-    public void dispose() {
-        MosyncUIPlugin.getDefault().removeListener(this);
-        MoSyncProject.removeGlobalPropertyChangeListener(this);
-        super.dispose();
+	@Override
+	public boolean shouldUpdateProject(PropertyChangeEvent event) {
+        // Project changed
+        return MosyncUIPlugin.CURRENT_PROJECT_CHANGED == event.getPropertyName() || MoSyncProject.BUILD_CONFIGURATION_CHANGED == event.getPropertyName();
     }
 
-    public void propertyChange(PropertyChangeEvent event) {
-        // Project changed
-        if (MosyncUIPlugin.CURRENT_PROJECT_CHANGED == event.getPropertyName() || MoSyncProject.BUILD_CONFIGURATION_CHANGED == event.getPropertyName()) {
-            updateProject();
+    @Override
+    public Control createControl(Composite parent) {
+    	attachListeners();
+        ComboViewer ui = new ComboViewer(parent, SWT.READ_ONLY);
+        ui.addSelectionChangedListener(this);
+        this.combo = ui;
+        updateUI();
+        return ui.getControl();
+    }
+
+    @Override
+	public void selectionChanged(SelectionChangedEvent event) {
+        IStructuredSelection selection = (IStructuredSelection) event.getSelection();
+        String cfgId = (String) selection.getFirstElement();
+        if (cfgId != null) {
+            project.setActiveBuildConfiguration(cfgId);
         }
     }
 
+    @Override
+	protected void noProjectSelected() {
+    	combo.getCombo().setItems( new String[] {"No project selected"} );
+    	combo.getCombo().select(0);
+    }
 
-    private void updateProject() {
-        project = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(getWorkbenchWindow());
-        
+	@Override
+	public void updateUI() {
         boolean activeCombo = project != null && project.areBuildConfigurationsSupported() && !project.getBuildConfigurations().isEmpty();
-        if (activeCombo) {
+		if (activeCombo) {
             combo.setContentProvider(new BuildConfigurationsContentProvider(project));
             combo.setLabelProvider(new BuildConfigurationsLabelProvider(project, false));
             combo.setInput(project);
@@ -68,14 +67,6 @@ public class ChangeBuildConfigWidget extends WorkbenchWindowControlContribution 
             noProjectSelected();
         }
         combo.getControl().setEnabled(activeCombo);
-    }
-
-    public void selectionChanged(SelectionChangedEvent event) {
-        IStructuredSelection selection = (IStructuredSelection) event.getSelection();
-        String cfgId = (String) selection.getFirstElement();
-        if (cfgId != null) {
-            project.setActiveBuildConfiguration(cfgId);
-        }
-    }
+	}
 
 }

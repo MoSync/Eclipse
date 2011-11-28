@@ -111,7 +111,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 		private File buildBeforeSend(IProfile targetProfile,
 				IProgressMonitor monitor) throws CoreException {
 			IBuildResult buildResult = null;
-            IBuildVariant variant = MoSyncBuilder.getFinalizerVariant(project, targetProfile);
+            IBuildVariant variant = MoSyncBuilder.createVariant(project, targetProfile);
             IBuildSession session = MoSyncBuilder.createDefaultBuildSession(variant);
 			buildResult = new MoSyncBuilder().build(project
 					.getWrappedProject(), session, variant, null,

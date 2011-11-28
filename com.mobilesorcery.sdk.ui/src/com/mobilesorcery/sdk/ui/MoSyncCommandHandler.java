@@ -21,15 +21,18 @@ public abstract class MoSyncCommandHandler extends AbstractHandler {
         List<IResource> resources = extractResources(selection, type);
         return resources.isEmpty() ? null : resources.get(0);
 	}
-	
+
     protected List<IResource> extractResources(ISelection selection) {
-        List elements = ((IStructuredSelection) selection).toList();
-        return extractResources(elements, ANY);
+        return extractResources(selection, ANY);
     }
-    
+
     protected List<IResource> extractResources(ISelection selection, int type) {
-        List elements = ((IStructuredSelection) selection).toList();
-        return extractResources(elements, type);
+    	if (selection instanceof IStructuredSelection) {
+    		List elements = ((IStructuredSelection) selection).toList();
+           	return extractResources(elements, type);
+    	} else {
+    		return new ArrayList<IResource>();
+    	}
     }
 
 	private List<IResource> extractResources(List elements, int type) {

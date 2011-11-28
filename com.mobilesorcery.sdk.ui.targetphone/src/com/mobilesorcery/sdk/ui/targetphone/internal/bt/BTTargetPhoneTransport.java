@@ -19,12 +19,14 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.ui.Activator;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransport;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 
 public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 
+	@Override
 	public ITargetPhone load(IMemento memento, String name) {
 		String addr = memento.getString("addr");
 		Integer portInt = memento.getInteger("port");
@@ -34,6 +36,7 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 		return newPhone;
 	}
 
+	@Override
 	public boolean store(ITargetPhone aPhone, IMemento memento) {
 		if (aPhone instanceof BTTargetPhone) {
 			BTTargetPhone phone = (BTTargetPhone) aPhone;
@@ -48,6 +51,7 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 		}
 	}
 
+	@Override
 	public String getId() {
 		return TargetPhonePlugin.DEFAULT_TARGET_PHONE_TRANSPORT;
 	}
@@ -76,11 +80,11 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 
 	/**
 	 * Pops up a dialog where the user can select a [BT] target phone.
-	 * 
+	 *
 	 * @return
 	 * @throws IOException
 	 */
-	public static BTTargetPhone selectPhone( final Shell shell ) throws IOException 
+	public static BTTargetPhone selectPhone( final Shell shell ) throws IOException
 	{
 		// Use a native dialog on windows
 		/*if( System.getProperty("os.name").toLowerCase().indexOf("win") != -1)
@@ -89,23 +93,24 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 			BTTargetPhone info = dialog.open();
 			return info;
 		}*/
-		
+
 		final ArrayList<BTTargetPhone> result = new ArrayList<BTTargetPhone>( );
 
     	shell.getDisplay().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				// TODO Auto-generated method stub
-				try {			
+				try {
 					BluetoothDialog ld = new BluetoothDialog( shell );
 					ld.open( );
-					
+
 					if( ld.getReturnCode( ) == ListDialog.OK )
 					{
 						BluetoothDevice selectedDevice = ld.getSelectedDevice();
 						BTTargetPhone targetDevice = selectedDevice.getTargetPhone();
 						ITargetPhone correspondingDevice = findInHistory(targetDevice);
 						targetDevice.setPreferredProfile(correspondingDevice == null ? null : correspondingDevice.getPreferredProfile());
-					    result.add(targetDevice);  
+					    result.add(targetDevice);
 					}
 				}
 				catch (Exception e) {
@@ -113,17 +118,17 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 				}
 			}
 		});
-		
+
     	if( result.size( ) > 0)
     	{
     		return result.get( 0 );
     	}
-    	else 
+    	else
     	{
     		return null;
     	}
 	}
-	
+
 	/**
 	 * Returns the corresponding target phone from history - can be
 	 * used to find out if there is already a preferred profile for a device
@@ -139,9 +144,10 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
                 }
             }
         }
-        
+
         return null;
     }
+	@Override
 	public void send(IShellProvider shell, MoSyncProject project,
 			ITargetPhone phone, File packageToSend, IProgressMonitor monitor)
 			throws CoreException {
@@ -150,6 +156,7 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 		job.runSync(monitor);
 	}
 
+	@Override
 	public ITargetPhone scan(IShellProvider shell, IProgressMonitor monitor)
 			throws CoreException {
 		try {
@@ -167,18 +174,22 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 		}
 	}
 
+	@Override
 	public ImageDescriptor getIcon() {
-		return Activator.getDefault().getImageRegistry().getDescriptor(Activator.PHONE_IMAGE);
+		return MosyncUIPlugin.getDefault().getImageRegistry().getDescriptor(MosyncUIPlugin.PHONE_IMAGE);
 	}
 
+	@Override
 	public String getDescription(String context) {
 		return "Bluetooth";
 	}
-	
+
+	@Override
 	public boolean isAvailable() {
 		return true;
 	}
 
+	@Override
 	public IDeviceFilter getAcceptedProfiles() {
 		return null;
 	}

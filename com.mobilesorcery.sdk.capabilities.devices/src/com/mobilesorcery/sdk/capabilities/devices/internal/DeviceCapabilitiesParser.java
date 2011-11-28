@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import com.mobilesorcery.sdk.capabilities.core.Capabilities;
-import com.mobilesorcery.sdk.capabilities.core.ICapabilities;
-import com.mobilesorcery.sdk.capabilities.devices.CapabilityState;
+import com.mobilesorcery.sdk.core.Capabilities;
+import com.mobilesorcery.sdk.core.CapabilityState;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
-import com.mobilesorcery.sdk.core.MoSyncBuilder;
+import com.mobilesorcery.sdk.core.ICapabilities;
+import com.mobilesorcery.sdk.core.MergeCapabilities;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile;
@@ -26,9 +26,9 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.Profile;
 
 public class DeviceCapabilitiesParser {
-	
+
 	class CapabilitiesMap {
-		
+
 		List<Pair<Pattern, Capabilities>> runtimes = new ArrayList<Pair<Pattern,Capabilities>>();
 		List<Pair<Pattern, Capabilities>> profiles = new ArrayList<Pair<Pattern,Capabilities>>();
 
@@ -37,53 +37,53 @@ public class DeviceCapabilitiesParser {
 				runtimes.add(new Pair<Pattern, Capabilities>(pattern, capabilites));
 			}
 		}
-		
+
 		public void addProfileCapability(Pattern pattern, Capabilities capabilites) {
 			if (pattern != null && capabilites != null) {
 				profiles.add(new Pair<Pattern, Capabilities>(pattern, capabilites));
 			}
 		}
-		
+
 		public ICapabilities getCapabilities(IProfile requestProfile) {
 			String profileName = MoSyncTool.toString(requestProfile);
 			String runtimeName = Profile.getAbbreviatedPlatform(requestProfile);
-			
+
 			ArrayList<Capabilities> result = new ArrayList<Capabilities>();
-			
+
 			for (Pair<Pattern, Capabilities> runtime : runtimes) {
 				if (runtime.first.matcher(runtimeName).matches()) {
 					result.add(runtime.second);
 				}
 			}
-			
+
 			for (Pair<Pattern, Capabilities> profile : profiles) {
 				if (profile.first.matcher(profileName).matches()) {
 					result.add(profile.second);
 				}
 			}
-			
+
 			// Correct inheritance
 			Collections.reverse(result);
 			if (result.isEmpty()) {
 				return null;
 			} else {
-				return new Capabilities.MergeCapabilities(result.toArray(new ICapabilities[0]));
+				return new MergeCapabilities(result.toArray(new ICapabilities[0]));
 			}
 		}
-		
+
 	}
 
 	private static final String CAPABILITIES_FILENAME = "runtime-capabilities.map";
-	
-	private HashMap<IProfile, ICapabilities> capabilities = new HashMap<IProfile, ICapabilities>();
-	private HashMap<IProfile, CapabilitiesMap> profileCapabilities = new HashMap<IProfile, CapabilitiesMap>();
-	private HashMap<String, CapabilitiesMap> runtimeCapabilities = new HashMap<String, CapabilitiesMap>();
+
+	private final HashMap<IProfile, ICapabilities> capabilities = new HashMap<IProfile, ICapabilities>();
+	private final HashMap<IProfile, CapabilitiesMap> profileCapabilities = new HashMap<IProfile, CapabilitiesMap>();
+	private final HashMap<String, CapabilitiesMap> runtimeCapabilities = new HashMap<String, CapabilitiesMap>();
 	private CapabilitiesMap defaultCapabilities;
-	
+
 	public DeviceCapabilitiesParser() {
-		
+
 	}
-	
+
 	private CapabilitiesMap parse(File file) throws IOException {
 		FileReader input = null;
 		try {
@@ -100,7 +100,7 @@ public class DeviceCapabilitiesParser {
 	private CapabilitiesMap parse(Reader input) throws IOException {
 		SectionedPropertiesFile capabilitesMap = SectionedPropertiesFile.parse(input);
 		CapabilitiesMap result = new CapabilitiesMap();
-		
+
 		for (Section section : capabilitesMap.getSections()) {
 			Capabilities capabilities = null;
 			List<Entry> entries = section.getEntries();
@@ -110,23 +110,23 @@ public class DeviceCapabilitiesParser {
 				if (capabilities == null) {
 					capabilities = new Capabilities();
 				}
-				
+
 				CapabilityState capabilityState = CapabilityState.SUPPORTED;
-				
+
 				try {
 					capabilityState = CapabilityState.valueOf(capabilityStateStr);
 				} catch (Exception e) {
 					// Fallback to default: SUPPORTED
 				}
-				
+
 				capabilities.setCapability(capability, capabilityState);
 			}
 			addCapabilites(result, section.getName(), capabilities);
 		}
-		
+
 		return result;
 	}
-	
+
 	private void addCapabilites(CapabilitiesMap capabilitiesMap, String matchingCriteria, Capabilities capabilities) {
 		if (matchingCriteria == null) {
 			return;
@@ -153,14 +153,14 @@ public class DeviceCapabilitiesParser {
 				CoreMoSyncPlugin.getDefault().log(e);
 			}
 		}
-		
+
 		return capabilities.get(profile);
 	}
 
 
 	private ICapabilities createCapabilities(IProfile profile) throws IOException {
 		CapabilitiesMap defaultMap = getDefaultCapabilitiesMap();
-		CapabilitiesMap runtimeMap = getCapabilitiesMapForRuntime(profile.getPlatform());
+		CapabilitiesMap runtimeMap = getCapabilitiesMapForRuntime(profile.getRuntime());
 		CapabilitiesMap profileMap = getCapabilitiesMapForProfile(profile);
 		return assembleCapabilities(profile, defaultMap, runtimeMap, profileMap);
 	}
@@ -174,7 +174,7 @@ public class DeviceCapabilitiesParser {
 			}
 		}
 
-		return new Capabilities.MergeCapabilities(result.toArray(new ICapabilities[0]));
+		return new MergeCapabilities(result.toArray(new ICapabilities[0]));
 	}
 
 	private CapabilitiesMap getCapabilitiesMapForProfile(IProfile profile) throws IOException {
@@ -183,7 +183,7 @@ public class DeviceCapabilitiesParser {
 		}
 		return profileCapabilities.get(profile);
 	}
-	
+
 	private CapabilitiesMap getCapabilitiesMapForRuntime(String platform) throws IOException {
 		if (runtimeCapabilities.get(platform) == null) {
 			runtimeCapabilities.put(platform, createCapabilitiesMap(platform));
@@ -197,18 +197,18 @@ public class DeviceCapabilitiesParser {
 		}
 		return defaultCapabilities;
 	}
-	
+
 	private CapabilitiesMap createCapabilitiesMap(IProfile profile) throws IOException {
 		File profileFile = MoSyncTool.getDefault().getProfilePath(profile).append(CAPABILITIES_FILENAME).toFile();
 		return parse(profileFile);
 	}
-	
+
 	private CapabilitiesMap createCapabilitiesMap(String platform) throws IOException {
 		File runtimeFile = MoSyncTool.getDefault().getRuntimePath(platform).append(CAPABILITIES_FILENAME).toFile();
 		CapabilitiesMap runtimeCapabilites = parse(runtimeFile);
 		return runtimeCapabilites;
 	}
-	
+
 	private CapabilitiesMap createDefaultCapabilitiesMap() throws IOException {
 		File defaultFile = MoSyncTool.getDefault().getProfilesPath().append(CAPABILITIES_FILENAME).toFile();
 		return parse(defaultFile);

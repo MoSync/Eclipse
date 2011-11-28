@@ -30,7 +30,7 @@ import org.eclipse.swt.graphics.RGB;
 
 public class ResourcesFileScanner extends RuleBasedScanner {
 
-    public static final String[] DIRECTIVES = new String[] { 
+    public static final String[] DIRECTIVES = new String[] {
     	".eof",
     	".image",
     	".res",
@@ -61,12 +61,13 @@ public class ResourcesFileScanner extends RuleBasedScanner {
     	".eof",
     	".index",
     	".wideindex",
-    	".set"
+    	".set",
+    	".lfile"
 	};
 
     public static final int COMMENT_SCANNER = 0;
     public static final int CODE_SCANNER = 1;
-	
+
 	public static final String COMMENT_COLOR = "comment";
 	public static final String DEFAULT_TEXT_COLOR = "text";
 	public static final String DIRECTIVE_COLOR = "directive";
@@ -78,37 +79,37 @@ public class ResourcesFileScanner extends RuleBasedScanner {
 	public static final RGB DIRECTIVE_DEFAULT_RGB = new RGB(0xaf, 0x00, 0x00);
 
 
-	private SyntaxColorPreferenceManager manager;
+	private final SyntaxColorPreferenceManager manager;
 
-	private int type;
+	private final int type;
 
-    public ResourcesFileScanner(SyntaxColorPreferenceManager manager, int type) {    	
+    public ResourcesFileScanner(SyntaxColorPreferenceManager manager, int type) {
     	this.manager = manager;
     	this.type = type;
     	reinit();
     }
-    
-    public void reinit() {    	
+
+    public void reinit() {
         IToken directiveToken =
             new Token(createTextAttribute(manager, DIRECTIVE_COLOR));
-        
+
         IToken commentToken = new Token(createTextAttribute(manager, COMMENT_COLOR));
-        
+
         IToken defaultToken = new Token(createTextAttribute(manager, DEFAULT_TEXT_COLOR));
 
         WordRule rule = new WordRule(new DirectiveDetector(), defaultToken);
         for (int i = 0; i < DIRECTIVES.length; i++) {
             rule.addWord(DIRECTIVES[i], directiveToken);
         }
-        
+
         IToken stringToken = new Token(createTextAttribute(manager, STRING_COLOR));
 		SingleLineRule string = new SingleLineRule("\"", "\"", stringToken, '\\');
 
         PatternRule slComment = new PatternRule("//", "\n", commentToken, '\\', true, true);
         MultiLineRule mlComment = new MultiLineRule("/*", "*/", commentToken);
-        
+
         WhitespaceRule ws = new WhitespaceRule(new WhiteSpaceDetector());
-        
+
         setDefaultReturnToken(defaultToken);
         setRules(type == COMMENT_SCANNER ? new IRule[] {mlComment} : new IRule[] { ws, mlComment, slComment, string, rule });
     }
@@ -116,7 +117,7 @@ public class ResourcesFileScanner extends RuleBasedScanner {
     public static TextAttribute createTextAttribute(SyntaxColorPreferenceManager manager, String prefId) {
     	SyntaxColoringPreference pref = manager.get(prefId);
     	if (pref != null) {
-    		Color foreground = manager.getForeground(prefId);    	
+    		Color foreground = manager.getForeground(prefId);
     		int style = (pref.isBold() ? SWT.BOLD : 0) | (pref.isItalic() ? SWT.ITALIC : 0) | (pref.isUnderline() ? SWT.UNDERLINE_SINGLE : 0);
     		return new TextAttribute(foreground, null, style);
     	} else {

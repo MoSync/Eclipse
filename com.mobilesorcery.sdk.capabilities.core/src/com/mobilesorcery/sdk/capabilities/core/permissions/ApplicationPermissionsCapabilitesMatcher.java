@@ -3,9 +3,9 @@ package com.mobilesorcery.sdk.capabilities.core.permissions;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.mobilesorcery.sdk.capabilities.core.ICapabilities;
 import com.mobilesorcery.sdk.capabilities.core.ICapabilitiesMatcher;
 import com.mobilesorcery.sdk.capabilities.core.IChangeRequest;
+import com.mobilesorcery.sdk.core.ICapabilities;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 

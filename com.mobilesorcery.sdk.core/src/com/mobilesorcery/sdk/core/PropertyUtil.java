@@ -27,7 +27,7 @@ import org.json.simple.parser.ParseException;
 public class PropertyUtil {
 
 	private PropertyUtil() {
-		
+
 	}
 
 	public static boolean getBoolean(IPropertyOwner p, String key) {
@@ -36,29 +36,29 @@ public class PropertyUtil {
 		}
 		return Boolean.parseBoolean(p.getProperty(key));
 	}
-	
+
 	public static boolean setBoolean(IPropertyOwner p, String key, boolean value) {
 		if (getBoolean(p, key) == value) {
 			return false;
 		}
 		return p.setProperty(key, Boolean.toString(value));
 	}
-	
+
 	public static String fromBoolean(boolean value) {
 	    return Boolean.toString(value);
 	}
-	
+
 	public static String fromInteger(int value) {
 		return Integer.toString(value);
 	}
-	
+
     public static IPath[] getPaths(IPropertyOwner p, String key) {
     	if (p == null) {
     		return new IPath[0];
     	}
         return toPaths(p.getProperty(key));
     }
-    
+
     public static void setPaths(IPropertyOwner p, String key, IPath[] paths) {
         p.setProperty(key, fromPaths(paths));
     }
@@ -66,16 +66,16 @@ public class PropertyUtil {
     public static IPath[] toPaths(String value) {
     	return toPaths(value, true);
     }
-    
+
     public static IPath[] toPaths(String value, boolean trimQuotes) {
 		if (value == null) {
 			return new IPath[0];
 		}
-		
+
     	String[] pathsArray = value.trim().length() == 0 ? new String[0] : value.split(",");
     	ArrayList<IPath> paths = new ArrayList<IPath>();
     	HashSet<String> existingPaths = new HashSet<String>();
-    	
+
     	for (int i = 0; i < pathsArray.length; i++) {
     	    String trimmed = pathsArray[i].trim();
     	    trimmed = Util.trimQuotes(trimmed);
@@ -87,17 +87,17 @@ public class PropertyUtil {
 
     	return paths.toArray(new IPath[paths.size()]);
 	}
-	
+
     public static String fromPaths(IPath[] paths) {
         return Util.join(paths, ", ");
     }
-    
+
     public static String fromPaths(IResource[] resources) {
         IPath[] fullPaths = new IPath[resources.length];
         for (int i = 0; i < resources.length; i++) {
             fullPaths[i] = resources[i].getFullPath();
         }
-        
+
         return fromPaths(fullPaths);
     }
 
@@ -105,25 +105,25 @@ public class PropertyUtil {
     	if (p == null) {
     		return new String[0];
     	}
-    	
+
         String value = p.getProperty(key);
         return toStrings(value);
     }
-    
+
     public static boolean setStrings(IPropertyOwner p, String key, String[] value) {
     	if (p != null) {
     		String valueStr = fromStrings(value);
     		return p.setProperty(key, valueStr);
     	}
-    	
+
     	return false;
     }
-    
+
     public static String[] toStrings(String value) {
         if (value == null) {
             return new String[0];
         }
-        
+
         ArrayList<String> result = new ArrayList<String>();
         char[] chValue = value.toCharArray();
         boolean inEscape = false;
@@ -141,9 +141,9 @@ public class PropertyUtil {
                 posInCurrent++;
                 inEscape = false;
             }
-            
+
             doAdd = doAdd || i == chValue.length - 1;
-            
+
             if (doAdd) {
                 String addThis = new String(current, 0, posInCurrent).trim();
                 if (addThis.length() > 0) {
@@ -154,43 +154,44 @@ public class PropertyUtil {
                 doAdd = false;
             }
         }
-        
+
         return result.toArray(new String[result.size()]);
     }
 
     public static String fromStrings(String[] value) {
+    	String[] newArray = new String[value.length];
         for (int i = 0; i < value.length; i++) {
-            value[i] = value[i].replace("\\", "\\\\").replace(" ", "\\ ");
+        	newArray[i] = value[i].replace("\\", "\\\\").replace(" ", "\\ ");
         }
-        return Util.join(value, " ");
+        return Util.join(newArray, " ");
     }
-    
+
     public static Integer getInteger(IPropertyOwner p, String key) {
     	if (p == null) {
     		return null;
     	}
-    	
+
         String value = p.getProperty(key);
         if (value == null) {
             return null;
         }
-        
+
         try {
             return Integer.parseInt(value);
         } catch (Exception e) {
             return null;
         }
     }
-    
+
     public static int getInteger(IPropertyOwner p, String key, int defaultValue) {
     	Integer value = getInteger(p, key);
     	return value == null ? defaultValue : value;
     }
-    
+
     public static boolean setInteger(IPropertyOwner p, String key, int value) {
         return p.setProperty(key, Integer.toString(value));
     }
-    
+
     public static String fromObject(Object value) {
         if (value == null) {
             return "";

@@ -51,7 +51,7 @@ import com.mobilesorcery.sdk.profiles.filter.CompositeDeviceFilter;
 import com.mobilesorcery.sdk.profiles.filter.EmulatorDeviceFilter;
 import com.mobilesorcery.sdk.profiles.ui.DeviceViewerFilter;
 import com.mobilesorcery.sdk.profiles.ui.ProfileContentProvider;
-import com.mobilesorcery.sdk.profiles.ui.ProfileLabelProvider;
+import com.mobilesorcery.sdk.ui.ProfileLabelProvider;
 import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransport;
@@ -60,7 +60,8 @@ import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 public class EditDeviceListDialog extends Dialog {
 
     public class TargetDeviceLabelProvider extends LabelProvider {
-        public String getText(Object o) {
+        @Override
+		public String getText(Object o) {
             ITargetPhone t = (ITargetPhone) o;
             ITargetPhoneTransport tt = t.getTransport();
             return MessageFormat.format("{0} [{1}]", t.getName(), tt.getDescription(""));
@@ -71,7 +72,7 @@ public class EditDeviceListDialog extends Dialog {
     private TreeViewer preferredProfile;
     private ITargetPhone initialTargetPhone;
     private boolean fixedDevice;
-    private HashMap<ITargetPhone, IProfile> pendingChanges = new HashMap<ITargetPhone, IProfile>();
+    private final HashMap<ITargetPhone, IProfile> pendingChanges = new HashMap<ITargetPhone, IProfile>();
 
     public EditDeviceListDialog(Shell parentShell) {
         super(parentShell);
@@ -81,7 +82,8 @@ public class EditDeviceListDialog extends Dialog {
         this.initialTargetPhone = initialTargetPhone;
     }
 
-    public Control createDialogArea(Composite parent) {
+    @Override
+	public Control createDialogArea(Composite parent) {
         getShell().setText("Select Preferred Profile");
 
         ITargetPhone initialTargetPhone = this.initialTargetPhone == null ? TargetPhonePlugin.getDefault().getCurrentlySelectedPhone()
@@ -97,7 +99,8 @@ public class EditDeviceListDialog extends Dialog {
             deviceList.setContentProvider(new ArrayContentProvider());
             deviceList.setLabelProvider(new TargetDeviceLabelProvider());
             deviceList.addSelectionChangedListener(new ISelectionChangedListener() {
-                public void selectionChanged(SelectionChangedEvent event) {
+                @Override
+				public void selectionChanged(SelectionChangedEvent event) {
                     updateFilter();
                     updateUI(null, false);
                 }
@@ -109,7 +112,8 @@ public class EditDeviceListDialog extends Dialog {
             clear.setText("<a>Clear History</a>");
             clear.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false));
             clear.addListener(SWT.Selection, new Listener() {
-                public void handleEvent(Event event) {
+                @Override
+				public void handleEvent(Event event) {
                     clearDeviceList(getShell());
                     updateUI(null, true);
                 }
@@ -122,7 +126,8 @@ public class EditDeviceListDialog extends Dialog {
         preferredProfile = new TreeViewer(contents, SWT.SINGLE | SWT.BORDER);
         ProfileLabelProvider labelProvider = new ProfileLabelProvider(SWT.NONE);
         labelProvider.setTargetProfileProvider(new ITargetProfileProvider() {
-            public IProfile getTargetProfile() {
+            @Override
+			public IProfile getTargetProfile() {
                 return getCurrentPreferredProfile();
             }
         });
@@ -132,15 +137,17 @@ public class EditDeviceListDialog extends Dialog {
         preferredProfile.setContentProvider(contentProvider);
         preferredProfile.getControl().setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), UIUtils.getDefaultListHeight()));
 
-        preferredProfile.addDoubleClickListener(new IDoubleClickListener() { 
-            public void doubleClick(DoubleClickEvent event) {
+        preferredProfile.addDoubleClickListener(new IDoubleClickListener() {
+            @Override
+			public void doubleClick(DoubleClickEvent event) {
                 selectNewProfile(event.getSelection());
                 okPressed();
             }
         });
-        
+
         preferredProfile.addSelectionChangedListener(new ISelectionChangedListener() {
-            public void selectionChanged(SelectionChangedEvent event) {
+            @Override
+			public void selectionChanged(SelectionChangedEvent event) {
                 selectNewProfile(event.getSelection());
             }
         });
@@ -150,7 +157,7 @@ public class EditDeviceListDialog extends Dialog {
 
         return contents;
     }
-    
+
     private void selectNewProfile(ISelection selection) {
         Object element = ((IStructuredSelection) selection).getFirstElement();
         if (element instanceof IProfile) {
@@ -160,17 +167,17 @@ public class EditDeviceListDialog extends Dialog {
             if (currentTargetPhone != null) {
                 pendingChanges.put(currentTargetPhone, profile);
             }
-            
+
             updateButtons();
             preferredProfile.refresh();
-        }                
+        }
     }
 
 
     /**
      * Sets a fixed device for this dialog (resulting in no visible device
      * selector).
-     * 
+     *
      * @param b
      */
     public void setFixedDevice(boolean fixedDevice) {
@@ -183,7 +190,7 @@ public class EditDeviceListDialog extends Dialog {
         } else {
             ITargetPhone selectedPhone = (ITargetPhone) ((IStructuredSelection) deviceList.getSelection()).getFirstElement();
             return selectedPhone;
-        } 
+        }
     }
 
     protected void updateFilter() {
@@ -192,11 +199,12 @@ public class EditDeviceListDialog extends Dialog {
         IDeviceFilter targetPhoneAcceptedProfiles = phone == null ? null : phone.getTransport().getAcceptedProfiles();
         IDeviceFilter filter = targetPhoneAcceptedProfiles == null ? emulatorFilter : new CompositeDeviceFilter(new IDeviceFilter[] { emulatorFilter,
                 targetPhoneAcceptedProfiles });
-        preferredProfile.setInput(MoSyncTool.getDefault().getVendors(filter));
+        preferredProfile.setInput(MoSyncTool.getDefault().getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE).getVendors(filter));
         preferredProfile.setFilters(new ViewerFilter[] { new DeviceViewerFilter(filter) });
     }
 
-    public void createButtonsForButtonBar(Composite parent) {
+    @Override
+	public void createButtonsForButtonBar(Composite parent) {
         Button okButton = createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL, true);
         createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);
         updateButtons();
@@ -231,20 +239,21 @@ public class EditDeviceListDialog extends Dialog {
         preferredProfile.setSelection(profile == null ? new StructuredSelection() : new StructuredSelection(profile), true);
         updateButtons();
     }
-    
+
     private void updateButtons() {
         Button okButton = getButton(IDialogConstants.OK_ID);
         if (okButton != null) {
             okButton.setEnabled(okButtonEnabled());
-        }    
+        }
     }
-    
+
     private boolean okButtonEnabled() {
         IProfile profile = getCurrentPreferredProfile();
         return profile != null;
     }
-    
-    public void okPressed() {
+
+    @Override
+	public void okPressed() {
         if (okButtonEnabled()) {
             commitPendingChanges();
             super.okPressed();

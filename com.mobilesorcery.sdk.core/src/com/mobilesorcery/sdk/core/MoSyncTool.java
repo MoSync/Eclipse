@@ -22,7 +22,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -36,7 +35,6 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -44,11 +42,12 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.mobilesorcery.sdk.internal.LegacyProfileManager;
+import com.mobilesorcery.sdk.internal.ProfileDBManager;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.IVendor;
 import com.mobilesorcery.sdk.profiles.ProfileParser;
-import com.mobilesorcery.sdk.profiles.Vendor;
 import com.sun.org.apache.xml.internal.serialize.OutputFormat;
 import com.sun.org.apache.xml.internal.serialize.XMLSerializer;
 
@@ -97,12 +96,13 @@ public class MoSyncTool {
 
 	public static final String MOSYNC_HOME_UPDATED = "mosync.home.updated";
 
+	public static final int LEGACY_PROFILE_TYPE = 1;
+
+	public static final int DEFAULT_PROFILE_TYPE = 0;
+
 	private static MoSyncTool instance = new MoSyncTool(true);
 
 	private boolean inited = false;
-
-	private final TreeMap<String, IVendor> vendors = new TreeMap<String, IVendor>(
-			String.CASE_INSENSITIVE_ORDER);
 
 	private Map<String, String> featureDescriptions = new TreeMap<String, String>();
 
@@ -118,6 +118,10 @@ public class MoSyncTool {
 	private final PropertyChangeSupport listeners = new PropertyChangeSupport(this);
 
 	private IPath overrideHome;
+
+	private LegacyProfileManager legacyProfileManager;
+
+	private ProfileDBManager defaultProfileManager;
 
 	private MoSyncTool(boolean initListeners) {
 		if (initListeners) {
@@ -231,64 +235,35 @@ public class MoSyncTool {
 		return getMoSyncHome().append("profiles");
 	}
 
-	public IVendor[] getVendors() {
-		init();
-		return vendors.values().toArray(new IVendor[0]);
-	}
-
-	public IVendor[] getVendors(IDeviceFilter filter) {
-		IVendor[] allVendors = getVendors();
-		ArrayList<IVendor> result = new ArrayList<IVendor>();
-
-		for (int i = 0; i < allVendors.length; i++) {
-			if (filter.accept(allVendors[i])) {
-				result.add(allVendors[i]);
-			}
-		}
-
-		return result.toArray(new IVendor[0]);
-	}
-
-	public IProfile[] getProfiles() {
-		ArrayList<IProfile> profiles = new ArrayList<IProfile>();
-		IVendor[] vendors = getVendors();
-		for (int i = 0; i < vendors.length; i++) {
-			profiles.addAll(Arrays.asList(vendors[i].getProfiles()));
-		}
-
-		return profiles.toArray(new IProfile[0]);
-	}
-
-	public IProfile[] getProfiles(IDeviceFilter filter) {
-		IProfile[] profiles = getProfiles();
-		return filterProfiles(profiles, filter);
-	}
-
-	public IProfile[] filterProfiles(IProfile[] profiles, IDeviceFilter filter) {
-		if (filter != null) {
-			ArrayList<IProfile> filtered = new ArrayList<IProfile>();
-			for (int i = 0; i < profiles.length; i++) {
-				if (filter.accept(profiles[i])) {
-					filtered.add(profiles[i]);
-				}
-			}
-			return filtered.toArray(new IProfile[filtered.size()]);
-		} else {
-			return profiles;
+	public ProfileManager getProfileManager(int type) {
+		switch (type) {
+		case DEFAULT_PROFILE_TYPE:
+			return defaultProfileManager();
+		case LEGACY_PROFILE_TYPE:
+			return legacyProfileManager();
+		default:
+			throw new IllegalArgumentException();
 		}
 	}
 
-	public IProfile[] getProfiles(String profileName) {
-		ArrayList<IProfile> profiles = new ArrayList<IProfile>();
-		IVendor[] vendors = getVendors();
-		for (int i = 0; i < vendors.length; i++) {
-			IProfile profile = vendors[i].getProfile(profileName);
-			if (profile != null) {
-				profiles.add(profile);
-			}
+	synchronized LegacyProfileManager legacyProfileManager() {
+		if (legacyProfileManager == null) {
+			legacyProfileManager = new LegacyProfileManager();
+			legacyProfileManager.init();
 		}
+		return legacyProfileManager;
+	}
 
-		return profiles.toArray(new IProfile[0]);
+	synchronized ProfileDBManager defaultProfileManager() {
+		if (defaultProfileManager == null) {
+			defaultProfileManager = new ProfileDBManager();
+			defaultProfileManager.init();
+		}
+		return defaultProfileManager;
+	}
+
+	private IVendor[] getVendors() {
+		return getProfileManager(DEFAULT_PROFILE_TYPE).getVendors();
 	}
 
 	public void reinit() {
@@ -305,17 +280,6 @@ public class MoSyncTool {
 				if (!isValid()) {
 					return;
 				}
-
-				IPath vendorsPath = getVendorsPath();
-
-				File[] directories = vendorsPath.toFile().listFiles();
-				for (int i = 0; i < directories.length; i++) {
-					if (directories[i].isDirectory()) {
-						IVendor vendor = initVendor(directories[i]);
-						this.vendors.put(vendor.getName(), vendor);
-					}
-				}
-
 				initFeatureDescriptions();
 				initProperties();
 			} finally {
@@ -434,46 +398,8 @@ public class MoSyncTool {
 		return getMoSyncHome().append("etc").append("config.xml");
 	}
 
-	private IVendor initVendor(File vendorDir) {
-		ProfileParser parser = new ProfileParser();
-
-		String name = vendorDir.getName();
-		File iconFile = new File(vendorDir, "icon.png");
-		ImageDescriptor icon = null;
-		try {
-			if (iconFile.exists()) {
-				icon = ImageDescriptor.createFromURL(iconFile.toURI().toURL());
-			}
-		} catch (MalformedURLException e) {
-			// Just ignore.
-		}
-
-		Vendor vendor = new Vendor(name, icon);
-
-		File[] profiles = vendorDir.listFiles();
-		for (int i = 0; i < profiles.length; i++) {
-			if (profiles[i].isDirectory()) {
-				String profileName = profiles[i].getName();
-				File profileInfoFile = new File(profiles[i], "maprofile.h");
-				File runtimeTxtFile = new File(profiles[i], "runtime.txt");
-				IProfile profile;
-				try {
-					profile = parser.parseInfoFile(vendor, profileName,
-							profileInfoFile, runtimeTxtFile);
-					vendor.addProfile(profile);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
-
-		return vendor;
-	}
-
 	public IVendor getVendor(String vendorName) {
-		init();
-		return vendors.get(vendorName);
+		return getProfileManager(DEFAULT_PROFILE_TYPE).getVendor(vendorName);
 	}
 
 	/**
@@ -589,9 +515,11 @@ public class MoSyncTool {
 	 * @return
 	 */
 	public IProfile getDefaultTargetProfile() {
+		init();
 		IProfile result = getDefaultEmulatorProfile();
-		if (result == null) {
-			IVendor someVendor = vendors.firstEntry().getValue();
+		IVendor[] vendors = getVendors();
+		if (result == null && vendors.length > 0) {
+			IVendor someVendor = vendors[0];
 			IProfile[] profilesForVendor = someVendor.getProfiles();
 			if (profilesForVendor.length > 0) {
 				return profilesForVendor[0];
@@ -617,7 +545,7 @@ public class MoSyncTool {
 	}
 
 	public IPath getRuntimePath(IProfile targetProfile) {
-		return getRuntimePath(targetProfile.getPlatform());
+		return getRuntimePath(targetProfile.getRuntime());
 	}
 
 	public IPath getRuntimePath(String platform) {

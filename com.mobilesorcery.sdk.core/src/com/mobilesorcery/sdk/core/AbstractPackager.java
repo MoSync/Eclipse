@@ -10,7 +10,7 @@
 
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
-*/
+ */
 package com.mobilesorcery.sdk.core;
 
 import java.util.HashMap;
@@ -18,20 +18,30 @@ import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 
+import com.mobilesorcery.sdk.internal.PipeTool;
+import com.mobilesorcery.sdk.profiles.IProfile;
+
 public abstract class AbstractPackager implements IPackagerDelegate {
 
-	private Map<String, String> parameters = new HashMap<String, String>();
+	private final Map<String, String> parameters = new HashMap<String, String>();
 
+	@Override
 	public void setParameter(String param, String value) throws CoreException {
 		parameters.put(param, value);
 	}
-	
+
 	protected Map<String, String> getParameters() {
 		return parameters;
 	}
-	
+
 	public boolean shouldUseDebugRuntimes() {
-		return Boolean.parseBoolean(parameters.get(MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS));
+		return Boolean.parseBoolean(parameters
+				.get(MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS));
+	}
+
+	@Override
+	public String getGenerateMode(IProfile profile) {
+		return PipeTool.BUILD_C_MODE;
 	}
 
 }

@@ -360,7 +360,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 	public boolean buildForLaunch(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor) throws CoreException {
         final IProject project = getProject(configuration);
         IBuildVariant variant = getVariant(configuration, mode);
-        IBuildSession session = new BuildSession(Arrays.asList(variant), BuildSession.DO_SAVE_DIRTY_EDITORS | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | (variant.isFinalizerBuild() ? BuildSession.DO_PACK : 0));
+        IBuildSession session = new BuildSession(Arrays.asList(variant), BuildSession.DO_SAVE_DIRTY_EDITORS | BuildSession.DO_BUILD_RESOURCES | BuildSession.DO_LINK | BuildSession.DO_PACK);
 
 		// No dialogs should pop up.
         Job job = new MoSyncBuildJob(MoSyncProject.create(project), session, variant);

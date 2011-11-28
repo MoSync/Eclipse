@@ -35,7 +35,9 @@ import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.SecurePropertyException;
@@ -59,7 +61,9 @@ public class JavaPackager2 extends AbstractPackager {
     }
 
     @Override
-	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult) throws CoreException {
+	public void createPackage(MoSyncProject project, IBuildSession session,
+			IBuildVariant variant, IFileTreeDiff diff, IBuildResult buildResult)
+			throws CoreException {
     	createPackage(project, variant, buildResult, true);
     }
 

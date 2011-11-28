@@ -160,6 +160,19 @@ icon="icons/launchshortcut.png">
                       </test>
                 </enabledWhen>
           </page>
+             <page
+                class="com.mobilesorcery.sdk.ui.internal.properties.ProfileDBPropertyPage"
+                id="com.mobilesorcery.sdk.ui.properties.profiledb"
+                name="Profile Database"
+                objectClass="org.eclipse.core.resources.IProject"
+                category="com.mobilesorcery.sdk.ui.properties.project">
+                <enabledWhen>
+                      <test
+                            forcePluginActivation="true"
+                            property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                      </test>
+                </enabledWhen>
+          </page>
        </extension>
       
          <extension point = "org.eclipse.ui.actionSets">
@@ -344,6 +357,18 @@ icon="icons/launchshortcut.png">
                id="com.mobilesorcery.sdk.ui.build"
                name="Rebuild Project">
          </command>
+         <command
+               categoryId="com.mobilesorcery.sdk.ui.category.main"
+               description="Filter Profiles"
+               id="com.mobilesorcery.sdk.ui.profilefilter"
+               name="Filter Profiles">
+         </command>
+          <command
+               categoryId="com.mobilesorcery.sdk.ui.category.main"
+               description="Build Project for all Profiles"
+               id="com.mobilesorcery.sdk.ui.finalize"
+               name="Build Project for all Profiles">
+         </command>
          </extension>
       <extension
             point="org.eclipse.ui.handlers">
@@ -372,33 +397,46 @@ icon="icons/launchshortcut.png">
                   <handler
                class="com.mobilesorcery.sdk.ui.internal.handlers.CompileFilesHandler"
                commandId="com.mobilesorcery.sdk.ui.compilefiles">
-               <activeWhen>
+               <!-- <activeWhen>
                <and>
                      <with
             variable="selection">
          <iterate
                ifEmpty="false"
                operator="and">
+            <or>
             <instanceof
                   value="org.eclipse.cdt.core.model.ITranslationUnit">
             </instanceof>
-         </iterate>
+            <instanceof
+                  value="org.eclipse.core.resources.IProject">
+            </instanceof>
+            </or>
+         </iterate> 
       </with>
       <test
                            forcePluginActivation="true"
                      property="com.mobilesorcery.sdk.testers.hasMoreNature">
       </test>
       </and>
-                     </activeWhen>
+                     </activeWhen> -->
          </handler>
                   <handler
                class="com.mobilesorcery.sdk.ui.internal.handlers.BuildProjectHandler"
                commandId="com.mobilesorcery.sdk.ui.build">
                </handler>
+               <handler
+               class="com.mobilesorcery.sdk.ui.internal.handlers.FilterProfilesHandler"
+               commandId="com.mobilesorcery.sdk.ui.profilefilter">
+               </handler>
+               <handler
+               class="com.mobilesorcery.sdk.ui.internal.handlers.FinalizeProjectHandler"
+               commandId="com.mobilesorcery.sdk.ui.finalize">
+               </handler>
       </extension>
       <extension
             point="org.eclipse.ui.menus">
-                     <menuContribution
+             <menuContribution
                locationURI="popup:org.eclipse.ui.popup.any?after=additions">
             <command
                   commandId="com.mobilesorcery.sdk.ui.compilefiles"
@@ -408,7 +446,17 @@ icon="icons/launchshortcut.png">
                      checkEnabled="true">
                </visibleWhen>
             </command>
-         </menuContribution>
+            </menuContribution>
+   	 	<menuContribution locationURI="popup:#CEditorContext?after=additions">
+            <command
+                  commandId="com.mobilesorcery.sdk.ui.compilefiles"
+                  label="Quick Compile"
+                  style="push">
+               <visibleWhen
+                     checkEnabled="true">
+               </visibleWhen>
+            </command>
+    </menuContribution>
          <menuContribution
                locationURI="popup:org.eclipse.ui.popup.any?after=additions">
             <command
@@ -439,23 +487,56 @@ icon="icons/launchshortcut.png">
                   commandId="com.mobilesorcery.sdk.ui.build"
                   label="Rebuild Project"
                   style="push">
-            </command>
             <visibleWhen
                      checkEnabled="true">
             </visibleWhen>
+            </command>
          </menuContribution>  
-         <!-- TODO: Activate this when enablement is properly handled             
             <menuContribution
                locationURI="menu:project?after=buildProject">
             <command
                   commandId="com.mobilesorcery.sdk.ui.build"
                   label="Rebuild Project"
                   style="push">
-            </command>
             <visibleWhen
                      checkEnabled="true">
             </visibleWhen>
-         </menuContribution> -->
+            </command></menuContribution> 
+                 <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+    <toolbar id="com.mobilesorcery.sdk.ui.profile.toolbar">
+        <control id="com.mobilesorcery.sdk.ui.changeActiveProfile"
+                class="com.mobilesorcery.sdk.ui.internal.actions.ChangeProfileWidget">
+            <visibleWhen 
+            		checkEnabled="true">
+            </visibleWhen>
+        </control>
+    </toolbar>
+    </menuContribution>
+     			<menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+             <toolbar
+               id="com.mobilesorcery.sdk.ui.profile.toolbar">
+                <command
+                  commandId="com.mobilesorcery.sdk.ui.profilefilter"
+                  label="Filter Profiles"
+                  tooltip="Filter Profiles for this project"
+                  icon="icons/filter.gif"
+                  style="push">
+            </command>
+            </toolbar>
+         </menuContribution>
+    
+ 			<menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+             <toolbar
+               id="com.mobilesorcery.sdk.ui.profile.toolbar">
+                <command
+                  commandId="com.mobilesorcery.sdk.ui.finalize"
+                  label="Build for all Profiles"
+                  tooltip="Build for all profiles of this project"
+                  icon="icons/binary.gif"
+                  style="push">
+            </command>
+            </toolbar>
+         </menuContribution> 
     <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
     <toolbar id="com.mobilesorcery.sdk.ui.changeActiveConfigToolbar">
         <control id="com.mobilesorcery.sdk.ui.changeActiveConfig"
@@ -474,4 +555,11 @@ icon="icons/launchshortcut.png">
    name="MoSync Experimental Activities" />
  </extension>
       
+      <extension point="org.eclipse.ui.bindings">
+  <key
+        commandId="com.mobilesorcery.sdk.ui.compilefiles"
+        schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+        sequence="M1+M2+I">
+  </key>
+</extension>
 </plugin>

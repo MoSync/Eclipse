@@ -31,10 +31,6 @@ public class Activator extends AbstractUIPlugin {
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.profiles.ui"; //$NON-NLS-1$
 
-    public static final String PHONE_IMAGE = "phone"; //$NON-NLS-1$
-
-    public static final String TARGET_PHONE_IMAGE = "target.phone"; //$NON-NLS-1$
-
     public static final String BUILD_FOR_PROFILE_IMAGE = "build";
 
 	// The shared instance
@@ -50,6 +46,7 @@ public class Activator extends AbstractUIPlugin {
 	 * (non-Javadoc)
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext)
 	 */
+	@Override
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
@@ -59,6 +56,7 @@ public class Activator extends AbstractUIPlugin {
 	 * (non-Javadoc)
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
 	 */
+	@Override
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
@@ -73,26 +71,9 @@ public class Activator extends AbstractUIPlugin {
 		return plugin;
 	}
 
+	@Override
 	public void initializeImageRegistry(ImageRegistry reg) {
-        reg.put(PHONE_IMAGE, ImageDescriptor.createFromFile(getClass(), "/icons/phone.png")); //$NON-NLS-1$
-        reg.put(TARGET_PHONE_IMAGE, ImageDescriptor.createFromFile(getClass(), "/icons/phoneTarget.png")); //$NON-NLS-1$
         reg.put(BUILD_FOR_PROFILE_IMAGE, ImageDescriptor.createFromFile(getClass(), "/icons/binary.gif"));
-	}
-	
-	public static Image resize(Image original, int width, int height, boolean disposeOriginal) {
-	    Display display = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell().getDisplay();
-
-	    Image scaled = new Image(display, width, height);	    
-	    GC gc = new GC(scaled);
-	    gc.setAntialias(SWT.ON);
-        gc.drawImage(original, 0, 0, original.getBounds().width, original.getBounds().height, 0, 0, width, height);
-        gc.dispose();
-        
-        if (disposeOriginal) {
-            original.dispose();
-        }
-        
-        return scaled;
 	}
 
 }

@@ -16,10 +16,10 @@ import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 
 public class DeploymentRunnable implements IRunnableWithProgress {
 
-	private IDeploymentStrategy strategy;
-	private MoSyncProject project;
-	private File deployFile;
-	private IDeviceFilter profiles;
+	private final IDeploymentStrategy strategy;
+	private final MoSyncProject project;
+	private final File deployFile;
+	private final IDeviceFilter profiles;
 
 	public DeploymentRunnable(MoSyncProject project, IDeploymentStrategy strategy, IDeviceFilter profiles, File deployFile) {
 		this.project = project;
@@ -28,6 +28,7 @@ public class DeploymentRunnable implements IRunnableWithProgress {
 		this.deployFile = deployFile;
 	}
 
+	@Override
 	public void run(IProgressMonitor monitor) throws InvocationTargetException,
 			InterruptedException {
 		if (deployFile != null) {
@@ -40,9 +41,9 @@ public class DeploymentRunnable implements IRunnableWithProgress {
 				throw new InvocationTargetException(e, "Could not save deploy file");
 			}
 		}
-		
+
 		try {
-			strategy.deploy(project, Arrays.asList(MoSyncTool.getDefault().getProfiles(profiles)), monitor);
+			strategy.deploy(project, Arrays.asList(MoSyncTool.getDefault().getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE).getProfiles(profiles)), monitor);
 		} catch (OperationCanceledException e) {
 		    // Ignore.
 		} catch (Exception e) {

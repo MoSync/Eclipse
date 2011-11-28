@@ -3,9 +3,9 @@ package com.mobilesorcery.sdk.capabilities.core.internal;
 import java.util.ArrayList;
 
 import com.mobilesorcery.sdk.capabilities.core.CompoundChangeRequest;
-import com.mobilesorcery.sdk.capabilities.core.ICapabilities;
 import com.mobilesorcery.sdk.capabilities.core.ICapabilitiesMatcher;
 import com.mobilesorcery.sdk.capabilities.core.IChangeRequest;
+import com.mobilesorcery.sdk.core.ICapabilities;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 
 public class DefaultCapabilitiesMatcher implements ICapabilitiesMatcher {

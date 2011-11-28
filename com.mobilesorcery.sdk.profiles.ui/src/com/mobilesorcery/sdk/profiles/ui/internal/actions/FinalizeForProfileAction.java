@@ -38,26 +38,27 @@ public class FinalizeForProfileAction extends Action {
     public FinalizeForProfileAction() {
         super("Finalize for this profile", Activator.getDefault().getImageRegistry().getDescriptor(Activator.BUILD_FOR_PROFILE_IMAGE));
     }
-    
-    public void run() {
+
+    @Override
+	public void run() {
         if (selection instanceof IStructuredSelection) {
             Object selected = ((IStructuredSelection)selection).getFirstElement();
             if (selected instanceof IProfile && project != null) {
                 //FinalizerParser.autoSwitchConfiguration(project);
                 IProfile profile = (IProfile) selected;
                 IBuildConfiguration cfg = project.getActiveBuildConfiguration();
-                IBuildVariant variant = new BuildVariant(profile, cfg == null ? null : cfg.getId(), true);
+                IBuildVariant variant = new BuildVariant(profile, cfg == null ? null : cfg.getId());
                 IBuildSession session = MoSyncBuilder.createFinalizerBuildSession(Arrays.asList(variant));
                 MoSyncBuildJob job = new MoSyncBuildJob(project, session, variant);
                 job.schedule();
             }
         }
     }
-          
+
     public void setCurrentProject(MoSyncProject currentProject) {
         this.project = currentProject;
     }
-    
+
     public void setSelection(ISelection selection) {
         this.selection = selection;
     }

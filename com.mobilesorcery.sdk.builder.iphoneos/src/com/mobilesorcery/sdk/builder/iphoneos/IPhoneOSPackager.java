@@ -28,7 +28,10 @@ import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IFileTreeDiff;
+import com.mobilesorcery.sdk.core.IPackagerDelegate;
 import com.mobilesorcery.sdk.core.IconManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -37,6 +40,7 @@ import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
+import com.mobilesorcery.sdk.profiles.IProfile;
 
 
 
@@ -51,14 +55,14 @@ public class IPhoneOSPackager extends PackageToolPackager
 	public final static String ID = "com.mobilesorcery.sdk.build.ios.packager";
 
     @Override
-	public void createPackage(MoSyncProject project, IBuildVariant variant, IBuildResult buildResult)
-    throws CoreException
-    {
+	public void createPackage(MoSyncProject project, IBuildSession session,
+			IBuildVariant variant, IFileTreeDiff diff, IBuildResult buildResult)
+			throws CoreException {
         try
         {
         	DefaultPackager intern = new DefaultPackager(project, variant);
 
-            super.createPackage(project, variant, buildResult);
+            super.createPackage(project, session, variant, diff, buildResult);
             File out = computeBuildResult(project, intern, variant);
             buildResult.setBuildResult(out);
 
@@ -74,6 +78,11 @@ public class IPhoneOSPackager extends PackageToolPackager
         catch (Exception e) {
         	buildResult.addError(e.getMessage());
         }
+    }
+
+    @Override
+    public String getGenerateMode(IProfile profile) {
+    	return BUILD_GEN_CPP_MODE;
     }
 
     private boolean shouldBuildWithXcodePref() {
