@@ -73,6 +73,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.activities.ICategory;
 import org.eclipse.ui.activities.ICategoryActivityBinding;
 import org.eclipse.ui.activities.IWorkbenchActivitySupport;
+import org.eclipse.ui.internal.presentations.util.LeftToRightTabOrder;
 import org.eclipse.ui.intro.IIntroManager;
 import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -91,6 +92,7 @@ import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.core.memory.MemoryLowListener;
 import com.mobilesorcery.sdk.profiles.IVendor;
+import com.mobilesorcery.sdk.ui.internal.LegacyProfileViewOpener;
 import com.mobilesorcery.sdk.ui.internal.MemoryLowDialog;
 import com.mobilesorcery.sdk.ui.internal.console.IDEProcessConsole;
 import com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator;
@@ -168,6 +170,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		}
 	};
 
+	private LegacyProfileViewOpener legacyProfileViewOpener;
+
 	/**
 	 * The constructor
 	 */
@@ -197,6 +201,9 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 				initializeLauncherParts();
 			}
 		});
+		legacyProfileViewOpener = new LegacyProfileViewOpener();
+		// Do not use addListener here, since it will trigger a deadlock-type error
+		listeners.addPropertyChangeListener(legacyProfileViewOpener);
 	}
 
 	private void initializeLauncherParts() {
@@ -742,4 +749,5 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	public void disposePlatformImages() {
 		platformImages.clear();
 	}
+
 }
