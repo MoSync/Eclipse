@@ -106,7 +106,7 @@ public class DefaultProfileFilterComposite extends Composite implements
 		platformSectionLayout.maxNumColumns = 8;
 		platformSectionMain.setLayout(platformSectionLayout);
 		ProfileManager mgr = MoSyncTool.getDefault().getProfileManager(
-				MoSyncTool.DEFAULT_PROFILE_MANAGER);
+				MoSyncTool.DEFAULT_PROFILE_TYPE);
 		IVendor[] vendors = mgr.getVendors();
 		for (IVendor vendor : vendors) {
 			PlatformControl platformComposite = createPlatformSelector(toolkit,
@@ -136,7 +136,7 @@ public class DefaultProfileFilterComposite extends Composite implements
 		capabilitiesSectionMain.setLayout(capabilitiesSectionLayout);
 
 		String[] availableCapabilities = MoSyncTool.getDefault()
-				.getProfileManager(MoSyncTool.DEFAULT_PROFILE_MANAGER)
+				.getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE)
 				.getAvailableCapabilities();
 
 		for (String capability : availableCapabilities) {
@@ -182,8 +182,7 @@ public class DefaultProfileFilterComposite extends Composite implements
 			Composite parent, IVendor platform) {
 		Composite result = toolkit.createComposite(parent);
 		result.setLayout(new GridLayout(1, false));
-		ImageDescriptor icon = platform.getIcon();
-		Image image = icon == null ? null : icon.createImage();// TODO: LEAK, LEAK!
+		Image image = MosyncUIPlugin.getDefault().getPlatformImage(platform, null);
 		String name = platform.getName();
 		Label iconLabel = null;
 		iconLabel = new Label(result, SWT.NONE);
@@ -227,7 +226,7 @@ public class DefaultProfileFilterComposite extends Composite implements
 		if (platforms == null) {
 			platforms = new HashSet<IVendor>(Arrays.asList(MoSyncTool
 					.getDefault()
-					.getProfileManager(MoSyncTool.DEFAULT_PROFILE_MANAGER)
+					.getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE)
 					.getVendors()));
 		}
 		this.platforms = platforms;
@@ -270,9 +269,7 @@ public class DefaultProfileFilterComposite extends Composite implements
 		DeviceCapabilitiesFilter capabilitiesFilter = new DeviceCapabilitiesFilter(
 				requiredCapabilities.toArray(new String[0]),
 				optionalCapabilities.toArray(new String[0]));
-		if (optionalCapabilities.size() > 0 || requiredCapabilities.size() > 0) {
-			project.getDeviceFilter().addFilter(capabilitiesFilter);
-		}
+		project.getDeviceFilter().addFilter(capabilitiesFilter);
 	}
 
 	@Override

@@ -199,7 +199,7 @@ public class EditDeviceListDialog extends Dialog {
         IDeviceFilter targetPhoneAcceptedProfiles = phone == null ? null : phone.getTransport().getAcceptedProfiles();
         IDeviceFilter filter = targetPhoneAcceptedProfiles == null ? emulatorFilter : new CompositeDeviceFilter(new IDeviceFilter[] { emulatorFilter,
                 targetPhoneAcceptedProfiles });
-        preferredProfile.setInput(MoSyncTool.getDefault().getProfileManager(MoSyncTool.DEFAULT_PROFILE_MANAGER).getVendors(filter));
+        preferredProfile.setInput(MoSyncTool.getDefault().getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE).getVendors(filter));
         preferredProfile.setFilters(new ViewerFilter[] { new DeviceViewerFilter(filter) });
     }
 

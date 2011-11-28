@@ -619,7 +619,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 				ProfileFilter requiredProfileFilter = new ProfileFilter();
 				requiredProfileFilter.setStyle(ProfileFilter.REQUIRE);
 				requiredProfileFilter.setProfiles(MoSyncTool.getDefault()
-						.getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER)
+						.getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE)
 						.getProfiles(requiredProfile), true);
 				filter.addFilter(requiredProfileFilter);
 			}
@@ -628,7 +628,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 				ProfileFilter disallowedProfileFilter = new ProfileFilter();
 				disallowedProfileFilter.setStyle(ProfileFilter.DISALLOW);
 				disallowedProfileFilter.setProfiles(MoSyncTool.getDefault()
-						.getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER)
+						.getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE)
 						.getProfiles(disallowedProfile), true);
 				filter.addFilter(disallowedProfileFilter);
 			}

@@ -218,7 +218,7 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
         profileLabelProvider = new ProfileLabelProvider(SWT.NONE);
         profileTree.setLabelProvider(profileLabelProvider);
         profileTree.setContentProvider(new ProfileContentProvider());
-        profileTree.setInput(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER).getVendors());
+        profileTree.setInput(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE).getVendors());
 
         profileTree.addSelectionChangedListener(new ISelectionChangedListener() {
             @Override
@@ -329,7 +329,7 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
 
                     updateProjectText(newProject);
                 } else {
-                    profileTree.setInput(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER).getVendors());
+                    profileTree.setInput(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE).getVendors());
                     profileTree.setFilters(new ViewerFilter[] { new DeviceViewerFilter( new CompositeDeviceFilter()) });
                     profileTree.refresh();
                 }
@@ -358,7 +358,7 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
             updateVisiblePane();
             if (currentProject != null) {
             	profileTree.setFilters(new ViewerFilter[] { new DeviceViewerFilter(currentProject.getDeviceFilter()) });
-            	profileTree.setInput(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER).getVendors());
+            	profileTree.setInput(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE).getVendors());
             }
         } else if (event.getPropertyName() == MoSyncProject.TARGET_PROFILE_CHANGED) {
             Object oldValue = event.getOldValue();
@@ -375,7 +375,7 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
         } else if (event.getSource() instanceof IDeviceFilter) {
         	deviceFilter.setCurrentProject(currentProject);
             profileTree.setFilters(new ViewerFilter[] { new DeviceViewerFilter(currentProject.getDeviceFilter()) });
-            profileTree.setInput(currentProject == null ? MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER).getVendors() : currentProject.getFilteredVendors());
+            profileTree.setInput(currentProject == null ? MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE).getVendors() : currentProject.getFilteredVendors());
         } else if (event.getPropertyName() == MoSyncTool.PROFILES_UPDATED ||
         		event.getPropertyName() == MoSyncProject.PROFILE_MANAGER_TYPE_KEY) {
             profileTree.getControl().getDisplay().asyncExec(new Runnable() {

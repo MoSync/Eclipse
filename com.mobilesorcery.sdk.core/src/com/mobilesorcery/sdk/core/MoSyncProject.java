@@ -70,6 +70,7 @@ import com.mobilesorcery.sdk.profiles.ITargetProfileProvider;
 import com.mobilesorcery.sdk.profiles.IVendor;
 import com.mobilesorcery.sdk.profiles.filter.AbstractDeviceFilter;
 import com.mobilesorcery.sdk.profiles.filter.CompositeDeviceFilter;
+import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 
 /**
  * This is a wrapper to provider mosync-specific capabilities to a vanilla
@@ -642,7 +643,8 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
         addDefaultResourceFilter(project, new NullProgressMonitor());
         MoSyncProject result = create(project);
         result.activateBuildConfigurations();
-        result.setProperty(PROFILE_MANAGER_TYPE_KEY, PropertyUtil.fromInteger(MoSyncTool.DEFAULT_PROFILE_MANAGER));
+        result.setProperty(PROFILE_MANAGER_TYPE_KEY, PropertyUtil.fromInteger(MoSyncTool.DEFAULT_PROFILE_TYPE));
+        result.getDeviceFilter().addFilter(new DeviceCapabilitiesFilter(new String[0], new String[0]));
         return result;
     }
 
@@ -662,7 +664,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 	 */
 	public void dispose() {
 		synchronized (projects) {
-			projects.remove(this);
+			projects.remove(this.project);
 		}
 
 		disposed = true;
@@ -986,7 +988,7 @@ public class MoSyncProject extends PropertyOwnerBase implements ITargetProfilePr
 
 	public ProfileManager getProfileManager() {
 		int mgrType = PropertyUtil.getInteger(this,
-				PROFILE_MANAGER_TYPE_KEY, MoSyncTool.LEGACY_PROFILE_MANAGER);
+				PROFILE_MANAGER_TYPE_KEY, MoSyncTool.LEGACY_PROFILE_TYPE);
 		return MoSyncTool.getDefault().getProfileManager(mgrType);
 	}
 

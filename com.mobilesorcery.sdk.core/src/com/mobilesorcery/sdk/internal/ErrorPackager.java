@@ -52,7 +52,7 @@ public class ErrorPackager extends AbstractPackager implements IPackager {
 
         IProcessConsole console = packager.getConsole();
         String errorMsg = MessageFormat.format("No packager defined for {0} (Runtime platform: {1})", targetProfile,
-                targetProfile.getPlatform());
+                targetProfile.getRuntime());
         console.addMessage(errorMsg);
         buildResult.addError(errorMsg);
     }

@@ -64,7 +64,7 @@ public class ProfileFilterDialog extends DeviceFilterDialog<ProfileFilter> {
         profiles.setContentProvider(contentProvider);
         profiles.getControl().setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), UIUtils.getDefaultListHeight()));
 
-        profiles.setInput(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER).getVendors());
+        profiles.setInput(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE).getVendors());
 
         profiles.setCheckedElements(filter.getProfiles());
 

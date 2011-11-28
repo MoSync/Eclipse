@@ -43,7 +43,7 @@ public class DeploymentRunnable implements IRunnableWithProgress {
 		}
 
 		try {
-			strategy.deploy(project, Arrays.asList(MoSyncTool.getDefault().getProfileManager(MoSyncTool.DEFAULT_PROFILE_MANAGER).getProfiles(profiles)), monitor);
+			strategy.deploy(project, Arrays.asList(MoSyncTool.getDefault().getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE).getProfiles(profiles)), monitor);
 		} catch (OperationCanceledException e) {
 		    // Ignore.
 		} catch (Exception e) {

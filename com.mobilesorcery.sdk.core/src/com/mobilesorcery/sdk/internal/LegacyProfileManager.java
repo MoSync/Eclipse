@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.TreeMap;
 
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.resource.ImageDescriptor;
 
 import com.mobilesorcery.sdk.core.ProfileManager;
@@ -36,8 +37,8 @@ public class LegacyProfileManager extends ProfileManager {
 		}
 	}
 
-	static ImageDescriptor getIconForVendor(String name) {
-		IPath iconPath = MoSyncTool.getDefault().getVendorsPath().append(name).append("icon.png");
+	static ImageDescriptor getIconForVendor(File vendorDir) {
+		IPath iconPath = new Path(vendorDir.getAbsolutePath()).append("icon.png");
 		File iconFile = iconPath.toFile();
 		ImageDescriptor icon = null;
 		try {
@@ -55,7 +56,7 @@ public class LegacyProfileManager extends ProfileManager {
 		ProfileParser parser = new ProfileParser();
 
 		String name = vendorDir.getName();
-		ImageDescriptor icon = getIconForVendor(name);
+		ImageDescriptor icon = getIconForVendor(MoSyncTool.getDefault().getVendorsPath().append(name).toFile());
 
 		Vendor vendor = new Vendor(name, icon);
 

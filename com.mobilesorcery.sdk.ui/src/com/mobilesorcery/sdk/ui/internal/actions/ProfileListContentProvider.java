@@ -30,7 +30,7 @@ public class ProfileListContentProvider implements IStructuredContentProvider {
 		HashSet<IProfile> profiles = null;
 		if (inputElement instanceof MoSyncTool) {
 			MoSyncTool tool = (MoSyncTool) inputElement;
-			ProfileManager mgr = tool.getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER);
+			ProfileManager mgr = tool.getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE);
 			vendors = mgr.getVendors();
 			profiles = new HashSet<IProfile>(Arrays.asList(mgr.getProfiles()));
 		} else if (inputElement instanceof MoSyncProject) {

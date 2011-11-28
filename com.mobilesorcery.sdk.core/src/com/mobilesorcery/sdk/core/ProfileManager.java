@@ -2,8 +2,10 @@ package com.mobilesorcery.sdk.core;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
+import com.mobilesorcery.sdk.internal.ProfileDBManager;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.IVendor;
@@ -44,20 +46,6 @@ public abstract class ProfileManager {
 		return filterProfiles(profiles, filter);
 	}
 
-	public static IProfile[] filterProfiles(IProfile[] profiles, IDeviceFilter filter) {
-		if (filter != null) {
-			ArrayList<IProfile> filtered = new ArrayList<IProfile>();
-			for (int i = 0; i < profiles.length; i++) {
-				if (filter.accept(profiles[i])) {
-					filtered.add(profiles[i]);
-				}
-			}
-			return filtered.toArray(new IProfile[filtered.size()]);
-		} else {
-			return profiles;
-		}
-	}
-
 	public IProfile[] getProfiles(String profileName) {
 		ArrayList<IProfile> profiles = new ArrayList<IProfile>();
 		IVendor[] vendors = getVendors();
@@ -73,6 +61,34 @@ public abstract class ProfileManager {
 
 	public String[] getAvailableCapabilities() {
 		return ICommonPermissions.ALL_PERMISSIONS;
+	}
+
+	public static IProfile[] filterProfiles(IProfile[] profiles, IDeviceFilter filter) {
+		if (filter != null) {
+			ArrayList<IProfile> filtered = new ArrayList<IProfile>();
+			for (int i = 0; i < profiles.length; i++) {
+				if (filter.accept(profiles[i])) {
+					filtered.add(profiles[i]);
+				}
+			}
+			return filtered.toArray(new IProfile[filtered.size()]);
+		} else {
+			return profiles;
+		}
+	}
+
+	/**
+	 * Given a profile of the {@code MoSyncTool#LEGACY_PROFILE_TYPE} type,
+	 * returns the closest matching profile of
+	 * {@code MoSyncTool#DEFAULT_PROFILE_TYPE}
+	 * @param profile
+	 * @return
+	 */
+	public static IProfile matchLegacyProfile(IProfile profile) {
+		String runtime = profile.getRuntime();
+		ProfileDBManager mgr = MoSyncTool.getDefault().defaultProfileManager();
+		List<IProfile> profiles = mgr.profilesForRuntime(runtime);
+		return profiles == null ? null : profiles.get(0);
 	}
 
 

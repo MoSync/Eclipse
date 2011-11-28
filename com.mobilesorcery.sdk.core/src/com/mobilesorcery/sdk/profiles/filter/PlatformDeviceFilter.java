@@ -56,7 +56,7 @@ public class PlatformDeviceFilter extends AbstractDeviceFilter {
 	}
 	
 	public boolean acceptProfile(IProfile profile) {
-		String platform = profile.getPlatform();
+		String platform = profile.getRuntime();
 		if (platform == null) {
 			return false;
 		}

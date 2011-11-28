@@ -38,7 +38,7 @@ public class BlackBerryPackager extends JavaPackager2 {
 		buildResult.setBuildResult(null);
 
 		// Convert the MIDlet to a cod file
-		String platform = variant.getProfile().getPlatform();
+		String platform = variant.getProfile().getRuntime();
 		JDE jde = matchingJDE(platform);
 		if (jde == null) {
 			throw new CoreException(new Status(IStatus.ERROR, BlackBerryPlugin.PLUGIN_ID, "Found no matching JDE for Blackberry platform " + platform));

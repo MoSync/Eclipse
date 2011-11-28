@@ -228,7 +228,7 @@ public class DeviceFilterComposite extends Composite {
 
     protected String getDeviceCountText() {
     	ProfileManager mgr = currentProject == null ?
-    			MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_MANAGER) :
+    			MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE) :
 				currentProject.getProfileManager();
         int selected = mgr.getProfiles(filter).length;
         int total = mgr.getProfiles().length;

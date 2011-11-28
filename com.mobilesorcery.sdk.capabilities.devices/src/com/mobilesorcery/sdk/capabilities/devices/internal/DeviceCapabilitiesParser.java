@@ -160,7 +160,7 @@ public class DeviceCapabilitiesParser {
 
 	private ICapabilities createCapabilities(IProfile profile) throws IOException {
 		CapabilitiesMap defaultMap = getDefaultCapabilitiesMap();
-		CapabilitiesMap runtimeMap = getCapabilitiesMapForRuntime(profile.getPlatform());
+		CapabilitiesMap runtimeMap = getCapabilitiesMapForRuntime(profile.getRuntime());
 		CapabilitiesMap profileMap = getCapabilitiesMapForProfile(profile);
 		return assembleCapabilities(profile, defaultMap, runtimeMap, profileMap);
 	}

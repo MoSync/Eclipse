@@ -83,11 +83,11 @@ public class Profile implements IProfile, Comparable<IProfile> {
     }
 
     @Override
-	public String getPlatform() {
+	public String getRuntime() {
         return platform;
     }
 
-    public void setPlatform(String platform) {
+    public void setRuntime(String platform) {
         this.platform = platform;
     }
 
@@ -107,10 +107,10 @@ public class Profile implements IProfile, Comparable<IProfile> {
     }
 
     public static String getAbbreviatedPlatform(IProfile targetProfile) {
-        String platform = targetProfile.getPlatform();
+        String platform = targetProfile.getRuntime();
         String abbrPlatform = platform;
-        if (platform.startsWith("profiles\\runtime\\")) {
-        	abbrPlatform = platform.substring("profiles\\runtime\\".length() + 1, platform.length());
+        if (platform.length() > "profiles\\runtimes\\".length()) {
+        	abbrPlatform = platform.substring("profiles\\runtimes\\".length(), platform.length());
         }
         return abbrPlatform;
     }

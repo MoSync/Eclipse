@@ -860,7 +860,9 @@ public class MoSyncBuilder extends ACBuilder {
             result.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
         }
 
-        result.addAll(Arrays.asList(MoSyncBuilder.getProfileIncludes(variant.getProfile())));
+        if (project.getProfileManager() == MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE)) {
+        	result.addAll(Arrays.asList(MoSyncBuilder.getProfileIncludes(variant.getProfile())));
+        }
 
         IPath[] additionalIncludePaths = PropertyUtil.getPaths(buildProperties, ADDITIONAL_INCLUDE_PATHS);
         for (int i = 0; i < additionalIncludePaths.length; i++) {

@@ -66,7 +66,7 @@ public interface IProfile {
      * eg <code>runtime/java/4</code>
      * @return
      */
-    String getPlatform();
+    String getRuntime();
     
     IPackager getPackager();
     

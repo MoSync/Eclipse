@@ -76,7 +76,7 @@ public class ProfileParser {
         LineNumberReader reader = new LineNumberReader(platformInfo);
         for (String line = reader.readLine(); line != null; line = reader.readLine()) {
             if (line.trim().length() != 0) {
-                profile.setPlatform(line.trim());
+                profile.setRuntime(line.trim());
             }
         }
     }

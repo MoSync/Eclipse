@@ -12,6 +12,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.xml.sax.Attributes;
 
@@ -20,6 +21,7 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.LineReader;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.ProfileManager;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.IVendor;
 import com.mobilesorcery.sdk.profiles.Profile;
@@ -27,24 +29,24 @@ import com.mobilesorcery.sdk.profiles.Vendor;
 
 public class ProfileDBManager extends ProfileManager {
 
-	private static final class ProfileDBLineHandler extends LineReader.XMLLineAdapter {
+	private static final class ProfileDBLineHandler extends
+			LineReader.XMLLineAdapter {
 
 		private final ProfileDBManager db;
 		private final HashMap<String, Vendor> families = new HashMap<String, Vendor>();
 		private final Set<IProfile> profiles = new HashSet<IProfile>();
+		private final HashMap<String, List<IProfile>> profilesForRuntime = new HashMap<String, List<IProfile>>();
 		private final HashSet<String> capabilities = new HashSet<String>();
 		private final CountDownLatch done;
 
-		public ProfileDBLineHandler(ProfileDBManager db) {
+		public ProfileDBLineHandler(ProfileDBManager db, CountDownLatch done) {
 			this.db = db;
-			done = new CountDownLatch(1);
+			this.done = done;
 		}
 
 		@Override
-		public void startElement(String uri,
-				  String localName,
-				  String qName,
-				  Attributes atts) {
+		public void startElement(String uri, String localName, String qName,
+				Attributes atts) {
 			if ("platform".equals(qName)) {
 				String familyName = atts.getValue("family");
 				String variant = atts.getValue("variant");
@@ -52,12 +54,15 @@ public class ProfileDBManager extends ProfileManager {
 
 				Vendor family = families.get(familyName);
 				if (family == null) {
-					ImageDescriptor icon = LegacyProfileManager.getIconForVendor(familyName);
+					IPath iconDir = MoSyncTool.getDefault().getProfilesPath()
+							.append("platforms").append(familyName);
+					ImageDescriptor icon = LegacyProfileManager
+							.getIconForVendor(iconDir.toFile());
 					family = new Vendor(familyName, icon);
 					families.put(familyName, family);
 				}
 				Profile profile = new Profile(family, variant);
-				profile.setPlatform(runtime);
+				setRuntime(profile, runtime);
 				family.addProfile(profile);
 				profiles.add(profile);
 			} else if ("capability".equals(qName)) {
@@ -66,9 +71,25 @@ public class ProfileDBManager extends ProfileManager {
 			}
 		}
 
+		private void setRuntime(Profile profile, String runtime) {
+			// For backwards compatibility, add platforms/runtime...
+			profile.setRuntime("profiles/runtimes/" + runtime);
+			String canonicalRuntime = toCanonicalRuntime(profile.getRuntime());
+			List<IProfile> profilesForThisRuntime = profilesForRuntime
+					.get(canonicalRuntime);
+			if (profilesForThisRuntime == null) {
+				profilesForThisRuntime = new ArrayList<IProfile>();
+				profilesForRuntime
+						.put(canonicalRuntime, profilesForThisRuntime);
+			}
+			profilesForThisRuntime.add(profile);
+		}
+
 		@Override
 		public synchronized void doStop(Exception e) {
-			done.countDown();
+			if (done != null) {
+				done.countDown();
+			}
 		}
 	}
 
@@ -78,6 +99,8 @@ public class ProfileDBManager extends ProfileManager {
 	private final TreeSet<String> capabilities = new TreeSet<String>(
 			String.CASE_INSENSITIVE_ORDER);
 
+	private final HashMap<String, List<IProfile>> profilesForRuntime = new HashMap<String, List<IProfile>>();
+
 	private boolean inited = false;
 
 	@Override
@@ -85,10 +108,13 @@ public class ProfileDBManager extends ProfileManager {
 		if (inited) {
 			return;
 		}
-		ProfileDBLineHandler lh = runProfileDb(new ArrayList<String>(Arrays.asList(new String[] { "-g", "*" })));
+		ProfileDBLineHandler lh = runProfileDb(new ArrayList<String>(
+				Arrays.asList(new String[] { "-g", "*" })));
 		vendors.clear();
 		vendors.putAll(lh.families);
 		capabilities.addAll(lh.capabilities);
+		profilesForRuntime.putAll(lh.profilesForRuntime);
+
 		inited = true;
 	}
 
@@ -96,10 +122,11 @@ public class ProfileDBManager extends ProfileManager {
 		CountDownLatch done = new CountDownLatch(1);
 		IPath profiledb = MoSyncTool.getDefault().getBinary("profiledb");
 
-		CommandLineExecutor profileDbExe = new CommandLineExecutor(CoreMoSyncPlugin.LOG_CONSOLE_NAME);
+		CommandLineExecutor profileDbExe = new CommandLineExecutor(
+				CoreMoSyncPlugin.LOG_CONSOLE_NAME);
 
-		ProfileDBLineHandler lh = new ProfileDBLineHandler(this);
-		profileDbExe.setLineHandlers(lh, lh);
+		ProfileDBLineHandler lh = new ProfileDBLineHandler(this, done);
+		profileDbExe.setLineHandlers(lh, null);
 
 		try {
 			ArrayList<String> cmdLine = new ArrayList<String>();
@@ -112,7 +139,7 @@ public class ProfileDBManager extends ProfileManager {
 		}
 
 		try {
-			lh.done.await(5, TimeUnit.SECONDS);
+			done.await(5, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
 			// Ignore.
 			Thread.currentThread().interrupt();
@@ -135,8 +162,8 @@ public class ProfileDBManager extends ProfileManager {
 		return capabilities.toArray(new String[0]);
 	}
 
-	public Set<IProfile> match(String profilePattern, String[] requiredCapabilities,
-			String[] optionalCapabilities) {
+	public Set<IProfile> match(String profilePattern,
+			String[] requiredCapabilities, String[] optionalCapabilities) {
 		ArrayList<String> args = new ArrayList<String>();
 		args.add("-m");
 		args.add(profilePattern);
@@ -147,6 +174,14 @@ public class ProfileDBManager extends ProfileManager {
 		}
 		ProfileDBLineHandler lh = runProfileDb(args);
 		return lh.profiles;
+	}
+
+	public List<IProfile> profilesForRuntime(String runtime) {
+		return profilesForRuntime.get(toCanonicalRuntime(runtime));
+	}
+
+	private static String toCanonicalRuntime(String runtime) {
+		return Util.convertSlashes(runtime);
 	}
 
 }

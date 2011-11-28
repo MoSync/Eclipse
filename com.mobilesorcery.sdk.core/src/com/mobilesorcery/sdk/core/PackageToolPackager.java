@@ -101,6 +101,10 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		IApplicationPermissions permissions = project.getPermissions();
 		String permissionsStr = Util.join(permissions.getRequestedPermissions(true).toArray(), ",");
 
+		if (project.getProfileManager() == MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE)) {
+			commandLine.flag("-t").with("device");
+		}
+
 		commandLine.flag("-p").with(program);
 		if (resource.exists()) {
 			commandLine.flag("-r").with(resource);

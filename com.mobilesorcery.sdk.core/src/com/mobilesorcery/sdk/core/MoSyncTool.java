@@ -96,9 +96,9 @@ public class MoSyncTool {
 
 	public static final String MOSYNC_HOME_UPDATED = "mosync.home.updated";
 
-	public static final int LEGACY_PROFILE_MANAGER = 1;
+	public static final int LEGACY_PROFILE_TYPE = 1;
 
-	public static final int DEFAULT_PROFILE_MANAGER = 0;
+	public static final int DEFAULT_PROFILE_TYPE = 0;
 
 	private static MoSyncTool instance = new MoSyncTool(true);
 
@@ -237,16 +237,16 @@ public class MoSyncTool {
 
 	public ProfileManager getProfileManager(int type) {
 		switch (type) {
-		case DEFAULT_PROFILE_MANAGER:
+		case DEFAULT_PROFILE_TYPE:
 			return defaultProfileManager();
-		case LEGACY_PROFILE_MANAGER:
+		case LEGACY_PROFILE_TYPE:
 			return legacyProfileManager();
 		default:
 			throw new IllegalArgumentException();
 		}
 	}
 
-	private synchronized ProfileManager legacyProfileManager() {
+	synchronized LegacyProfileManager legacyProfileManager() {
 		if (legacyProfileManager == null) {
 			legacyProfileManager = new LegacyProfileManager();
 			legacyProfileManager.init();
@@ -254,7 +254,7 @@ public class MoSyncTool {
 		return legacyProfileManager;
 	}
 
-	private synchronized ProfileManager defaultProfileManager() {
+	synchronized ProfileDBManager defaultProfileManager() {
 		if (defaultProfileManager == null) {
 			defaultProfileManager = new ProfileDBManager();
 			defaultProfileManager.init();
@@ -263,7 +263,7 @@ public class MoSyncTool {
 	}
 
 	private IVendor[] getVendors() {
-		return getProfileManager(DEFAULT_PROFILE_MANAGER).getVendors();
+		return getProfileManager(DEFAULT_PROFILE_TYPE).getVendors();
 	}
 
 	public void reinit() {
@@ -399,7 +399,7 @@ public class MoSyncTool {
 	}
 
 	public IVendor getVendor(String vendorName) {
-		return getProfileManager(DEFAULT_PROFILE_MANAGER).getVendor(vendorName);
+		return getProfileManager(DEFAULT_PROFILE_TYPE).getVendor(vendorName);
 	}
 
 	/**
@@ -545,7 +545,7 @@ public class MoSyncTool {
 	}
 
 	public IPath getRuntimePath(IProfile targetProfile) {
-		return getRuntimePath(targetProfile.getPlatform());
+		return getRuntimePath(targetProfile.getRuntime());
 	}
 
 	public IPath getRuntimePath(String platform) {

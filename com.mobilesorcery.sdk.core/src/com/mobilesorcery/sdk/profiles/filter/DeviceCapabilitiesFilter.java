@@ -58,7 +58,7 @@ public class DeviceCapabilitiesFilter extends AbstractDeviceFilter {
 		if (profiles == null) {
 			profiles = new HashSet<IProfile>();
 			ProfileDBManager mgr = (ProfileDBManager) MoSyncTool.getDefault()
-					.getProfileManager(MoSyncTool.DEFAULT_PROFILE_MANAGER);
+					.getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE);
 			Set<IProfile> matches = mgr.match("*", requiredCapabilities, optionalCapabilities);
 			profiles.addAll(matches);
 		}

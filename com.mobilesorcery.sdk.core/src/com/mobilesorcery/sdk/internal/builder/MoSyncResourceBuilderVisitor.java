@@ -121,7 +121,7 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 			int lstCount = countResourceFiles(resourceFiles, "lst");
 			if (lstxCount > 0) {
 				if (lstCount > 0) {
-					throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Cannot mix .lst files and .lstx files"));
+					throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Cannot mix .lst files and .lstx files or 'Resources' directories"));
 				}
 				// Beware; here we once more update the resourceFiles array...
 				resourceFiles = Arrays.asList(compileWithResComp(resourceFiles.toArray(new String[0]), monitor, dependencyManager, dependencyDelta));

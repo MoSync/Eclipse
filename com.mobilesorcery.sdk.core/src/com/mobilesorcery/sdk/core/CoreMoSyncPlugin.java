@@ -560,7 +560,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	}
 
 	private void installResourceListener() {
-		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.PRE_DELETE | IResourceChangeEvent.PRE_BUILD);
+		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.PRE_DELETE | IResourceChangeEvent.PRE_BUILD | IResourceChangeEvent.PRE_CLOSE);
 	}
 
 	private void deinstallResourceListener() {
@@ -760,7 +760,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
-		if (event.getType() == IResourceChangeEvent.PRE_DELETE) {
+		if (event.getType() == IResourceChangeEvent.PRE_DELETE || event.getType() == IResourceChangeEvent.PRE_CLOSE) {
 		    IResource resource = event.getResource();
 	        IProject project = (resource != null && resource.getType() == IResource.PROJECT) ? (IProject) resource : null;
 

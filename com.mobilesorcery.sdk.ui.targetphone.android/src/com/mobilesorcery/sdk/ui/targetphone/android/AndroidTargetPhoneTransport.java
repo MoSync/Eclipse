@@ -46,7 +46,7 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 	static final Pattern androidPlatformRegexp = Pattern.compile("^profiles\\\\runtimes\\\\android.*");
 	private static final IDeviceFilter ANDROID_DEVICE_FILTER = new AbstractDeviceFilter() {
 		public boolean acceptProfile(IProfile profile) {
-			String platform = profile.getPlatform();
+			String platform = profile.getRuntime();
 			boolean match = androidPlatformRegexp.matcher(platform).matches();
 			return match;
 		}
