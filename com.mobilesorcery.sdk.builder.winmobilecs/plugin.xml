@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="com.mobilesorcery.core.packagers">
+      <packager
+            implementation="com.mobilesorcery.sdk.builder.winmobilecs.WinMobileCSPackager"
+            pattern="^profiles[/|\\]runtimes[/|\\]winphone.*">
+      </packager>
+   </extension>
+
+</plugin>
