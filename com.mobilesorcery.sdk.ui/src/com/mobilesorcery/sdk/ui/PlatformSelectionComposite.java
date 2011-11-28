@@ -221,6 +221,7 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 				UIUtils.getDefaultListHeight()));
 		filterBox = new Text(inner, SWT.SEARCH);
 		filterBox.addListener(SWT.KeyUp, this);
+		filterBox.addListener(SWT.KeyDown, this);
 		showFilterBox(false);
 		profileTable = new TableViewer(inner, SWT.NONE);
 		profileLabelProvider = new RichProfileLabelProvider();
@@ -283,15 +284,22 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 				&& Character.isLetterOrDigit(event.character)) {
 			if (!filterShown) {
 				showFilterBox(true);
-				filterBox.append("" + event.character);
-				filterBox.forceFocus();
+			}
+			filterBox.append("" + event.character);
+			filterBox.forceFocus();
+		} else if (event.widget == filterBox && event.type == SWT.KeyDown) {
+			if (event.keyCode == SWT.ARROW_DOWN || event.keyCode == SWT.ARROW_UP) {
+				profileTable.getControl().forceFocus();
+				if (profileTable.getSelection().isEmpty() && profileTable.getElementAt(0) != null) {
+					profileTable.getTable().select(0);
+				}
 			}
 		} else if (event.widget == filterBox && event.type == SWT.KeyUp) {
 			String filterText = filterBox.getText();
 			profileTable.setFilters(new ViewerFilter[] { new ProfileTextFilter(filterText) });
 			if (filterText.length() == 0) {
 				showFilterBox(false);
-				profileTable.getControl().setFocus();
+				profileTable.getControl().forceFocus();
 			}
 		} else if (event.widget == CURRENT_SHELL && event.type == SWT.Deactivate) {
 			close(false);
