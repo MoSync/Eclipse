@@ -407,27 +407,31 @@ public class MoSyncBuilder extends ACBuilder {
      * @param profile The profile we want to use pipe-tool for.
      * @param isLib Indicates whether we are building a library or not.
      * @return The appropriate mode for the given profile.
+     * @throws CoreException
      */
-    public static String getPipeToolMode(IProfile profile, boolean isLib)
+    public static String getPipeToolMode(MoSyncProject project, IProfile profile, boolean isLib) throws CoreException
     {
         if ( isLib )
         {
         	return PipeTool.BUILD_LIB_MODE;
         }
 
-        Map<String, Object> properties = profile.getProperties( );
-        if ( properties.containsKey( "MA_PROF_OUTPUT_CPP" ) )
-        {
-        	return PipeTool.BUILD_GEN_CPP_MODE ;
+        if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
+	        Map<String, Object> properties = profile.getProperties( );
+	        if ( properties.containsKey( "MA_PROF_OUTPUT_CPP" ) )
+	        {
+	        	return PipeTool.BUILD_GEN_CPP_MODE ;
+	        }
+	        else if ( properties.containsKey( "MA_PROF_OUTPUT_JAVA" ) )
+	        {
+	        	return PipeTool.BUILD_GEN_JAVA_MODE;
+	        }
+        } else {
+        	return profile.getPackager().getGenerateMode(profile);
         }
-        else if ( properties.containsKey( "MA_PROF_OUTPUT_JAVA" ) )
-        {
-        	return PipeTool.BUILD_GEN_JAVA_MODE;
-        }
-        else
-        {
-        	return PipeTool.BUILD_C_MODE;
-        }
+
+        // The default mode
+        return PipeTool.BUILD_C_MODE;
     }
 
     /**
@@ -860,7 +864,7 @@ public class MoSyncBuilder extends ACBuilder {
             result.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
         }
 
-        if (project.getProfileManager() == MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE)) {
+        if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
         	result.addAll(Arrays.asList(MoSyncBuilder.getProfileIncludes(variant.getProfile())));
         }
 

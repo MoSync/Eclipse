@@ -9,6 +9,8 @@ import com.mobilesorcery.sdk.profiles.filter.IDeviceFilterFactory;
 
 public class DeviceCapabilitiesFilterFactory implements IDeviceFilterFactory  {
 
+	public static final String ID = "com.mobilesorcery.sdk.capabilities.devices.elementfactory";
+
 	@Override
 	public IDeviceFilter createFilter(IMemento child) {
 		IMemento capabilities = child.getChild("capabilities");

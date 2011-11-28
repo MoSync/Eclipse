@@ -81,6 +81,7 @@ import com.mobilesorcery.sdk.lib.JNALibInitializer;
 import com.mobilesorcery.sdk.profiles.filter.DeviceFilterFactoryProxy;
 import com.mobilesorcery.sdk.profiles.filter.IDeviceFilterFactory;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.ConstantFilterFactory;
+import com.mobilesorcery.sdk.profiles.filter.elementfactories.DeviceCapabilitiesFilterFactory;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.FeatureFilterFactory;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.ProfileFilterFactory;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.VendorFilterFactory;
@@ -542,6 +543,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		factories.put(VendorFilterFactory.ID, new VendorFilterFactory());
 		factories.put(FeatureFilterFactory.ID, new FeatureFilterFactory());
 		factories.put(ProfileFilterFactory.ID, new ProfileFilterFactory());
+		factories.put(DeviceCapabilitiesFilterFactory.ID, new DeviceCapabilitiesFilterFactory());
 
 		IConfigurationElement[] factoryCEs = Platform.getExtensionRegistry().getConfigurationElementsFor(PLUGIN_ID + ".filter.factories");
 		for (int i = 0; i < factoryCEs.length; i++) {

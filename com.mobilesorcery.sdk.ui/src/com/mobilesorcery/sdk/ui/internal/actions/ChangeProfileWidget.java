@@ -13,6 +13,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.CoolBar;
@@ -30,25 +31,32 @@ import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.PlatformSelectionComposite;
 import com.mobilesorcery.sdk.ui.ProfileLabelProvider;
 import com.mobilesorcery.sdk.ui.UIUtils;
+import com.snapps.swt.SquareButton;
 
 public class ChangeProfileWidget extends MoSyncProjectWidget implements
 		Listener {
 
-	private Button profileButton;
+	private SquareButton profileButton;
 
 	@Override
 	protected Control createControl(Composite parent) {
 		attachListeners();
 		Composite dummy = new Composite(parent, SWT.NONE);
 		GridLayout layout = UIUtils.newPrefsLayout(1);
-		layout.marginTop = 0;
+		layout.marginTop = 1;
+		layout.marginWidth = 2;
 		dummy.setLayout(layout);
-		GridData dummyData = new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT);
+		GridData dummyData = new GridData(UIUtils.getDefaultFieldSize(),
+				SWT.DEFAULT);
 		dummy.setLayoutData(dummyData);
-		profileButton = new Button(dummy, SWT.PUSH);
+		Combo justToGetTheHeight = new Combo(dummy, SWT.READ_ONLY);
+		int height = justToGetTheHeight.computeSize(SWT.DEFAULT, SWT.DEFAULT).y - 5;
+		justToGetTheHeight.dispose();
+		profileButton = new SquareButton(dummy, SWT.PUSH);
 		profileButton.addListener(SWT.Selection, this);
-		GridData profileButtonData = new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT);
-		profileButtonData.verticalAlignment = SWT.TOP;
+		GridData profileButtonData = new GridData(
+				UIUtils.getDefaultFieldSize(), height);
+		profileButtonData.verticalAlignment = SWT.CENTER;
 		profileButton.setLayoutData(profileButtonData);
 		updateUI(true);
 		return dummy;
@@ -78,13 +86,14 @@ public class ChangeProfileWidget extends MoSyncProjectWidget implements
 
 	public void updateUI(boolean force) {
 		boolean activeButton = project != null
-				&& project.getProfileManager() == MoSyncTool.getDefault()
-						.getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE);
+				&& project.getProfileManagerType() == MoSyncTool.DEFAULT_PROFILE_TYPE;
 		if (activeButton || force) {
 			ProfileLabelProvider lp = new ProfileLabelProvider(SWT.NONE);
 			lp.setImageSize(new Point(12, 12));
-			String text = project == null ? "" : lp.getText(project.getTargetProfile());
-			Image image = project == null ? null : lp.getImage(project.getTargetProfile().getVendor());
+			String text = project == null ? "" : lp.getText(project
+					.getTargetProfile());
+			Image image = project == null ? null : lp.getImage(project
+					.getTargetProfile().getVendor());
 			String name = project == null ? "" : project.getName();
 			profileButton.setText(text);
 			profileButton.setImage(image);
@@ -98,7 +107,8 @@ public class ChangeProfileWidget extends MoSyncProjectWidget implements
 
 	@Override
 	public void handleEvent(Event event) {
-		PlatformSelectionComposite psc = new PlatformSelectionComposite(profileButton);
+		PlatformSelectionComposite psc = new PlatformSelectionComposite(
+				profileButton);
 		psc.setProject(getProject());
 		psc.show();
 	}

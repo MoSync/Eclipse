@@ -2,6 +2,9 @@ package com.mobilesorcery.sdk.core;
 
 import org.eclipse.core.runtime.CoreException;
 
+import com.mobilesorcery.sdk.internal.PipeTool;
+import com.mobilesorcery.sdk.profiles.IProfile;
+
 /**
  * <p>To be used with the extension point com.mobilesorcery.core.packager.</p>
  * <p>A packager is called after compiling and linking.</p>
@@ -11,6 +14,11 @@ import org.eclipse.core.runtime.CoreException;
  *
  */
 public interface IPackagerDelegate {
+
+	final static String BUILD_C_MODE = PipeTool.BUILD_C_MODE;
+	final static String BUILD_GEN_CPP_MODE = PipeTool.BUILD_GEN_CPP_MODE;
+	final static String BUILD_GEN_JAVA_MODE = PipeTool.BUILD_GEN_JAVA_MODE;
+	final static String BUILD_GEN_CS_MODE = PipeTool.BUILD_GEN_CS_MODE;
 
     final static String EXTENSION_POINT = "com.mobilesorcery.core.packagers";
 
@@ -38,5 +46,20 @@ public interface IPackagerDelegate {
      * @throws CoreException
      */
     void setParameter(String param, String value) throws CoreException;
+
+
+	/**
+	 * Returns the generate mode to be used during linking, as
+	 * per defined in the {@link IPackagerDelegate#BUILD_C_MODE},
+	 * {@link IPackagerDelegate#BUILD_GEN_CPP_MODE},
+	 * {@link IPackagerDelegate#BUILD_GEN_CS_MODE},
+	 * {@link IPackagerDelegate#BUILD_GEN_JAVA_MODE}
+	 * <p>
+	 * <b>Note:</b> We may want to move this responsibility elsewhere,
+	 * ie extend the build step factories...?
+	 * </p>
+	 * @throws CoreException
+	 */
+	public String getGenerateMode(IProfile profile) throws CoreException;
 
 }

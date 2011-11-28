@@ -3,12 +3,14 @@ package com.mobilesorcery.sdk.core;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 import com.mobilesorcery.sdk.internal.ProfileDBManager;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.IVendor;
+import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 
 public abstract class ProfileManager {
 
@@ -84,11 +86,19 @@ public abstract class ProfileManager {
 	 * @param profile
 	 * @return
 	 */
-	public static IProfile matchLegacyProfile(IProfile profile) {
+	public static IProfile matchLegacyProfile(MoSyncProject project, IProfile profile) {
 		String runtime = profile.getRuntime();
 		ProfileDBManager mgr = MoSyncTool.getDefault().defaultProfileManager();
 		List<IProfile> profiles = mgr.profilesForRuntime(runtime);
-		return profiles == null ? null : profiles.get(0);
+		IProfile firstMatch = profiles == null ? null : profiles.get(0);
+		DeviceCapabilitiesFilter dcf = DeviceCapabilitiesFilter.extractFilterFromProject(project);
+		/*if (resolve) {
+			IProfile[] resolved = mgr.match(MoSyncTool.toString(firstMatch),
+					filter.getRequiredCapabilities().toArray(new String[0]),
+					filter.getOptionalCapabilities().toArray(new String[0])).toArray(new IProfile[0]);
+			firstMatch = resolved.length == 0 ? null : resolved[0];
+		}*/
+		return firstMatch;
 	}
 
 

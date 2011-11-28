@@ -94,7 +94,7 @@ public class LinkBuildStep extends AbstractBuildStep {
         if (requiresLinking) {
             String[] objectFiles = getObjectFilesForProject(session);
             pipeTool.setInputFiles(objectFiles);
-            String pipeToolMode = MoSyncBuilder.getPipeToolMode(targetProfile, isLib);
+            String pipeToolMode = MoSyncBuilder.getPipeToolMode(mosyncProject, targetProfile, isLib);
             pipeTool.setMode(pipeToolMode);
             pipeTool.setOutputFile(isLib ? libraryOutput : program);
             pipeTool.setLibraryPaths(MoSyncBuilder.resolvePaths(MoSyncBuilder.getLibraryPaths(project, buildProperties), resolver));

@@ -31,6 +31,7 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
+import com.mobilesorcery.sdk.core.IPackagerDelegate;
 import com.mobilesorcery.sdk.core.IconManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -39,6 +40,7 @@ import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
+import com.mobilesorcery.sdk.profiles.IProfile;
 
 
 
@@ -76,6 +78,11 @@ public class IPhoneOSPackager extends PackageToolPackager
         catch (Exception e) {
         	buildResult.addError(e.getMessage());
         }
+    }
+
+    @Override
+    public String getGenerateMode(IProfile profile) {
+    	return BUILD_GEN_CPP_MODE;
     }
 
     private boolean shouldBuildWithXcodePref() {

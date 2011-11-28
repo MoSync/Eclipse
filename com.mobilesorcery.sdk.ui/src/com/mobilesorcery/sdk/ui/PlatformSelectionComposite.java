@@ -1,16 +1,21 @@
 package com.mobilesorcery.sdk.ui;
 
 import java.util.HashMap;
-import java.util.HashSet;
 
+import org.eclipse.jface.util.Util;
+import org.eclipse.jface.viewers.IOpenListener;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.OwnerDrawLabelProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -28,12 +33,11 @@ import org.eclipse.swt.widgets.Text;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.ProfileManager;
-import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.IVendor;
 import com.mobilesorcery.sdk.ui.internal.actions.ProfileListContentProvider;
 
-public class PlatformSelectionComposite implements Listener, ISelectionChangedListener {
+public class PlatformSelectionComposite implements Listener, ISelectionChangedListener, IOpenListener {
 	public class ProfileTextFilter extends ViewerFilter {
 
 		private final String pattern;
@@ -120,11 +124,15 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 			GC gc = event.gc;
 			boolean drawLine = false;
 
+			boolean isTargetProfile = false;
+			Font originalFont = gc.getFont();
+			Font boldFont = MosyncUIPlugin.getDefault().getFont(MosyncUIPlugin.FONT_DEFAULT_BOLD);
 			if (obj instanceof IProfile) {
 				IProfile profile = (IProfile) obj;
 				mainText = profile.getName();
+				isTargetProfile = project.getTargetProfile() == profile;
 				if (mode == MoSyncTool.LEGACY_PROFILE_TYPE) {
-					IProfile platformProfile = ProfileManager.matchLegacyProfile(profile);
+					IProfile platformProfile = ProfileManager.matchLegacyProfile(project, profile);
 					subText = MoSyncTool.toString(platformProfile);
 				}
 			} else if (obj instanceof IVendor) {
@@ -134,11 +142,12 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 				height = image.getBounds().height + 2;
 				if (doPaint) {
 					gc.drawImage(image, bounds.x, bounds.y);
-					gc.setFont(MosyncUIPlugin.getDefault().getFont(
-							MosyncUIPlugin.FONT_DEFAULT_BOLD));
 					drawLine = true;
 				}
 				mainText = platform.getName();
+			}
+			if (obj instanceof IVendor || isTargetProfile) {
+				gc.setFont(boldFont);
 			}
 			Point mainTextExtent = gc.textExtent(mainText);
 			Point subTextExtent = subText.length() == 0 ? new Point(0, 0) : gc.textExtent(subText);
@@ -146,16 +155,23 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 				subTextExtent.y + mainTextExtent.y);
 			width = indentX + actualTextExtent.x;
 			height = Math.max(height, actualTextExtent.y);
+			Color black = event.display.getSystemColor(SWT.COLOR_BLACK);
+			Color gray = event.display.getSystemColor(SWT.COLOR_DARK_GRAY);
 			if (doPaint) {
-				gc.setForeground(event.display.getSystemColor(SWT.COLOR_BLACK));
+				gc.setForeground(black);
+				if (isTargetProfile) {
+					String checkmark = Util.isMac() ? "\u2713" : "*";
+					gc.drawText(checkmark, bounds.x + 8, bounds.y, true);
+				}
 				gc.drawText(mainText, bounds.x + indentX, bounds.y, true);
-				gc.setForeground(event.display.getSystemColor(SWT.COLOR_GRAY));
-				gc.drawText(subText, bounds.x + indentX, bounds.y + mainTextExtent.y);
+				gc.setForeground(gray);
+				gc.drawText(subText, bounds.x + indentX, bounds.y + mainTextExtent.y, true);
 				if (drawLine) {
 					gc.drawLine(bounds.x, bounds.y + height,
 							bounds.x + UIUtils.getDefaultFieldSize(), bounds.y
 									+ height);
 				}
+				gc.setFont(originalFont);
 			}
 
 			newBounds.width = width;
@@ -182,6 +198,7 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 	private TableViewer profileTable;
 	private int mode = -1;
 	private RichProfileLabelProvider profileLabelProvider;
+	private IProfile currentProfile;
 
 	private static Shell CURRENT_SHELL;
 
@@ -217,6 +234,7 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 		profileTable.getControl().setFocus();
 		profileTable.getControl().addListener(SWT.KeyDown, this);
 		profileTable.addSelectionChangedListener(this);
+		profileTable.addOpenListener(this);
 		inner.setBackground(profileTable.getControl().getBackground());
 		return main;
 	}
@@ -232,7 +250,7 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 	}
 
 	public void show() {
-		close();
+		close(false);
 		Shell shell = new Shell(control.getShell(), SWT.ON_TOP | SWT.TOOL);
 		CURRENT_SHELL = shell;
 		shell.setLayout(UIUtils.newPrefsLayout(1));
@@ -244,11 +262,14 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 		shell.open();
 	}
 
-	private void close() {
+	private void close(boolean saveTargetProfile) {
 		if (CURRENT_SHELL != null && !CURRENT_SHELL.isDisposed()) {
 			CURRENT_SHELL.close();
 		}
 		CURRENT_SHELL = null;
+		if (saveTargetProfile && currentProfile != null) {
+			project.setTargetProfile(currentProfile);
+		}
 	}
 
 	private void attachListeners(Shell shell) {
@@ -273,9 +294,9 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 				profileTable.getControl().setFocus();
 			}
 		} else if (event.widget == CURRENT_SHELL && event.type == SWT.Deactivate) {
-			close();
+			close(false);
 		} else if (event.keyCode == SWT.ESC && (event.type == SWT.KeyDown || event.type == SWT.KeyUp)) {
-			close();
+			close(false);
 		}
 	}
 
@@ -296,12 +317,27 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 
 	@Override
 	public void selectionChanged(SelectionChangedEvent event) {
-		IStructuredSelection selection = (IStructuredSelection) event.getSelection();
-		Object element = selection.getFirstElement();
+		updateFromSelection(event.getSelection());
+	}
+
+	private void updateFromSelection(ISelection selection) {
+		IStructuredSelection sSelection = (IStructuredSelection) selection;
+		Object element = sSelection.getFirstElement();
+		currentProfile = null;
 		if (element instanceof IProfile) {
 			IProfile profile = (IProfile) element;
-			project.setTargetProfile(profile);
-			close();
+			if (mode == MoSyncTool.LEGACY_PROFILE_TYPE) {
+				profile = ProfileManager.matchLegacyProfile(project, profile);
+			}
+			currentProfile = profile;
+		}
+	}
+
+	@Override
+	public void open(OpenEvent event) {
+		updateFromSelection(event.getSelection());
+		if (currentProfile != null) {
+			close(true);
 		}
 	}
 }

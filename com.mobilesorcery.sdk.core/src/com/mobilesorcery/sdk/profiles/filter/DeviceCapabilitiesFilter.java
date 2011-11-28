@@ -8,15 +8,20 @@ import java.util.Set;
 
 import org.eclipse.ui.IMemento;
 
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.internal.ProfileDBManager;
+import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
+import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
+import com.mobilesorcery.sdk.profiles.IVendor;
+import com.mobilesorcery.sdk.profiles.filter.elementfactories.DeviceCapabilitiesFilterFactory;
 
 public class DeviceCapabilitiesFilter extends AbstractDeviceFilter {
 
-	private final static String FACTORY_ID = "com.mobilesorcery.sdk.capabilities.devices.elementfactory";
+	private final static String FACTORY_ID =  DeviceCapabilitiesFilterFactory.ID;
 
 	private final String[] requiredCapabilities;
 	private final String[] optionalCapabilities;
@@ -62,6 +67,18 @@ public class DeviceCapabilitiesFilter extends AbstractDeviceFilter {
 			Set<IProfile> matches = mgr.match("*", requiredCapabilities, optionalCapabilities);
 			profiles.addAll(matches);
 		}
+	}
+
+	public static DeviceCapabilitiesFilter extractFilterFromProject(MoSyncProject project) {
+		ICompositeDeviceFilter compositeFilter = project.getDeviceFilter();
+		IDeviceFilter[] filters = compositeFilter.getFilters();
+		for (int i = 0; i < filters.length; i++) {
+			IDeviceFilter filter = filters[i];
+			if (filter instanceof DeviceCapabilitiesFilter) {
+				return (DeviceCapabilitiesFilter) filter;
+			}
+		}
+		return null;
 	}
 
 	@Override
