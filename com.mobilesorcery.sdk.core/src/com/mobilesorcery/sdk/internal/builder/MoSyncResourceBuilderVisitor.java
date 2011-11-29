@@ -112,16 +112,16 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 		Set<IResource> recompileThese = computeResourcesToRebuild(dependencyManager);
 		if (!recompileThese.isEmpty()) {
 			List<String> resourceFiles = new ArrayList<String>(Arrays.asList(getResourceFiles()));
-			File resDir = getResourcesDirectory();
 			int lstxCount = countResourceFiles(resourceFiles, "lstx");
-			if (resDir != null) {
-				lstxCount++;
-				resourceFiles.add(resDir.getAbsolutePath());
-			}
 			int lstCount = countResourceFiles(resourceFiles, "lst");
-			if (lstxCount > 0) {
-				if (lstCount > 0) {
-					throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Cannot mix .lst files and .lstx files or 'Resources' directories"));
+			if (lstxCount > 0 && lstCount > 0) {
+				throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Cannot mix .lst files and .lstx"));
+			}
+
+			if (lstxCount > 0 && lstCount == 0) {
+				File resDir = getResourcesDirectory();
+				if (resDir != null) {
+					resourceFiles.add(resDir.getAbsolutePath());
 				}
 				// Beware; here we once more update the resourceFiles array...
 				resourceFiles = Arrays.asList(compileWithResComp(resourceFiles.toArray(new String[0]), monitor, dependencyManager, dependencyDelta));
