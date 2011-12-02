@@ -158,11 +158,11 @@ public class ProfileDBManager extends ProfileManager {
 		inited = true;
 	}
 
-	public boolean isValid() {
+	public static boolean isAvailable() {
 		return getTool().toFile().exists();
 	}
 
-	private IPath getTool() {
+	private static IPath getTool() {
 		IPath profiledb = MoSyncTool.getDefault().getBinary("profiledb");
 		return profiledb;
 	}

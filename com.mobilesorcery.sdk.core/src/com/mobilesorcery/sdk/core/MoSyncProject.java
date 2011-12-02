@@ -60,6 +60,7 @@ import org.eclipse.ui.ide.undo.CreateProjectOperation;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.MoSyncProjectConverter1_2;
+import com.mobilesorcery.sdk.internal.ProfileDBManager;
 import com.mobilesorcery.sdk.internal.SecureProperties;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
@@ -660,8 +661,10 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		addDefaultResourceFilter(project, new NullProgressMonitor());
 		MoSyncProject result = create(project);
 		result.activateBuildConfigurations();
+		int pt = ProfileDBManager.isAvailable() ? MoSyncTool.DEFAULT_PROFILE_TYPE :
+			MoSyncTool.LEGACY_PROFILE_TYPE;
 		result.setProperty(PROFILE_MANAGER_TYPE_KEY,
-				PropertyUtil.fromInteger(MoSyncTool.DEFAULT_PROFILE_TYPE));
+				PropertyUtil.fromInteger(pt));
 		result.getDeviceFilter().addFilter(
 				new DeviceCapabilitiesFilter(new String[0], new String[0]));
 		return result;
