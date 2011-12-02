@@ -3,6 +3,8 @@ package com.mobilesorcery.sdk.builder.blackberry;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,14 +65,10 @@ public class JDE {
 	}
 
 	public Version guessVersion() throws IOException {
-		File rapc = getRapc().toFile();
 		CollectingLineHandler lines = new CollectingLineHandler();
 		CommandLineExecutor executor = new CommandLineExecutor(MoSyncBuilder.CONSOLE_ID);
 		executor.setLineHandlers(lines, lines);
-		executor.runCommandLine(new String[] {
-			rapc.getAbsolutePath(),
-			"-version"
-		});
+		runRapc(executor, new String[] { "-version" });
 
 		for (String line : lines.getLines()) {
 			Version version = guessVersion(line);
@@ -82,6 +80,16 @@ public class JDE {
 		return null;
 	}
 
+	private void runRapc(CommandLineExecutor exe, String[] args) throws IOException {
+		String[] baseCommand = new String[] { "java", "-classpath",
+				getRapc().toFile().getAbsolutePath(),
+				"net.rim.tools.compiler.Compiler" };
+		ArrayList<String> fullCommand = new ArrayList<String>();
+		fullCommand.addAll(Arrays.asList(baseCommand));
+		fullCommand.addAll(Arrays.asList(args));
+		exe.runCommandLine(fullCommand.toArray(new String[0]));
+	}
+
 	private Version guessVersion(String version) {
 		Matcher versionMatcher = JDE_RAPC_VERSION_PATTERN.matcher(version);
 		if (versionMatcher.matches()) {
@@ -91,7 +99,7 @@ public class JDE {
 	}
 
 	private IPath getRapc() {
-		return root.append("bin/rapc" + MoSyncTool.getBinExtension());
+		return root.append("bin/rapc.jar");
 	}
 
 	private IPath getPreverifier() {
@@ -148,7 +156,6 @@ public class JDE {
 	public void convertJARToCOD(File jar, File jad, File cod) throws IOException {
 		String codNameParam = getVersion().isOlder(VER_430) ? "codename" : "codname";
 		String[] rapcCommandLine = new String[] {
-				getRapc().toFile().getAbsolutePath(),
 				"import=" + getBootClasspath().toOSString(),
 				codNameParam + "=" + Util.getNameWithoutExtension(cod),
 				"-midlet",
@@ -158,7 +165,7 @@ public class JDE {
 		};
 		CommandLineExecutor executor = new CommandLineExecutor(MoSyncBuilder.CONSOLE_ID);
 		executor.setExecutionDirectory(jar.getParent());
-		executor.runCommandLine(rapcCommandLine);
+		runRapc(executor, rapcCommandLine);
 	}
 
 	public void sign(File finalOutput, KeystoreCertificateInfo certInfo) throws IOException {
@@ -171,7 +178,7 @@ public class JDE {
 		}
 
 		// BLURGH!
-		CommandLineBuilder commandLine = new CommandLineBuilder("javaw", true).flag("-jar").with(getSignTool().toFile().getAbsolutePath()).
+		CommandLineBuilder commandLine = new CommandLineBuilder("java", true).flag("-jar").with(getSignTool().toFile().getAbsolutePath()).
 			flag("-p", true).with(password).flag("-C").flag("-a").with(finalOutput);
 
 		CommandLineExecutor executor = new CommandLineExecutor(MoSyncBuilder.CONSOLE_ID);
@@ -185,7 +192,8 @@ public class JDE {
 
 	@Override
 	public String toString() {
-		return "JDE version " + version + " (" + root + ")";
+		String versionStr = (version == null ? "?" : version.asCanonicalString());
+		return "JDE version " + versionStr; //+ " (" + root + ")";
 	}
 
 

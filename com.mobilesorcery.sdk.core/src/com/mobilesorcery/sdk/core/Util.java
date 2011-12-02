@@ -805,7 +805,10 @@ public class Util {
         return permissionPath.segmentCount() > 1 ? permissionPath.removeLastSegments(1).toPortableString() : null;
     }
 
-	public static String convertSlashes(String abbreviatedPlatform) {
-		return abbreviatedPlatform.replace('\\', File.separatorChar).replace('/', File.separatorChar);
+	public static String convertSlashes(String str) {
+		if (str == null) {
+			return str;
+		}
+		return str.replace('\\', File.separatorChar).replace('/', File.separatorChar);
 	}
 }

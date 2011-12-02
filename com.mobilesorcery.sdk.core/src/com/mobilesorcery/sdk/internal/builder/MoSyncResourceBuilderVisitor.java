@@ -127,7 +127,9 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 				resourceFiles = Arrays.asList(compileWithResComp(resourceFiles.toArray(new String[0]), monitor, dependencyManager, dependencyDelta));
 			}
 
-			compileWithPipeTool(monitor, dependencyManager, dependencyDelta, resourceFiles.toArray(new String[0]));
+			if (!resourceFiles.isEmpty()) {
+				compileWithPipeTool(monitor, dependencyManager, dependencyDelta, resourceFiles.toArray(new String[0]));
+			}
 		}
 	}
 

@@ -5,8 +5,11 @@
    <extension
          point="com.mobilesorcery.core.packagers">
       <packager
+            id="com.mobilesorcery.sdk.builder.blackberry"
             implementation="com.mobilesorcery.sdk.builder.blackberry.BlackBerryPackager"
-            pattern="^profiles[/|\\]runtimes[/|\\]rim[/|\\].*">
+            pattern="^profiles[/|\\]runtimes[/|\\]rim[/|\\].*"
+            platformPattern="BlackBerry*"
+            platform="BlackBerry">
       </packager>
    </extension>
       <extension

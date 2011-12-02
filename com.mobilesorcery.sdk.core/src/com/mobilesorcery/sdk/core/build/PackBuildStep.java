@@ -22,6 +22,7 @@ import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.internal.PipeTool;
@@ -80,10 +81,9 @@ public class PackBuildStep extends AbstractBuildStep {
         		CoreMoSyncPlugin.getDefault().getLog().log(new Status(IStatus.WARNING, CoreMoSyncPlugin.PLUGIN_ID,
         			MessageFormat.format("Expected build result at {0}, but did not find it", buildResult.getBuildResult())));
         	}
-        	String platform = targetProfile.isEmulator() ? "N/A" : Profile.getAbbreviatedPlatform(targetProfile);
-            throw new IOException(MessageFormat.format("Failed to create package for {0} (platform: {1})", targetProfile, platform));
+        	throw new IOException(MessageFormat.format("Failed to create package for {0}", targetProfile));
         } else {
-            console.addMessage(MessageFormat.format("Created package: {0} (platform: {1})", buildResult.getBuildResult(), Profile.getAbbreviatedPlatform(targetProfile)));
+            console.addMessage(MessageFormat.format("Created package: {0} (profile: {1})", buildResult.getBuildResult(), MoSyncTool.toString(targetProfile)));
         }
 
         return CONTINUE;

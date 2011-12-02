@@ -418,13 +418,12 @@ public class MoSyncBuilder extends ACBuilder {
 
         if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
 	        Map<String, Object> properties = profile.getProperties( );
-	        if ( properties.containsKey( "MA_PROF_OUTPUT_CPP" ) )
-	        {
+	        if (properties.containsKey( "MA_PROF_OUTPUT_CPP" )) {
 	        	return PipeTool.BUILD_GEN_CPP_MODE ;
-	        }
-	        else if ( properties.containsKey( "MA_PROF_OUTPUT_JAVA" ) )
-	        {
+	        } else if (properties.containsKey("MA_PROF_OUTPUT_JAVA")) {
 	        	return PipeTool.BUILD_GEN_JAVA_MODE;
+	        } else if (properties.containsKey("MA_PROF_OUTPUT_CS")) {
+	        	return PipeTool.BUILD_GEN_CS_MODE;
 	        }
         } else {
         	return profile.getPackager().getGenerateMode(profile);

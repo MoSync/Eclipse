@@ -40,7 +40,7 @@ public class DefaultProfileFilterDialog extends Dialog {
 	public void configureShell(Shell newShell) {
 		super.configureShell(newShell);
 		Rectangle screenSize = Display.getCurrent().getPrimaryMonitor().getBounds();
-		newShell.setSize(screenSize.width / 2, screenSize.height / 2);
+		newShell.setSize(9 * screenSize.width / 11, 3 * screenSize.height / 4);
 		UIUtils.centerShell(newShell);
 	}
 

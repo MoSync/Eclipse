@@ -45,11 +45,11 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 			return UNLAUNCHABLE;
 		} else if (!isCorrectPackager(launchConfiguration)) {
 			return IEmulatorLauncher.UNLAUNCHABLE;
-		} if (askUserForLauncher(launchConfiguration, mode)) {
+		} if (shouldAskUserForLauncher(launchConfiguration, mode)) {
 			return IEmulatorLauncher.REQUIRES_CONFIGURATION;
 		} else if (!isCorrectlyInstalled()) {
 			IEmulatorLauncher preferredLauncher = CoreMoSyncPlugin.getDefault().getPreferredLauncher(IPhoneOSPackager.ID);
-			boolean useOtherLauncher = !askUserForLauncher(IPhoneOSPackager.ID) && !Util.equals(preferredLauncher.getId(), ID);
+			boolean useOtherLauncher = !shouldAskUserForLauncher(IPhoneOSPackager.ID) && !Util.equals(preferredLauncher.getId(), ID);
 			return isAutoSelectLaunch(launchConfiguration, mode) && useOtherLauncher ?
 					IEmulatorLauncher.UNLAUNCHABLE :
 					IEmulatorLauncher.REQUIRES_CONFIGURATION;
@@ -58,8 +58,8 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 		}
 	}
 
-	private boolean askUserForLauncher(ILaunchConfiguration launchConfiguration, String mode) {
-		return isCorrectlyInstalled() && isAutoSelectLaunch(launchConfiguration, mode) && askUserForLauncher(IPhoneOSPackager.ID);
+	private boolean shouldAskUserForLauncher(ILaunchConfiguration launchConfiguration, String mode) {
+		return isCorrectlyInstalled() && isAutoSelectLaunch(launchConfiguration, mode) && shouldAskUserForLauncher(IPhoneOSPackager.ID);
 	}
 
 	@Override
@@ -100,7 +100,7 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 		// If we are not auto-select, don't fallback to MoRe.
 		final boolean isAutomaticSelection = isAutoSelectLaunch(config, mode);
 		// And if we are supposed to ask the user, we do not really need to configure anything.
-		final boolean needsConfig = !askUserForLauncher(config, mode);
+		final boolean needsConfig = !shouldAskUserForLauncher(config, mode);
 
 		final IEmulatorLauncher[] result = new IEmulatorLauncher[] { null };
 		d.syncExec(new Runnable() {

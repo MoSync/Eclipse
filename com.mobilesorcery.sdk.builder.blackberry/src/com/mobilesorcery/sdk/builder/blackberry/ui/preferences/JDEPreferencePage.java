@@ -19,9 +19,10 @@ import com.mobilesorcery.sdk.builder.blackberry.BlackBerryPlugin;
 import com.mobilesorcery.sdk.builder.blackberry.GuessVersionJob;
 import com.mobilesorcery.sdk.builder.blackberry.JDE;
 import com.mobilesorcery.sdk.ui.SimpleListEditor;
+import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class JDEPreferencePage extends PreferencePage implements IWorkbenchPreferencePage{
-	
+
 	private SimpleListEditor<JDE> editor;
 
 	public JDEPreferencePage() {
@@ -31,26 +32,26 @@ public class JDEPreferencePage extends PreferencePage implements IWorkbenchPrefe
 
 	@Override
 	public void init(IWorkbench workbench) {
-		
+
 	}
 
 	@Override
 	protected Control createContents(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(1, false));
-		
+
 		editor = new SimpleListEditor<JDE>(main, SWT.NONE) {
 			@Override
 			public boolean edit(Object selection, boolean add) {
 				return openEditor((JDE) selection, add);
 			}
-			
+
 			@Override
 			public JDE createObject() {
 				return new JDE(new Path(""), null);
 			}
 		};
-		
+
 		editor.setInput(getJDEs());
 		editor.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true, 1, 1));
 		return main;
@@ -83,10 +84,11 @@ public class JDEPreferencePage extends PreferencePage implements IWorkbenchPrefe
 			selection.apply(newJDE);
 			return true;
 		}
-		
-		return false; 
+
+		return false;
 	}
 
+	@Override
 	public boolean performOk() {
 		BlackBerryPlugin.getDefault().setJDEs(editor.getEditedInput());
 		return super.performOk();

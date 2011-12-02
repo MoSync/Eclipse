@@ -1,6 +1,8 @@
 package com.mobilesorcery.sdk.ui;
 
+import java.text.MessageFormat;
 import java.util.HashMap;
+import java.util.List;
 
 import org.eclipse.jface.util.Util;
 import org.eclipse.jface.viewers.IOpenListener;
@@ -35,9 +37,12 @@ import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.ProfileManager;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.IVendor;
+import com.mobilesorcery.sdk.profiles.Profile;
+import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 import com.mobilesorcery.sdk.ui.internal.actions.ProfileListContentProvider;
 
-public class PlatformSelectionComposite implements Listener, ISelectionChangedListener, IOpenListener {
+public class PlatformSelectionComposite implements Listener,
+		ISelectionChangedListener, IOpenListener {
 	public class ProfileTextFilter extends ViewerFilter {
 
 		private final String pattern;
@@ -126,15 +131,13 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 
 			boolean isTargetProfile = false;
 			Font originalFont = gc.getFont();
-			Font boldFont = MosyncUIPlugin.getDefault().getFont(MosyncUIPlugin.FONT_DEFAULT_BOLD);
+			Font boldFont = MosyncUIPlugin.getDefault().getFont(
+					MosyncUIPlugin.FONT_DEFAULT_BOLD);
 			if (obj instanceof IProfile) {
 				IProfile profile = (IProfile) obj;
 				mainText = profile.getName();
 				isTargetProfile = project.getTargetProfile() == profile;
-				if (mode == MoSyncTool.LEGACY_PROFILE_TYPE) {
-					IProfile platformProfile = ProfileManager.matchLegacyProfile(project, profile);
-					subText = MoSyncTool.toString(platformProfile);
-				}
+				subText = getProfileDescription(profile);
 			} else if (obj instanceof IVendor) {
 				IVendor platform = (IVendor) obj;
 				Image image = MosyncUIPlugin.getDefault().getPlatformImage(
@@ -150,9 +153,10 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 				gc.setFont(boldFont);
 			}
 			Point mainTextExtent = gc.textExtent(mainText);
-			Point subTextExtent = subText.length() == 0 ? new Point(0, 0) : gc.textExtent(subText);
+			Point subTextExtent = subText.length() == 0 ? new Point(0, 0) : gc
+					.textExtent(subText);
 			Point actualTextExtent = new Point(mainTextExtent.x,
-				subTextExtent.y + mainTextExtent.y);
+					subTextExtent.y + mainTextExtent.y);
 			width = indentX + actualTextExtent.x;
 			height = Math.max(height, actualTextExtent.y);
 			Color black = event.display.getSystemColor(SWT.COLOR_BLACK);
@@ -165,7 +169,8 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 				}
 				gc.drawText(mainText, bounds.x + indentX, bounds.y, true);
 				gc.setForeground(gray);
-				gc.drawText(subText, bounds.x + indentX, bounds.y + mainTextExtent.y, true);
+				gc.drawText(subText, bounds.x + indentX, bounds.y
+						+ mainTextExtent.y, true);
 				if (drawLine) {
 					gc.drawLine(bounds.x, bounds.y + height,
 							bounds.x + UIUtils.getDefaultFieldSize(), bounds.y
@@ -179,14 +184,25 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 			return newBounds;
 		}
 
-		private Point union(Point... points) {
-			int x = 0;
-			int y = 0;
-			for (Point point : points) {
-				x = Math.max(x, point.x);
-				y = Math.max(y, point.y);
+		private String getProfileDescription(IProfile profile) {
+			if (mode == MoSyncTool.LEGACY_PROFILE_TYPE) {
+				IProfile platformProfile = DeviceCapabilitiesFilter
+						.matchLegacyProfile(project, profile);
+				if (platformProfile != null) {
+					return MoSyncTool.toString(platformProfile);
+				} else {
+					List<IProfile> filteredOutProfile = MoSyncTool.getDefault()
+							.getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE)
+							.getProfilesForRuntime(profile.getRuntime());
+					if (filteredOutProfile != null
+							&& filteredOutProfile.size() > 0) {
+						return MessageFormat.format("(Filtered out - {0})",
+								MoSyncTool.toString(filteredOutProfile.get(0)));
+					}
+				}
+				return MessageFormat.format("({0}: Unknown runtime", Profile.getAbbreviatedPlatform(profile));
 			}
-			return new Point(x, y);
+			return "";
 		}
 
 	}
@@ -217,8 +233,8 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 		GridLayout innerData = UIUtils.newPrefsLayout(1);
 		innerData.verticalSpacing = 0;
 		inner.setLayout(innerData);
-		inner.setLayoutData(new GridData(UIUtils.getDefaultFieldSize(),
-				UIUtils.getDefaultListHeight()));
+		inner.setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), UIUtils
+				.getDefaultListHeight()));
 		filterBox = new Text(inner, SWT.SEARCH);
 		filterBox.addListener(SWT.KeyUp, this);
 		filterBox.addListener(SWT.KeyDown, this);
@@ -228,7 +244,8 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 		profileTable.setLabelProvider(profileLabelProvider);
 		profileTable.setContentProvider(new ProfileListContentProvider());
 		setMode(MoSyncTool.DEFAULT_PROFILE_TYPE);
-		GridData profileTableData = new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT);
+		GridData profileTableData = new GridData(UIUtils.getDefaultFieldSize(),
+				SWT.DEFAULT);
 		profileTableData.grabExcessVerticalSpace = true;
 		profileTableData.verticalAlignment = SWT.TOP;
 		profileTable.getControl().setLayoutData(profileTableData);
@@ -242,7 +259,8 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 
 	private void showFilterBox(boolean show) {
 		filterShown = show;
-		setMode(show ? MoSyncTool.LEGACY_PROFILE_TYPE : MoSyncTool.DEFAULT_PROFILE_TYPE);
+		setMode(show ? MoSyncTool.LEGACY_PROFILE_TYPE
+				: MoSyncTool.DEFAULT_PROFILE_TYPE);
 		GridData data = show ? new GridData(SWT.FILL, SWT.NONE, true, false)
 				: new GridData(0, 0);
 		filterBox.setLayoutData(data);
@@ -252,13 +270,14 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 
 	public void show() {
 		close(false);
-		Shell shell = new Shell(control.getShell(), SWT.ON_TOP | SWT.TOOL);
+		final Shell shell = new Shell(control.getShell(), SWT.ON_TOP | SWT.TOOL);
 		CURRENT_SHELL = shell;
 		shell.setLayout(UIUtils.newPrefsLayout(1));
 		createContentArea(shell);
 		shell.pack();
 		Point controlLocation = control.toDisplay(control.getLocation());
-		shell.setLocation(controlLocation.x, controlLocation.y + control.getSize().y);
+		shell.setLocation(controlLocation.x,
+				controlLocation.y + control.getSize().y);
 		attachListeners(shell);
 		shell.open();
 	}
@@ -288,22 +307,27 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 			filterBox.append("" + event.character);
 			filterBox.forceFocus();
 		} else if (event.widget == filterBox && event.type == SWT.KeyDown) {
-			if (event.keyCode == SWT.ARROW_DOWN || event.keyCode == SWT.ARROW_UP) {
+			if (event.keyCode == SWT.ARROW_DOWN
+					|| event.keyCode == SWT.ARROW_UP) {
 				profileTable.getControl().forceFocus();
-				if (profileTable.getSelection().isEmpty() && profileTable.getElementAt(0) != null) {
+				if (profileTable.getSelection().isEmpty()
+						&& profileTable.getElementAt(0) != null) {
 					profileTable.getTable().select(0);
 				}
 			}
 		} else if (event.widget == filterBox && event.type == SWT.KeyUp) {
 			String filterText = filterBox.getText();
-			profileTable.setFilters(new ViewerFilter[] { new ProfileTextFilter(filterText) });
+			profileTable.setFilters(new ViewerFilter[] { new ProfileTextFilter(
+					filterText) });
 			if (filterText.length() == 0) {
 				showFilterBox(false);
 				profileTable.getControl().forceFocus();
 			}
-		} else if (event.widget == CURRENT_SHELL && event.type == SWT.Deactivate) {
+		} else if (event.widget == CURRENT_SHELL
+				&& event.type == SWT.Deactivate) {
 			close(false);
-		} else if (event.keyCode == SWT.ESC && (event.type == SWT.KeyDown || event.type == SWT.KeyUp)) {
+		} else if (event.keyCode == SWT.ESC
+				&& (event.type == SWT.KeyDown || event.type == SWT.KeyUp)) {
 			close(false);
 		}
 	}
@@ -335,7 +359,8 @@ public class PlatformSelectionComposite implements Listener, ISelectionChangedLi
 		if (element instanceof IProfile) {
 			IProfile profile = (IProfile) element;
 			if (mode == MoSyncTool.LEGACY_PROFILE_TYPE) {
-				profile = ProfileManager.matchLegacyProfile(project, profile);
+				profile = DeviceCapabilitiesFilter.matchLegacyProfile(project,
+						profile);
 			}
 			currentProfile = profile;
 		}

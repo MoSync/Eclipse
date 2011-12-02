@@ -78,6 +78,7 @@ import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLauncherProxy;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 import com.mobilesorcery.sdk.lib.JNALibInitializer;
+import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.filter.DeviceFilterFactoryProxy;
 import com.mobilesorcery.sdk.profiles.filter.IDeviceFilterFactory;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.ConstantFilterFactory;
@@ -108,7 +109,9 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	private static LowMemoryManager lowMemoryManager;
 
-    private final ArrayList<Pattern> patterns = new ArrayList<Pattern>();
+    private final ArrayList<Pattern> runtimePatterns = new ArrayList<Pattern>();
+
+    private final ArrayList<Pattern> platformPatterns = new ArrayList<Pattern>();
 
     private final ArrayList<IPackager> packagers = new ArrayList<IPackager>();
 
@@ -415,29 +418,52 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     private void initPackagers() {
         IConfigurationElement[] elements = Platform.getExtensionRegistry().getConfigurationElementsFor(IPackager.EXTENSION_POINT);
         for (int i = 0; i < elements.length; i++) {
-            String pattern = elements[i].getAttribute(PackagerProxy.PATTERN);
-            Pattern platformPattern = Pattern.compile(pattern);
-            patterns.add(platformPattern);
-            packagers.add(new PackagerProxy(elements[i]));
+        	try {
+	            String runtime = elements[i].getAttribute(PackagerProxy.RUNTIME_PATTERN);
+	            String platform = elements[i].getAttribute(PackagerProxy.PLATFORM_PATTERN);
+	            Pattern runtimePattern = runtime == null ? null : Pattern.compile(runtime);
+	            Pattern platformPattern = platform == null ? null : Pattern.compile(platform);
+	            runtimePatterns.add(runtimePattern);
+	            platformPatterns.add(platformPattern);
+	            packagers.add(new PackagerProxy(elements[i]));
+        	} catch (Exception e) {
+        		CoreMoSyncPlugin.getDefault().log(e);
+        	}
         }
     }
 
     /**
-     * Returns the packager for a specific platform.
-     * @param platform
+     * Returns the packager for a specific project/platform.
+     * @param project The profile type
+     * @param profile The profile to package for
      * @return A non-null packager. If no packager is found,
      * a default <code>ErrorPackager</code> is returned
      * @see ErrorPackager
      */
-    public IPackager getPackager(String platform) {
+    public IPackager getPackager(int profileType, IProfile profile) {
+    	String runtime = profile.getRuntime();
+    	String platform = profile.getVendor().getName();
+    	IPackager packager = null;
+    	if (profileType == MoSyncTool.DEFAULT_PROFILE_TYPE) {
+    		packager = matchPackager(platformPatterns, platform);
+    	}
+    	if (packager == null) {
+    		packager = matchPackager(runtimePatterns, runtime);
+    	}
+    	if (packager == null) {
+    		packager = ErrorPackager.getDefault();
+    	}
+        return packager;
+    }
+
+    private IPackager matchPackager(List<Pattern> patterns, String matchingCriteria) {
         for (int i = 0; i < patterns.size(); i++) {
             Pattern pattern = patterns.get(i);
-            if (pattern.matcher(platform).matches()) {
+            if (pattern != null && pattern.matcher(matchingCriteria).matches()) {
                 return packagers.get(i);
             }
         }
-
-        return ErrorPackager.getDefault();
+        return null;
     }
 
     /**

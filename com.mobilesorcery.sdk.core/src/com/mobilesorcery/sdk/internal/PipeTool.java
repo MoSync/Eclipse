@@ -165,12 +165,7 @@ public class PipeTool {
         	args.add("-stabs=stabs.tab");
         }
 
-        boolean programMode = BUILD_C_MODE == mode ||
-                              BUILD_GEN_CPP_MODE == mode ||
-                              BUILD_GEN_JAVA_MODE == mode ||
-                              BUILD_LIB_MODE == mode;
-
-
+        boolean programMode = BUILD_RESOURCES_MODE != mode;
         if (programMode) {
             if (argumentMap != null) {
             	addMemoryArg(args, argumentMap, MoSyncBuilder.MEMORY_HEAPSIZE_KB, DEFAULT_HEAP_SIZE_KB, "-heapsize");
@@ -210,10 +205,7 @@ public class PipeTool {
 
         args.addAll(Arrays.asList(inputFiles));
 
-        if ( BUILD_C_MODE == mode ||
-             BUILD_LIB_MODE == mode ||
-             BUILD_GEN_CPP_MODE == mode ||
-             BUILD_GEN_JAVA_MODE == mode )
+        if (programMode)
         {
             for (int i = 0; libraries != null && i < libraries.length; i++) {
                 args.add(Util.replace(libraries[i].toOSString(), resolver));

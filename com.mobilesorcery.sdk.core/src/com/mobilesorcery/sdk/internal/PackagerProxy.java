@@ -27,7 +27,8 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class PackagerProxy implements IPackager {
 
-    public final static String PATTERN = "pattern";
+	public final static String RUNTIME_PATTERN = "pattern";
+	public final static String PLATFORM_PATTERN = "platformPattern";
     public final static String CLASS = "implementation";
 
     private final IConfigurationElement element;

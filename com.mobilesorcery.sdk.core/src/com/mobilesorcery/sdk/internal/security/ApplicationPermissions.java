@@ -49,8 +49,9 @@ public class ApplicationPermissions implements IApplicationPermissions {
 
     public ApplicationPermissions(MoSyncProject project) {
         this.project = project;
-        for (int i = 0; i < ICommonPermissions.ALL_PERMISSIONS.length; i++) {
-            addAvailablePermission(ICommonPermissions.ALL_PERMISSIONS[i]);
+        String[] permissions = project.getProfileManager().getAvailableCapabilities(true);
+        for (int i = 0; i < permissions.length; i++) {
+            addAvailablePermission(permissions[i]);
         }
 
         refresh();

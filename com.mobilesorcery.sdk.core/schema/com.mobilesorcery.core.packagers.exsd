@@ -52,7 +52,7 @@
          <attribute name="pattern" type="string" use="required">
             <annotation>
                <documentation>
-                  A regexp pattern for matching the runtime platform to a packager
+                  A regexp pattern for matching the runtime platform to a packager; for example &quot;profiles[\\/]runtimes[\\/]JavaME.*&quot;
                </documentation>
             </annotation>
          </attribute>
@@ -70,6 +70,13 @@
             <annotation>
                <documentation>
                   An optional id
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="platformPattern" type="string">
+            <annotation>
+               <documentation>
+                  A regexp pattern for matching the platform name to a packager; for example &quot;Android*&quot;
                </documentation>
             </annotation>
          </attribute>

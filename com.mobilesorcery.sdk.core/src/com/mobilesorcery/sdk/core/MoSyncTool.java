@@ -123,6 +123,8 @@ public class MoSyncTool {
 
 	private ProfileDBManager defaultProfileManager;
 
+	private int profileManagerType;
+
 	private MoSyncTool(boolean initListeners) {
 		if (initListeners) {
 			addPreferenceStoreListeners();
@@ -246,7 +248,7 @@ public class MoSyncTool {
 		}
 	}
 
-	synchronized LegacyProfileManager legacyProfileManager() {
+	private synchronized LegacyProfileManager legacyProfileManager() {
 		if (legacyProfileManager == null) {
 			legacyProfileManager = new LegacyProfileManager();
 			legacyProfileManager.init();
@@ -254,7 +256,7 @@ public class MoSyncTool {
 		return legacyProfileManager;
 	}
 
-	synchronized ProfileDBManager defaultProfileManager() {
+	private synchronized ProfileDBManager defaultProfileManager() {
 		if (defaultProfileManager == null) {
 			defaultProfileManager = new ProfileDBManager();
 			defaultProfileManager.init();
@@ -263,7 +265,7 @@ public class MoSyncTool {
 	}
 
 	private IVendor[] getVendors() {
-		return getProfileManager(DEFAULT_PROFILE_TYPE).getVendors();
+		return getProfileManager(profileManagerType).getVendors();
 	}
 
 	public void reinit() {
@@ -282,6 +284,10 @@ public class MoSyncTool {
 				}
 				initFeatureDescriptions();
 				initProperties();
+				profileManagerType =
+						new ProfileDBManager().isValid() ?
+							DEFAULT_PROFILE_TYPE :
+							LEGACY_PROFILE_TYPE;
 			} finally {
 				inited = true;
 				listeners.firePropertyChange(PROFILES_UPDATED, null, this);
@@ -399,7 +405,7 @@ public class MoSyncTool {
 	}
 
 	public IVendor getVendor(String vendorName) {
-		return getProfileManager(DEFAULT_PROFILE_TYPE).getVendor(vendorName);
+		return getProfileManager(profileManagerType).getVendor(vendorName);
 	}
 
 	/**

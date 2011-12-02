@@ -17,6 +17,7 @@ import java.util.Map;
 
 import com.mobilesorcery.sdk.core.Filter;
 import com.mobilesorcery.sdk.core.IPackager;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 
 public interface IProfile {
 
@@ -35,14 +36,14 @@ public interface IProfile {
      * @return
      */
     IVendor getVendor();
-    
+
     /**
      * Returns the name of this handset profile
      * @return
      */
     String getName();
-    
-    
+
+
     /**
      * Returns a map of properties, a property
      * may have any of theses types
@@ -53,27 +54,35 @@ public interface IProfile {
      * </ul>
      */
     Map<String, Object> getProperties();
-    
+
     /**
      * Returns a filtered map of properties
      * @param filter
      * @return
      */
     Map<String, Object> getProperties(Filter<String> filter);
-    
+
     /**
      * Returns the platform of this profile,
      * eg <code>runtime/java/4</code>
      * @return
      */
     String getRuntime();
-    
+
     IPackager getPackager();
-    
+
     /**
      * Returns a flag indicating whether this device is an emulator
      * or not.
      * @return
      */
     boolean isEmulator();
+
+    /**
+     * Returns the profile type of this profile.
+     * @see MoSyncTool#LEGACY_PROFILE_TYPE
+     * @see MoSyncTool#DEFAULT_PROFILE_TYPE
+     * @return
+     */
+	int getProfileType();
 }

@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.TreeMap;
 
 import org.eclipse.core.runtime.IPath;
@@ -23,6 +25,8 @@ public class LegacyProfileManager extends ProfileManager {
 
 	private final TreeMap<String, Vendor> vendors = new TreeMap<String, Vendor>(
 			String.CASE_INSENSITIVE_ORDER);
+
+	private final HashMap<String, List<IProfile>> profilesForRuntime = new HashMap<String, List<IProfile>>();
 
 	@Override
 	public void init() {
@@ -71,6 +75,14 @@ public class LegacyProfileManager extends ProfileManager {
 					profile = parser.parseInfoFile(vendor, profileName,
 							profileInfoFile, runtimeTxtFile);
 					vendor.addProfile(profile);
+					String runtime = toCanonicalRuntime(profile.getRuntime());
+					List<IProfile> profilesForOneRuntime =
+							profilesForRuntime.get(runtime);
+					if (profilesForOneRuntime == null) {
+						profilesForOneRuntime = new ArrayList<IProfile>();
+						profilesForRuntime.put(runtime, profilesForOneRuntime);
+					}
+					profilesForOneRuntime.add(profile);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -89,6 +101,11 @@ public class LegacyProfileManager extends ProfileManager {
 	@Override
 	public IVendor getVendor(String vendorName) {
 		return vendors.get(vendorName);
+	}
+
+	@Override
+	public List<IProfile> getProfilesForRuntime(String runtime) {
+		return profilesForRuntime.get(toCanonicalRuntime(runtime));
 	}
 
 

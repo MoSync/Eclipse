@@ -12,6 +12,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.jface.util.Util;
 
 import com.mobilesorcery.sdk.builder.blackberry.BlackBerryPackager;
 import com.mobilesorcery.sdk.builder.blackberry.BlackBerryPlugin;
@@ -21,8 +22,8 @@ import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.LineReader;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
-import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.launch.AbstractEmulatorLauncher;
+import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 
 // BIG PHAT TODO ON THIS CLASS; MAY BE USED AS A STARTING POINT
 public class BlackBerrySimulatorLauncher extends AbstractEmulatorLauncher {
@@ -57,6 +58,27 @@ public class BlackBerrySimulatorLauncher extends AbstractEmulatorLauncher {
 	}
 
 	@Override
+	public int isLaunchable(ILaunchConfiguration launchConfiguration, String mode) {
+		if (!Util.isWindows()) {
+			return UNLAUNCHABLE;
+		} else if (!isCorrectPackager(launchConfiguration)) {
+			return IEmulatorLauncher.UNLAUNCHABLE;
+		} else if (shouldAskUserForLauncher(launchConfiguration, mode)) {
+			return IEmulatorLauncher.REQUIRES_CONFIGURATION;
+		} else {
+			return super.isLaunchable(launchConfiguration, mode);
+		}
+	}
+
+	private boolean shouldAskUserForLauncher(ILaunchConfiguration launchConfiguration, String mode) {
+		return isCorrectlyInstalled() && isAutoSelectLaunch(launchConfiguration, mode) && shouldAskUserForLauncher(BlackBerryPackager.ID);
+	}
+
+	protected boolean isCorrectlyInstalled() {
+		return false;
+	}
+
+	@Override
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
@@ -79,12 +101,6 @@ public class BlackBerrySimulatorLauncher extends AbstractEmulatorLauncher {
 
 	private IPath getSDKPath(ILaunchConfiguration launchConfig) throws CoreException {
 		return new Path(launchConfig.getAttribute(BlackBerryPlugin.SDK_PATH, ""));
-	}
-
-	@Override
-	public int isLaunchable(ILaunchConfiguration config, String mode) {
-		return UNLAUNCHABLE;
-		//return super.isAvailable(config, mode);
 	}
 
 	@Override

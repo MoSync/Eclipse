@@ -1,47 +1,79 @@
 package com.mobilesorcery.sdk.builder.blackberry;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.List;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.builder.java.JavaPackager;
-import com.mobilesorcery.sdk.builder.java.JavaPackager2;
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
+import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
-import com.mobilesorcery.sdk.core.IBuildResult;
-import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
-import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PreferenceStorePropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
+import com.mobilesorcery.sdk.profiles.IProfile;
 
-public class BlackBerryPackager extends JavaPackager2 {
+public class BlackBerryPackager extends JavaPackager {
 
 	public static final String ID = "com.mobilesorcery.sdk.builder.blackberry";
 
 	@Override
+	protected void addPlatformSpecifics(MoSyncProject project, IBuildVariant variant, CommandLineBuilder commandLine) throws Exception {
+		if (project.getProfileManagerType() != MoSyncTool.DEFAULT_PROFILE_TYPE) {
+			throw new CoreException(new Status(IStatus.OK, BlackBerryPlugin.PLUGIN_ID,
+					"Can only package BlackBerry with platform-based profiles"));
+		}
+
+		JDE jde = matchingJDE(project, variant.getProfile());
+		if (jde == null) {
+			throw new CoreException(new Status(IStatus.ERROR, BlackBerryPlugin.PLUGIN_ID, "Found no matching JDE for Blackberry platform " + variant.getProfile()));
+		}
+
+		commandLine.flag("--blackberry-jde").with(jde.getLocation().toFile());
+
+		if (shouldSign(project)) {
+			// We just reuse this java cert info, it's not quite blackberry-ish...
+			KeystoreCertificateInfo certInfo = KeystoreCertificateInfo.loadOne(
+					BlackBerryPlugin.BLACKBERRY_SIGNING_INFO, new PreferenceStorePropertyOwner(BlackBerryPlugin.getDefault().getPreferenceStore()),
+							CoreMoSyncPlugin.getDefault().getSecureProperties());
+			String signFileKey = (certInfo == null ? null : certInfo.getKeyPassword());
+			if (Util.isEmpty(signFileKey)) {
+				throw new CoreException(new Status(IStatus.OK, BlackBerryPlugin.PLUGIN_ID, "No key password for blackberry signing. Please note that for security reasons, passwords are locally stored. You may need to set the password in the BlackBerry preference page."));
+			}
+			commandLine.flag("--blackberry-signkey").with(signFileKey);
+		}
+	}
+
+	@Override
+	public File computeBuildResult(MoSyncProject project, IBuildVariant variant) throws ParameterResolverException {
+		File result = super.computeBuildResult(project, variant);
+		String cod = Util.replaceExtension(result.getAbsolutePath(), "cod");
+		return new File(cod);
+	}
+
+	/*@Override
 	public void createPackage(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult buildResult)
 			throws CoreException {
+
 		// Create a MIDlet
-		super.createPackage(project, variant, buildResult, false);
+		super.createPackage(project, session, variant, diff, buildResult);
 		File jar = buildResult.getBuildResult();
 		// We null the build result in case of error
 		buildResult.setBuildResult(null);
 
 		// Convert the MIDlet to a cod file
-		String platform = variant.getProfile().getRuntime();
-		JDE jde = matchingJDE(platform);
+		//String platform = variant.getProfile().getRuntime();
+		JDE jde = matchingJDE(project, variant.getProfile());
 		if (jde == null) {
-			throw new CoreException(new Status(IStatus.ERROR, BlackBerryPlugin.PLUGIN_ID, "Found no matching JDE for Blackberry platform " + platform));
+			throw new CoreException(new Status(IStatus.ERROR, BlackBerryPlugin.PLUGIN_ID, "Found no matching JDE for Blackberry platform " + variant.getProfile()));
 		}
 
 		// We'll just replace the original jar
@@ -80,15 +112,18 @@ public class BlackBerryPackager extends JavaPackager2 {
 		}
 
 		buildResult.setBuildResult(finalOutput);
-	}
+	}*/
 
 	private boolean shouldSign(MoSyncProject project) {
 		return PropertyUtil.getBoolean(project, BlackBerryPlugin.PROPERTY_SHOULD_SIGN);
 	}
 
-	private JDE matchingJDE(String platform) {
-		// TODO: Not correct?
-		Version version = new Version(new Path(platform).lastSegment());
+	private JDE matchingJDE(MoSyncProject project, IProfile profile) {
+		Version version = new Version(profile.getName());
+		if (version.getMajor() == Version.UNDEFINED) {
+			throw new IllegalArgumentException(
+				"BlackBerry profiles must have a version number as name (eg 4.1)");
+		}
 		return BlackBerryPlugin.getDefault().getCompatibleJDE(version);
 	}
 

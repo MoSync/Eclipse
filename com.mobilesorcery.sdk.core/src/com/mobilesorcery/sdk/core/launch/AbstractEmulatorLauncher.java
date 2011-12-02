@@ -142,7 +142,7 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 	 * @param packagerId
 	 * @return
 	 */
-	protected boolean askUserForLauncher(String packagerId) {
+	protected boolean shouldAskUserForLauncher(String packagerId) {
 		IEmulatorLauncher preferredLauncher = CoreMoSyncPlugin.getDefault().getPreferredLauncher(packagerId);
 		return preferredLauncher == null;
 	}

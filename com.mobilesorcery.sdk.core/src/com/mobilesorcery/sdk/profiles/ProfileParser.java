@@ -21,10 +21,12 @@ import java.io.Reader;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.mobilesorcery.sdk.core.MoSyncTool;
+
 /**
  * <p>A parser for profile information files - by convention located in
  * the <code>maprofile.h</code> file in the profile directory.</p>
- * 
+ *
  * @author Mattias Bybro, mattias.bybro@purplescout.com/mattias@bybro.com
  *
  */
@@ -42,7 +44,8 @@ public class ProfileParser {
     }
 
     public IProfile parseInfoFile(IVendor vendor, String profileName, Reader profileInfo, Reader platformInfo) throws IOException {
-        Profile profile = new Profile(vendor, profileName);        
+        Profile profile = new Profile(vendor, profileName,
+        		MoSyncTool.LEGACY_PROFILE_TYPE);
         Map<String, Object> properties = profile.getModifiableProperties();
         LineNumberReader reader = new LineNumberReader(profileInfo);
         for (String line = reader.readLine(); line != null; line = reader.readLine()) {
@@ -59,19 +62,19 @@ public class ProfileParser {
                         String restOfLine = components[2];
                         Long longValue = parseCInteger(restOfLine);
                         properties.put(identifier, longValue == null ? restOfLine : longValue);
-                    } else {                    
+                    } else {
                         properties.put(identifier, true);
                     }
                 }
-                
-                
+
+
             }
         }
-        
+
         updatePlatform(profile, platformInfo);
-        return profile; 
+        return profile;
     }
-    
+
     private void updatePlatform(Profile profile, Reader platformInfo) throws IOException {
         LineNumberReader reader = new LineNumberReader(platformInfo);
         for (String line = reader.readLine(); line != null; line = reader.readLine()) {
@@ -86,7 +89,7 @@ public class ProfileParser {
      * a user-friendly description of each feature flag.
      * @param reader
      * @return
-     * @throws IOException 
+     * @throws IOException
      */
     public Map<String, String> parseFeatureDescriptionFile(File featureDescriptionsFile) throws IOException {
         FileReader featureDescriptions = new FileReader(featureDescriptionsFile);
@@ -96,10 +99,10 @@ public class ProfileParser {
             if (featureDescriptions != null) featureDescriptions.close();
         }
     }
-    
+
     public Map<String, String> parseFeatureDescriptionFile(Reader featureDescriptions) throws IOException {
         Map<String, String> result = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
-        
+
         LineNumberReader reader = new LineNumberReader(featureDescriptions);
         for (String line = reader.readLine(); line != null; line = reader.readLine()) {
             String[] components = line.split(",", 2);
@@ -109,12 +112,12 @@ public class ProfileParser {
                 result.put(feature, description);
             }
         }
-        
+
         return result;
     }
 
     /**
-     * Simple method to parse simple decimal numbers 
+     * Simple method to parse simple decimal numbers
      * returns <code>null</code> if not a number
      * @param restOfLine
      * @return

@@ -86,9 +86,6 @@ public class MoSyncIncludePathContainer implements IPathEntryContainer {
         entries.addAll(Arrays.asList(createCompilerSymbols()));
         entries.addAll(createOutputEntries(project.getWrappedProject()));
 
-        if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-        	CoreMoSyncPlugin.trace(entries);
-        }
         return entries.toArray(new IPathEntry[entries.size()]);
     }
 

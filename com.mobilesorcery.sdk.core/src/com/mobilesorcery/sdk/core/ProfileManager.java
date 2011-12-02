@@ -20,6 +20,8 @@ public abstract class ProfileManager {
 
 	public abstract IVendor getVendor(String vendorName);
 
+	public abstract List<IProfile> getProfilesForRuntime(String runtime);
+
 	public IVendor[] getVendors(IDeviceFilter filter) {
 		IVendor[] allVendors = getVendors();
 		ArrayList<IVendor> result = new ArrayList<IVendor>();
@@ -61,7 +63,7 @@ public abstract class ProfileManager {
 		return profiles.toArray(new IProfile[0]);
 	}
 
-	public String[] getAvailableCapabilities() {
+	public String[] getAvailableCapabilities(boolean permissionsOnly) {
 		return ICommonPermissions.ALL_PERMISSIONS;
 	}
 
@@ -79,27 +81,8 @@ public abstract class ProfileManager {
 		}
 	}
 
-	/**
-	 * Given a profile of the {@code MoSyncTool#LEGACY_PROFILE_TYPE} type,
-	 * returns the closest matching profile of
-	 * {@code MoSyncTool#DEFAULT_PROFILE_TYPE}
-	 * @param profile
-	 * @return
-	 */
-	public static IProfile matchLegacyProfile(MoSyncProject project, IProfile profile) {
-		String runtime = profile.getRuntime();
-		ProfileDBManager mgr = MoSyncTool.getDefault().defaultProfileManager();
-		List<IProfile> profiles = mgr.profilesForRuntime(runtime);
-		IProfile firstMatch = profiles == null ? null : profiles.get(0);
-		DeviceCapabilitiesFilter dcf = DeviceCapabilitiesFilter.extractFilterFromProject(project);
-		/*if (resolve) {
-			IProfile[] resolved = mgr.match(MoSyncTool.toString(firstMatch),
-					filter.getRequiredCapabilities().toArray(new String[0]),
-					filter.getOptionalCapabilities().toArray(new String[0])).toArray(new IProfile[0]);
-			firstMatch = resolved.length == 0 ? null : resolved[0];
-		}*/
-		return firstMatch;
+	public static String toCanonicalRuntime(String runtime) {
+		return Util.convertSlashes(runtime);
 	}
-
 
 }

@@ -47,11 +47,11 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 	public int isLaunchable(ILaunchConfiguration launchConfiguration, String mode) {
 		if (!isCorrectPackager(launchConfiguration)) {
 			return IEmulatorLauncher.UNLAUNCHABLE;
-		} else if (askUserForLauncher(launchConfiguration, mode)) {
+		} else if (shouldAskUserForLauncher(launchConfiguration, mode)) {
 			return IEmulatorLauncher.REQUIRES_CONFIGURATION;
 		} else if (!isCorrectlyInstalled()) {
 			IEmulatorLauncher preferredLauncher = CoreMoSyncPlugin.getDefault().getPreferredLauncher(AndroidPackager.ID);
-			boolean useOtherLauncher = !askUserForLauncher(AndroidPackager.ID) && !Util.equals(preferredLauncher.getId(), ID);
+			boolean useOtherLauncher = !shouldAskUserForLauncher(AndroidPackager.ID) && !Util.equals(preferredLauncher.getId(), ID);
 			return isAutoSelectLaunch(launchConfiguration, mode) && useOtherLauncher ?
 					IEmulatorLauncher.UNLAUNCHABLE :
 					IEmulatorLauncher.REQUIRES_CONFIGURATION;
@@ -62,8 +62,8 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 		}
 	}
 
-	private boolean askUserForLauncher(ILaunchConfiguration launchConfiguration, String mode) {
-		return isCorrectlyInstalled() && isAutoSelectLaunch(launchConfiguration, mode) && askUserForLauncher(AndroidPackager.ID);
+	private boolean shouldAskUserForLauncher(ILaunchConfiguration launchConfiguration, String mode) {
+		return isCorrectlyInstalled() && isAutoSelectLaunch(launchConfiguration, mode) && shouldAskUserForLauncher(AndroidPackager.ID);
 	}
 
 	protected boolean isCorrectlyInstalled() {
@@ -171,7 +171,7 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 		// If we are not auto-select, don't fallback to MoRe.
 		final boolean isAutomaticLaunch = isAutoSelectLaunch(config, mode);
 		// And if we are supposed to ask the user, we do not really need to configure anything.
-		final boolean needsConfig = !askUserForLauncher(config, mode);
+		final boolean needsConfig = !shouldAskUserForLauncher(config, mode);
 
 		final IEmulatorLauncher[] result = new IEmulatorLauncher[] { null };
 		d.syncExec(new Runnable() {

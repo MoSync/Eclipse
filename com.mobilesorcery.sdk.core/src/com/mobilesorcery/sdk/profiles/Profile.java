@@ -20,6 +20,7 @@ import java.util.Map;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.Filter;
 import com.mobilesorcery.sdk.core.IPackager;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 
 public class Profile implements IProfile, Comparable<IProfile> {
@@ -28,11 +29,12 @@ public class Profile implements IProfile, Comparable<IProfile> {
     private final String name;
     private final Map<String, Object> properties = new HashMap<String, Object>();
     private String platform;
-    private IPackager packager;
+	private final int profileType;
 
-    public Profile(IVendor vendor, String name) {
+    public Profile(IVendor vendor, String name, int profileType) {
         this.vendor = vendor;
         this.name = name;
+        this.profileType = profileType;
     }
 
     @Override
@@ -43,6 +45,11 @@ public class Profile implements IProfile, Comparable<IProfile> {
     @Override
 	public IVendor getVendor() {
         return vendor;
+    }
+
+    @Override
+	public int getProfileType() {
+    	return profileType;
     }
 
     @Override
@@ -93,12 +100,16 @@ public class Profile implements IProfile, Comparable<IProfile> {
 
     @Override
 	public IPackager getPackager() {
-        return CoreMoSyncPlugin.getDefault().getPackager(platform);
+        return CoreMoSyncPlugin.getDefault().getPackager(profileType, this);
     }
 
     @Override
 	public int compareTo(IProfile o) {
-        return toString().compareTo(o.toString());
+        int result = toString().compareTo(o.toString());
+        if (result == 0) {
+        	result = new Integer(profileType).compareTo(o.getProfileType());
+        }
+        return result;
     }
 
     @Override
