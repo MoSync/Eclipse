@@ -94,7 +94,18 @@ public class DeviceCapabilitiesFilter extends AbstractDeviceFilter {
 
 	@Override
 	public String toString() {
-		return MessageFormat.format("Required: {0}, Optional: {1}", Util.join(requiredCapabilities, ","), Util.join(optionalCapabilities, ","));
+		String reqStr = requiredCapabilities.length == 0 ?
+				"" :
+				MessageFormat.format("Required capabilities: {0}", Util.join(requiredCapabilities, ","));
+		String optStr = optionalCapabilities.length == 0 ?
+				"" :
+				MessageFormat.format("Optional capabilities: {0}", Util.join(optionalCapabilities, ","));
+		String delim = reqStr.isEmpty() || optStr.isEmpty() ? "" : "; ";
+		String result = reqStr + delim + optStr;
+		if (result.isEmpty()) {
+			result = "<No required/optional capbilities>";
+		}
+		return result;
 	}
 
 	public IProfile mapProfile(IProfile profile) {

@@ -368,6 +368,10 @@ icon="icons/launchshortcut.png">
                description="Build Project for all Profiles"
                id="com.mobilesorcery.sdk.ui.finalize"
                name="Build Project for all Profiles">
+               <commandParameter
+                     id="com.mobilesorcery.sdk.ui.finalize.scope"
+                     name="com.mobilesorcery.sdk.ui.finalize.scope">
+               </commandParameter>
          </command>
          </extension>
       <extension
@@ -523,8 +527,7 @@ icon="icons/launchshortcut.png">
                   style="push">
             </command>
             </toolbar>
-         </menuContribution>
-    
+         </menuContribution>  
  			<menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
              <toolbar
                id="com.mobilesorcery.sdk.ui.profile.toolbar">
@@ -533,10 +536,21 @@ icon="icons/launchshortcut.png">
                   label="Build for all Profiles"
                   tooltip="Build for all profiles of this project"
                   icon="icons/binary.gif"
-                  style="push">
+                  style="pulldown">
             </command>
             </toolbar>
-         </menuContribution> 
+         </menuContribution>
+         <menuContribution locationURI="menu:com.mobilesorcery.sdk.ui.finalize">
+        <command commandId="com.mobilesorcery.sdk.ui.finalize" label="Build for CURRENT profile" style="push">
+           <parameter name="com.mobilesorcery.sdk.ui.finalize.scope" value="current"/>
+        </command>
+        <command commandId="com.mobilesorcery.sdk.ui.finalize" label="Build for ALL profiles" style="push">
+           <parameter name="com.mobilesorcery.sdk.ui.finalize.scope" value="all"/>
+        </command>
+        <!-- <command commandId="com.mobilesorcery.sdk.ui.finalize" label="Build for selected profiles" style="push">
+           <parameter name="com.mobilesorcery.sdk.ui.finalize.scope" value="selected"/>
+        </command> -->
+     </menuContribution>
     <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
     <toolbar id="com.mobilesorcery.sdk.ui.changeActiveConfigToolbar">
         <control id="com.mobilesorcery.sdk.ui.changeActiveConfig"

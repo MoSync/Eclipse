@@ -70,8 +70,14 @@ public class FilterProfilesHandler extends MoSyncCommandHandler implements Prope
 				dialog.setProject(project);
 				dialog.open();
 			}
+		} else {
+			showNoProjectMessage(HandlerUtil.getActiveShell(event));
 		}
 		return null;
+	}
+
+	private void showNoProjectMessage(Shell activeShell) {
+		MessageDialog.openError(activeShell, "No project selected", "No project selected. To open the profile filter dialog, please select a project.");
 	}
 
 	private boolean askForConversion(Shell shell, MoSyncProject project) {
