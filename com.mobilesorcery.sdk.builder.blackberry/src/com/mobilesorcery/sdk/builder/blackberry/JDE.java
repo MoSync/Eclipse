@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.CollectingLineHandler;
@@ -24,30 +25,33 @@ public class JDE {
 
 	private final static Pattern JDE_RAPC_VERSION_PATTERN = Pattern.compile(".*Build:\\s*(.*)");
 	private static final Version VER_430 = new Version("4.3.0");
+
+	public final static int TYPE_DEV_TOOLS = 0;
+	public final static int TYPE_SIMULATOR = 1;
+
 	private IPath root;
 	private Version version;
 
-	public static void main(String[] args) {
-		JDE jde = new JDE();
-		System.out.println(jde.guessVersion("RAPC Version: 2.2 Build: 6.0.0.141"));
-	}
-
-	public JDE(IPath root, Version version) {
+	protected JDE(IPath root, Version version) {
 		this.root = root;
 		this.version = version;
-	}
-
-	private JDE() {
-		// TODO Auto-generated constructor stub
 	}
 
 	public IPath getLocation() {
 		return root;
 	}
 
-
 	public Version getVersion() {
 		return version;
+	}
+
+	public void apply(JDE workingCopy) {
+		this.root = workingCopy.root;
+		this.version = workingCopy.version;
+	}
+
+	public int getType() {
+		return TYPE_DEV_TOOLS;
 	}
 
 	/**
@@ -55,13 +59,18 @@ public class JDE {
 	 * @return <code>null</code> if for some reason the version could not
 	 * be guessed
 	 */
-	public static Version getVersion(IPath root) {
-		JDE throwaway = new JDE(root, null);
+	public static Version getVersion(int toolType, IPath root) {
+		JDE throwaway = create(toolType, root, null);
 		try {
 			return throwaway.guessVersion();
 		} catch (IOException e) {
 			return null;
 		}
+	}
+
+	public static JDE create(int toolType, IPath root, Version version) {
+		return toolType == TYPE_DEV_TOOLS ? new JDE(root, version) :
+			new Simulator(root, version);
 	}
 
 	public Version guessVersion() throws IOException {
@@ -109,11 +118,6 @@ public class JDE {
 	private IPath getSignTool() {
 		// Win only
 		return root.append("bin/SignatureTool.jar");
-	}
-
-	public void apply(JDE workingCopy) {
-		this.root = workingCopy.root;
-		this.version = workingCopy.version;
 	}
 
 	/**
@@ -190,10 +194,12 @@ public class JDE {
 		return root.append("lib/net_rim_api.jar");
 	}
 
+
 	@Override
 	public String toString() {
-		String versionStr = (version == null ? "?" : version.asCanonicalString());
-		return "JDE version " + versionStr; //+ " (" + root + ")";
+		String versionStr = (version == null ? "?" : version
+				.asCanonicalString());
+		return getClass().getSimpleName() + " version " + versionStr;
 	}
 
 

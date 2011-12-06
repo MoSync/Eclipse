@@ -25,7 +25,13 @@
             category="com.mobilesorcery.sdk.preferences.main"
             class="com.mobilesorcery.sdk.builder.blackberry.ui.preferences.JDEPreferencePage"
             id="com.mobilesorcery.sdk.builder.blackberry.jde.preferences"
-            name="BlackBerry JDE">
+            name="BlackBerry JDEs">
+        </page>
+              <page
+            category="com.mobilesorcery.sdk.preferences.main"
+            class="com.mobilesorcery.sdk.builder.blackberry.ui.preferences.SimulatorPreferencePage"
+            id="com.mobilesorcery.sdk.builder.blackberry.simulator.preferences"
+            name="BlackBerry Simulators">
         </page>
         </extension>
                  <extension

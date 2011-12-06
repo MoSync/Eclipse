@@ -1,5 +1,7 @@
 package com.mobilesorcery.sdk.builder.blackberry.ui.preferences;
 
+import java.text.MessageFormat;
+
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.dialogs.Dialog;
@@ -16,6 +18,7 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.mobilesorcery.sdk.builder.blackberry.GuessVersionJob;
 import com.mobilesorcery.sdk.builder.blackberry.JDE;
+import com.mobilesorcery.sdk.builder.blackberry.Simulator;
 import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.ui.UIUtils;
 
@@ -25,19 +28,24 @@ public class JDEEditorDialog extends Dialog {
 	private boolean showVersionField;
 	private StringButtonFieldEditor versionEditor;
 	private DirectoryFieldEditor location;
+	private int toolType;
 
 	protected JDEEditorDialog(Shell parentShell) {
 		super(parentShell);
 	}
-	
+
 	public void setShowVersionField(boolean showVersionField) {
 		this.showVersionField = showVersionField;
 	}
-	
+
 	public void setInitial(JDE jde) {
 		this.jde = jde;
 	}
-	
+
+	public void setToolType(int toolType) {
+		this.toolType = toolType;
+	}
+
 	public JDE getEdited() {
 		return jde;
 	}
@@ -46,16 +54,17 @@ public class JDEEditorDialog extends Dialog {
 	public Control createDialogArea(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		Label instructions = new Label(main, SWT.NONE);
-		instructions.setText("Select location of BlackBerry JDE");
+		String toolStr = toolType == JDE.TYPE_DEV_TOOLS ? "JDE" : "Simulator";
+		instructions.setText(MessageFormat.format("Select location of BlackBerry {0}", toolStr));
 		// We just want the UI, we don't care about the pref store
-		location = new DirectoryFieldEditor("", "JDE Path:", main);
+		location = new DirectoryFieldEditor("", MessageFormat.format("{0} Path:", toolStr), main);
 		location.getTextControl(main).setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT));
 		IPath path = jde.getLocation();
 		location.setStringValue(path == null ? "" : path.toOSString());
 		instructions.setLayoutData(new GridData(GridData.FILL, SWT.DEFAULT, true, false, location.getNumberOfControls(), 1));
 
 		if (showVersionField) {
-			versionEditor = new StringButtonFieldEditor("", "JDE version:", main) {				
+			versionEditor = new StringButtonFieldEditor("", "JDE version:", main) {
 				@Override
 				protected String changePressed() {
 					GuessVersionJob job = new GuessVersionJob();
@@ -74,11 +83,12 @@ public class JDEEditorDialog extends Dialog {
 			Version version = jde.getVersion();
 			versionEditor.setStringValue(version == null ? "" : version.asCanonicalString());
 		}
-				
+
 		main.setLayout(new GridLayout(location.getNumberOfControls(), false));
 		return main;
 	}
-	
+
+	@Override
 	public void okPressed() {
 		jde = createJDEFromUI();
 		super.okPressed();
@@ -86,6 +96,6 @@ public class JDEEditorDialog extends Dialog {
 
 	private JDE createJDEFromUI() {
 		Version version = versionEditor == null ? null : new Version(versionEditor.getStringValue());
-		return new JDE(new Path(location.getStringValue()), version);
+		return JDE.create(toolType, new Path(location.getStringValue()), version);
 	}
 }

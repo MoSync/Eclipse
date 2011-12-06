@@ -31,9 +31,10 @@ public class BlackBerryPackager extends JavaPackager {
 					"Can only package BlackBerry with platform-based profiles"));
 		}
 
-		JDE jde = matchingJDE(project, variant.getProfile());
+		JDE jde = matchingJDE(JDE.TYPE_DEV_TOOLS, project, variant.getProfile());
 		if (jde == null) {
-			throw new CoreException(new Status(IStatus.ERROR, BlackBerryPlugin.PLUGIN_ID, "Found no matching JDE for Blackberry platform " + variant.getProfile()));
+			throw new CoreException(new Status(IStatus.ERROR, BlackBerryPlugin.PLUGIN_ID, "Found no matching JDE for this Blackberry platform. " +
+					"Please note that "));
 		}
 
 		commandLine.flag("--blackberry-jde").with(jde.getLocation().toFile());
@@ -118,13 +119,21 @@ public class BlackBerryPackager extends JavaPackager {
 		return PropertyUtil.getBoolean(project, BlackBerryPlugin.PROPERTY_SHOULD_SIGN);
 	}
 
-	private JDE matchingJDE(MoSyncProject project, IProfile profile) {
+	public static JDE matchingJDE(int type, MoSyncProject project, IProfile profile) {
 		Version version = new Version(profile.getName());
 		if (version.getMajor() == Version.UNDEFINED) {
 			throw new IllegalArgumentException(
 				"BlackBerry profiles must have a version number as name (eg 4.1)");
 		}
-		return BlackBerryPlugin.getDefault().getCompatibleJDE(version);
+		if (type == JDE.TYPE_DEV_TOOLS) {
+			return BlackBerryPlugin.getDefault().getCompatibleJDE(version, false);
+		} else {
+			return BlackBerryPlugin.getDefault().getCompatibleSimulator(version, false);
+		}
 	}
 
+	public static boolean isSigningRequired(MoSyncProject project) {
+		// Yep, it seems that not even PIM requires this?
+		return false;
+	}
 }

@@ -13,15 +13,17 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
+import com.mobilesorcery.sdk.builder.blackberry.BlackBerryPackager;
 import com.mobilesorcery.sdk.builder.blackberry.BlackBerryPlugin;
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.PreferenceStorePropertyOwner;
 import com.mobilesorcery.sdk.core.SecurePropertyException;
+import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
 import com.mobilesorcery.sdk.ui.PasswordTextFieldDecorator;
 import com.mobilesorcery.sdk.ui.UIUtils;
 
-public class BlackBerrySigningPreferencePage extends PreferencePage implements
+public class BlackBerrySigningPreferencePage extends MoSyncPropertyPage implements
 		IWorkbenchPreferencePage {
 
 	private Label passwordLabel;
@@ -41,9 +43,10 @@ public class BlackBerrySigningPreferencePage extends PreferencePage implements
 	protected Control createContents(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(UIUtils.newPrefsLayout(2));
-        passwordLabel = new Label(main, SWT.PASSWORD);
+
+		passwordLabel = new Label(main, SWT.PASSWORD);
         passwordLabel.setText("&Signature file password");
-        
+
         password = new Text(main, SWT.BORDER | SWT.SINGLE);
         password.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         passwordDec = new PasswordTextFieldDecorator(password);
@@ -51,7 +54,7 @@ public class BlackBerrySigningPreferencePage extends PreferencePage implements
         init();
         return main;
 	}
-	
+
 	private void init() {
 		try {
 			KeystoreCertificateInfo info = KeystoreCertificateInfo.loadOne(
@@ -64,7 +67,7 @@ public class BlackBerrySigningPreferencePage extends PreferencePage implements
 			CoreMoSyncPlugin.getDefault().log(e);
 		}
 	}
-	
+
 	@Override
 	public boolean performOk() {
 		KeystoreCertificateInfo info = new KeystoreCertificateInfo("", "", "", password.getText(), true);

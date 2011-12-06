@@ -32,8 +32,10 @@ public class BlackBerryPlugin extends AbstractUIPlugin {
 	// The shared instance
 	private static BlackBerryPlugin plugin;
 
-	private ArrayList<JDE> jdes = new ArrayList<JDE>();
-	
+	private final ArrayList<JDE> jdes = new ArrayList<JDE>();
+
+	private final ArrayList<Simulator> simulators = new ArrayList<Simulator>();
+
 	/**
 	 * The constructor
 	 */
@@ -44,16 +46,19 @@ public class BlackBerryPlugin extends AbstractUIPlugin {
 	 * (non-Javadoc)
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext)
 	 */
+	@Override
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
-		initJDEs();
+		initJDEs(JDE.TYPE_DEV_TOOLS);
+		initJDEs(JDE.TYPE_SIMULATOR);
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
 	 */
+	@Override
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
@@ -67,28 +72,45 @@ public class BlackBerryPlugin extends AbstractUIPlugin {
 	public static BlackBerryPlugin getDefault() {
 		return plugin;
 	}
-	
-	public List<JDE> getJDEs() {
-		return new ArrayList(jdes);
+
+	public List<JDE> getJDEs(int type) {
+		return new ArrayList<JDE>(internalGetJDEs(type));
 	}
-	
+
+	private ArrayList internalGetJDEs(int type) {
+		return type == JDE.TYPE_DEV_TOOLS ? jdes : simulators;
+	}
+
 	/**
 	 * Returns a JDE that is compatible with a specific version.
 	 * @param version
 	 * @return
 	 */
-	public JDE getCompatibleJDE(Version version) {
-		// We usually have only 2-5 JDEs installed...
-		JDE bestMatch = null;
-		for (JDE jde : jdes) {
-			Version jdeVersion = jde.getVersion();
+	public JDE getCompatibleJDE(Version version, boolean strict) {
+		return getCompatibleTool(jdes, version, strict);
+	}
+
+	/**
+	 * Returns a JDE that is compatible with a specific version.
+	 * @param version
+	 * @return
+	 */
+	public Simulator getCompatibleSimulator(Version version, boolean strict) {
+		return getCompatibleTool(simulators, version, strict);
+	}
+
+	private <ToolType extends JDE> ToolType getCompatibleTool(List<ToolType> tools, Version version, boolean strict) {
+		// We usually have only 2-5 JDEs/Simulators installed...
+		ToolType bestMatch = null;
+		for (ToolType tool : tools) {
+			Version toolVersion = tool.getVersion();
 			Version bestMatchVersion = bestMatch == null ? null : bestMatch.getVersion();
-			boolean isCompatible = jdeVersion != null && !jdeVersion.isNewer(version);
-			if (isCompatible && (bestMatchVersion == null || bestMatchVersion.isNewer(version))) {
-				bestMatch = jde;
+			boolean isCompatible = toolVersion != null && !toolVersion.isNewer(version);
+			if ((!strict || isCompatible) && (bestMatchVersion == null || bestMatchVersion.isNewer(bestMatch.getVersion()))) {
+				bestMatch = tool;
 			}
 		}
-		
+
 		return bestMatch;
 	}
 
@@ -96,47 +118,56 @@ public class BlackBerryPlugin extends AbstractUIPlugin {
 	 * This method is internal to the BlackBerry plugin.
 	 * @param newJDEs
 	 */
-	public void setJDEs(List<JDE> newJDEs) {
-		setJDEs(newJDEs, true);
+	public void setJDEs(int type, List<JDE> newJDEs) {
+		setJDEs(type, newJDEs, true);
 	}
-	
-	private void setJDEs(List<JDE> newJDEs, boolean doStore) {
-		this.jdes = new ArrayList<JDE>(newJDEs);
+
+	private void setJDEs(int type, List<JDE> newJDEs, boolean doStore) {
+		ArrayList<JDE> toolList = internalGetJDEs(type);
+		toolList.clear();
+		toolList.addAll(newJDEs);
 		if (doStore) {
-			storeJDEs();
+			storeJDEs(type);
 		}
 	}
 
-	private void initJDEs() {
+	private void initJDEs(int type) {
 		int ix = 1;
 		IPreferenceStore prefs = getPreferenceStore();
 		boolean existsJDE = true;
 		ArrayList<JDE> jdes = new ArrayList<JDE>();
+		String prefix = getPrefix(type);
 		while (existsJDE) {
-			String jdeLocation = prefs.getString("JDE.location" + ix);
-			String jdeVersion = prefs.getString("JDE.version" + ix);
-			existsJDE = prefs.contains("JDE.location" + ix);
+			String jdeLocation = prefs.getString(prefix + ".location" + ix);
+			String jdeVersion = prefs.getString(prefix + ".version" + ix);
+			existsJDE = prefs.contains(prefix + ".location" + ix);
 			ix++;
 			if (existsJDE) {
-				jdes.add(new JDE(new Path(jdeLocation), new Version(jdeVersion)));
+				jdes.add(JDE.create(type, new Path(jdeLocation), new Version(jdeVersion)));
 			}
 		}
-		
-		setJDEs(jdes, false);
+
+		setJDEs(type, jdes, false);
 	}
-	
-	private void storeJDEs() {
+
+	private void storeJDEs(int type) {
 		int ix = 1;
 		IPreferenceStore prefs = getPreferenceStore();
-		for (JDE jde : jdes) {
+		String prefix = getPrefix(type);
+		for (Object o : internalGetJDEs(type)) {
+			JDE jde = (JDE) o;
 			IPath jdeLocation = jde.getLocation();
 			Version jdeVersion = jde.getVersion();
 			if (jdeLocation != null && jdeVersion != null) {
-				prefs.putValue("JDE.location" + ix, jdeLocation.toPortableString());
-				prefs.putValue("JDE.version" + ix, jdeVersion.asCanonicalString());
+				prefs.putValue(prefix + ".location" + ix, jdeLocation.toPortableString());
+				prefs.putValue(prefix + ".version" + ix, jdeVersion.asCanonicalString());
 				ix++;
 			}
 		}
+	}
+
+	private String getPrefix(int toolType) {
+		return toolType == JDE.TYPE_DEV_TOOLS ? "JDE" : "sim";
 	}
 
 }
