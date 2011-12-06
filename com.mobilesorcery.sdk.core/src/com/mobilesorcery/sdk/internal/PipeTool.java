@@ -253,7 +253,7 @@ public class PipeTool {
     private void addMemoryArg(ArrayList<String> args, IPropertyOwner argumentMap,
 			String key, int defaultSize, String prefix) {
     	Integer size = PropertyUtil.getInteger(argumentMap, key);
-    	if (size != null && size.intValue() != defaultSize) {
+    	if (size != null) {
     		int sizeInBytes = 1024 * size;
     		args.add(prefix + "=" + sizeInBytes);
     	}
