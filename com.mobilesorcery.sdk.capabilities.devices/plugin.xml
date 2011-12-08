@@ -10,7 +10,7 @@
                  <extension
                        point="com.mobilesorcery.sdk.core.filter.factories">
                      <filter
-                           id="com.mobilesorcery.sdk.capabilities.devices.elementfactory"
+                           id="com.mobilesorcery.sdk.capabilities"
                            class="com.mobilesorcery.sdk.capabilities.devices.DeviceCapabilitiesFilterFactory"> 
                      </filter>
                  </extension>
