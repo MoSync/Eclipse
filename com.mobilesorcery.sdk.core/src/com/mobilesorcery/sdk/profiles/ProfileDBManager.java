@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.internal;
+package com.mobilesorcery.sdk.profiles;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,28 +16,28 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.xml.sax.Attributes;
 
+import com.mobilesorcery.sdk.core.Capabilities;
+import com.mobilesorcery.sdk.core.Capability;
+import com.mobilesorcery.sdk.core.CapabilityFragmentation;
 import com.mobilesorcery.sdk.core.CapabilityState;
 import com.mobilesorcery.sdk.core.CommandLineExecutor;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.ICapabilities;
 import com.mobilesorcery.sdk.core.LineReader;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.ProfileManager;
 import com.mobilesorcery.sdk.core.Util;
-import com.mobilesorcery.sdk.internal.ProfileDBManager.ProfileDBResult;
-import com.mobilesorcery.sdk.profiles.IProfile;
-import com.mobilesorcery.sdk.profiles.IVendor;
-import com.mobilesorcery.sdk.profiles.Profile;
-import com.mobilesorcery.sdk.profiles.Vendor;
 
 public class ProfileDBManager extends ProfileManager {
 
 	public class ProfileDBResult {
 		public final HashMap<String, Vendor> families = new HashMap<String, Vendor>();
 		public final Set<IProfile> profiles = new HashSet<IProfile>();
-		public final HashSet<String> capabilities = new HashSet<String>();
+		public final Set<String> capabilities = new TreeSet<String>();
 		public final HashSet<String> permissions = new HashSet<String>();
 		public final HashMap<String, List<IProfile>> profilesForRuntime = new HashMap<String, List<IProfile>>();
 		public final HashMap<String, String> profileMappings = new HashMap<String, String>();
+		public final HashMap<IProfile, Capabilities> capabilitiesForProfiles = new HashMap<IProfile, Capabilities>();
 	}
 
 	private static final class ProfileDBLineHandler extends
@@ -46,6 +46,7 @@ public class ProfileDBManager extends ProfileManager {
 		private final CountDownLatch done;
 		private boolean inMapTag = false;
 		private final ProfileDBResult result;
+		private Profile currentProfile;
 
 		public ProfileDBLineHandler(CountDownLatch done, ProfileDBResult result) {
 			this.done = done;
@@ -69,15 +70,15 @@ public class ProfileDBManager extends ProfileManager {
 					family = new Vendor(familyName, icon);
 					result.families.put(familyName, family);
 				}
-				Profile profile = new Profile(family, variant,
+				currentProfile = new Profile(family, variant,
 						MoSyncTool.DEFAULT_PROFILE_TYPE);
-				setRuntime(profile, runtime);
+				setRuntime(currentProfile, runtime);
 				if (!inMapTag) {
 					// We never actually add mapped tags
 					// since they are only used for finding
 					// platforms for devices.
-					family.addProfile(profile);
-					result.profiles.add(profile);
+					family.addProfile(currentProfile);
+					result.profiles.add(currentProfile);
 				} else {
 					inMapTag = false;
 				}
@@ -85,15 +86,34 @@ public class ProfileDBManager extends ProfileManager {
 				String name = atts.getValue("name");
 				String type = atts.getValue("type");
 				boolean isNested = name.contains("/");
-				if (Util.isEmpty(type) && !isNested) {
-					// Only untyped capabilities are added!
-					// TODO: Nested capabilities!
-					result.capabilities.add(name);
+				Object value = atts.getValue("value");
+				if (value == null) {
+					value = Boolean.TRUE;
 				}
-				String state = atts.getValue("state");
-				if (CapabilityState.REQUIRES_PERMISSION.matches(state)
-						|| CapabilityState.REQUIRES_PRIVILEGED_PERMISSION
-								.matches(state)) {
+				CapabilityState state = CapabilityState.create(atts
+						.getValue("state"));
+				CapabilityFragmentation fragmentation = CapabilityFragmentation
+						.create(atts.getValue("fragmentation"));
+				if (!isNested) {
+					// TODO: Nested capabilities!
+					Capability cap = new Capability(name, state, type, value,
+							fragmentation);
+					if (Util.isEmpty(type)) {
+						// Ok, this is the list of available caps!
+						result.capabilities.add(name);
+					}
+					if (currentProfile != null) {
+						Capabilities caps = result.capabilitiesForProfiles.get(currentProfile);
+						if (caps == null) {
+							caps = new Capabilities();
+							result.capabilitiesForProfiles.put(currentProfile, caps);
+						}
+						caps.setCapability(cap);
+					}
+				}
+
+				if (state == CapabilityState.REQUIRES_PERMISSION
+						|| state == CapabilityState.REQUIRES_PRIVILEGED_PERMISSION) {
 					result.permissions.add(name);
 				}
 			} else if ("map".equals(qName)) {
@@ -128,6 +148,8 @@ public class ProfileDBManager extends ProfileManager {
 		}
 	}
 
+	private static ProfileDBManager instance = new ProfileDBManager();
+
 	private final TreeMap<String, Vendor> vendors = new TreeMap<String, Vendor>(
 			String.CASE_INSENSITIVE_ORDER);
 
@@ -141,21 +163,28 @@ public class ProfileDBManager extends ProfileManager {
 
 	private boolean inited = false;
 
+	private HashMap<IProfile, Capabilities> capabilitiesForProfiles;
+
+	public static ProfileDBManager getInstance() {
+		return instance;
+	}
+
 	@Override
 	public synchronized void init() {
 		if (inited) {
 			return;
 		}
+		inited = true;
 		ProfileDBLineHandler lh = runProfileDb(new ArrayList<String>(
 				Arrays.asList(new String[] { "-g", "*" })));
 		vendors.clear();
 		vendors.putAll(lh.result.families);
 		capabilities.addAll(lh.result.capabilities);
 		permissions.addAll(lh.result.permissions);
+		capabilitiesForProfiles = lh.result.capabilitiesForProfiles;
 		// Ok, give us some mappings!
 		ProfileDBResult matchResult = match("*", new String[0], new String[0]);
 		profilesForRuntime = matchResult.profilesForRuntime;
-		inited = true;
 	}
 
 	public static boolean isAvailable() {
@@ -200,16 +229,19 @@ public class ProfileDBManager extends ProfileManager {
 
 	@Override
 	public IVendor[] getVendors() {
+		init();
 		return vendors.values().toArray(new IVendor[0]);
 	}
 
 	@Override
 	public IVendor getVendor(String vendorName) {
+		init();
 		return vendors.get(vendorName);
 	}
 
 	@Override
 	public String[] getAvailableCapabilities(boolean permissionsOnly) {
+		init();
 		if (permissionsOnly) {
 			return permissions.toArray(new String[0]);
 		} else {
@@ -236,6 +268,7 @@ public class ProfileDBManager extends ProfileManager {
 	 */
 	public ProfileDBResult match(String profilePattern,
 			String[] requiredCapabilities, String[] optionalCapabilities) {
+		init();
 		ArrayList<String> args = new ArrayList<String>();
 		args.add("--list-mappings");
 		args.add("--no-caps");
@@ -252,9 +285,13 @@ public class ProfileDBManager extends ProfileManager {
 
 	@Override
 	public List<IProfile> getProfilesForRuntime(String runtime) {
+		init();
 		List<IProfile> result = profilesForRuntime
 				.get(toCanonicalRuntime(runtime));
 		return result == null ? null : Collections.unmodifiableList(result);
 	}
 
+	public ICapabilities getCapabilities(IProfile profile) {
+		return capabilitiesForProfiles.get(profile);
+	}
 }

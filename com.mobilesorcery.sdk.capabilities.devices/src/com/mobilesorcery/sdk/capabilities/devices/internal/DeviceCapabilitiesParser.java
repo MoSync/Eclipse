@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import com.mobilesorcery.sdk.core.Capabilities;
+import com.mobilesorcery.sdk.core.Capability;
 import com.mobilesorcery.sdk.core.CapabilityState;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.ICapabilities;
@@ -119,7 +120,7 @@ public class DeviceCapabilitiesParser {
 					// Fallback to default: SUPPORTED
 				}
 
-				capabilities.setCapability(capability, capabilityState);
+				capabilities.setCapability(new Capability(capability, capabilityState));
 			}
 			addCapabilites(result, section.getName(), capabilities);
 		}

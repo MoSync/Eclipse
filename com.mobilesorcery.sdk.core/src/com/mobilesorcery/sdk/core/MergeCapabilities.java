@@ -6,18 +6,20 @@ import java.util.Set;
 
 public class MergeCapabilities implements ICapabilities {
 
-	private ICapabilities[] children;
+	private final ICapabilities[] children;
 
 	public MergeCapabilities(ICapabilities... children) {
 		this.children = children;
 	}
 
+	@Override
 	public boolean hasCapability(String capability) {
-		return getCapabilityValue(capability) != null;
+		return getCapability(capability) != null;
 	}
 
-	public Set<String> listCapabilities() {
-		HashSet<String> result = new HashSet<String>();
+	@Override
+	public Set<ICapability> listCapabilities() {
+		HashSet<ICapability> result = new HashSet<ICapability>();
 		for (int i = 0; i < children.length; i++) {
 			if (children[i] != null) {
 				result.addAll(children[i].listCapabilities());
@@ -26,18 +28,21 @@ public class MergeCapabilities implements ICapabilities {
 		return result;
 	}
 
-	public Object getCapabilityValue(String capability) {
+	@Override
+	public ICapability getCapability(String capability) {
 		for (int i = 0; i < children.length; i++) {
-			Object value = children[i] == null ? null : children[i].getCapabilityValue(capability);
-			if (value != null) {
-				return value;
+			ICapability child = children[i] == null ? null : children[i].getCapability(capability);
+			if (child != null) {
+				return child;
 			}
 		}
-		
+
 		return null;
 	}
 
+	@Override
 	public String toString() {
 		return Arrays.asList(children).toString();
 	}
+
 }

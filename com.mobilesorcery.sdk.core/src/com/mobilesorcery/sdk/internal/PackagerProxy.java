@@ -67,6 +67,16 @@ public class PackagerProxy implements IPackager {
 	}
 
 	@Override
+	public String getShortDescription(MoSyncProject project, IProfile profile) {
+		try {
+			initDelegate();
+			return delegate.getShortDescription(project, profile);
+		} catch (CoreException e) {
+			return profile.getName();
+		}
+	}
+
+	@Override
 	public String getId() {
 		return id;
 	}

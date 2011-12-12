@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.internal;
+package com.mobilesorcery.sdk.profiles;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,11 +15,6 @@ import org.eclipse.jface.resource.ImageDescriptor;
 
 import com.mobilesorcery.sdk.core.ProfileManager;
 import com.mobilesorcery.sdk.core.MoSyncTool;
-import com.mobilesorcery.sdk.profiles.IDeviceFilter;
-import com.mobilesorcery.sdk.profiles.IProfile;
-import com.mobilesorcery.sdk.profiles.IVendor;
-import com.mobilesorcery.sdk.profiles.ProfileParser;
-import com.mobilesorcery.sdk.profiles.Vendor;
 
 public class LegacyProfileManager extends ProfileManager {
 

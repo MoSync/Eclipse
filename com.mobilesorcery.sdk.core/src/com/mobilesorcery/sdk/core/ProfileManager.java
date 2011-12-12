@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Set;
 
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
-import com.mobilesorcery.sdk.internal.ProfileDBManager;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.IVendor;
+import com.mobilesorcery.sdk.profiles.ProfileDBManager;
 import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 
 public abstract class ProfileManager {

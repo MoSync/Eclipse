@@ -136,8 +136,10 @@ public class PlatformSelectionComposite implements Listener,
 			if (obj instanceof IProfile) {
 				IProfile profile = (IProfile) obj;
 				mainText = profile.getName();
-				isTargetProfile = project.getTargetProfile() == profile;
-				subText = getProfileDescription(profile);
+				isTargetProfile = profile != null && profile.equals(project.getTargetProfile());
+				subText = getProfileDescription(project, profile);
+				if (subText.equals(mainText))
+					subText = "";
 			} else if (obj instanceof IVendor) {
 				IVendor platform = (IVendor) obj;
 				Image image = MosyncUIPlugin.getDefault().getPlatformImage(
@@ -184,7 +186,11 @@ public class PlatformSelectionComposite implements Listener,
 			return newBounds;
 		}
 
-		private String getProfileDescription(IProfile profile) {
+		private String getProfileShortDescription(MoSyncProject project, IProfile profile) {
+			return profile.getPackager().getShortDescription(project, profile);
+		}
+
+		private String getProfileDescription(MoSyncProject project, IProfile profile) {
 			if (mode == MoSyncTool.LEGACY_PROFILE_TYPE) {
 				IProfile platformProfile = DeviceCapabilitiesFilter
 						.matchLegacyProfile(project, profile);
@@ -200,9 +206,11 @@ public class PlatformSelectionComposite implements Listener,
 								MoSyncTool.toString(filteredOutProfile.get(0)));
 					}
 				}
-				return MessageFormat.format("({0}: Unknown runtime", Profile.getAbbreviatedPlatform(profile));
+				return MessageFormat.format("({0}: Unknown runtime",
+						Profile.getAbbreviatedPlatform(profile));
+			} else {
+				return getProfileShortDescription(project, profile);
 			}
-			return "";
 		}
 
 	}

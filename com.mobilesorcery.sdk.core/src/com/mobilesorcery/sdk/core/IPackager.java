@@ -13,6 +13,8 @@
 */
 package com.mobilesorcery.sdk.core;
 
+import com.mobilesorcery.sdk.profiles.IProfile;
+
 
 /**
  * <p>A packager is called after compiling and linking.</p>

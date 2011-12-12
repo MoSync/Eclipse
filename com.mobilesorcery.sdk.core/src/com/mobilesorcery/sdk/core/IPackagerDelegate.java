@@ -62,4 +62,12 @@ public interface IPackagerDelegate {
 	 */
 	public String getGenerateMode(IProfile profile) throws CoreException;
 
+	/**
+	 * Returns a short, user-friendly description text of this profile,
+	 * to be used by UI elements.
+	 * @param profile
+	 * @return
+	 */
+	public String getShortDescription(MoSyncProject project, IProfile profile);
+
 }

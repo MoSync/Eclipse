@@ -40,10 +40,10 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import com.mobilesorcery.sdk.internal.LegacyProfileManager;
-import com.mobilesorcery.sdk.internal.ProfileDBManager;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.IVendor;
+import com.mobilesorcery.sdk.profiles.LegacyProfileManager;
+import com.mobilesorcery.sdk.profiles.ProfileDBManager;
 import com.mobilesorcery.sdk.profiles.ProfileParser;
 import com.sun.org.apache.xml.internal.serialize.OutputFormat;
 import com.sun.org.apache.xml.internal.serialize.XMLSerializer;
@@ -265,7 +265,7 @@ public class MoSyncTool {
 
 	private synchronized ProfileDBManager defaultProfileManager() {
 		if (defaultProfileManager == null) {
-			defaultProfileManager = new ProfileDBManager();
+			defaultProfileManager = ProfileDBManager.getInstance();
 			defaultProfileManager.init();
 		}
 		return defaultProfileManager;

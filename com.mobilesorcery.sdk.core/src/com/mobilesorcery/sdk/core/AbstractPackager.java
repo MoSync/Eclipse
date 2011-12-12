@@ -44,4 +44,13 @@ public abstract class AbstractPackager implements IPackagerDelegate {
 		return PipeTool.BUILD_C_MODE;
 	}
 
+	@Override
+	public String getShortDescription(MoSyncProject project, IProfile profile) {
+		return getDefaultShortDescription(profile);
+	}
+
+	protected static String getDefaultShortDescription(IProfile profile) {
+		return profile.getName();
+	}
+
 }

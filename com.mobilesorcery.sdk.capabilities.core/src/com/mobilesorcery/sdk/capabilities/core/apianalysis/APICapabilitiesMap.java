@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Set;
 
 import com.mobilesorcery.sdk.core.Capabilities;
+import com.mobilesorcery.sdk.core.Capability;
+import com.mobilesorcery.sdk.core.CapabilityState;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.ICapabilities;
 import com.mobilesorcery.sdk.core.MergeCapabilities;
@@ -81,7 +83,7 @@ public class APICapabilitiesMap {
 			capabilitiesMap.put(capabilitiesKey, capabilities);
 		}
 		if (capabilityName != null) {
-			capabilities.setCapability(capabilityName);
+			capabilities.setCapability(new Capability(capabilityName, CapabilityState.SUPPORTED));
 		}
 	}
 
@@ -92,7 +94,7 @@ public class APICapabilitiesMap {
 			fileCapabilitiesMap.put(uri, capabilities);
 		}
 		if (capabilityName != null) {
-			capabilities.setCapability(capabilityName);
+			capabilities.setCapability(new Capability(capabilityName, CapabilityState.SUPPORTED));
 		}
 	}
 
