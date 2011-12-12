@@ -293,6 +293,13 @@ public class MoSyncBuilder extends ACBuilder {
         return getFinalOutputPath(project, variant).append("package");
     }
 
+    public static String getExtraCompilerSwitches(MoSyncProject project) throws ParameterResolverException {
+    	IBuildVariant variant = getActiveVariant(project);
+    	ParameterResolver resolver = createParameterResolver(project, variant);
+    	IPropertyOwner buildProperties = getPropertyOwner(project, variant.getConfigurationId());
+    	return Util.replace(buildProperties.getProperty(MoSyncBuilder.EXTRA_COMPILER_SWITCHES), resolver);
+    }
+
     @Override
 	protected IProject[] build(int kind, Map args, IProgressMonitor monitor) throws CoreException {
             IProject project = getProject();

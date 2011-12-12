@@ -19,6 +19,7 @@ import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -40,7 +41,7 @@ public class CompileBuildStep extends AbstractBuildStep {
 		public String getId() {
 			return ID;
 		}
-		
+
 		@Override
 		public String getName() {
 			return "Compile";
@@ -55,23 +56,23 @@ public class CompileBuildStep extends AbstractBuildStep {
 		setId(ID);
 		setName("Compile");
 	}
-	
+
 	@Override
 	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff,
-			IBuildResult buildResult, IProgressMonitor monitor) throws CoreException {		
+			IBuildResult buildResult, IProgressMonitor monitor) throws CoreException, ParameterResolverException {
 		IProject project = mosyncProject.getWrappedProject();
-		
+
         MoSyncBuilderVisitor compilerVisitor = new MoSyncBuilderVisitor();
-        compilerVisitor.setProject(project);           
+        compilerVisitor.setProject(project);
         compilerVisitor.setVariant(variant);
         compilerVisitor.setDependencyProvider(getDependencyProvider());
-        
+
         IPropertyOwner buildProperties = getBuildProperties();
         ILineHandler lineHandler = getDefaultLineHandler();
-        
+
         compilerVisitor.setConsole(getConsole());
-        compilerVisitor.setExtraCompilerSwitches(buildProperties.getProperty(MoSyncBuilder.EXTRA_COMPILER_SWITCHES));
+        compilerVisitor.setExtraCompilerSwitches(MoSyncBuilder.getExtraCompilerSwitches(mosyncProject));
         Integer gccWarnings = PropertyUtil.getInteger(buildProperties, MoSyncBuilder.GCC_WARNINGS);
         compilerVisitor.setGCCWarnings(gccWarnings == null ? 0 : gccWarnings.intValue());
         compilerVisitor.setOutputPath(MoSyncBuilder.getOutputPath(project, variant));
@@ -91,10 +92,10 @@ public class CompileBuildStep extends AbstractBuildStep {
         Set<IProject> projectDependencies = computeProjectDependencies(monitor, mosyncProject, getBuildState(), allAffectedResources);
         DependencyManager<IProject> projectDependencyMgr = CoreMoSyncPlugin.getDefault().getProjectDependencyManager(ResourcesPlugin.getWorkspace());
         projectDependencyMgr.setDependencies(project, projectDependencies);
-        
+
         // TODO: Better way to transport this stuff?
         session.getProperties().put(OBJECT_FILES, compilerVisitor.getObjectFilesForProject(project));
-        
+
         return CONTINUE;
 	}
 

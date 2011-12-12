@@ -811,4 +811,29 @@ public class Util {
 		}
 		return str.replace('\\', File.separatorChar).replace('/', File.separatorChar);
 	}
+
+	/**
+	 * Given a string, returns a proper C identifier.
+	 * @param name
+	 * @return
+	 */
+	public static String toIdentifier(String str) {
+		// C = Java identifiers :)
+		StringBuffer buf = new StringBuffer();
+		if (!str.isEmpty()) {
+			char first = str.charAt(0);
+			if (Character.isJavaIdentifierPart(first) && !Character.isJavaIdentifierStart(first)) {
+				buf.append("_");
+			}
+			for (int i = 0; i < str.length(); i++) {
+				char ch = str.charAt(i);
+				if (Character.isJavaIdentifierPart(ch)) {
+					buf.append(Character.toUpperCase(ch));
+				} else {
+					buf.append("_");
+				}
+			}
+		}
+		return buf.toString();
+	}
 }

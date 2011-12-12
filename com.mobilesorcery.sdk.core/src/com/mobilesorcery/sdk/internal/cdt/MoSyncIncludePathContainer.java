@@ -112,7 +112,12 @@ public class MoSyncIncludePathContainer implements IPathEntryContainer {
     	if (mosyncProject == null) {
     		throw new IllegalStateException("Project does not have MoSync Nature");
     	}
-    	String extraCompilerSwitchesLine = mosyncProject.getPropertyOwner().getProperty(MoSyncBuilder.EXTRA_COMPILER_SWITCHES);
+    	String extraCompilerSwitchesLine = "";
+		try {
+			extraCompilerSwitchesLine = MoSyncBuilder.getExtraCompilerSwitches(mosyncProject);
+		} catch (ParameterResolverException e) {
+			CoreMoSyncPlugin.getDefault().logOnce(e, "qqeeww");
+		}
         ArrayList<IMacroEntry> compilerSymbols = new ArrayList<IMacroEntry>();
 
         if (!Util.isEmpty(extraCompilerSwitchesLine)) {

@@ -22,7 +22,9 @@ import com.mobilesorcery.sdk.core.IPropertyInitializerDelegate;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
+import com.mobilesorcery.sdk.core.ProfileManager;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 import com.mobilesorcery.sdk.internal.PipeTool;
@@ -33,36 +35,35 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
     public BuildPropertiesInitializerDelegate() {
     }
 
-    public String getDefaultValue(IPropertyOwner p, String key) {
+    @Override
+	public String getDefaultValue(IPropertyOwner p, String key) {
     	// TODO: Some of these should be set in an initialization step instead,
     	// lo prio though.
-    	
+
     	String namespacedKey = NameSpacePropertyOwner.getKey(key);
     	String namespace = NameSpacePropertyOwner.getFullNamespace(key);
     	String namespaceSegment = "";
     	String projectName = "";
-    	
+
+    	int profileManagerType = MoSyncTool.LEGACY_PROFILE_TYPE;
     	if (p instanceof MoSyncProject) {
     		MoSyncProject project = (MoSyncProject) p;
+    		profileManagerType = project.getProfileManagerType();
     		projectName = project.getName();
     		// Config = namespace
     		namespaceSegment = project.areBuildConfigurationsSupported() ? namespace + "/" : "";
     	}
-    	
+
         if (MoSyncBuilder.EXTRA_COMPILER_SWITCHES.equals(namespacedKey)) {
-        	if (IBuildConfiguration.DEBUG_ID.equals(namespace)) {
-        		return "-O0";
-        	} else {
-        		return "-O2";
-        	}
+        	return createDefaultExtraCompilerSwitches(profileManagerType, IBuildConfiguration.DEBUG_ID.equals(namespace));
         } else if (MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS.equals(namespacedKey)) {
         	if (IBuildConfiguration.DEBUG_ID.equals(namespace)) {
-        		return PropertyUtil.fromBoolean(true); 
+        		return PropertyUtil.fromBoolean(true);
         	} else {
         		return PropertyUtil.fromBoolean(false);
         	}
         } else if (MoSyncBuilder.LIB_OUTPUT_PATH.equals(namespacedKey) && namespaceSegment != null) {
-    		return namespaceSegment + projectName + ".lib";          	
+    		return namespaceSegment + projectName + ".lib";
         } else if (MoSyncBuilder.APP_OUTPUT_PATH.equals(namespacedKey) && namespaceSegment != null) {
     		return namespaceSegment;
         } else if (MoSyncBuilder.DEFAULT_LIBRARIES.equals(namespacedKey)) {
@@ -74,7 +75,7 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
         } else if (MoSyncBuilder.MEMORY_HEAPSIZE_KB.equals(namespacedKey)) {
         	return PropertyUtil.fromInteger(PipeTool.DEFAULT_HEAP_SIZE_KB);
         } else if (MoSyncBuilder.MEMORY_STACKSIZE_KB.equals(namespacedKey)) {
-        	return PropertyUtil.fromInteger(PipeTool.DEFAULT_STACK_SIZE_KB);        	
+        	return PropertyUtil.fromInteger(PipeTool.DEFAULT_STACK_SIZE_KB);
         } else if (MoSyncBuilder.MEMORY_DATASIZE_KB.equals(namespacedKey)) {
         	return PropertyUtil.fromInteger(PipeTool.DEFAULT_DATA_SIZE_KB);
         } else if (DefaultPackager.APP_VENDOR_NAME_BUILD_PROP.equals(namespacedKey)) {
@@ -85,12 +86,25 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
             return projectName;
         } else if (ApplicationPermissions.APPLICATION_PERMISSIONS_PROP.equals(namespacedKey)) {
             return ApplicationPermissions.toPropertyString(
-                    ICommonPermissions.VIBRATE, 
-                    ICommonPermissions.INTERNET, 
+                    ICommonPermissions.VIBRATE,
+                    ICommonPermissions.INTERNET,
                     ICommonPermissions.FILE_STORAGE);
         }
-        
+
         return null;
     }
+
+	private String createDefaultExtraCompilerSwitches(int profileManagerType, boolean debug) {
+		StringBuffer result = new StringBuffer();
+    	if (debug) {
+    		result.append("-O0");
+    	} else {
+    		result.append("-O2");
+    	}
+    	if (profileManagerType == MoSyncTool.DEFAULT_PROFILE_TYPE) {
+    		result.append(" -D%platform-family% -D%platform-variant%");
+    	}
+    	return result.toString();
+	}
 
 }
