@@ -15,11 +15,11 @@ import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.ProfileManager;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
-import com.mobilesorcery.sdk.internal.ProfileDBManager;
-import com.mobilesorcery.sdk.internal.ProfileDBManager.ProfileDBResult;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
+import com.mobilesorcery.sdk.profiles.ProfileDBManager;
+import com.mobilesorcery.sdk.profiles.ProfileDBManager.ProfileDBResult;
 import com.mobilesorcery.sdk.profiles.filter.elementfactories.DeviceCapabilitiesFilterFactory;
 
 public class DeviceCapabilitiesFilter extends AbstractDeviceFilter {
@@ -79,17 +79,32 @@ public class DeviceCapabilitiesFilter extends AbstractDeviceFilter {
 	}
 
 	public static DeviceCapabilitiesFilter extractFilterFromProject(MoSyncProject project) {
+		return replaceFilter(project, null);
+	}
+
+	public static void setFilter(MoSyncProject project, DeviceCapabilitiesFilter newFilter) {
+		replaceFilter(project, newFilter);
+	}
+
+	private static DeviceCapabilitiesFilter replaceFilter(MoSyncProject project, DeviceCapabilitiesFilter newFilter) {
 		ICompositeDeviceFilter compositeFilter = project.getDeviceFilter();
 		IDeviceFilter[] filters = compositeFilter.getFilters();
-		for (int i = 0; i < filters.length; i++) {
+		DeviceCapabilitiesFilter result = null;
+		for (int i = 0; result == null && i < filters.length; i++) {
 			IDeviceFilter filter = filters[i];
 			if (filter instanceof DeviceCapabilitiesFilter) {
-				DeviceCapabilitiesFilter result = (DeviceCapabilitiesFilter) filter;
+				result = (DeviceCapabilitiesFilter) filter;
 				result.initProfiles();
-				return result;
 			}
 		}
-		return null;
+
+		if (newFilter != null) {
+			if (result != null) {
+				compositeFilter.removeFilter(result);
+			}
+			compositeFilter.addFilter(newFilter);
+		}
+		return result;
 	}
 
 	@Override

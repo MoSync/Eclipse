@@ -32,6 +32,7 @@ import com.mobilesorcery.sdk.core.build.BundleBuildStep.Factory;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.core.build.PackBuildStep;
 import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
+import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -41,7 +42,8 @@ public class Html5Plugin extends AbstractUIPlugin {
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.html5"; //$NON-NLS-1$
 
-	private static final String JS_PROJECT_SUPPORT_PROP = PLUGIN_ID + ".support";
+	private static final String JS_PROJECT_SUPPORT_PROP = PLUGIN_ID
+			+ ".support";
 
 	public static final String HTML5_TEMPLATE_TYPE = "html5";
 
@@ -56,7 +58,10 @@ public class Html5Plugin extends AbstractUIPlugin {
 
 	/*
 	 * (non-Javadoc)
-	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext)
+	 *
+	 * @see
+	 * org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext
+	 * )
 	 */
 	@Override
 	public void start(BundleContext context) throws Exception {
@@ -66,7 +71,10 @@ public class Html5Plugin extends AbstractUIPlugin {
 
 	/*
 	 * (non-Javadoc)
-	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
+	 *
+	 * @see
+	 * org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext
+	 * )
 	 */
 	@Override
 	public void stop(BundleContext context) throws Exception {
@@ -85,12 +93,14 @@ public class Html5Plugin extends AbstractUIPlugin {
 
 	/**
 	 * Adds HTML5 support to a {@link MoSyncProject}.
+	 *
 	 * @throws CoreException
 	 */
 	public void addHTML5Support(MoSyncProject project) throws CoreException {
 		try {
 			BuildSequence sequence = new BuildSequence(project);
-			List<IBuildStepFactory> factories = sequence.getBuildStepFactories();
+			List<IBuildStepFactory> factories = sequence
+					.getBuildStepFactories();
 			ArrayList<IBuildStepFactory> newFactories = new ArrayList<IBuildStepFactory>();
 			for (IBuildStepFactory factory : factories) {
 				if (ResourceBuildStep.ID.equals(factory.getId())) {
@@ -102,21 +112,35 @@ public class Html5Plugin extends AbstractUIPlugin {
 			PrivilegedAccess.getInstance().grantAccess(project, true);
 			PropertyUtil.setBoolean(project, JS_PROJECT_SUPPORT_PROP, true);
 
-			configureForJSDT(project.getWrappedProject());
+			configureForJSDT(project);
 		} catch (Exception e) {
-			throw new CoreException(new Status(IStatus.ERROR, PLUGIN_ID, "Could not create JavaScript/HTML5 project", e));
+			throw new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,
+					"Could not create JavaScript/HTML5 project", e));
 		}
 	}
 
-	private void configureForJSDT(IProject project) throws CoreException {
+	private void configureForJSDT(MoSyncProject mosyncProject)
+			throws CoreException {
+		IProject project = mosyncProject.getWrappedProject();
 		addJavaScriptNature(project);
 		IJavaScriptProject jsProject = JavaScriptCore.create(project);
 		if (jsProject instanceof JavaProject) {
 			JavaProject jsProject1 = (JavaProject) jsProject;
-			jsProject1.setCommonSuperType(new LibrarySuperType(new Path("org.eclipse.wst.jsdt.launching.baseBrowserLibrary"), jsProject1, "Window"));
+			jsProject1.setCommonSuperType(new LibrarySuperType(new Path(
+					"org.eclipse.wst.jsdt.launching.baseBrowserLibrary"),
+					jsProject1, "Window"));
 		} else {
-			CoreMoSyncPlugin.getDefault().logOnce(new IllegalStateException("Invalid JSDT version!!"), "JSDT");
+			CoreMoSyncPlugin
+					.getDefault()
+					.logOnce(
+							new IllegalStateException("Invalid JSDT version!!"),
+							"JSDT");
 		}
+
+		// Add HTML5 capability filter!
+		DeviceCapabilitiesFilter newFilter = new DeviceCapabilitiesFilter(
+				new String[] { "HTML5" }, new String[0]);
+		DeviceCapabilitiesFilter.setFilter(mosyncProject, newFilter);
 	}
 
 	private void addJavaScriptNature(IProject project) throws CoreException {
