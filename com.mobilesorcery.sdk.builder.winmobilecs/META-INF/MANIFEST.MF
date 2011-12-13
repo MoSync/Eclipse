@@ -6,8 +6,11 @@ Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: com.mobilesorcery.sdk.builder.winmobilecs.WinMobileCSPlugin
 Bundle-Vendor: MOBILESORCERY
 Require-Bundle: org.eclipse.ui,
- org.eclipse.core.runtime
+ org.eclipse.core.runtime,
+ org.eclipse.debug.core;bundle-version="3.7.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Import-Package: com.mobilesorcery.sdk.core,
- com.mobilesorcery.sdk.profiles
+ com.mobilesorcery.sdk.core.launch,
+ com.mobilesorcery.sdk.profiles,
+ com.mobilesorcery.sdk.ui.launch

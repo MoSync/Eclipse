@@ -4,9 +4,26 @@
    <extension
          point="com.mobilesorcery.core.packagers">
       <packager
+      		id="com.mobilesorcery.sdk.build.winmobilecs.packager"
             implementation="com.mobilesorcery.sdk.builder.winmobilecs.WinMobileCSPackager"
-            pattern="^profiles[/|\\]runtimes[/|\\]winphone.*">
+            pattern="^profiles[/|\\]runtimes[/|\\]winphone.*"
+            platform="Windows Phone">
       </packager>
    </extension>
-
+            <extension
+            point="com.mobilesorcery.core.launcher">
+         <launcher
+               id="com.mobilesorcery.sdk.builder.winmobilecs.launcher"
+               implementation="com.mobilesorcery.sdk.builder.winmobilecs.launch.WindowsPhoneEmulatorLauncher">
+         </launcher>
+      </extension>
+                 <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            category="com.mobilesorcery.sdk.preferences.main"
+            class="com.mobilesorcery.sdk.builder.winmobilecs.ui.preferences.WindowsPhoneEmulatorPreferencePage"
+            id="com.mobilesorcery.sdk.builder.winmobilecs.emulator.prefs"
+            name="Windows Phone Emulator">
+      </page>
+      </extension>
 </plugin>
