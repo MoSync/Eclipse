@@ -25,7 +25,7 @@ public class WinMobileCSPackager extends PackageToolPackager {
 		if (shouldBuildWithVS(project, variant)) {
 			String config = getConfig(project, variant);
 			File xapFile =
-				internal.resolveFile("%package-output-dir%/bin/" + config + "/mosync.xap");
+				internal.resolveFile("%package-output-dir%/project/bin/" + config + "/mosync.xap");
 			return xapFile;
 		} else {
 			File csProjFile =
