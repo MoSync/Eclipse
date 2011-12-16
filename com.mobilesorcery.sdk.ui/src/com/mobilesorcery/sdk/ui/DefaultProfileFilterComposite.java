@@ -22,6 +22,7 @@ import org.eclipse.ui.forms.widgets.ColumnLayout;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
+import org.omg.CORBA.Request;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -49,13 +50,13 @@ public class DefaultProfileFilterComposite extends Composite implements
 	class CapabilityControl {
 		Composite main;
 		Button selected;
-		Button optional;
+		Button required;
 
 		public CapabilityControl(Composite main, Button selected,
-				Button optional) {
+				Button required) {
 			this.main = main;
 			this.selected = selected;
-			this.optional = optional;
+			this.required = required;
 		}
 	}
 
@@ -170,7 +171,7 @@ public class DefaultProfileFilterComposite extends Composite implements
 		Label spacer = toolkit.createLabel(result, "");
 
 		Button optionalButton = new Button(result, SWT.CHECK);
-		optionalButton.setText("Optional");
+		optionalButton.setText("Must have");
 		optionalButton.setLayoutData(new GridData(SWT.LEFT, SWT.DEFAULT, true,
 				false));
 		optionalButton.setData(capability);
@@ -256,11 +257,10 @@ public class DefaultProfileFilterComposite extends Composite implements
 
 			for (String capability : capabilityControls.keySet()) {
 				CapabilityControl control = capabilityControls.get(capability);
-				boolean isOptional = optionalCapabilities.contains(capability);
-				boolean isSelected = isOptional
-						|| selectedCapabilities.contains(capability);
+				boolean isRequired = !optionalCapabilities.contains(capability);
+				boolean isSelected = selectedCapabilities.contains(capability);
 				control.selected.setSelection(isSelected);
-				control.optional.setSelection(isOptional);
+				control.required.setSelection(isRequired);
 				updateCapabilityUI(capability);
 			}
 			updateEligiblePlatforms();
@@ -270,7 +270,7 @@ public class DefaultProfileFilterComposite extends Composite implements
 	private void updateCapabilityUI(String capability) {
 		CapabilityControl control = capabilityControls.get(capability);
 		boolean isSelected = selectedCapabilities.contains(capability);
-		control.optional.setVisible(isSelected);
+		control.required.setVisible(isSelected);
 	}
 
 	private void updateEligiblePlatforms() {
@@ -322,11 +322,11 @@ public class DefaultProfileFilterComposite extends Composite implements
 			String capability = (String) data;
 			CapabilityControl capabilityControl = this.capabilityControls
 					.get(capability);
-			if (event.widget == capabilityControl.optional) {
-				if (capabilityControl.optional.getSelection()) {
-					optionalCapabilities.add(capability);
-				} else {
+			if (event.widget == capabilityControl.required) {
+				if (capabilityControl.required.getSelection()) {
 					optionalCapabilities.remove(capability);
+				} else {
+					optionalCapabilities.add(capability);
 				}
 			}
 			if (event.widget == capabilityControl.selected) {
