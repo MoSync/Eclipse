@@ -118,11 +118,11 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 				throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Cannot mix .lst files and .lstx"));
 			}
 
-			if (lstxCount > 0 && lstCount == 0) {
-				File resDir = getResourcesDirectory();
-				if (resDir != null) {
-					resourceFiles.add(resDir.getAbsolutePath());
-				}
+			File resDir = getResourcesDirectory();
+			if (resDir != null && lstCount == 0) {
+				resourceFiles.add(resDir.getAbsolutePath());
+			}
+			if ((lstxCount > 0 || resDir != null) && lstCount == 0) {
 				// Beware; here we once more update the resourceFiles array...
 				resourceFiles = Arrays.asList(compileWithResComp(resourceFiles.toArray(new String[0]), monitor, dependencyManager, dependencyDelta));
 			}
@@ -199,7 +199,7 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 	public boolean isBuildable(IResource resource) {
 		// Ok, I added the 'resource' file just so it will not get filtered out -- what we'd really
 		// like is the dependency files of pipe-tool resource compilation to work properly
-		return isResourceFile(resource) || MoSyncBuilder.getResourceOutputPath(project, getVariant()).equals(resource.getLocation());
+		return Util.equals(getResourcesDirectory(), resource.getLocation().toFile()) || isResourceFile(resource) || MoSyncBuilder.getResourceOutputPath(project, getVariant()).equals(resource.getLocation());
 	}
 
 	protected String getName() {
