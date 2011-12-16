@@ -118,7 +118,7 @@ public class DeviceCapabilitiesFilter extends AbstractDeviceFilter {
 		String delim = reqStr.isEmpty() || optStr.isEmpty() ? "" : "; ";
 		String result = reqStr + delim + optStr;
 		if (result.isEmpty()) {
-			result = "<No required/optional capbilities>";
+			result = "<No required/optional capabilities>";
 		}
 		return result;
 	}
