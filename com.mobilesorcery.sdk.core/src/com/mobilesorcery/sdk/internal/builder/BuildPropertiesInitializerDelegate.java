@@ -45,6 +45,8 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
     	String namespaceSegment = "";
     	String projectName = "";
 
+    	boolean isDebugCfg = IBuildConfiguration.DEBUG_ID.equals(namespace);
+
     	int profileManagerType = MoSyncTool.LEGACY_PROFILE_TYPE;
     	if (p instanceof MoSyncProject) {
     		MoSyncProject project = (MoSyncProject) p;
@@ -55,7 +57,7 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
     	}
 
         if (MoSyncBuilder.EXTRA_COMPILER_SWITCHES.equals(namespacedKey)) {
-        	return createDefaultExtraCompilerSwitches(profileManagerType, IBuildConfiguration.DEBUG_ID.equals(namespace));
+        	return createDefaultExtraCompilerSwitches(profileManagerType, isDebugCfg);
         } else if (MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS.equals(namespacedKey)) {
         	if (IBuildConfiguration.DEBUG_ID.equals(namespace)) {
         		return PropertyUtil.fromBoolean(true);
@@ -89,6 +91,10 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
                     ICommonPermissions.VIBRATE,
                     ICommonPermissions.INTERNET,
                     ICommonPermissions.FILE_STORAGE);
+        } else if (MoSyncBuilder.USE_STATIC_RECOMPILATION.equals(namespacedKey)) {
+        	// The default is to use interpreted (=faster execution),
+        	// in debug mode, static recompile otherwise.
+        	return PropertyUtil.fromBoolean(!isDebugCfg);
         }
 
         return null;

@@ -17,8 +17,8 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.Profile;
 
 /**
- * Uses the packager tool in the mosync binary directory to create
- * packages
+ * Uses the packager tool in the mosync binary directory to create packages
+ *
  * @author mattias.bybro@mosync.com
  *
  */
@@ -32,29 +32,37 @@ public abstract class PackageToolPackager extends AbstractPackager {
 
 		try {
 			if (needsPackaging(diff)) {
-				IPath packagerTool = MoSyncTool.getDefault().getBinary("package");
+				IPath packagerTool = MoSyncTool.getDefault().getBinary(
+						"package");
 
 				DefaultPackager internal = new DefaultPackager(project, variant);
 
-				CommandLineBuilder commandLine = new CommandLineBuilder(packagerTool.toOSString());
+				CommandLineBuilder commandLine = new CommandLineBuilder(
+						packagerTool.toOSString());
 				addGeneralParameters(project, variant, commandLine);
 				addPlatformSpecifics(project, variant, commandLine);
 
-				String packageOutputDirStr = internal.get(DefaultPackager.PACKAGE_OUTPUT_DIR);
+				String packageOutputDirStr = internal
+						.get(DefaultPackager.PACKAGE_OUTPUT_DIR);
 				File packageOutputDir = new File(packageOutputDirStr);
 				packageOutputDir.mkdirs();
 
-				internal.runCommandLine(commandLine.asArray(), commandLine.toHiddenString());
+				internal.runCommandLine(commandLine.asArray(),
+						commandLine.toHiddenString());
 			}
 			buildResult.setBuildResult(computeBuildResult(project, variant));
 		} catch (Exception e) {
-			String errorMsg = MessageFormat.format("Failed to create package for {0} (platform: {1})", profile, Profile.getAbbreviatedPlatform(profile));
-			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, errorMsg, e));
+			String errorMsg = MessageFormat.format(
+					"Failed to create package for {0} (platform: {1})",
+					profile, Profile.getAbbreviatedPlatform(profile));
+			throw new CoreException(new Status(IStatus.ERROR,
+					CoreMoSyncPlugin.PLUGIN_ID, errorMsg, e));
 		}
 	}
 
 	private boolean needsPackaging(IFileTreeDiff diff) {
-		// Poor man's dependency check -- if any file is touched with the exception
+		// Poor man's dependency check -- if any file is touched with the
+		// exception
 		// of .* resources, then rebuild. This is because we have no dependency
 		// file output from the package tool (yet?)
 		if (diff == null) {
@@ -72,17 +80,20 @@ public abstract class PackageToolPackager extends AbstractPackager {
 
 	/**
 	 * Clients override this method and/or the createPackage method.
+	 *
 	 * @param variant
 	 * @param project
 	 * @return
 	 * @throws ParameterResolverException
 	 */
-	protected File computeBuildResult(MoSyncProject project, IBuildVariant variant) throws ParameterResolverException {
+	protected File computeBuildResult(MoSyncProject project,
+			IBuildVariant variant) throws ParameterResolverException {
 		return null;
 	}
 
 	private void addGeneralParameters(MoSyncProject project,
-			IBuildVariant variant, CommandLineBuilder commandLine) throws Exception {
+			IBuildVariant variant, CommandLineBuilder commandLine)
+			throws Exception {
 		DefaultPackager internal = new DefaultPackager(project, variant);
 		internal.setParameters(getParameters());
 
@@ -94,12 +105,14 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		if (iconFile == null) {
 			iconFile = getDefaultIconFile();
 		}
-		String packageOutputDir = internal.get(DefaultPackager.PACKAGE_OUTPUT_DIR);
+		String packageOutputDir = internal
+				.get(DefaultPackager.PACKAGE_OUTPUT_DIR);
 		String vendor = internal.get(DefaultPackager.APP_VENDOR_NAME);
 		Version version = new Version(internal.get(DefaultPackager.APP_VERSION));
 		String appName = internal.get(DefaultPackager.APP_NAME);
 		IApplicationPermissions permissions = project.getPermissions();
-		String permissionsStr = Util.join(permissions.getRequestedPermissions(true).toArray(), ",");
+		String permissionsStr = Util.join(
+				permissions.getRequestedPermissions(true).toArray(), ",");
 
 		if (project.getProfileManagerType() == MoSyncTool.DEFAULT_PROFILE_TYPE) {
 			commandLine.flag("-t").with("platform");
@@ -113,8 +126,19 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			commandLine.flag("-i").with(iconFile);
 		}
 
-		commandLine.flag("-d").with(packageOutputDir).flag("-m").with(MoSyncTool.toString(profile)).
-		flag("--vendor").with(vendor).flag("-n").with(appName).flag("--version").with(version.asCanonicalString());
+		commandLine.flag("-d").with(packageOutputDir).flag("-m")
+				.with(MoSyncTool.toString(profile)).flag("--vendor")
+				.with(vendor).flag("-n").with(appName).flag("--version")
+				.with(version.asCanonicalString());
+
+		boolean useStaticRecompile = PropertyUtil.getBoolean(
+				MoSyncBuilder.getPropertyOwner(project,
+						variant.getConfigurationId()),
+				MoSyncBuilder.USE_STATIC_RECOMPILATION);
+
+		if (!useStaticRecompile) {
+			commandLine.flag("--output-type").with("interpreted");
+		}
 
 		if (!Util.isEmpty(permissionsStr)) {
 			commandLine.flag("--permissions").with(permissionsStr);
@@ -125,18 +149,22 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		}
 
 		if (permissions.isPermissionRequested(ICommonPermissions.NFC)) {
-			File nfcDescription = NFCSupport.create(project).getNFCDescription();
+			File nfcDescription = NFCSupport.create(project)
+					.getNFCDescription();
 			commandLine.flag("--nfc").with(nfcDescription);
 		}
 
 	}
 
 	protected File getDefaultIconFile() {
-		File iconFile = MoSyncTool.getDefault().getMoSyncHome().append("etc/default.icon").toFile();
+		File iconFile = MoSyncTool.getDefault().getMoSyncHome()
+				.append("etc/default.icon").toFile();
 		return iconFile.exists() ? iconFile : null;
 	}
 
-	protected void addPlatformSpecifics(MoSyncProject project, IBuildVariant variant, CommandLineBuilder commandLine) throws Exception {
+	protected void addPlatformSpecifics(MoSyncProject project,
+			IBuildVariant variant, CommandLineBuilder commandLine)
+			throws Exception {
 
 	}
 

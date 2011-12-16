@@ -34,7 +34,11 @@ public class PropertyUtil {
 		if (p == null) {
 			return false;
 		}
-		return Boolean.parseBoolean(p.getProperty(key));
+		return toBoolean(p.getProperty(key));
+	}
+
+	public static boolean toBoolean(String value) {
+		return Boolean.parseBoolean(value);
 	}
 
 	public static boolean setBoolean(IPropertyOwner p, String key, boolean value) {

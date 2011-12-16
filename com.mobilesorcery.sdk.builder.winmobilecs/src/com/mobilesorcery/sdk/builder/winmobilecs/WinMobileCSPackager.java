@@ -37,6 +37,9 @@ public class WinMobileCSPackager extends PackageToolPackager {
 	@Override
 	public void addPlatformSpecifics(MoSyncProject project,
 			IBuildVariant variant, CommandLineBuilder commandLine) {
+		DefaultPackager internal = new DefaultPackager(project, variant);
+		commandLine.flag("--cs-output").with(internal.resolveFile("%program-output%").getParent());
+
 		if (!shouldBuildWithVS(project, variant)) {
 			commandLine.flag("--wp-project-only");
 		}

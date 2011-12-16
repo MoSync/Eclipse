@@ -107,6 +107,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private Button gccWextra;
     private Combo incrementalBuildStrategy;
     private Button useDebugRuntimes;
+	private Button staticRecompilation;
     private ComboViewer buildConfigurations;
     private String currentConfigId;
     private BuildConfigurationChangedListener buildConfigurationListener;
@@ -315,6 +316,12 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         useDebugRuntimesData.horizontalSpan = 2;
         useDebugRuntimes.setLayoutData(useDebugRuntimesData);
 
+        staticRecompilation = new Button(packaging, SWT.CHECK);
+        staticRecompilation.setText("Use static recompilation (if applicable)");
+        GridData staticRecompilationData = new GridData(GridData.FILL_HORIZONTAL);
+        staticRecompilationData.horizontalSpan = 2;
+        staticRecompilation.setLayoutData(staticRecompilationData);
+
         Label versionLabel = new Label(packaging, SWT.NONE);
         versionLabel.setText("&Version:");
 
@@ -448,6 +455,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         setText(dataSize, configProperties.getProperty(MoSyncBuilder.MEMORY_DATASIZE_KB));
 
         useDebugRuntimes.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS));
+        staticRecompilation.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.USE_STATIC_RECOMPILATION));
         setText(version, configProperties.getProperty(MoSyncBuilder.PROJECT_VERSION));
         setText(vendor, configProperties.getProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP));
         setText(appName, configProperties.getProperty(MoSyncBuilder.APP_NAME));
@@ -651,6 +659,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         changed |= configProperties.setProperty(MoSyncBuilder.MEMORY_DATASIZE_KB, dataSize.getText());
 
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS, useDebugRuntimes.getSelection());
+        changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.USE_STATIC_RECOMPILATION, staticRecompilation.getSelection());
         changed |= configProperties.setProperty(MoSyncBuilder.PROJECT_VERSION, version.getText());
         changed |= configProperties.setProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP, vendor.getText());
         changed |= configProperties.setProperty(MoSyncBuilder.APP_NAME, appName.getText());

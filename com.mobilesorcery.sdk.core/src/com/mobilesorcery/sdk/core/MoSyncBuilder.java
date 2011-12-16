@@ -137,7 +137,9 @@ public class MoSyncBuilder extends ACBuilder {
 
     public static final String USE_DEBUG_RUNTIME_LIBS = BUILD_PREFS_PREFIX + "runtime.debug";
 
-    public static final String PROJECT_VERSION = BUILD_PREFS_PREFIX + "app.version";
+	public static final String USE_STATIC_RECOMPILATION = BUILD_PREFS_PREFIX + "output.static.recompilation";
+
+	public static final String PROJECT_VERSION = BUILD_PREFS_PREFIX + "app.version";
 
     public static final String APP_NAME = BUILD_PREFS_PREFIX + "app.name";
 
