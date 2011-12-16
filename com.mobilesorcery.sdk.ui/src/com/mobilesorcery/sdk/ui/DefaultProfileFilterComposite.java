@@ -7,12 +7,14 @@ import java.util.HashSet;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
@@ -27,6 +29,7 @@ import org.omg.CORBA.Request;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.ProfileManager;
+import com.mobilesorcery.sdk.core.SimpleQueue;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IVendor;
 import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
@@ -120,10 +123,10 @@ public class DefaultProfileFilterComposite extends Composite implements
 				Section.DESCRIPTION);
 		capabilitiesSection.setText("Capabilities");
 		capabilitiesSection
-				.setDescription("Select capabilities and features for this project. "
-						+ "Check 'Optional' if your app should still run without the capability. "
-						+ "This will make sure that platforms that do not support the 'Optional' capability "
-						+ "will still be built.");
+				.setDescription("Select capabilities and features for this project.\n"
+						+ "Check 'Must have' if the capability is essential for your app. This will filter out all"
+						+ "platforms that do not have this capability.\n"
+						+ "If the capability is not essential, but rather an optional feature, uncheck 'Must have'");
 
 		capabilitiesSection.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT,
 				true, false));
@@ -274,6 +277,9 @@ public class DefaultProfileFilterComposite extends Composite implements
 	}
 
 	private void updateEligiblePlatforms() {
+		getShell().setEnabled(false);
+		Cursor prevCursor = getShell().getCursor();
+		getShell().setCursor(Display.getCurrent().getSystemCursor(SWT.CURSOR_WAIT));
 		DeviceCapabilitiesFilter filter = createCapabilitiesFilter();
 		for (IVendor platform : platformControls.keySet()) {
 			boolean acceptedPlatform = filter.accept(platform);
@@ -284,6 +290,8 @@ public class DefaultProfileFilterComposite extends Composite implements
 			platformControl.selected.setSelection(selectPlatform);
 			eligiblePlatforms.put(platform, acceptedPlatform);
 		}
+		getShell().setCursor(prevCursor);
+		getShell().setEnabled(true);
 	}
 
 	public void updateProject() {
