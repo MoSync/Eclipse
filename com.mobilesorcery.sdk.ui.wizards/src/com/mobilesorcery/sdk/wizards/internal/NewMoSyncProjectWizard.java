@@ -82,8 +82,8 @@ public class NewMoSyncProjectWizard extends Wizard implements INewWizard {
         projectPage = new NewMoSyncProjectPage();
         templatePage = new TemplateWizardPage();
         templatePage.setTemplateTypes(getTemplateTypes());
-        addPage(projectPage);
         addPage(templatePage);
+        addPage(projectPage);
     }
 
 	private void createProject(IProgressMonitor monitor, ProjectTemplate mainTemplate) throws CoreException {
