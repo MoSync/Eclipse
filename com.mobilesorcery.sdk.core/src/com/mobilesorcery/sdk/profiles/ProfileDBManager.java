@@ -176,14 +176,14 @@ public class ProfileDBManager extends ProfileManager {
 		}
 		inited = true;
 		ProfileDBLineHandler lh = runProfileDb(new ArrayList<String>(
-				Arrays.asList(new String[] { "-g", "*" })));
+				Arrays.asList(new String[] { "-g", "\'*\'" })));
 		vendors.clear();
 		vendors.putAll(lh.result.families);
 		capabilities.addAll(lh.result.capabilities);
 		permissions.addAll(lh.result.permissions);
 		capabilitiesForProfiles = lh.result.capabilitiesForProfiles;
 		// Ok, give us some mappings!
-		ProfileDBResult matchResult = match("*", new String[0], new String[0]);
+		ProfileDBResult matchResult = match("\'*\'", new String[0], new String[0]);
 		profilesForRuntime = matchResult.profilesForRuntime;
 	}
 
