@@ -666,7 +666,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		result.setProperty(PROFILE_MANAGER_TYPE_KEY,
 				PropertyUtil.fromInteger(pt));
 		result.getDeviceFilter().addFilter(
-				new DeviceCapabilitiesFilter(new String[0], new String[0]));
+				DeviceCapabilitiesFilter.create(new String[0], new String[0]));
 		return result;
 	}
 

@@ -309,7 +309,7 @@ public class DefaultProfileFilterComposite extends Composite implements
 	private DeviceCapabilitiesFilter createCapabilitiesFilter() {
 		HashSet<String> requiredCapabilities = new HashSet<String>(selectedCapabilities);
 		requiredCapabilities.removeAll(optionalCapabilities);
-		DeviceCapabilitiesFilter capabilitiesFilter = new DeviceCapabilitiesFilter(
+		DeviceCapabilitiesFilter capabilitiesFilter = DeviceCapabilitiesFilter.create(
 				requiredCapabilities.toArray(new String[0]),
 				optionalCapabilities.toArray(new String[0]));
 		return capabilitiesFilter;

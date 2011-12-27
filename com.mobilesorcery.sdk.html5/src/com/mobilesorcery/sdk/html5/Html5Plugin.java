@@ -138,7 +138,7 @@ public class Html5Plugin extends AbstractUIPlugin {
 		}
 
 		// Add HTML5 capability filter!
-		DeviceCapabilitiesFilter newFilter = new DeviceCapabilitiesFilter(
+		DeviceCapabilitiesFilter newFilter = DeviceCapabilitiesFilter.create(
 				new String[] { "HTML5" }, new String[0]);
 		DeviceCapabilitiesFilter.setFilter(mosyncProject, newFilter);
 	}

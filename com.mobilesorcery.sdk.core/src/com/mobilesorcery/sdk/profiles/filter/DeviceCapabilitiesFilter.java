@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.eclipse.ui.IMemento;
 
+import com.mobilesorcery.sdk.core.Cache;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.ProfileManager;
@@ -35,7 +36,20 @@ public class DeviceCapabilitiesFilter extends AbstractDeviceFilter {
 
 	private HashMap<String, List<IProfile>> profilesForRuntime;
 
-	public DeviceCapabilitiesFilter(String[] requiredCapabilities, String[] optionalCapabilities) {
+	private static Cache<String, DeviceCapabilitiesFilter> cachedFilters = new Cache<String, DeviceCapabilitiesFilter>(32);
+
+	public static DeviceCapabilitiesFilter create(String[] requiredCapabilities, String[] optionalCapabilities) {
+		DeviceCapabilitiesFilter uninited = new DeviceCapabilitiesFilter(requiredCapabilities, optionalCapabilities);
+		String token = uninited.toString();
+		DeviceCapabilitiesFilter filter = cachedFilters.get(token);
+		if (filter == null) {
+			filter = uninited;
+			cachedFilters.put(token, uninited);
+		}
+		return filter;
+	}
+
+	private DeviceCapabilitiesFilter(String[] requiredCapabilities, String[] optionalCapabilities) {
 		this.requiredCapabilities = requiredCapabilities;
 		this.optionalCapabilities = optionalCapabilities;
 	}

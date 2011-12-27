@@ -25,7 +25,7 @@ public class DeviceCapabilitiesFilterFactory implements IDeviceFilterFactory  {
 			if (optionalStr != null) {
 				optional = PropertyUtil.toStrings(optionalStr);
 			}
-			return new DeviceCapabilitiesFilter(required, optional);
+			return DeviceCapabilitiesFilter.create(required, optional);
 		}
 		return null;
 	}
