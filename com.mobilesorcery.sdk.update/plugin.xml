@@ -27,7 +27,7 @@
                class="com.mobilesorcery.sdk.update.internal.UpdateProfilesAction"
                id="com.mobilesorcery.sdk.update"
                label="Update MoSync Profile Database"
-               menubarPath="help/helpStart">
+               menubarPath="help/intro">
          </action>
       </actionSet>      
       <actionSet
@@ -39,7 +39,7 @@
                class="com.mobilesorcery.sdk.update.internal.RegistrationAction"
                id="com.mobilesorcery.sdk.registration"
                label="Register"
-               menubarPath="help/helpStart">
+               menubarPath="help/intro">
          </action>
       </actionSet>
    </extension>
