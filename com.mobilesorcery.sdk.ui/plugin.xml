@@ -166,27 +166,13 @@ icon="icons/launchshortcut.png">
        <actionSet id="com.mobilesorcery.sdk.help.actionset"
            label="Help"
            visible="true">
-           <!--<action
-                 class="com.mobilesorcery.internal.actions.OpenExampleWorkspaceAction"
-                 id="com.mobilesorcery.sdk.examplews"
-                 label="Switch To Example Workspace"
-                 menubarPath="help/helpStart">
-           </action> -->
-           <action id="com.mobilesorcery.sdk.help.doxygen"
-               menubarPath="help/helpStart"
-               label="MoSync API Reference">
-               <class class="com.mobilesorcery.ui.internal.actions.ShowHelpAction">
-                   <parameter name="resource" value="/docs/html/index.html"/>
-                   <parameter name="showInExternalBrowser" value="true"/>
-               </class>
-           </action>
            <action id="com.mobilesorcery.sdk.htmlhelp"
-               menubarPath="help/helpStart"
+               menubarPath="help/intro"
                label="MoSync Online User Guides"
                class="com.mobilesorcery.ui.internal.actions.ShowHTMLAction">
            </action>           ...
            <action id="com.mobilesorcery.sdk.panic"
-               menubarPath="help/helpStart"
+               menubarPath="help/intro"
                label="Translate Panic Code..."
                class="com.mobilesorcery.ui.internal.actions.TranslatePanicCodeAction">
            </action>           ...

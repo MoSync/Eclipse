@@ -86,7 +86,7 @@
       <activityPatternBinding
             activityId="com.mobilesorcery.sdk.ui.cdt.activity"
             isEqualityPattern="true"
-            pattern="      org.eclipse.cdt.ui.wizards.ConvertToMakeWizard">
+            pattern="org.eclipse.cdt.ui.wizards.ConvertToMakeWizard">
       </activityPatternBinding>      
       <activityPatternBinding
             activityId="com.mobilesorcery.sdk.ui.cdt.activity"
@@ -97,6 +97,13 @@
             activityId="com.mobilesorcery.sdk.ui.cdt.activity"
             isEqualityPattern="true"
             pattern="org.eclipse.cdt.managedbuilder.ui/org.eclipse.cdt.ui.wizards.NewMakeFromExisting">
+      </activityPatternBinding>
+      
+      <!-- TODO: Move this to some other place perhaps? -->
+    <activityPatternBinding
+            activityId="com.mobilesorcery.sdk.ui.cdt.activity"
+            isEqualityPattern="false"
+            pattern=".*org\.eclipse\.equinox\.p2\.ui\.sdk\.update">
       </activityPatternBinding>
      
      <category
