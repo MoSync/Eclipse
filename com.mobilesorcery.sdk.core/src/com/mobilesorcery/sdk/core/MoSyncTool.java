@@ -413,35 +413,6 @@ public class MoSyncTool {
 		return getProfileManager(profileManagerType).getVendor(vendorName);
 	}
 
-	/**
-	 * Given a name of the format <code>vendor/profile</code>, will return an
-	 * instance of <code>IProfile</code>
-	 *
-	 * @param fullName
-	 * @return <code>null</code> if <code>fullName</code> is <code>null</code>,
-	 *         or does not properly represent a profile
-	 */
-	public IProfile getProfile(String fullName) {
-		if (fullName == null) {
-			return null;
-		}
-
-		String[] tokens = fullName.split("/");
-		if (tokens.length != 2) {
-			return null;
-		}
-
-		String vendorName = tokens[0];
-		String profileName = tokens[1];
-
-		IVendor vendor = getVendor(vendorName);
-		if (vendor == null) {
-			return null;
-		}
-
-		return vendor.getProfile(profileName);
-	}
-
 	public IPath getVendorsPath() {
 		IPath profiles = getProfilesPath();
 		return profiles.append("vendors");

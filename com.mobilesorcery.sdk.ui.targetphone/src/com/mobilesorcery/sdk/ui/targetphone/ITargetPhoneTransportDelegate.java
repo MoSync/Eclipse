@@ -26,9 +26,11 @@ import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 public interface ITargetPhoneTransportDelegate {
 
 	final static String NAME_ATTR = "name";
-	
-	final static String PROFILE_ATTR = "profile";
-	
+
+	final static String LEGACY_PROFILE_ATTR = "profile";
+
+	final static String DEFAULT_PROFILE_ATTR = "platform.profile";
+
 	/**
 	 * Stores information about a target phone that may later be loaded
 	 * by the <code>load</code> method. The name and target profile need
@@ -38,9 +40,9 @@ public interface ITargetPhoneTransportDelegate {
 	 * @return
 	 */
 	public boolean store(ITargetPhone phone, IMemento memento);
-	
+
 	public ITargetPhone load(IMemento memento, String name);
-	
+
 	/**
 	 * Sends a file to a device and may launch it, if the device
 	 * permits it.
@@ -52,18 +54,18 @@ public interface ITargetPhoneTransportDelegate {
 	 * @throws CoreException
 	 */
 	public void send(IShellProvider shell, MoSyncProject project, ITargetPhone phone, File packageToSend, IProgressMonitor monitor) throws CoreException;
-	
+
 	public ITargetPhone scan(IShellProvider shell, IProgressMonitor monitor) throws CoreException;
-	
+
 	/**
 	 * Returns a filter indicating which profiles this transport
-	 * supports. 
+	 * supports.
 	 * @return <code>null</code> if accepts all profiles
-	 */ 
+	 */
 	public IDeviceFilter getAcceptedProfiles();
-	
+
 	public String getDescription(String context);
-	
+
 	/**
 	 * Returns <code>true</code> if this transport is available;
 	 * if for example a certain piece of hardware is not available,
@@ -71,5 +73,5 @@ public interface ITargetPhoneTransportDelegate {
 	 * @return
 	 */
 	public boolean isAvailable();
-	
+
 }

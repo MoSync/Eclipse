@@ -13,21 +13,24 @@
  */
 package com.mobilesorcery.sdk.ui.targetphone;
 
+import java.util.HashMap;
+
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 public abstract class AbstractTargetPhone implements ITargetPhone {
 
     private String name;
 
-	private IProfile preferredProfile;
-	
-	private String transportId;
-    
+	private final HashMap<Integer, IProfile> preferredProfile = new HashMap<Integer, IProfile>();
+
+	private final String transportId;
+
     public AbstractTargetPhone(String name, String transportId) {
     	this.name = name;
     	this.transportId = transportId;
     }
-    
+
+	@Override
 	public String getName() {
 		return name;
 	}
@@ -35,17 +38,20 @@ public abstract class AbstractTargetPhone implements ITargetPhone {
 	protected void setName(String name) {
 	    this.name = name;
 	}
-	
-	public IProfile getPreferredProfile() {
-		return preferredProfile;
+
+	@Override
+	public IProfile getPreferredProfile(int profileManagerType) {
+		return preferredProfile.get(profileManagerType);
 	}
 
+	@Override
 	public ITargetPhoneTransport getTransport() {
 		return TargetPhonePlugin.getDefault().getTargetPhoneTransport(transportId);
 	}
 
+	@Override
 	public void setPreferredProfile(IProfile preferredProfile) {
-		this.preferredProfile = preferredProfile;
+		this.preferredProfile.put(preferredProfile.getProfileType(), preferredProfile);
 	}
 
 }

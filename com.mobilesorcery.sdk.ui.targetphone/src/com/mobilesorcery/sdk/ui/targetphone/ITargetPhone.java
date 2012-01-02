@@ -21,8 +21,8 @@ public interface ITargetPhone {
 
 	public abstract void setPreferredProfile(IProfile preferredProfile);
 
-	public abstract IProfile getPreferredProfile();
-	
+	public abstract IProfile getPreferredProfile(int profileManagerType);
+
 	public ITargetPhoneTransport getTransport();
 
 }

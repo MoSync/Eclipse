@@ -31,14 +31,17 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.IMemento;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.XMLMemento;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.lib.JNALibInitializer;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.targetphone.internal.TargetPhoneTransportProxy;
 import com.mobilesorcery.sdk.ui.targetphone.internal.bt.BTDIALOG;
 import com.mobilesorcery.sdk.ui.targetphone.internal.bt.BTTargetPhoneTransport;
@@ -70,11 +73,11 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 	// The shared instance
 	private static TargetPhonePlugin plugin;
 
-	private LinkedList<ITargetPhone> history = new LinkedList<ITargetPhone>();
+	private final LinkedList<ITargetPhone> history = new LinkedList<ITargetPhone>();
 
 	private ITargetPhone selectedPhone;
 
-	private HashMap<String, ITargetPhoneTransport> transports = new HashMap<String, ITargetPhoneTransport>();
+	private final HashMap<String, ITargetPhoneTransport> transports = new HashMap<String, ITargetPhoneTransport>();
 
 	/**
 	 * The constructor
@@ -84,11 +87,12 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext
 	 * )
 	 */
+	@Override
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
@@ -104,7 +108,7 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 			if (!historyInputFile.exists()) {
 				return;
 			}
-			
+
 			historyInput = new FileReader(historyInputFile);
 			XMLMemento historyMemento = XMLMemento.createReadRoot(historyInput);
 			IMemento[] devices = historyMemento.getChildren("device");
@@ -120,11 +124,13 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 					Integer ix = device.getInteger("ix");
 					String name = device
 							.getString(ITargetPhoneTransport.NAME_ATTR);
-					String profile = device
-							.getString(ITargetPhoneTransport.PROFILE_ATTR);
+					String legacyProfile = device
+							.getString(ITargetPhoneTransport.LEGACY_PROFILE_ATTR);
+					String platformProfile = device
+							.getString(ITargetPhoneTransport.LEGACY_PROFILE_ATTR);
 					ITargetPhone targetPhone = transport.load(device, name);
-					targetPhone.setPreferredProfile(MoSyncTool.getDefault()
-							.getProfile(profile));
+					targetPhone.setPreferredProfile(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE)
+							.getProfile(legacyProfile));
 					history.addFirst(targetPhone);
 					if (Util.equals(ix, selected)) {
 						selectedPhone = targetPhone;
@@ -141,7 +147,7 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 	private void initTargetPhoneTransports() {
 		// The default (BT) transport
 		addTransport(new BTTargetPhoneTransport());
-		
+
 		// Other (extension points) transports
 		IConfigurationElement[] transportExtensions = Platform.getExtensionRegistry().getConfigurationElementsFor("com.mobilesorcery.sdk.targetphonetransports");
 		for (int i = 0; i < transportExtensions.length; i++) {
@@ -150,7 +156,7 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 			if (transportId != null) {
 				addTransport(new TargetPhoneTransportProxy(transportExtension));
 			}
-			
+
 		}
 	}
 
@@ -172,7 +178,7 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 		}
 		return result;
 	}
-	
+
 	private void storeTargetPhoneHistory() throws CoreException {
 		int i = 0;
 		XMLMemento historyMemento = XMLMemento.createWriteRoot("history");
@@ -188,8 +194,10 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 				deviceMemento.putString("transport", transport.getId());
 				deviceMemento.putString(ITargetPhoneTransport.NAME_ATTR, phone
 						.getName());
-				deviceMemento.putString(ITargetPhoneTransport.PROFILE_ATTR,
-						MoSyncTool.toString(phone.getPreferredProfile()));
+				deviceMemento.putString(ITargetPhoneTransport.LEGACY_PROFILE_ATTR,
+						MoSyncTool.toString(phone.getPreferredProfile(MoSyncTool.LEGACY_PROFILE_TYPE)));
+				deviceMemento.putString(ITargetPhoneTransport.LEGACY_PROFILE_ATTR,
+						MoSyncTool.toString(phone.getPreferredProfile(MoSyncTool.DEFAULT_PROFILE_TYPE)));
 				transport.store(phone, deviceMemento);
 				if (selectedPhone == phone) {
 					historyMemento.putInteger("selected", i);
@@ -221,7 +229,7 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 		{
 			return;
 		}
-		
+
 		try {
 			JNALibInitializer.init(getBundle(), "libbtdialog");
 			BTDIALOG dummy = BTDIALOG.INSTANCE; // Just to execute the .clinit.
@@ -232,11 +240,12 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext
 	 * )
 	 */
+	@Override
 	public void stop(BundleContext context) throws Exception {
 		try {
 			storeTargetPhoneHistory();
@@ -248,7 +257,7 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 
 	/**
 	 * Returns the shared instance
-	 * 
+	 *
 	 * @return the shared instance
 	 */
 	public static TargetPhonePlugin getDefault() {
@@ -282,5 +291,13 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 	public void clearHistory() {
 		history.clear();
 		selectedPhone = null;
+	}
+
+	public int getCurrentProfileManagerType() {
+		MoSyncProject current = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(PlatformUI.getWorkbench().getActiveWorkbenchWindow());
+		if (current == null) {
+			return MoSyncTool.DEFAULT_PROFILE_TYPE;
+		}
+		return current.getProfileManagerType();
 	}
 }

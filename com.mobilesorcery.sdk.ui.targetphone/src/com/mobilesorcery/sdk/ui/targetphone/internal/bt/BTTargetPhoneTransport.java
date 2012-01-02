@@ -16,6 +16,7 @@ import org.eclipse.ui.IMemento;
 import org.eclipse.ui.dialogs.ListDialog;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.ui.Activator;
@@ -109,7 +110,10 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 						BluetoothDevice selectedDevice = ld.getSelectedDevice();
 						BTTargetPhone targetDevice = selectedDevice.getTargetPhone();
 						ITargetPhone correspondingDevice = findInHistory(targetDevice);
-						targetDevice.setPreferredProfile(correspondingDevice == null ? null : correspondingDevice.getPreferredProfile());
+						if (correspondingDevice != null) {
+							targetDevice.setPreferredProfile(correspondingDevice.getPreferredProfile(MoSyncTool.DEFAULT_PROFILE_TYPE));
+							targetDevice.setPreferredProfile(correspondingDevice.getPreferredProfile(MoSyncTool.LEGACY_PROFILE_TYPE));
+						}
 					    result.add(targetDevice);
 					}
 				}

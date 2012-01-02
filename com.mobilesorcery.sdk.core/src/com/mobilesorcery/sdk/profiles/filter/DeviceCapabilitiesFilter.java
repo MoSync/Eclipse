@@ -145,7 +145,7 @@ public class DeviceCapabilitiesFilter extends AbstractDeviceFilter {
 			return profile;
 		}
 		String mapped = profileMappings.get(MoSyncTool.toString(profile));
-		return MoSyncTool.getDefault().getProfile(mapped);
+		return MoSyncTool.getDefault().getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE).getProfile(mapped);
 	}
 
 	/**
@@ -156,6 +156,9 @@ public class DeviceCapabilitiesFilter extends AbstractDeviceFilter {
 	 * @return {@code null} If the profile would be filtered out by the project
 	 */
 	public static IProfile matchLegacyProfile(MoSyncProject project, IProfile profile) {
+		if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
+			return profile;
+		}
 		String runtime = ProfileManager.toCanonicalRuntime(profile.getRuntime());
 		DeviceCapabilitiesFilter dcf = extractFilterFromProject(project);
 		List<IProfile> profiles = dcf.profilesForRuntime.get(runtime);

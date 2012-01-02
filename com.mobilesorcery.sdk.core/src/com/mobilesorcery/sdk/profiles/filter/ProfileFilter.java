@@ -54,7 +54,7 @@ public class ProfileFilter extends AbstractDeviceFilter {
 
     public void setProfiles(String[] profileNames) {
         for (int i = 0; i < profileNames.length; i++) {
-            setProfile(MoSyncTool.getDefault().getProfile(profileNames[i]), true);
+            setProfile(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE).getProfile(profileNames[i]), true);
         }
     }
 

@@ -359,6 +359,18 @@ icon="icons/launchshortcut.png">
                      name="com.mobilesorcery.sdk.ui.finalize.scope">
                </commandParameter>
          </command>
+         <command
+               categoryId="com.mobilesorcery.sdk.ui.category.main"
+               description="Change Profile"
+               id="com.mobilesorcery.sdk.ui.changeActiveProfile"
+               name="Change Profile">
+         </command>
+         <command
+               categoryId="com.mobilesorcery.sdk.ui.category.main"
+               description="Find Profile for Device"
+               id="com.mobilesorcery.sdk.ui.findProfileForDevice"
+               name="Find Profile for Device">
+         </command>
          </extension>
       <extension
             point="org.eclipse.ui.handlers">
@@ -422,6 +434,14 @@ icon="icons/launchshortcut.png">
                <handler
                class="com.mobilesorcery.sdk.ui.internal.handlers.FinalizeProjectHandler"
                commandId="com.mobilesorcery.sdk.ui.finalize">
+               </handler>
+               <handler
+               class="com.mobilesorcery.sdk.ui.internal.handlers.ChangeActiveProfileHandler"
+               commandId="com.mobilesorcery.sdk.ui.changeActiveProfile">
+               </handler>
+               <handler
+               class="com.mobilesorcery.sdk.ui.internal.handlers.FindProfileForDeviceHandler"
+               commandId="com.mobilesorcery.sdk.ui.findProfileForDevice">
                </handler>
       </extension>
       <extension
@@ -503,6 +523,27 @@ icon="icons/launchshortcut.png">
     </toolbar>
     </menuContribution>
      			<menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+             <toolbar
+               id="com.mobilesorcery.sdk.ui.profile.toolbar">
+                <command
+                  commandId="com.mobilesorcery.sdk.ui.changeActiveProfile"
+                  label="Change Active Profiles"
+                  tooltip="Change the Active Profile for this Project"
+                  icon="icons/phoneTarget.png"
+                  style="push">
+            </command>
+            </toolbar>
+             <toolbar
+               id="com.mobilesorcery.sdk.ui.profile.toolbar">
+                <command
+                  commandId="com.mobilesorcery.sdk.ui.findProfileForDevice"
+                  label="Find Profile for Device"
+                  tooltip="Find profile for device"
+                  icon="icons/phone.png"
+                  style="push">
+            </command>
+            </toolbar>
+
              <toolbar
                id="com.mobilesorcery.sdk.ui.profile.toolbar">
                 <command

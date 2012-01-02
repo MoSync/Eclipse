@@ -137,7 +137,10 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 
 	public static final String TARGET_PHONE_IMAGE = "target.phone"; //$NON-NLS-1$
 
+	public static final String IMG_BINARY = "binary";
+
 	private final static Object NULL = new Object();
+
 
 	// The shared instance
 	private static MosyncUIPlugin plugin;
@@ -565,6 +568,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 				ImageDescriptor.createFromFile(getClass(), "/icons/phone.png")); //$NON-NLS-1$
 		reg.put(TARGET_PHONE_IMAGE, ImageDescriptor.createFromFile(getClass(),
 				"/icons/phoneTarget.png")); //$NON-NLS-1$
+		reg.put(IMG_BINARY, ImageDescriptor.createFromFile(getClass(),
+				"/icons/binary.gif")); //$NON-NLS-1$
 	}
 
 	public static Image resize(Image original, int width, int height,

@@ -15,6 +15,8 @@ package com.mobilesorcery.sdk.ui.targetphone.internal;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -45,8 +47,8 @@ import com.mobilesorcery.sdk.ui.targetphone.internal.bt.BTTargetPhone;
 public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 
 	class SendToTargetJob extends Job {
-		private ITargetPhone phone;
-		private MoSyncProject project;
+		private final ITargetPhone phone;
+		private final MoSyncProject project;
 
 		public SendToTargetJob(MoSyncProject project, ITargetPhone phone) {
 			super("");
@@ -66,13 +68,14 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 		}
 
 		private IProfile getProfile(MoSyncProject project, ITargetPhone phone) {
-			IProfile targetProfile = phone == null ? null : phone.getPreferredProfile();
+			IProfile targetProfile = phone == null ? null : phone.getPreferredProfile(project.getProfileManagerType());
 			if (targetProfile == null) {
 				targetProfile = project == null ? null : project.getTargetProfile();
 			}
 			return targetProfile;
 		}
 
+		@Override
 		protected IStatus run(IProgressMonitor monitor) {
 			ITargetPhone phone = this.phone;
 
@@ -84,14 +87,14 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 				if (phone == null) {
 					SubProgressMonitor subMonitor = new SubProgressMonitor(
 							monitor, 1);
-					phone = SelectTargetPhoneAction.selectPhone(window,
+					phone = SelectTargetPhoneAction.selectPhone(project.getProfileManagerType(), window,
 							subMonitor);
 				}
 
 				if (phone != null) {
 					IProfile targetProfile = getProfile(project, phone);
 					assertNotNull(targetProfile, "No target profile selected");
-					
+
 					File packageToSend = buildBeforeSend(targetProfile, monitor);
 					phone.getTransport().send(window, project, phone,
 							packageToSend, new SubProgressMonitor(monitor, 4));
@@ -118,13 +121,15 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 					new NullProgressMonitor());
 			monitor.worked(1);
 
-			if (buildResult.getBuildResult() == null) {
-				throw new CoreException(new Status(IStatus.ERROR,
-						TargetPhonePlugin.PLUGIN_ID,
-						"Could not build for device"));
+			Map<String, List<File>> buildArtifacts = buildResult.getBuildResult();
+
+			List<File> fileToSend = buildArtifacts == null ? null : buildResult.getBuildResult().get(IBuildResult.MAIN);
+			if (fileToSend != null && !fileToSend.isEmpty()) {
+				return fileToSend.get(0);
 			}
-			
-			return buildResult.getBuildResult();
+			throw new CoreException(new Status(IStatus.ERROR,
+					TargetPhonePlugin.PLUGIN_ID,
+					"Could not build for device"));
 		}
 	}
 
@@ -133,13 +138,16 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 	private ISelection selection;
 	IWorkbenchWindow window;
 
+	@Override
 	public void dispose() {
 	}
 
+	@Override
 	public void init(IWorkbenchWindow window) {
 		this.window = window;
 	}
 
+	@Override
 	public void run(IAction action) {
 		ITargetPhone phone = TargetPhonePlugin.getDefault()
 				.getCurrentlySelectedPhone();
@@ -159,6 +167,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 	public void sendTo(final BTTargetPhone phone) {
 		if (phone != null) {
 			Job job = new Job("Send to target") {
+				@Override
 				public IStatus run(IProgressMonitor monitor) {
 					IPath mobex = MoSyncTool.getDefault().getBinary("mobex");
 					MoSyncProject project = MosyncUIPlugin.getDefault()
@@ -195,6 +204,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 				phone.getAddress(), Integer.toString(phone.getPort()) };
 	}
 
+	@Override
 	public void selectionChanged(IAction action, ISelection selection) {
 		this.action = action;
 		this.selection = selection;

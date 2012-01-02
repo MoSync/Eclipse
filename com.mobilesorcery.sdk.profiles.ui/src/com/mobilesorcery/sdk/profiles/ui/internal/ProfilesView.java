@@ -350,6 +350,9 @@ public class ProfilesView extends ViewPart implements PropertyChangeListener {
 
     @Override
 	public void propertyChange(PropertyChangeEvent event) {
+    	if (profilePane.isDisposed()) {
+    		return;
+    	}
     	MoSyncProject currentProject = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(getSite().getWorkbenchWindow());
     	if (event.getPropertyName() == MosyncUIPlugin.CURRENT_PROJECT_CHANGED) {
     	    currentProjectChanged(false);

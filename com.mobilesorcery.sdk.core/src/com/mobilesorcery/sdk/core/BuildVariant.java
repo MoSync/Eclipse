@@ -106,9 +106,18 @@ public class BuildVariant implements IBuildVariant {
         }
 
         String[] variantComponents = PropertyUtil.toStrings(variantStr);
+        // Minor hack for legacy profiles.
+        int profileManagerType = MoSyncTool.DEFAULT_PROFILE_TYPE;
+        if (variantStr.startsWith("*")) {
+        	variantStr = variantStr.substring(1);
+        	profileManagerType = MoSyncTool.LEGACY_PROFILE_TYPE;
+        }
+
+
         if (variantComponents.length == 2 || variantComponents.length == 3) {
             String profileStr = variantComponents[0];
-            IProfile profile = MoSyncTool.getDefault().getProfile(profileStr);
+            IProfile profile = MoSyncTool.getDefault().
+            		getProfileManager(profileManagerType).getProfile(profileStr);
             String cfgId = variantComponents[1];
             if (NULL_CFG.equals(cfgId)) {
                 cfgId = null;

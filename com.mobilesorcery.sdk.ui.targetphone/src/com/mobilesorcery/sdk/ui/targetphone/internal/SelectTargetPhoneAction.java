@@ -14,6 +14,7 @@
 package com.mobilesorcery.sdk.ui.targetphone.internal;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -42,6 +43,8 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowPulldownDelegate;
 import org.eclipse.ui.dialogs.ListDialog;
 
+import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransport;
@@ -52,13 +55,14 @@ public class SelectTargetPhoneAction implements
 
 	class ScanJob extends Job {
 
-		private ITargetPhoneTransport transport;
+		private final ITargetPhoneTransport transport;
 
 		public ScanJob(ITargetPhoneTransport transport) {
 			super("Scanning for devices");
 			this.transport = transport;
 		}
 
+		@Override
 		protected IStatus run(IProgressMonitor monitor) {
 			try {
 				ITargetPhone phone = transport.scan(window, monitor);
@@ -66,8 +70,9 @@ public class SelectTargetPhoneAction implements
 					TargetPhonePlugin.getDefault().addToHistory(phone);
 					monitor.setTaskName(MessageFormat.format(
 							"Assigning profile to {0}", phone.getName()));
-					SelectTargetPhoneAction.selectProfileForPhone(phone,
-							window, false);
+					SelectTargetPhoneAction.selectProfileForPhone(
+							TargetPhonePlugin.getDefault().getCurrentProfileManagerType(),
+							phone, window, false);
 				}
 				return Status.OK_STATUS;
 			} catch (CoreException e) {
@@ -81,6 +86,7 @@ public class SelectTargetPhoneAction implements
 	protected IAction targetDialogAction;
 	IWorkbenchWindow window;
 
+	@Override
 	public Menu getMenu(Control parent) {
 		Menu menu = new Menu(parent);
 		List<ITargetPhone> phones = TargetPhonePlugin.getDefault()
@@ -94,10 +100,12 @@ public class SelectTargetPhoneAction implements
 					.getCurrentlySelectedPhone());
 			item.setData(phone);
 			item.addSelectionListener(new SelectionListener() {
+				@Override
 				public void widgetDefaultSelected(SelectionEvent event) {
 					widgetSelected(event);
 				}
 
+				@Override
 				public void widgetSelected(SelectionEvent event) {
 					ITargetPhone phone = (ITargetPhone) event.widget.getData();
 					TargetPhonePlugin.getDefault().setCurrentlySelectedPhone(
@@ -126,6 +134,7 @@ public class SelectTargetPhoneAction implements
 				select.setImage(TargetPhonePlugin.getDefault().getImageRegistry().get(transport.getId()));
 			}
 			select.addListener(SWT.Selection, new Listener() {
+				@Override
 				public void handleEvent(Event event) {
 					ScanJob job = new ScanJob(transport);
 					job.setUser(true);
@@ -139,6 +148,7 @@ public class SelectTargetPhoneAction implements
 			final MenuItem reassign = new MenuItem(menu, SWT.PUSH);
 			reassign.setText("Edit Device &List...");
 			reassign.addListener(SWT.Selection, new Listener() {
+				@Override
 				public void handleEvent(Event event) {
 					openTargetPhoneListDialog(reassign.getDisplay());
 				}
@@ -149,9 +159,17 @@ public class SelectTargetPhoneAction implements
 	}
 
 	private static String computeTargetPhoneLabel(ITargetPhone phone) {
-		IProfile preferredProfile = phone.getPreferredProfile();
-		String preferredProfileStr = preferredProfile == null ? "" : " - ["
-				+ preferredProfile.getName() + "]";
+		ArrayList<String> preferredProfiles = new ArrayList<String>();
+		IProfile preferredProfile = phone.getPreferredProfile(MoSyncTool.DEFAULT_PROFILE_TYPE);
+		if (preferredProfile != null) {
+			preferredProfiles.add(preferredProfile.getName());
+		}
+		IProfile preferredLegacyProfile = phone.getPreferredProfile(MoSyncTool.LEGACY_PROFILE_TYPE);
+		if (preferredLegacyProfile != null) {
+			preferredProfiles.add(preferredLegacyProfile.getName());
+		}
+		String preferredProfileStr = preferredProfiles.isEmpty() ? "" : " - ["
+				+ Util.join(preferredProfiles.toArray(), ",") + "]";
 		return phone.getName() + preferredProfileStr;
 	}
 
@@ -165,13 +183,16 @@ public class SelectTargetPhoneAction implements
 	    }
 	}
 
+	@Override
 	public void dispose() {
 	}
 
+	@Override
 	public void init(IWorkbenchWindow window) {
 		this.window = window;
 	}
 
+	@Override
 	public void selectionChanged(IAction action, ISelection selection) {
 		this.targetDialogAction = action;
 		this.selection = selection;
@@ -181,18 +202,20 @@ public class SelectTargetPhoneAction implements
 	 * A utility method for querying the user for which profile to assign
 	 * to a specific device. If applicable, a device list dialog pops up (with the
 	 * device fixed to the device passed in to this method)
+	 * @param profileManagerType
 	 * @param phone The target device, must not be <code>null</code>
 	 * @param shellProvider
 	 * @param askOnlyIfNotAssigned If <code>true</code>, will only ask the user
 	 * if no profile is already assigned.
 	 * @return
 	 */
-	public static IProfile selectProfileForPhone(final ITargetPhone phone,
+	public static IProfile selectProfileForPhone(int profileManagerType, final ITargetPhone phone,
 			final IShellProvider shellProvider, boolean askOnlyIfNotAssigned) {
-		if (!askOnlyIfNotAssigned || phone.getPreferredProfile() == null) {
+		if (!askOnlyIfNotAssigned || phone.getPreferredProfile(profileManagerType) == null) {
 			Display d = shellProvider == null ? Display.getDefault()
 					: shellProvider.getShell().getDisplay();
 			d.syncExec(new Runnable() {
+				@Override
 				public void run() {
 					Shell shell = shellProvider == null ? new Shell(Display
 							.getDefault()) : shellProvider.getShell();
@@ -205,17 +228,18 @@ public class SelectTargetPhoneAction implements
 			});
 		}
 
-		return phone.getPreferredProfile();
+		return phone.getPreferredProfile(profileManagerType);
 	}
 
 	/**
 	 * Lets the user select a target phone. If there is more than one
 	 * <code>ITargetPhoneTransport</code> installed, a dialog is popped up which
 	 * lets the user select type of transport.
-	 * 
+	 * @param profileManagerType
+	 *
 	 * @return
 	 */
-	public static ITargetPhone selectPhone(IShellProvider shellProvider,
+	public static ITargetPhone selectPhone(int profileManagerType, IShellProvider shellProvider,
 			IProgressMonitor monitor) throws CoreException {
 	    ITargetPhone result = null;
 		ITargetPhoneTransport selectedTransport = selectTransport(shellProvider);
@@ -223,10 +247,10 @@ public class SelectTargetPhoneAction implements
 			result = selectedTransport.scan(shellProvider, monitor);
 			if (result != null) {
 			    TargetPhonePlugin.getDefault().addToHistory(result);
-			    if (result.getPreferredProfile() == null) {
+			    if (result.getPreferredProfile(profileManagerType) == null) {
                     monitor.setTaskName(MessageFormat.format(
                             "Assigning profile to {0}", result.getName()));
-                    SelectTargetPhoneAction.selectProfileForPhone(result,
+                    SelectTargetPhoneAction.selectProfileForPhone(profileManagerType, result,
                             shellProvider, true);
                 }
 			}
@@ -255,6 +279,7 @@ public class SelectTargetPhoneAction implements
 		final ITargetPhoneTransport[] result = new ITargetPhoneTransport[1];
 
 		shell.getDisplay().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				ListDialog dialog = new ListDialog(shell);
 				dialog.setTitle("Select type of transport");
@@ -276,6 +301,7 @@ public class SelectTargetPhoneAction implements
 
 	}
 
+	@Override
 	public void run(IAction action) {
 		ITargetPhoneTransport transport = selectTransport(window);
 		if (transport != null) {

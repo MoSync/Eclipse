@@ -51,6 +51,7 @@ import com.mobilesorcery.sdk.profiles.filter.CompositeDeviceFilter;
 import com.mobilesorcery.sdk.profiles.filter.EmulatorDeviceFilter;
 import com.mobilesorcery.sdk.profiles.ui.DeviceViewerFilter;
 import com.mobilesorcery.sdk.profiles.ui.ProfileContentProvider;
+import com.mobilesorcery.sdk.ui.Note;
 import com.mobilesorcery.sdk.ui.ProfileLabelProvider;
 import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
@@ -73,6 +74,7 @@ public class EditDeviceListDialog extends Dialog {
     private ITargetPhone initialTargetPhone;
     private boolean fixedDevice;
     private final HashMap<ITargetPhone, IProfile> pendingChanges = new HashMap<ITargetPhone, IProfile>();
+	private Integer profileManagerType;
 
     public EditDeviceListDialog(Shell parentShell) {
         super(parentShell);
@@ -106,7 +108,7 @@ public class EditDeviceListDialog extends Dialog {
                 }
             });
 
-            deviceList.getCombo().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+            deviceList.getCombo().setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT));
 
             Link clear = new Link(contents, SWT.NONE);
             clear.setText("<a>Clear History</a>");
@@ -122,6 +124,12 @@ public class EditDeviceListDialog extends Dialog {
 
         Label instructions = new Label(contents, SWT.NONE | SWT.WRAP);
         instructions.setText("Click to select new target device");
+
+        if (getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
+        	Note note = new Note(contents, SWT.NONE);
+        	note.setText("NOTE:\nThe selected project uses a (legacy) device based profile database.\nThis is why this list looks different than for platform based profile databases.");
+        	note.setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT));
+        }
 
         preferredProfile = new TreeViewer(contents, SWT.SINGLE | SWT.BORDER);
         ProfileLabelProvider labelProvider = new ProfileLabelProvider(SWT.NONE);
@@ -199,7 +207,7 @@ public class EditDeviceListDialog extends Dialog {
         IDeviceFilter targetPhoneAcceptedProfiles = phone == null ? null : phone.getTransport().getAcceptedProfiles();
         IDeviceFilter filter = targetPhoneAcceptedProfiles == null ? emulatorFilter : new CompositeDeviceFilter(new IDeviceFilter[] { emulatorFilter,
                 targetPhoneAcceptedProfiles });
-        preferredProfile.setInput(MoSyncTool.getDefault().getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE).getVendors(filter));
+        preferredProfile.setInput(MoSyncTool.getDefault().getProfileManager(getProfileManagerType()).getVendors(filter));
         preferredProfile.setFilters(new ViewerFilter[] { new DeviceViewerFilter(filter) });
     }
 
@@ -216,14 +224,21 @@ public class EditDeviceListDialog extends Dialog {
         if (selectedPhone != null) {
             profile = pendingChanges.get(selectedPhone);
             if (profile == null) {
-                profile = selectedPhone.getPreferredProfile();
+                profile = selectedPhone.getPreferredProfile(getProfileManagerType());
             }
         }
 
         return profile;
     }
 
-    protected void updateUI(ITargetPhone changeToTargetPhone, boolean reloadPhones) {
+    private int getProfileManagerType() {
+		if (profileManagerType == null) {
+			profileManagerType = TargetPhonePlugin.getDefault().getCurrentProfileManagerType();
+		}
+		return profileManagerType;
+	}
+
+	protected void updateUI(ITargetPhone changeToTargetPhone, boolean reloadPhones) {
         if (!fixedDevice) {
             if (reloadPhones) {
                 deviceList.setInput(TargetPhonePlugin.getDefault().getSelectedTargetPhoneHistory().toArray());

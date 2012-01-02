@@ -31,6 +31,7 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.internal.expressions.AlwaysEnabledExpression;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -116,9 +117,7 @@ public class PlatformSelectionComposite implements Listener,
 				boolean doPaint) {
 			Rectangle newBounds = ((TableItem) event.item)
 					.getBounds(event.index);
-			Rectangle bounds = event.getBounds();
-			newBounds.x = bounds.x;
-			newBounds.y = bounds.y;
+			Rectangle bounds = new Rectangle(newBounds.x, newBounds.y, newBounds.width, newBounds.height); //event.getBounds();
 			int width = 0;
 			int height = 0;
 
@@ -223,37 +222,43 @@ public class PlatformSelectionComposite implements Listener,
 	private int mode = -1;
 	private RichProfileLabelProvider profileLabelProvider;
 	private IProfile currentProfile;
+	private final int style;
+	private Composite inner;
 
 	private static Shell CURRENT_SHELL;
 
-	public PlatformSelectionComposite(Control control) {
+	public PlatformSelectionComposite(Control control, int style) {
 		this.control = control;
+		this.style = style;
 	}
 
 	public void setProject(MoSyncProject project) {
 		this.project = project;
+		setMode(project.getProfileManagerType());
+	}
+
+	private boolean hasSearchBox() {
+		return (style & SWT.SEARCH) != 0;
+	}
+
+	private boolean alwaysShowSearchBox() {
+		return (style & SWT.BACKGROUND) == 0;
 	}
 
 	protected Composite createContentArea(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(UIUtils.newPrefsLayout(1));
-		Composite inner = new Composite(main, SWT.NONE);
-		GridLayout innerData = UIUtils.newPrefsLayout(1);
-		innerData.verticalSpacing = 0;
-		inner.setLayout(innerData);
-		inner.setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), UIUtils
-				.getDefaultListHeight()));
+		inner = new Composite(main, SWT.NONE);
+		resize(UIUtils.getDefaultFieldSize(), UIUtils.getDefaultListHeight());
 		filterBox = new Text(inner, SWT.SEARCH);
 		filterBox.addListener(SWT.KeyUp, this);
 		filterBox.addListener(SWT.KeyDown, this);
-		showFilterBox(false);
+
 		profileTable = new TableViewer(inner, SWT.NONE);
 		profileLabelProvider = new RichProfileLabelProvider();
 		profileTable.setLabelProvider(profileLabelProvider);
 		profileTable.setContentProvider(new ProfileListContentProvider());
-		setMode(MoSyncTool.DEFAULT_PROFILE_TYPE);
-		GridData profileTableData = new GridData(UIUtils.getDefaultFieldSize(),
-				SWT.DEFAULT);
+		GridData profileTableData = new GridData(GridData.FILL_BOTH);
 		profileTableData.grabExcessVerticalSpace = true;
 		profileTableData.verticalAlignment = SWT.TOP;
 		profileTable.getControl().setLayoutData(profileTableData);
@@ -262,13 +267,15 @@ public class PlatformSelectionComposite implements Listener,
 		profileTable.addSelectionChangedListener(this);
 		profileTable.addOpenListener(this);
 		inner.setBackground(profileTable.getControl().getBackground());
+		setMode(mode, true);
+		showFilterBox(hasSearchBox() && alwaysShowSearchBox());
 		return main;
 	}
 
 	private void showFilterBox(boolean show) {
 		filterShown = show;
-		setMode(show ? MoSyncTool.LEGACY_PROFILE_TYPE
-				: MoSyncTool.DEFAULT_PROFILE_TYPE);
+		/*setMode(show ? MoSyncTool.LEGACY_PROFILE_TYPE
+				: MoSyncTool.DEFAULT_PROFILE_TYPE);*/
 		GridData data = show ? new GridData(SWT.FILL, SWT.NONE, true, false)
 				: new GridData(0, 0);
 		filterBox.setLayoutData(data);
@@ -276,17 +283,24 @@ public class PlatformSelectionComposite implements Listener,
 		filterBox.getParent().redraw();
 	}
 
-	public void show() {
+	public void show(int style) {
+		boolean asDropdown = (style & SWT.DROP_DOWN) != 0;
 		close(false);
-		final Shell shell = new Shell(control.getShell(), SWT.ON_TOP | SWT.TOOL);
+		int shellStyle = (asDropdown ? SWT.ON_TOP | SWT.TOOL : SWT.TITLE | SWT.CLOSE);
+		final Shell shell = new Shell(control.getShell(), shellStyle);
+		shell.setText("Select profile");
 		CURRENT_SHELL = shell;
 		shell.setLayout(UIUtils.newPrefsLayout(1));
 		createContentArea(shell);
 		shell.pack();
-		Point controlLocation = control.toDisplay(control.getLocation());
-		shell.setLocation(controlLocation.x,
-				controlLocation.y + control.getSize().y);
-		attachListeners(shell);
+		if (asDropdown) {
+			Point controlLocation = control.toDisplay(asDropdown ? control.getLocation() : new Point(0, 0));
+			shell.setLocation(controlLocation.x,
+					controlLocation.y + control.getSize().y);
+		} else {
+			UIUtils.centerShell(shell);
+		}
+		attachListeners(shell, asDropdown);
 		shell.open();
 	}
 
@@ -300,19 +314,28 @@ public class PlatformSelectionComposite implements Listener,
 		}
 	}
 
-	private void attachListeners(Shell shell) {
-		shell.addListener(SWT.Deactivate, this);
+	private void attachListeners(Shell shell, boolean asDropdown) {
+		if (asDropdown) {
+			shell.addListener(SWT.Deactivate, this);
+		} else {
+			shell.addListener(SWT.Resize, this);
+		}
 	}
 
 	@Override
 	public void handleEvent(Event event) {
 		if (event.widget == profileTable.getControl()
 				&& event.type == SWT.KeyDown
-				&& Character.isLetterOrDigit(event.character)) {
+				&& shouldCharBeSentToSearchBox(event.character)) {
 			if (!filterShown) {
-				showFilterBox(true);
+				showFilterBox(hasSearchBox());
 			}
-			filterBox.append("" + event.character);
+			if (event.character == SWT.BS) {
+				filterBox.setText(filterBox.getText(0, Math.max(0, filterBox.getText().length()-2)));
+			} else {
+				filterBox.append("" + event.character);
+			}
+			filterBox.setSelection(filterBox.getText().length());
 			filterBox.forceFocus();
 		} else if (event.widget == filterBox && event.type == SWT.KeyDown) {
 			if (event.keyCode == SWT.ARROW_DOWN
@@ -323,36 +346,54 @@ public class PlatformSelectionComposite implements Listener,
 					profileTable.getTable().select(0);
 				}
 			}
-		} else if (event.widget == filterBox && event.type == SWT.KeyUp) {
+		} else if (event.widget == filterBox && event.type == SWT.KeyUp && hasSearchBox()) {
 			String filterText = filterBox.getText();
 			profileTable.setFilters(new ViewerFilter[] { new ProfileTextFilter(
 					filterText) });
 			if (filterText.length() == 0) {
-				showFilterBox(false);
+				showFilterBox(alwaysShowSearchBox());
 				profileTable.getControl().forceFocus();
 			}
 		} else if (event.widget == CURRENT_SHELL
 				&& event.type == SWT.Deactivate) {
 			close(false);
+		} else if (event.widget == CURRENT_SHELL && event.type == SWT.Resize) {
+			resize(CURRENT_SHELL.getBounds().width, CURRENT_SHELL.getBounds().height);
 		} else if (event.keyCode == SWT.ESC
 				&& (event.type == SWT.KeyDown || event.type == SWT.KeyUp)) {
 			close(false);
 		}
 	}
 
-	private void setMode(int profileManagerType) {
-		if (mode == profileManagerType || profileTable == null) {
-			return;
+	private void resize(int width, int height) {
+		GridLayout innerData = UIUtils.newPrefsLayout(1);
+		innerData.verticalSpacing = 0;
+		inner.setLayout(innerData);
+		inner.setLayoutData(new GridData(width, height));
+		inner.setSize(width, height);
+		inner.getParent().layout(true, true);
+	}
+
+	private boolean shouldCharBeSentToSearchBox(char ch) {
+		return Character.isLetterOrDigit(ch) || (ch == SWT.BS && !filterBox.getText().isEmpty());
+	}
+
+	public void setMode(int profileManagerType) {
+		setMode(profileManagerType, false);
+	}
+
+	private void setMode(int profileManagerType, boolean force) {
+		if (force || (mode != profileManagerType && profileTable != null)) {
+			profileLabelProvider.setMode(profileManagerType);
+			if (profileManagerType == MoSyncTool.LEGACY_PROFILE_TYPE) {
+				// The content provider uses the mosync tool to get
+				// 'legacy' devices.
+				profileTable.setInput(MoSyncTool.getDefault());
+			} else {
+				profileTable.setInput(project);
+			}
 		}
-		profileLabelProvider.setMode(profileManagerType);
 		mode = profileManagerType;
-		if (profileManagerType == MoSyncTool.LEGACY_PROFILE_TYPE) {
-			// The content provider uses the mosync tool to get
-			// 'legacy' devices.
-			profileTable.setInput(MoSyncTool.getDefault());
-		} else {
-			profileTable.setInput(project);
-		}
 	}
 
 	@Override
