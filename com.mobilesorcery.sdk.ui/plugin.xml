@@ -562,4 +562,47 @@ icon="icons/launchshortcut.png">
         sequence="M1+M2+I">
   </key>
 </extension>
+      <extension
+            point="org.eclipse.ui.navigator.navigatorContent">
+         <navigatorContent
+               activeByDefault="true"
+               appearsBefore="org.eclipse.ui.navigator.resourceContent"
+               contentProvider="com.mobilesorcery.sdk.ui.internal.navigationext.MoSyncNavigatorContentProvider"
+               icon="icons/binary.gif"
+               id="com.mobilesorcery.sdk.ui.releasePackages"
+               labelProvider="com.mobilesorcery.sdk.ui.internal.navigationext.MoSyncNavigatorLabelProvider"
+               name="MoSync Release Packages"
+               priority="highest"
+               sortOnly="false">
+            <triggerPoints>
+               <or>
+               <instanceof
+                     value="com.mobilesorcery.sdk.ui.internal.navigationext.ReleasePackage">
+               </instanceof>
+               <and>
+                  <adapt
+                        type="org.eclipse.core.resources.IResource">
+                  </adapt>
+                  <!--<test
+                        forcePluginActivation="true"
+                        property="com.mobilesorcery.sdk.testers.isReleasePackage">
+                  </test> -->
+               </and>
+               </or>
+            </triggerPoints>
+         </navigatorContent>
+      </extension>
+      <extension
+            point="org.eclipse.ui.navigator.viewer">
+         <viewerContentBinding
+               viewerId="org.eclipse.ui.navigator.ProjectExplorer">
+            <includes>
+               <contentExtension
+                     isRoot="false"
+                     pattern="com.mobilesorcery.sdk.*">
+               </contentExtension>
+            </includes>
+         </viewerContentBinding>
+      </extension>
+      
 </plugin>

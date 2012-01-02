@@ -160,6 +160,11 @@ public class CommandLineBuildStep extends AbstractBuildStep {
 			return true;
 		}
 
+		@Override
+		public boolean isDefault() {
+			return false;
+		}
+
 	}
 
 	public static final class BuildStepParameterResolver extends ParameterResolver {

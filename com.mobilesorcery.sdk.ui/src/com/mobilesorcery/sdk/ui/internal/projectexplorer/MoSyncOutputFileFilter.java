@@ -23,18 +23,24 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerFilter;
 
+import com.mobilesorcery.sdk.core.IsReleasePackageTester;
 import com.mobilesorcery.sdk.core.MoSyncNature;
+import com.mobilesorcery.sdk.ui.internal.navigationext.ReleasePackage;
 
 public class MoSyncOutputFileFilter extends ViewerFilter {
 
 	public MoSyncOutputFileFilter() {
 	}
 
+	@Override
 	public boolean select(Viewer viewer, Object parentElement, Object element) {
+		if (element instanceof ReleasePackage) {
+			return true;
+		}
 		if (element instanceof IAdaptable) {
 			element = ((IAdaptable) element).getAdapter(IResource.class);
 		}
-		
+
 		if (element instanceof IFile || element instanceof IFolder) {
 			IResource file = (IResource) element;
 			IProject project = file.getProject();
@@ -54,8 +60,12 @@ public class MoSyncOutputFileFilter extends ViewerFilter {
 					if ("s".equals(ext) || "tab".equals(ext) || "mopro".equals(ext) || "vcproj".equals(ext)) {
 						return false;
 					}
-					
+
 					if ("stabs.lst".equals(file.getName())) {
+						return false;
+					}
+
+					if (IsReleasePackageTester.isReleasePackageFolder(file)) {
 						return false;
 					}
 				}

@@ -37,17 +37,27 @@ public class BuildSequence implements IBuildSequence {
 		addStandardFactory(CompileBuildStep.ID);
 		addStandardFactory(LinkBuildStep.ID);
 		addStandardFactory(PackBuildStep.ID);
+		addStandardFactory(CopyBuildResultBuildStep.ID);
 	}
 
 	private boolean isDefaultSequence() {
 		// Note: if we add properties to these build steps
 		// we need to change this method
-		boolean result = buildStepFactories.size() == 4;
-		result &= ResourceBuildStep.ID.equals(buildStepFactories.get(0).getId());
-		result &= CompileBuildStep.ID.equals(buildStepFactories.get(1).getId());
-		result &= LinkBuildStep.ID.equals(buildStepFactories.get(2).getId());
-		result &= PackBuildStep.ID.equals(buildStepFactories.get(3).getId());
+		boolean result = buildStepFactories.size() == 5;
+		result &= isDefaultFactory(0, ResourceBuildStep.ID);
+		result &= isDefaultFactory(1, CompileBuildStep.ID);
+		result &= isDefaultFactory(2, LinkBuildStep.ID);
+		result &= isDefaultFactory(3, PackBuildStep.ID);
+		result &= isDefaultFactory(4, CopyBuildResultBuildStep.ID);
 		return result;
+	}
+
+	private boolean isDefaultFactory(int ix, String id) {
+		if (ix >= buildStepFactories.size()) {
+			return false;
+		}
+		IBuildStepFactory factory = buildStepFactories.get(ix);
+		return (id.equals(factory.getId()) && factory.isDefault());
 	}
 
 	private void addStandardFactory(String id) {
@@ -69,6 +79,8 @@ public class BuildSequence implements IBuildSequence {
 			return new CommandLineBuildStep.Factory();
 		} else if (BundleBuildStep.ID.equals(id)) {
 			return new BundleBuildStep.Factory();
+		} else if (CopyBuildResultBuildStep.ID.equals(id)) {
+			return new CopyBuildResultBuildStep.Factory();
 		}
 
 		return null;
@@ -193,5 +205,15 @@ public class BuildSequence implements IBuildSequence {
 	public void setToDefault() {
 		buildStepFactories.clear();
 		initDefaultFactories();
+	}
+
+	public <T extends IBuildStepFactory> List<T> getBuildStepFactories(Class<T> clazz) {
+		ArrayList<T> result = new ArrayList<T>();
+		for (IBuildStepFactory factory : buildStepFactories) {
+			if (factory.getClass().isAssignableFrom(clazz)) {
+				result.add((T) factory);
+			}
+		}
+		return result;
 	}
 }

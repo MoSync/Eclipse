@@ -78,6 +78,13 @@
              properties="isExperimental"
              type="java.lang.Object">
        </propertyTester>
+       <propertyTester
+             class="com.mobilesorcery.sdk.core.IsReleasePackageTester"
+             id="com.mobilesorcery.sdk.testers.releasepackage"
+             namespace="com.mobilesorcery.sdk.testers"
+             properties="isReleasePackage"
+             type="java.lang.Object">
+       </propertyTester>
    </extension>
    
 
