@@ -39,6 +39,7 @@ public class FTPDeploymentStrategy implements IDeploymentStrategy {
 
 		private boolean active = true;
 
+		@Override
 		public void protocolReplyReceived(ProtocolCommandEvent event) {
 			if (!active) {
 				return;
@@ -46,6 +47,7 @@ public class FTPDeploymentStrategy implements IDeploymentStrategy {
 			System.err.println("<- " + event.getMessage().trim());
 		}
 
+		@Override
 		public void protocolCommandSent(ProtocolCommandEvent event) {
 			sent(event.getMessage().trim());
 		}
@@ -95,6 +97,7 @@ public class FTPDeploymentStrategy implements IDeploymentStrategy {
 		this.password = password;
 	}
 
+	@Override
 	public void deploy(MoSyncProject project, List<IProfile> profiles,
 			IProgressMonitor monitor) throws Exception {
 		monitor.beginTask("", profiles.size());
@@ -157,7 +160,7 @@ public class FTPDeploymentStrategy implements IDeploymentStrategy {
 			IProfile profile, IProgressMonitor monitor) throws CoreException {
 	    IBuildVariant variant = MoSyncBuilder.createVariant(project, profile);
 		IBuildSession session = MoSyncBuilder.createDefaultBuildSession(variant);
-		
+
         IBuildResult buildResult = new MoSyncBuilder().build(project
 				.getWrappedProject(), session, variant, null, monitor);
 		return buildResult;
@@ -225,12 +228,12 @@ public class FTPDeploymentStrategy implements IDeploymentStrategy {
 	}
 
 	private File getLocalFile(IBuildResult result) throws IOException {
-		File file = result.getBuildResult();
-		if (file == null || !file.exists()) {
+		List<File> files = result.getBuildResult().get(IBuildResult.MAIN);
+		if (files == null || files.isEmpty() || !files.get(0).exists()) {
 			throw new IOException("No package built/found");
 		}
 
-		return file;
+		return files.get(0);
 	}
 
 	private InputStream createInputStream(MoSyncProject project,
@@ -238,6 +241,7 @@ public class FTPDeploymentStrategy implements IDeploymentStrategy {
 		return new FileInputStream(getLocalFile(result));
 	}
 
+	@Override
 	public String getFactoryId() {
 		return FACTORY_ID;
 	}

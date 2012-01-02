@@ -152,7 +152,7 @@ public class MoblinPackager extends AbstractPackager {
 				p = "all";
 			p = p.toLowerCase();
 			List<String> l = pack.createPackages(outputDir, p);
-			buildResult.setBuildResult(new File(l.get(0)));
+			buildResult.setBuildResult(IBuildResult.MAIN, new File(l.get(0)));
 		} catch (Exception e) {
 			// Return stack trace in case of error
 			throw new CoreException(new Status(IStatus.ERROR,

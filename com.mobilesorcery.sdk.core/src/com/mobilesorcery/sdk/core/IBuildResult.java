@@ -14,13 +14,20 @@
 package com.mobilesorcery.sdk.core;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.resources.IResource;
 
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager.Delta;
 
 public interface IBuildResult {
+
+	/**
+	 * The main build result file key
+	 */
+	public static final String MAIN = "main";
 
 	/**
 	 * A flag indicating success/failure
@@ -42,19 +49,31 @@ public interface IBuildResult {
     public abstract List<String> getErrors();
 
     /**
-     * Returns a single file representing
+     * Returns the files representing
      * the build result; this may be used
      * for sending via BT/OBEX, etc.
-     * @return
+     * @return A map with keys indicating the
+     * type of the build artifact (this key may
+     * be null). The special key {@link MAIN} is used
+     * to indicate files that can be used for
+     * uploading, etc.
      */
-    public abstract File getBuildResult();
+    public abstract Map<String, List<File>> getBuildResult();
 
     /**
-     * Sets the location of the build result.
+     * Sets the the build result.
      * @see getBuildResult
      * @param buildResult
      */
-    public abstract void setBuildResult(File buildResult);
+    public abstract void setBuildResult(Map<String, List<File>> buildResult);
+
+    /**
+     * Sets the location of the build result, for a
+     * specific key.
+     * @see getBuildResult
+     * @param buildResult
+     */
+    public abstract void setBuildResult(String key, File... buildResult);
 
     /**
      * Returns the variant built.
@@ -96,6 +115,5 @@ public interface IBuildResult {
 	 * @param file
 	 */
 	public abstract void setIntermediateBuildResult(String buildStepId, File file);
-
 
 }

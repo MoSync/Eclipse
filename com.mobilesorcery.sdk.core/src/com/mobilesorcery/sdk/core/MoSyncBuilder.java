@@ -35,6 +35,7 @@ import org.eclipse.cdt.core.IMarkerGenerator;
 import org.eclipse.cdt.core.model.ICModelMarker;
 import org.eclipse.cdt.core.resources.ACBuilder;
 import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -62,6 +63,7 @@ import com.mobilesorcery.sdk.core.build.BuildSequence;
 import com.mobilesorcery.sdk.core.build.IBuildStep;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.internal.BuildSession;
+import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.dependencies.CompoundDependencyProvider;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
@@ -612,6 +614,14 @@ public class MoSyncBuilder extends ACBuilder {
 		return false;
 	}
 
+	public static boolean hasBuildState(IResource location) {
+		return BuildState.hasBuildState(location);
+	}
+
+	public static IBuildState parseBuildState(IResource location) {
+		return BuildState.parseBuildState(location);
+	}
+
 	private IDependencyProvider<IResource> createDependencyProvider(
 			MoSyncProject mosyncProject, IBuildVariant variant) {
 		CompoundDependencyProvider<IResource> dependencyProvider = new CompoundDependencyProvider<IResource>(new GCCDependencyProvider(mosyncProject, variant),
@@ -677,7 +687,7 @@ public class MoSyncBuilder extends ACBuilder {
         // Also, if the variant we want to build does not match what was previously built here,
         // then we'll do a full rebuild.
         IBuildResult previousResult = buildState.getBuildResult();
-        if (previousResult == null || !buildState.getBuildVariant().equals(previousResult.getVariant())) {
+        if (previousResult == null || !Util.equals(buildState.getBuildVariant(), previousResult.getVariant())) {
             return null;
         }
 

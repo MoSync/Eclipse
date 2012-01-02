@@ -2,6 +2,8 @@ package com.mobilesorcery.sdk.core.launch;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -43,8 +45,9 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 				launchConfig, mode);
 		IBuildState buildState = mosyncProject.getBuildState(variant);
 		IBuildResult buildResult = buildState.getBuildResult();
-		File packageToInstall = buildResult == null ? null : buildResult
-				.getBuildResult();
+		List<File> buildArtifacts = buildResult == null ? null : buildResult
+				.getBuildResult().get(IBuildResult.MAIN);
+		File packageToInstall = buildArtifacts == null || buildArtifacts.isEmpty() ? null : buildArtifacts.get(0);
 		return packageToInstall;
 	}
 

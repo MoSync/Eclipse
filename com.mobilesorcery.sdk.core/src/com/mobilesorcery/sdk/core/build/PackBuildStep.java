@@ -10,6 +10,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.IMemento;
 
+import com.mobilesorcery.sdk.core.BuildResult;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
@@ -66,7 +67,7 @@ public class PackBuildStep extends AbstractBuildStep {
 
 		// Special hack for MoRe (I don't think this is how it should work though.
 		if (targetProfile.isEmulator() && buildResult.getBuildResult() == null) {
-			buildResult.setBuildResult(buildResult.getIntermediateBuildResult(LinkBuildStep.ID));
+			buildResult.setBuildResult(IBuildResult.MAIN, buildResult.getIntermediateBuildResult(LinkBuildStep.ID));
 		} else {
 	        monitor.setTaskName(MessageFormat.format("Packaging for {0}", targetProfile));
 
@@ -76,7 +77,7 @@ public class PackBuildStep extends AbstractBuildStep {
 	        packager.createPackage(mosyncProject, session, variant, diff, buildResult);
 		}
 
-        if (buildResult.getBuildResult() == null || !buildResult.getBuildResult().exists()) {
+        if (buildResult.getBuildResult() == null || !BuildResult.exists(buildResult.getBuildResult())) {
         	if (buildResult.getBuildResult() != null) {
         		CoreMoSyncPlugin.getDefault().getLog().log(new Status(IStatus.WARNING, CoreMoSyncPlugin.PLUGIN_ID,
         			MessageFormat.format("Expected build result at {0}, but did not find it", buildResult.getBuildResult())));

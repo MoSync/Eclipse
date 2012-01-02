@@ -58,7 +58,7 @@ public class V2V3Packager extends PackageToolPackager {
 
 		super.createPackage(project, session, variant, diff, buildResult);
 		// TODO: Extract build result from packager?
-		buildResult.setBuildResult(new File(packageOutputDir, appName + resultExtension));
+		buildResult.setBuildResult(IBuildResult.MAIN, new File(packageOutputDir, appName + resultExtension));
 	}
 
 	/**

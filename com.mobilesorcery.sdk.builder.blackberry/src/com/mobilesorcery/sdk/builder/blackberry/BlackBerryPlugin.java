@@ -29,6 +29,8 @@ public class BlackBerryPlugin extends AbstractUIPlugin {
 
 	public static final String SDK_PATH = PLUGIN_ID + "sdk.path";
 
+	public static final String JAD = "jad";
+
 	// The shared instance
 	private static BlackBerryPlugin plugin;
 

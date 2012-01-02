@@ -2,7 +2,10 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -86,7 +89,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 	 * @return
 	 * @throws ParameterResolverException
 	 */
-	protected File computeBuildResult(MoSyncProject project,
+	protected Map<String, List<File>> computeBuildResult(MoSyncProject project,
 			IBuildVariant variant) throws ParameterResolverException {
 		return null;
 	}
@@ -166,6 +169,12 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			IBuildVariant variant, CommandLineBuilder commandLine)
 			throws Exception {
 
+	}
+
+	protected Map<String, List<File>> createBuildResult(File file) {
+		HashMap<String, List<File>> result = new HashMap<String, List<File>>();
+		result.put(IBuildResult.MAIN, Arrays.asList(file));
+		return result;
 	}
 
 }

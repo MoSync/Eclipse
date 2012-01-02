@@ -1,6 +1,10 @@
 package com.mobilesorcery.sdk.builder.winmobilecs;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.jface.util.Util;
 
@@ -19,18 +23,22 @@ public class WinMobileCSPackager extends PackageToolPackager {
 	private static final String REBUILD = "rebuild";
 	private static final String INTERPRETED = "interpreted";
 
+	private static final String PROJECT_FILE = "project";
+
 	@Override
-	public File computeBuildResult(MoSyncProject project, IBuildVariant variant) {
+	public Map<String, List<File>> computeBuildResult(MoSyncProject project, IBuildVariant variant) {
 		DefaultPackager internal = new DefaultPackager(project, variant);
 		if (shouldBuildWithVS(project, variant)) {
 			String config = getConfig(project, variant);
 			File xapFile =
 				internal.resolveFile("%package-output-dir%/project/bin/" + config + "/mosync.xap");
-			return xapFile;
+			return createBuildResult(xapFile);
 		} else {
 			File csProjFile =
 				internal.resolveFile("%package-output-dir%/project/mosync.csproj");
-			return csProjFile;
+			Map<String, List<File>> buildResult = new HashMap<String, List<File>>();
+			buildResult.put(WinMobileCSPackager.PROJECT_FILE, Arrays.asList(csProjFile));
+			return buildResult;
 		}
 	}
 

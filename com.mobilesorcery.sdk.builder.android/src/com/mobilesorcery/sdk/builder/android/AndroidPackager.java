@@ -2,6 +2,8 @@ package com.mobilesorcery.sdk.builder.android;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
@@ -54,10 +56,10 @@ public class AndroidPackager extends PackageToolPackager {
 	}
 
 	@Override
-	protected File computeBuildResult(MoSyncProject project,
+	protected Map<String, List<File>> computeBuildResult(MoSyncProject project,
 			IBuildVariant variant) throws ParameterResolverException {
 		DefaultPackager intern = new DefaultPackager(project, variant);
-		return new File(intern.get(DefaultPackager.PACKAGE_OUTPUT_DIR), intern.get(DefaultPackager.APP_NAME) + ".apk");
+		return createBuildResult(new File(intern.get(DefaultPackager.PACKAGE_OUTPUT_DIR), intern.get(DefaultPackager.APP_NAME) + ".apk"));
 	}
 
 	/**

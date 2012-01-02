@@ -15,8 +15,10 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -25,7 +27,7 @@ import com.mobilesorcery.sdk.internal.dependencies.DependencyManager.Delta;
 
 public class BuildResult implements IBuildResult {
 
-    private File buildResult;
+    private Map<String, List<File>> buildResult = new HashMap<String, List<File>>();
     private final ArrayList<String> errors = new ArrayList<String>();
     private final IProject project;
 	private boolean success;
@@ -49,13 +51,18 @@ public class BuildResult implements IBuildResult {
     }
 
     @Override
-	public File getBuildResult() {
+	public Map<String, List<File>> getBuildResult() {
         return buildResult;
     }
 
     @Override
-	public void setBuildResult(File buildResult) {
+	public void setBuildResult(Map<String, List<File>> buildResult) {
         this.buildResult = buildResult;
+    }
+
+    @Override
+	public void setBuildResult(String key, File... buildResult) {
+    	this.buildResult.put(key, Arrays.asList(buildResult));
     }
 
 	@Override
@@ -107,5 +114,17 @@ public class BuildResult implements IBuildResult {
 	@Override
 	public void setIntermediateBuildResult(String buildStepId, File file) {
 		intermediateBuildResults.put(buildStepId, file);
+	}
+
+	public static boolean exists(Map<String, List<File>> buildArtifacts) {
+		for (Map.Entry<String, List<File>> buildArtifact : buildArtifacts.entrySet()) {
+			List<File> files = buildArtifact.getValue();
+			for (File file : files) {
+				if (file == null || !file.exists()) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 }

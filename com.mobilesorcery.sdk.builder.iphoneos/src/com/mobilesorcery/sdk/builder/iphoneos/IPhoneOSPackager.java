@@ -64,7 +64,7 @@ public class IPhoneOSPackager extends PackageToolPackager
 
             super.createPackage(project, session, variant, diff, buildResult);
             File out = computeBuildResult(project, intern, variant);
-            buildResult.setBuildResult(out);
+            buildResult.setBuildResult(IBuildResult.MAIN, out);
 
             // Notify user if we did not build the generated project and say why
             if (!XCodeBuild.isMac()) {

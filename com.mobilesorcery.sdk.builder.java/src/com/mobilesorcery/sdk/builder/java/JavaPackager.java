@@ -3,6 +3,10 @@ package com.mobilesorcery.sdk.builder.java;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.jar.Manifest;
 
@@ -104,8 +108,17 @@ public class JavaPackager extends PackageToolPackager {
 	}
 
 	@Override
-	protected File computeBuildResult(MoSyncProject project,
+	protected Map<String, List<File>> computeBuildResult(MoSyncProject project,
 			IBuildVariant variant) throws ParameterResolverException {
+		File jar = getProducedJar(project, variant);
+		File jad = new File(Util.replaceExtension(jar.getAbsolutePath(), "jad"));
+		HashMap<String, List<File>> result = new HashMap<String, List<File>>();
+		result.put(IBuildResult.MAIN, Arrays.asList(jar));
+		result.put(Activator.JAD, Arrays.asList(jad));
+		return result;
+	}
+
+	protected File getProducedJar(MoSyncProject project, IBuildVariant variant) throws ParameterResolverException {
 		DefaultPackager intern = new DefaultPackager(project, variant);
 		return new File(intern.get(DefaultPackager.PACKAGE_OUTPUT_DIR),
 				intern.get(DefaultPackager.APP_NAME) + ".jar");
@@ -119,7 +132,7 @@ public class JavaPackager extends PackageToolPackager {
 			ICapabilities caps = ProfileDBManager.getInstance()
 					.getCapabilities(profile);
 			DeviceCapabilitiesFilter filter = DeviceCapabilitiesFilter.extractFilterFromProject(project);
-			if (caps != null) {
+			if (caps != null && filter != null) {
 				ICapability iconSize = caps.getCapability("IconSize");
 				if (iconSize != null) {
 					result.add(iconSize.getValue());

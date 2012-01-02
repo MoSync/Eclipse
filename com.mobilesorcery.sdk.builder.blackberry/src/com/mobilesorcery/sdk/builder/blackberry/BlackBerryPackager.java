@@ -1,6 +1,10 @@
 package com.mobilesorcery.sdk.builder.blackberry;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
@@ -10,6 +14,7 @@ import com.mobilesorcery.sdk.builder.java.JavaPackager;
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -53,10 +58,13 @@ public class BlackBerryPackager extends JavaPackager {
 	}
 
 	@Override
-	public File computeBuildResult(MoSyncProject project, IBuildVariant variant) throws ParameterResolverException {
-		File result = super.computeBuildResult(project, variant);
-		String cod = Util.replaceExtension(result.getAbsolutePath(), "cod");
-		return new File(cod);
+	public Map<String, List<File>> computeBuildResult(MoSyncProject project, IBuildVariant variant) throws ParameterResolverException {
+		File jar = super.getProducedJar(project, variant);
+		File cod = new File(Util.replaceExtension(jar.getAbsolutePath(), "cod"));
+		Map<String, List<File>> result = new HashMap<String, List<File>>();
+		result.put(IBuildResult.MAIN, Arrays.asList(cod));
+		result.put(BlackBerryPlugin.JAD, Arrays.asList(cod));
+		return result;
 	}
 
 	/*@Override

@@ -131,7 +131,9 @@ public class JavaPackager2 extends AbstractPackager {
 
             signPackage(internal, project, projectJad, projectJar);
 
-            buildResult.setBuildResult(projectJar);
+            buildResult.setBuildResult(IBuildResult.MAIN, projectJar);
+            buildResult.setBuildResult(Activator.JAD, projectJad);
+
         } catch (Exception e) {
             throw new CoreException(new Status(IStatus.ERROR, "com.mobilesorcery.sdk.builder.java", Messages.JavaPackager_PackageError, e)); //$NON-NLS-1$
         }

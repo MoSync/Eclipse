@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
@@ -158,8 +159,8 @@ public class BuildState implements IBuildState {
     private DependencyManager<IResource> dependencies;
 
     private IBuildVariant variant;
-    private final MoSyncProject project;
-    private final File buildStateFile;
+    private MoSyncProject project;
+    private File buildStateFile;
     private IBuildResult buildResult;
 
 
@@ -175,6 +176,30 @@ public class BuildState implements IBuildState {
         buildStateFile = buildStatePath.toFile();
         clear();
         load();
+    }
+
+    private BuildState() {
+
+    }
+
+    /**
+     * Parses the .metadata/.buildstate file of a directory.
+     * @param location
+     * @return
+     */
+    public static IBuildState parseBuildState(IResource location) {
+    	BuildState result = new BuildState();
+    	result.project = MoSyncProject.create(location.getProject());
+    	IPath buildStatePath = location.getLocation().append(".metadata/.buildstate");
+    	result.buildStateFile = buildStatePath.toFile();
+    	result.clear();
+    	result.load();
+    	return result.buildStateFile.exists() && result.project != null ? result : null;
+    }
+
+    public static boolean hasBuildState(IResource location) {
+    	IPath buildStatePath = location.getLocation().append(".metadata/.buildstate");
+    	return buildStatePath.toFile().exists();
     }
 
     /* (non-Javadoc)
@@ -268,16 +293,28 @@ public class BuildState implements IBuildState {
         BuildResult buildResult = new BuildResult(project.getWrappedProject());
         IBuildVariant variant = BuildVariant.parse(resultMap.get("variant"));
         buildResult.setVariant(variant);
+        this.variant = variant;
         buildResult.setSuccess(Boolean.parseBoolean(resultMap.get("success")));
         fullRebuildNeeded = Boolean.parseBoolean(resultMap.get("rebuild-needed"));
         String timestampStr = resultMap.get("timestamp");
         if (timestampStr != null) {
             buildResult.setTimestamp(Long.parseLong(timestampStr));
         }
-        String outputFileName = resultMap.get("output");
-        if (outputFileName != null) {
-            buildResult.setBuildResult(new File(outputFileName));
+        for (Map.Entry<String, String> outputs : resultMap.entrySet()) {
+        	String key = outputs.getKey();
+        	String[] filenames = PropertyUtil.toStrings(outputs.getValue());
+        	if (key.startsWith("output")) {
+        		String outputType = key.length() > "output".length() + 1 ?
+        				key.substring("output-".length()) :
+        				null;
+        		File[] files = new File[filenames.length];
+        		for (int i = 0; i < files.length; i++) {
+        			files[i] = new File(filenames[i]);
+        		}
+        		buildResult.setBuildResult(outputType, files);
+        	}
         }
+
         this.buildResult = buildResult;
     }
 
@@ -340,9 +377,18 @@ public class BuildState implements IBuildState {
             resultSection.addEntry(new Entry("variant", BuildVariant.toString(buildResult.getVariant())));
             resultSection.addEntry(new Entry("success", Boolean.toString(buildResult.success())));
             resultSection.addEntry(new Entry("timestamp", Long.toString(buildResult.getTimestamp())));
-            File output = buildResult.getBuildResult();
-            if (output != null) {
-                resultSection.addEntry(new Entry("output", output.getAbsolutePath()));
+            Map<String, List<File>> buildArtifacts = buildResult.getBuildResult();
+            if (buildArtifacts != null) {
+            	for (Map.Entry<String, List<File>> buildArtifact : buildArtifacts.entrySet()) {
+            		String key = buildArtifact.getKey();
+            		String outputKey = "output" + (key == null ? "" :  "-" + key);
+            		List<File> files = buildArtifact.getValue();
+            		List<String> filenames = new ArrayList<String>();
+            		for (File file : files) {
+            			filenames.add(file.getAbsolutePath());
+            		}
+            		resultSection.addEntry(new Entry(outputKey, PropertyUtil.fromStrings(filenames.toArray(new String[0]))));
+            	}
             }
         }
     }

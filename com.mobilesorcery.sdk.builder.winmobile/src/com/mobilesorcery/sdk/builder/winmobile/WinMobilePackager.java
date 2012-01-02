@@ -14,6 +14,8 @@
 package com.mobilesorcery.sdk.builder.winmobile;
 
 import java.io.File;
+import java.util.List;
+import java.util.Map;
 
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildVariant;
@@ -23,10 +25,10 @@ import com.mobilesorcery.sdk.core.PackageToolPackager;
 public class WinMobilePackager extends PackageToolPackager {
 
 	@Override
-	public File computeBuildResult(MoSyncProject project, IBuildVariant variant) {
+	public Map<String, List<File>> computeBuildResult(MoSyncProject project, IBuildVariant variant) {
 		DefaultPackager internal = new DefaultPackager(project, variant);
 		File cabFile = new File(internal.resolve("%package-output-dir%/%app-name%.cab"));
-		return cabFile;
+		return createBuildResult(cabFile);
 	}
 
 }
