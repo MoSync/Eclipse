@@ -54,13 +54,13 @@ public class FilterProfilesHandler extends MoSyncCommandHandler implements Prope
 		MoSyncProject project = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(HandlerUtil.getActiveWorkbenchWindow(event));
 		if (project != null) {
 			Integer projectManagerType =
-					PropertyUtil.getInteger(project, MoSyncProject.PROFILE_MANAGER_TYPE_KEY);
+					project.getProfileManagerType();
 			boolean openDialog = projectManagerType != null &&
 				projectManagerType == MoSyncTool.DEFAULT_PROFILE_TYPE;
 
 			if (!openDialog) {
 				if (askForConversion(shell, project)) {
-					PropertyUtil.setInteger(project, MoSyncProject.PROFILE_MANAGER_TYPE_KEY, MoSyncTool.DEFAULT_PROFILE_TYPE);
+					project.setProfileManagerType(MoSyncTool.DEFAULT_PROFILE_TYPE);
 					openDialog = true;
 				}
 			}

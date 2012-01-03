@@ -26,8 +26,7 @@ public class ProfileDBPropertyPage extends MoSyncPropertyPage {
 		profileTypeButton = new Button(main, SWT.CHECK);
 		profileTypeButton
 				.setText("Use &platform based profiles (new projects always uses this)");
-		Integer pmt = PropertyUtil.getInteger(getProject(),
-				MoSyncProject.PROFILE_MANAGER_TYPE_KEY);
+		Integer pmt = getProject().getProfileManagerType();
 		profileTypeButton.setSelection(pmt != null
 				&& pmt == MoSyncTool.DEFAULT_PROFILE_TYPE);
 		return main;
@@ -35,10 +34,9 @@ public class ProfileDBPropertyPage extends MoSyncPropertyPage {
 
 	@Override
 	public boolean performOk() {
-		PropertyUtil.setInteger(getProject(),
-				MoSyncProject.PROFILE_MANAGER_TYPE_KEY, profileTypeButton
-						.getSelection() ? MoSyncTool.DEFAULT_PROFILE_TYPE
-						: MoSyncTool.LEGACY_PROFILE_TYPE);
+		getProject().setProfileManagerType(profileTypeButton
+				.getSelection() ? MoSyncTool.DEFAULT_PROFILE_TYPE
+				: MoSyncTool.LEGACY_PROFILE_TYPE);
 		return super.performOk();
 	}
 

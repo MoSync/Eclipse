@@ -781,7 +781,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	public void setTargetProfile(IProfile newTarget) {
 		IProfile oldTarget = initTargetProfile(newTarget);
 		firePropertyChange(new PropertyChangeEvent(this,
-				TARGET_PROFILE_CHANGED, oldTarget, newTarget));
+				TARGET_PROFILE_CHANGED, oldTarget, getTargetProfile()));
 	}
 
 	/**
@@ -1024,6 +1024,22 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		int mgrType = PropertyUtil.getInteger(this, PROFILE_MANAGER_TYPE_KEY,
 				MoSyncTool.LEGACY_PROFILE_TYPE);
 		return mgrType;
+	}
+
+	/**
+	 * Sets the profile manager type of this project, and if it
+	 * is different from it's current type: makes
+	 * sure to change the target profile to a default one as well
+	 * as clearing all filters. (This is actually more of a conversion
+	 * method than a setter).
+	 * @param type
+	 */
+	public void setProfileManagerType(int type) {
+		if (getProfileManagerType() != type) {
+			PropertyUtil.setInteger(this, MoSyncProject.PROFILE_MANAGER_TYPE_KEY, type);
+			getDeviceFilter().removeAllFilters();
+			setTargetProfile(null);
+		}
 	}
 
 	/**
