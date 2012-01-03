@@ -123,7 +123,10 @@ public class EditDeviceListDialog extends Dialog {
         }
 
         Label instructions = new Label(contents, SWT.NONE | SWT.WRAP);
-        instructions.setText("Click to select new target device");
+        String instructionMsg = getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE ?
+        		"Click to select new target device" :
+    			"Click to select new target platform";
+        instructions.setText(instructionMsg);
 
         if (getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
         	Note note = new Note(contents, SWT.NONE);
