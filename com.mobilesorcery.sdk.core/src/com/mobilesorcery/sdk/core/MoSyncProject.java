@@ -665,9 +665,15 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			MoSyncTool.LEGACY_PROFILE_TYPE;
 		result.setProperty(PROFILE_MANAGER_TYPE_KEY,
 				PropertyUtil.fromInteger(pt));
-		result.getDeviceFilter().addFilter(
-				DeviceCapabilitiesFilter.create(new String[0], new String[0]));
+		addDefaultFilters(result);
 		return result;
+	}
+
+	private static void addDefaultFilters(MoSyncProject result) {
+		if (result.getProfileManagerType() == MoSyncTool.DEFAULT_PROFILE_TYPE) {
+			result.getDeviceFilter().addFilter(
+				DeviceCapabilitiesFilter.create(new String[0], new String[0]));
+		}
 	}
 
 	private static void addDefaultResourceFilter(IProject project,
@@ -1043,6 +1049,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		if (getProfileManagerType() != type) {
 			PropertyUtil.setInteger(this, MoSyncProject.PROFILE_MANAGER_TYPE_KEY, type);
 			getDeviceFilter().removeAllFilters();
+			addDefaultFilters(this);
 			setTargetProfile(null);
 		}
 	}
