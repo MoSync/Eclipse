@@ -109,37 +109,44 @@ public class CopyBuildResultBuildStep extends AbstractBuildStep {
 	public int incrementalBuild(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult result,
 			IProgressMonitor monitor) throws Exception {
-		if (prototype.isActive()) {
-			String cfgId = getReleasePackageCfgId(project);
-			if (configMatches(project, variant)) {
-				IPath outputFolder = project.getWrappedProject().getLocation().append(prototype.getFolderName());
-				String cfgFolder = getCfgFolder(project, variant);
-				if (cfgFolder != null) {
-					outputFolder = outputFolder.append(cfgFolder);
-				}
-				outputFolder = outputFolder.append(MoSyncTool.toString(variant.getProfile()));
-				Map<String, List<File>> buildArtifacts = result
-						.getBuildResult();
-				if (!buildArtifacts.isEmpty()) {
-					getConsole().addMessage("Copied to release package folder:");
-				}
-				for (Map.Entry<String, List<File>> buildArtifact : buildArtifacts
-						.entrySet()) {
-					for (File file : buildArtifact.getValue()) {
-						File dest = outputFolder.append(file.getName())
-								.toFile();
-						Util.copy(new NullProgressMonitor(), file, dest, null);
-						getConsole().addMessage(dest.getAbsolutePath());
+		if (!result.getDependencyDelta().getAllDependees().isEmpty()) {
+			if (prototype.isActive()) {
+				String cfgId = getReleasePackageCfgId(project);
+				if (configMatches(project, variant)) {
+					IPath outputFolder = project.getWrappedProject()
+							.getLocation().append(prototype.getFolderName());
+					String cfgFolder = getCfgFolder(project, variant);
+					if (cfgFolder != null) {
+						outputFolder = outputFolder.append(cfgFolder);
 					}
+					outputFolder = outputFolder.append(MoSyncTool
+							.toString(variant.getProfile()));
+					Map<String, List<File>> buildArtifacts = result
+							.getBuildResult();
+					if (!buildArtifacts.isEmpty()) {
+						getConsole().addMessage(
+								"Copied to release package folder:");
+					}
+					for (Map.Entry<String, List<File>> buildArtifact : buildArtifacts
+							.entrySet()) {
+						for (File file : buildArtifact.getValue()) {
+							File dest = outputFolder.append(file.getName())
+									.toFile();
+							Util.copy(new NullProgressMonitor(), file, dest,
+									null);
+							getConsole().addMessage(dest.getAbsolutePath());
+						}
+					}
+					IFolder toRefresh = project.getWrappedProject().getFolder(
+							prototype.getFolderName());
+					toRefresh.refreshLocal(IResource.DEPTH_INFINITE, monitor);
+				} else {
+					getConsole()
+							.addMessage(
+									MessageFormat
+											.format("NOTE: This package was not copied the release package folder. Only builds for configuration {0} will be copied",
+													cfgId));
 				}
-				IFolder toRefresh = project.getWrappedProject().getFolder(prototype.getFolderName());
-				toRefresh.refreshLocal(IResource.DEPTH_INFINITE, monitor);
-			} else {
-				getConsole()
-						.addMessage(
-								MessageFormat
-										.format("NOTE: This package was not copied the release package folder. Only builds for configuration {0} will be copied",
-												cfgId));
 			}
 		}
 		return IBuildStep.CONTINUE;
