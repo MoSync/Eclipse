@@ -103,5 +103,14 @@ public class LegacyProfileManager extends ProfileManager {
 		return profilesForRuntime.get(toCanonicalRuntime(runtime));
 	}
 
+	@Override
+	public IProfile getDefaultTargetProfile() {
+		IProfile result = MoSyncTool.getDefault()
+				.getDefaultEmulatorProfile();
+		if (result == null) {
+			result = super.getDefaultTargetProfile();
+		}
+		return result;
+	}
 
 }

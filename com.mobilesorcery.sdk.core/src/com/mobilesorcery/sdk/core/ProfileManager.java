@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.osgi.internal.profile.DefaultProfileLogger;
+
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -14,6 +16,10 @@ import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 
 public abstract class ProfileManager {
 
+	private boolean defaultProfileInited = false;
+
+	private IProfile defaultProfile = null;
+
 	public abstract void init();
 
 	public abstract IVendor[] getVendors();
@@ -21,6 +27,35 @@ public abstract class ProfileManager {
 	public abstract IVendor getVendor(String vendorName);
 
 	public abstract List<IProfile> getProfilesForRuntime(String runtime);
+
+	/**
+	 * <p>
+	 * Returns the default target profile, which for a tool in a 'correct' state
+	 * should return the default emulator profile.
+	 * </p>
+	 * <p>
+	 * If no emulator profile exists, an arbitrary profile is returned.
+	 * </p>
+	 *
+	 * @return
+	 */
+	public IProfile getDefaultTargetProfile() {
+		if (!defaultProfileInited) {
+			defaultProfileInited = true;
+			init();
+			IVendor[] vendors = getVendors();
+			IProfile result = null;
+			if (vendors.length > 0) {
+				IVendor someVendor = vendors[0];
+				IProfile[] profilesForVendor = someVendor.getProfiles();
+				if (profilesForVendor.length > 0) {
+					result = profilesForVendor[0];
+				}
+			}
+			defaultProfile = result;
+		}
+		return defaultProfile;
+	}
 
 	public IVendor[] getVendors(IDeviceFilter filter) {
 		IVendor[] allVendors = getVendors();
@@ -96,7 +131,8 @@ public abstract class ProfileManager {
 		return ICommonPermissions.ALL_PERMISSIONS;
 	}
 
-	public static IProfile[] filterProfiles(IProfile[] profiles, IDeviceFilter filter) {
+	public static IProfile[] filterProfiles(IProfile[] profiles,
+			IDeviceFilter filter) {
 		if (filter != null) {
 			ArrayList<IProfile> filtered = new ArrayList<IProfile>();
 			for (int i = 0; i < profiles.length; i++) {

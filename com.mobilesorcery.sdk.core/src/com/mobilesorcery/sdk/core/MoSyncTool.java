@@ -485,39 +485,13 @@ public class MoSyncTool {
 	}
 
 	/**
-	 * <p>
-	 * Returns the default target profile, which for a tool in a 'correct' state
-	 * should return the default emulator profile.
-	 * </p>
-	 * <p>
-	 * If no emulator profile exists, an arbitrary profile is returned.
-	 * </p>
-	 *
-	 * @return
-	 */
-	public IProfile getDefaultTargetProfile() {
-		init();
-		IProfile result = getDefaultEmulatorProfile();
-		IVendor[] vendors = getVendors();
-		if (result == null && vendors.length > 0) {
-			IVendor someVendor = vendors[0];
-			IProfile[] profilesForVendor = someVendor.getProfiles();
-			if (profilesForVendor.length > 0) {
-				return profilesForVendor[0];
-			}
-		}
-
-		return result;
-	}
-
-	/**
 	 * Returns the default emulator profile.
 	 *
 	 * @return
 	 */
 	public IProfile getDefaultEmulatorProfile() {
 		init();
-		IVendor defaultVendor = getVendor("MoSync");
+		IVendor defaultVendor = legacyProfileManager.getVendor("MoSync");
 		if (defaultVendor != null) {
 			return defaultVendor.getProfile("Emulator");
 		}
@@ -573,7 +547,7 @@ public class MoSyncTool {
 			return "Invalid MoSync home - could not find profiles directory";
 		} else if (!getVendorsPath().toFile().exists()) {
 			return "Invalid MoSync home - could not find vendors directory";
-		} else if (inited && getDefaultTargetProfile() == null) {
+		} else if (inited && getProfileManager(DEFAULT_PROFILE_TYPE).getDefaultTargetProfile() == null) {
 			// Please note that we need the inited check to avoid an infinite
 			// loop.
 			return "Tool in an incorrect state - no default target profile exists (so there seems to be something seriously strange with the directory structure of mosync - did you try to trick the IDE?)";

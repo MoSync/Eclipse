@@ -766,8 +766,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	 */
 	@Override
 	public IProfile getTargetProfile() {
-		return target == null ? MoSyncTool.getDefault()
-				.getDefaultTargetProfile() : target;
+		return target == null ? getProfileManager().getDefaultTargetProfile() : target;
 	}
 
 	/**
