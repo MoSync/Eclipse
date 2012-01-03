@@ -207,6 +207,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		legacyProfileViewOpener = new LegacyProfileViewOpener();
 		// Do not use addListener here, since it will trigger a deadlock-type error
 		listeners.addPropertyChangeListener(legacyProfileViewOpener);
+		MoSyncProject.addGlobalPropertyChangeListener(legacyProfileViewOpener);
 	}
 
 	private void initializeLauncherParts() {

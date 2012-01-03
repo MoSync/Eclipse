@@ -802,8 +802,13 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		// TODO: A bit out of place, but it works
 		excludes.clear();
 
-		globalListeners.firePropertyChange(event);
-		listeners.firePropertyChange(event);
+		try {
+			globalListeners.firePropertyChange(event);
+			listeners.firePropertyChange(event);
+		} catch (Exception e) {
+			// Continue anyway.
+			CoreMoSyncPlugin.getDefault().log(e);
+		}
 	}
 
 	/**

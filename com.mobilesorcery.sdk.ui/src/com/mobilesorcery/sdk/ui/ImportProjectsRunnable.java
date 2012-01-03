@@ -190,6 +190,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 			} catch (Exception e) {
 				errorStatus.add(new Status(IStatus.ERROR, MosyncUIPlugin.PLUGIN_ID,
 						projectDescriptions[i] + "; " + e.getMessage(), e));
+				CoreMoSyncPlugin.getDefault().log(e);
 			}
 		}
 

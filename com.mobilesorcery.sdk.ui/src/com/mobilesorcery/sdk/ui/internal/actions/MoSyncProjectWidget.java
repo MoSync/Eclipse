@@ -26,7 +26,12 @@ PropertyChangeListener, IUpdatableControl {
         // Project changed
         if (shouldUpdateProject(event)) {
         	project = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(getWorkbenchWindow());
-        	updateUI();
+        	getWorkbenchWindow().getShell().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					updateUI();
+				}
+        	});
         }
     }
 
