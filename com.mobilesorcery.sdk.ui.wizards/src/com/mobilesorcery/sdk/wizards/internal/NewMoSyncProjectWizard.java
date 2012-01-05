@@ -81,7 +81,6 @@ public class NewMoSyncProjectWizard extends Wizard implements INewWizard {
 	public void addPages() {
         projectPage = new NewMoSyncProjectPage();
         templatePage = new TemplateWizardPage();
-        templatePage.setTemplateTypes(getTemplateTypes());
         addPage(templatePage);
         addPage(projectPage);
     }
@@ -113,6 +112,10 @@ public class NewMoSyncProjectWizard extends Wizard implements INewWizard {
 
         if (mainTemplate != null) {
         	IFile mainFile = mainTemplate.initializeProject(monitor, mosyncProject);
+        	IProjectTemplateExtension ext = Activator.getDefault().getExtensionForType(mainTemplate.getType());
+        	if (ext != null) {
+        		ext.configureProject(mosyncProject);
+        	}
         	if (mainFile != null) {
         		UIUtils.openResource(PlatformUI.getWorkbench(), mainFile);
         	}
@@ -127,18 +130,4 @@ public class NewMoSyncProjectWizard extends Wizard implements INewWizard {
 		// Clients may override
 	}
 
-    private List<String> getTemplateTypes() {
-		Collection<String> availableTypes = Activator.getDefault().getTemplateTypes();
-		ArrayList<String> result = new ArrayList<String>();
-		for (String type : availableTypes) {
-			if (isSupported(type)) {
-				result.add(type);
-			}
-		}
-		return result;
-	}
-
-	protected boolean isSupported(String templateType) {
-		return templateType == null;
-	}
 }

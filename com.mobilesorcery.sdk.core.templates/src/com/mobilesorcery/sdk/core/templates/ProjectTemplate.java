@@ -39,6 +39,11 @@ import com.mobilesorcery.sdk.core.Util;
 
 public class ProjectTemplate {
 
+	/**
+	 * The default project template type.
+	**/
+	public static final String DEFAULT_TYPE = "default";
+
 	private final ProjectTemplateDescription desc;
 	private final File templateRoot;
 

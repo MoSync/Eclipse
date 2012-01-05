@@ -574,10 +574,21 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	}
 
 	public static Image resize(Image original, int width, int height,
-			boolean disposeOriginal) {
+			boolean disposeOriginal, boolean keepAspectRatio) {
 		Display display = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
 				.getShell().getDisplay();
-
+		if (keepAspectRatio) {
+			int originalWidth = original.getBounds().width;
+			int originalHeight = original.getBounds().height;
+			double aspectRatio = (double) originalWidth / (double) originalHeight;
+			double newWidth = height * aspectRatio;
+			if (newWidth > width) {
+				double overSizeRatio = newWidth / width;
+				newWidth = Math.floor((overSizeRatio * width));
+				height = (int) Math.floor((overSizeRatio * height));
+			}
+			width = (int) newWidth;
+		}
 		Image scaled = new Image(display, width, height);
 		GC gc = new GC(scaled);
 		gc.setAntialias(SWT.ON);
@@ -737,7 +748,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 				addImage = vendorImageDesc.createImage();
 				if (imageSize != null) {
 					addImage = MosyncUIPlugin.resize((Image) addImage,
-							imageSize.x, imageSize.y, true);
+							imageSize.x, imageSize.y, true, true);
 				}
 			}
 

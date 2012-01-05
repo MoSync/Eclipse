@@ -49,14 +49,14 @@ public class ProjectTemplateDescription {
 	public static ProjectTemplateDescription parse(Reader reader) throws IOException {
 		return init(SectionedPropertiesFile.parse(reader));
 	}
-	
+
 	private static ProjectTemplateDescription init(SectionedPropertiesFile file) {
 		ProjectTemplateDescription desc = new ProjectTemplateDescription();
 		Section files = file.getFirstSection("Files"); //$NON-NLS-1$
 		String[] templateFileDescs = files == null ? new String[0] : files.getValues();
 		ArrayList<String> templateFilesRW = new ArrayList<String>();
 		ArrayList<String> generatedFilesRW = new ArrayList<String>();
-		
+
 		if (templateFileDescs != null) {
 			for (int i = 0; i < templateFileDescs.length; i++) {
 				String[] templateFileDesc = templateFileDescs[i].split("->", 2); //$NON-NLS-1$
@@ -67,25 +67,30 @@ public class ProjectTemplateDescription {
 				}
 			}
 		}
-		
+
 		desc.templateFiles = Collections.unmodifiableList(templateFilesRW);
 		desc.generatedFiles = Collections.unmodifiableList(generatedFilesRW);
-		
+
 		Section settings = file.getFirstSection("Settings"); //$NON-NLS-1$
 		desc.settings = settings == null ? new HashMap<String, String>() : settings.getEntriesAsMap();
-		
+
 		Map<String, String> defaultEntries = file.getDefaultSection().getEntriesAsMap();
 		desc.id = defaultEntries.get("id"); //$NON-NLS-1$
 		desc.name = defaultEntries.get("name"); //$NON-NLS-1$
 		desc.description = defaultEntries.get("description"); //$NON-NLS-1$
 		desc.type = defaultEntries.get("type");
-		
+
+		// We always have a 'default' type
+		if (desc.type == null) {
+			desc.type = ProjectTemplate.DEFAULT_TYPE;
+		}
+
 		return desc;
 	}
-	
+
 	private ProjectTemplateDescription() {
 	}
-		
+
 	/**
 	 * <p>Returns a list of template file paths,
 	 * relative to the project root. The result may
@@ -94,7 +99,7 @@ public class ProjectTemplateDescription {
 	 * @return
 	 */
 	public List<String> getTemplateFiles() {
-		return templateFiles;  
+		return templateFiles;
 	}
 
 	public Map<String, String> getSettings() {
@@ -102,7 +107,7 @@ public class ProjectTemplateDescription {
 	}
 
 	public String getId() {
-		return id; 
+		return id;
 	}
 
 	public String getName() {

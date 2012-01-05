@@ -22,7 +22,7 @@ public class NewMoSyncProjectPage extends WizardNewProjectCreationPage {
         super("MoSyncProjectPage");
         setTitle("MoSync Project");
         setDescription("Create a new MoSync Project");
-        setImageDescriptor(ImageDescriptor.createFromFile(this.getClass(), "/icons/new.png"));
+        setImageDescriptor(ImageDescriptor.createFromFile(this.getClass(), "/icons/wizardimg.png"));
     }
 
 }

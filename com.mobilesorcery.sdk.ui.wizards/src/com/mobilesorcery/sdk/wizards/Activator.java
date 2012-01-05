@@ -21,18 +21,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.TreeMap;
 
+import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 import com.mobilesorcery.sdk.core.templates.ITemplate;
 import com.mobilesorcery.sdk.core.templates.ProjectTemplate;
 import com.mobilesorcery.sdk.core.templates.ProjectTemplateDescription;
 import com.mobilesorcery.sdk.core.templates.Template;
+import com.mobilesorcery.sdk.wizards.internal.IProjectTemplateExtension;
+import com.mobilesorcery.sdk.wizards.internal.ProjectTemplateExtension;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -50,6 +55,8 @@ public class Activator extends AbstractUIPlugin {
     private final TreeMap<String, ITemplate> templates = new TreeMap<String, ITemplate>();
 
     private final TreeMap<String, ProjectTemplate> projectTemplates = new TreeMap<String, ProjectTemplate>();
+
+	private TreeMap<String, IProjectTemplateExtension> extensions = null;
 
 	/**
 	 * The constructor
@@ -133,6 +140,19 @@ public class Activator extends AbstractUIPlugin {
 			}
 		}
 	    return result;
+	}
+
+	public IProjectTemplateExtension getExtensionForType(String type) {
+		if (extensions == null) {
+			extensions = new TreeMap<String, IProjectTemplateExtension>();
+	    	IConfigurationElement[] extensionCfgs = Platform.getExtensionRegistry().getConfigurationElementsFor(ProjectTemplateExtension.EXTENSION_POINT_ID);
+	    	for (IConfigurationElement extensionCfg : extensionCfgs) {
+	    		ProjectTemplateExtension extensionImpl = new ProjectTemplateExtension(extensionCfg);
+	    		String extensionType = type = extensionImpl.getType();
+	    		extensions.put(extensionType, extensionImpl);
+	    	}
+		}
+		return extensions.get(type);
 	}
 
 	public Collection<String> getTemplateTypes() {

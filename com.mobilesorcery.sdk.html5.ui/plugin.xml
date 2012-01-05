@@ -1,21 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
-     <extension
-         point="org.eclipse.ui.newWizards">
-      <wizard
-            category="com.mobilesorcery.wizard.category"
-            class="com.mobilesorcery.sdk.html5.wizards.NewHTML5MoSyncProjectWizard"
-            finalPerspective="com.mobilesorcery.ui.perspective"
-            icon="icons/mosyncproject.png"
-            id="com.mobilesorcery.wizard.mosync.project.html5"
-            name="MoSync HTML5/JavaScript Project"
-            project="true"/>
-      <primaryWizard
-            id="com.mobilesorcery.wizard.mosync.project.html5">
-      </primaryWizard>
-      
-   </extension>
    
  <!--     <extension point="org.eclipse.wst.jsdt.ui.JsGlobalScopeContainerPage">
   	  <JsGlobalScopeContainerPage
@@ -31,4 +16,13 @@
      	class="com.mobilesorcery.sdk.html5.ui.jsdt.JoSyncUiInitializer">
      </JsGlobalScopeUIInitializer>
    </extension>-->
+     <extension
+           point="com.mobilesorcery.sdk.templates.type.extension">
+        <templateextension
+              configurer="com.mobilesorcery.sdk.html5.wizards.HTML5TemplateExtension"
+              image="icons/HTML5_Logo_64.png"
+              name="HTML5"
+              type="html5">
+        </templateextension>
+     </extension>
 </plugin>
