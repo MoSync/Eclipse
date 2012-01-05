@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -36,6 +37,7 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 
 public class ProjectTemplate {
 
@@ -67,6 +69,10 @@ public class ProjectTemplate {
 
 	public String getType() {
 		return desc.getType();
+	}
+
+	public Set<String> getRequiredCapabilities() {
+		return desc.getRequiredCapabilities();
 	}
 
 	public String validate() {
@@ -130,6 +136,13 @@ public class ProjectTemplate {
 		Map<String, String> settings = desc.getSettings();
         if (settings != null) {
             mosyncProject.setProperties(settings);
+        }
+
+        Set<String> requiredCapabilities = desc.getRequiredCapabilities();
+        if (requiredCapabilities != null) {
+    		DeviceCapabilitiesFilter newFilter = DeviceCapabilitiesFilter.create(
+    				requiredCapabilities.toArray(new String[0]), new String[0]);
+    		DeviceCapabilitiesFilter.setFilter(mosyncProject, newFilter);
         }
 
         mosyncProject.setProperty(MoSyncProject.TEMPLATE_ID, getId());

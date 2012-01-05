@@ -17,10 +17,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
@@ -41,6 +44,7 @@ public class ProjectTemplateDescription {
 	private List<String> generatedFiles;
 	private String description;
 	private String type;
+	private Set<String> requiredCapabilities;
 
 	public static ProjectTemplateDescription parse(File descFile) throws IOException {
 		return init(SectionedPropertiesFile.parse(descFile));
@@ -79,6 +83,11 @@ public class ProjectTemplateDescription {
 		desc.name = defaultEntries.get("name"); //$NON-NLS-1$
 		desc.description = defaultEntries.get("description"); //$NON-NLS-1$
 		desc.type = defaultEntries.get("type");
+		String requiredCapabilitiesStr = defaultEntries.get("required-capabilities");
+		if (requiredCapabilitiesStr != null) {
+			String[] requiredCapabilities = requiredCapabilitiesStr.split(",\\s");
+			desc.requiredCapabilities = new HashSet<String>(Arrays.asList(requiredCapabilities));
+		}
 
 		// We always have a 'default' type
 		if (desc.type == null) {
@@ -124,6 +133,10 @@ public class ProjectTemplateDescription {
 
 	public String getType() {
 		return type;
+	}
+
+	public Set<String> getRequiredCapabilities() {
+		return requiredCapabilities;
 	}
 
 }

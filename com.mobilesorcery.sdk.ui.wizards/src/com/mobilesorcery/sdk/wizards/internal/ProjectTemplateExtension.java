@@ -40,7 +40,9 @@ public class ProjectTemplateExtension implements IProjectTemplateExtension {
 		if (!inited) {
 			inited = true;
 			try {
-				configurer = (IProjectTemplateExtensionDelegate) element.createExecutableExtension("configurer");
+				if (element.getAttribute("configurer") != null) {
+					configurer = (IProjectTemplateExtensionDelegate) element.createExecutableExtension("configurer");
+				}
 			} catch (CoreException e) {
 				CoreMoSyncPlugin.getDefault().log(e);
 				// Never mind.
