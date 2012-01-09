@@ -65,8 +65,8 @@ public class PackBuildStep extends AbstractBuildStep {
 		IPropertyOwner buildProperties = getBuildProperties();
 		IProfile targetProfile = variant.getProfile();
 
-		// Special hack for MoRe (I don't think this is how it should work though.
-		if (targetProfile.isEmulator() && buildResult.getBuildResult() == null) {
+		// Special hack for MoRe (I don't think this is how it should work though.)
+		if (targetProfile.isEmulator() && buildResult.getBuildResult().get(IBuildResult.MAIN) == null) {
 			buildResult.setBuildResult(IBuildResult.MAIN, buildResult.getIntermediateBuildResult(LinkBuildStep.ID));
 		} else {
 	        monitor.setTaskName(MessageFormat.format("Packaging for {0}", targetProfile));

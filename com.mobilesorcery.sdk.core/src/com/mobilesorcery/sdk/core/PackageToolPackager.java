@@ -88,9 +88,10 @@ public abstract class PackageToolPackager extends AbstractPackager {
 	 * @param project
 	 * @return
 	 * @throws ParameterResolverException
+	 * @throws CoreException
 	 */
 	protected Map<String, List<File>> computeBuildResult(MoSyncProject project,
-			IBuildVariant variant) throws ParameterResolverException {
+			IBuildVariant variant) throws ParameterResolverException, CoreException {
 		return null;
 	}
 

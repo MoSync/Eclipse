@@ -14,16 +14,15 @@
 package com.mobilesorcery.sdk.builder.iphoneos;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 
-import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
@@ -31,14 +30,9 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
-import com.mobilesorcery.sdk.core.IPackagerDelegate;
-import com.mobilesorcery.sdk.core.IconManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
-import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PropertyUtil;
-import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
@@ -54,7 +48,9 @@ public class IPhoneOSPackager extends PackageToolPackager
 {
 	public final static String ID = "com.mobilesorcery.sdk.build.ios.packager";
 
-    @Override
+	private static final String PROJECT_FILE = "project";
+
+	@Override
 	public void createPackage(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult buildResult)
 			throws CoreException {
@@ -63,8 +59,7 @@ public class IPhoneOSPackager extends PackageToolPackager
         	DefaultPackager intern = new DefaultPackager(project, variant);
 
             super.createPackage(project, session, variant, diff, buildResult);
-            File out = computeBuildResult(project, intern, variant);
-            buildResult.setBuildResult(IBuildResult.MAIN, out);
+            buildResult.setBuildResult(computeBuildResult(project, variant));
 
             // Notify user if we did not build the generated project and say why
             if (!XCodeBuild.isMac()) {
@@ -100,16 +95,20 @@ public class IPhoneOSPackager extends PackageToolPackager
         return shouldBuild;
 	}
 
-	private File computeBuildResult(MoSyncProject project, DefaultPackager packager, IBuildVariant variant) throws CoreException {
+	@Override
+	protected Map<String, List<File>> computeBuildResult(MoSyncProject project, IBuildVariant variant) throws CoreException {
+		DefaultPackager packager = new DefaultPackager(project, variant);
 		File xcodeProject = packager.resolveFile( "%package-output-dir%/xcode-proj" );
 		if (shouldBuildWithXcode(project, variant)) {
 			String target = getXcodeTarget(project, variant);
 			SDK sdk = getSDK(project, variant);
 			String xcodeTarget = target + "-" + sdk.getSDKType();
 			// Hm, is this always true...?
-			return packager.resolveFile(xcodeProject.getAbsolutePath() + "/build/" + xcodeTarget + "/%app-name%.app");
+			return createBuildResult(packager.resolveFile(xcodeProject.getAbsolutePath() + "/build/" + xcodeTarget + "/%app-name%.app"));
 		} else {
-			return xcodeProject;
+			Map<String, List<File>> buildResult = new HashMap<String, List<File>>();
+			buildResult.put(PROJECT_FILE, Arrays.asList(xcodeProject));
+			return buildResult;
 		}
 	}
 
