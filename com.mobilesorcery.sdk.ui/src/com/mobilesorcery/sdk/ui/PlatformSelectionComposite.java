@@ -31,11 +31,9 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.internal.expressions.AlwaysEnabledExpression;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
-import com.mobilesorcery.sdk.core.ProfileManager;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.IVendor;
 import com.mobilesorcery.sdk.profiles.Profile;
@@ -191,8 +189,7 @@ public class PlatformSelectionComposite implements Listener,
 
 		private String getProfileDescription(MoSyncProject project, IProfile profile) {
 			if (mode == MoSyncTool.LEGACY_PROFILE_TYPE) {
-				IProfile platformProfile = DeviceCapabilitiesFilter
-						.matchLegacyProfile(project, profile);
+				IProfile platformProfile = matchLegacyProfile(project, profile);
 				if (platformProfile != null) {
 					return MoSyncTool.toString(platformProfile);
 				} else {
@@ -408,10 +405,17 @@ public class PlatformSelectionComposite implements Listener,
 		if (element instanceof IProfile) {
 			IProfile profile = (IProfile) element;
 			if (mode == MoSyncTool.LEGACY_PROFILE_TYPE) {
-				profile = DeviceCapabilitiesFilter.matchLegacyProfile(project,
-						profile);
+				profile = matchLegacyProfile(project, profile);
 			}
 			currentProfile = profile;
+		}
+	}
+
+	private IProfile matchLegacyProfile(MoSyncProject project, IProfile legacyProfile) {
+		if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
+			return legacyProfile;
+		} else {
+			return DeviceCapabilitiesFilter.matchLegacyProfile(project, legacyProfile);
 		}
 	}
 

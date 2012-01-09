@@ -27,6 +27,8 @@ public class DeviceCapabilitiesFilter extends AbstractDeviceFilter {
 
 	private final static String FACTORY_ID =  DeviceCapabilitiesFilterFactory.ID;
 
+	private static DeviceCapabilitiesFilter EMPTY = new DeviceCapabilitiesFilter(new String[0], new String[0]);
+
 	private final String[] requiredCapabilities;
 	private final String[] optionalCapabilities;
 
@@ -151,16 +153,30 @@ public class DeviceCapabilitiesFilter extends AbstractDeviceFilter {
 	/**
 	 * Given a profile of the {@code MoSyncTool#LEGACY_PROFILE_TYPE} type,
 	 * returns the closest matching profile of
+	 * {@code MoSyncTool#DEFAULT_PROFILE_TYPE} for a project that does not
+	 * filter out any profiles.
+	 * @param profile
+	 * @return {@code null} If no match can be found.
+	 */
+	public static IProfile matchLegacyProfile(IProfile profile) {
+		return matchLegacyProfile(null, profile);
+	}
+
+	/**
+	 * Given a profile of the {@code MoSyncTool#LEGACY_PROFILE_TYPE} type,
+	 * returns the closest matching profile of
 	 * {@code MoSyncTool#DEFAULT_PROFILE_TYPE} for a project
 	 * @param profile
 	 * @return {@code null} If the profile would be filtered out by the project
 	 */
 	public static IProfile matchLegacyProfile(MoSyncProject project, IProfile profile) {
-		if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
-			return profile;
+		DeviceCapabilitiesFilter dcf = project == null ? null : extractFilterFromProject(project);
+		if (dcf == null) {
+			dcf = EMPTY;
 		}
-		String runtime = ProfileManager.toCanonicalRuntime(profile.getRuntime());
-		DeviceCapabilitiesFilter dcf = extractFilterFromProject(project);
+		String runtime = ProfileManager
+				.toCanonicalRuntime(profile.getRuntime());
+		dcf.initProfiles();
 		List<IProfile> profiles = dcf.profilesForRuntime.get(runtime);
 		IProfile firstMatch = profiles == null ? null : profiles.get(0);
 		IProfile mappedProfile = dcf.mapProfile(firstMatch);

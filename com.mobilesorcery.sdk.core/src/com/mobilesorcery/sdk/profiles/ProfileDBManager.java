@@ -27,6 +27,7 @@ import com.mobilesorcery.sdk.core.LineReader;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.ProfileManager;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 
 public class ProfileDBManager extends ProfileManager {
 
@@ -293,5 +294,14 @@ public class ProfileDBManager extends ProfileManager {
 
 	public ICapabilities getCapabilities(IProfile profile) {
 		return capabilitiesForProfiles.get(profile);
+	}
+
+	public static String getPlatform(IProfile profile) {
+		if (profile.getProfileType() == MoSyncTool.DEFAULT_PROFILE_TYPE) {
+			return profile.getVendor().getName();
+		} else {
+			IProfile platformProfile = DeviceCapabilitiesFilter.matchLegacyProfile(profile);
+			return platformProfile.getVendor().getName();
+		}
 	}
 }

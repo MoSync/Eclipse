@@ -45,6 +45,7 @@ import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
 import com.mobilesorcery.sdk.internal.dependencies.ResourceFileDependencyProvider;
+import com.mobilesorcery.sdk.profiles.ProfileDBManager;
 
 public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 	private ArrayList<IResource> resourceFiles = new ArrayList<IResource>();
@@ -145,7 +146,7 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 		IPath rescomp = MoSyncTool.getDefault().getBinary("rescomp");
 		IPath resourceOutput = MoSyncBuilder.getResourceOutputPath(project, getVariant());
 		IPath intermediateLstFile = resourceOutput.removeLastSegments(1).append("~tmpres.lst");
-		String platform = getVariant().getProfile().getPackager().getPlatform();
+		String platform = ProfileDBManager.getPlatform(getVariant().getProfile());
 		if (platform == null) {
 			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, MessageFormat.format("No platform defined for {0}", getVariant())));
 		}
@@ -153,7 +154,7 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 		ArrayList<String> args = new ArrayList<String>();
 		args.add(rescomp.toOSString());
 		args.add("-L");
-		args.add(platform.toLowerCase());
+		args.add(platform);
 		args.add(intermediateLstFile.removeLastSegments(1).toOSString());
 		for (String resourceFile : resourceFiles) {
 			args.add(resourceFile);
