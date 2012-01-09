@@ -996,17 +996,25 @@ public class MoSyncBuilder extends ACBuilder {
 
 
     public static boolean saveAllEditors(IResource resource) {
+    	return saveAllEditors(resource, false, false);
+    }
+
+    public static boolean saveAllEditors(IResource resource, boolean force, boolean confirm) {
         ArrayList<IResource> resourceList = new ArrayList<IResource>();
         resourceList.add(resource);
-        return saveAllEditors(resourceList);
+        return saveAllEditors(resourceList, force, confirm);
     }
 
     public static boolean saveAllEditors(final List<IResource> resources) {
+    	return saveAllEditors(resources, false, false);
+    }
+
+    public static boolean saveAllEditors(final List<IResource> resources, boolean force, final boolean confirm) {
         if (CoreMoSyncPlugin.isHeadless()) {
             return true;
         }
 
-        final boolean doSaveAll = BuildAction.isSaveAllSet();
+        final boolean doSaveAll = force || BuildAction.isSaveAllSet();
         final boolean[] result = new boolean[1];
         result[0] = true;
 
@@ -1016,7 +1024,7 @@ public class MoSyncBuilder extends ACBuilder {
 	            display.syncExec(new Runnable() {
 	                @Override
 					public void run() {
-	                    if (!IDE.saveAllEditors(resources.toArray(new IResource[0]), false)) {
+	                    if (!IDE.saveAllEditors(resources.toArray(new IResource[0]), confirm)) {
 	                        result[0] = false;
 	                    }
 	                }

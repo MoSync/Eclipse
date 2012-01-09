@@ -84,6 +84,9 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 
 			try {
                 assertNotNull(project, "No project selected");
+                // Fix for MOSYNC-569
+                MoSyncBuilder.saveAllEditors(project.getWrappedProject(), true, true);
+
 				if (phone == null) {
 					SubProgressMonitor subMonitor = new SubProgressMonitor(
 							monitor, 1);
