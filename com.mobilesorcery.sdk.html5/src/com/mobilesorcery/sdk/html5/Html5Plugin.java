@@ -1,6 +1,7 @@
 package com.mobilesorcery.sdk.html5;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import org.eclipse.core.resources.IProject;
@@ -138,8 +139,10 @@ public class Html5Plugin extends AbstractUIPlugin {
 		}
 
 		// Add HTML5 capability filter!
-		DeviceCapabilitiesFilter newFilter = DeviceCapabilitiesFilter.create(
-				new String[] { "HTML5" }, new String[0]);
+		DeviceCapabilitiesFilter oldFilter = DeviceCapabilitiesFilter.extractFilterFromProject(mosyncProject);
+		HashSet<String> newCapabilities = new HashSet<String>(oldFilter.getRequiredCapabilities());
+		newCapabilities.add("HTML5");
+		DeviceCapabilitiesFilter newFilter = DeviceCapabilitiesFilter.create(newCapabilities.toArray(new String[0]), new String[0]);
 		DeviceCapabilitiesFilter.setFilter(mosyncProject, newFilter);
 	}
 
