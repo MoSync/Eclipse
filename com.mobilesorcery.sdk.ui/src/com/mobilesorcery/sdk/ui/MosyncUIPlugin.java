@@ -582,10 +582,10 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 			int originalHeight = original.getBounds().height;
 			double aspectRatio = (double) originalWidth / (double) originalHeight;
 			double newWidth = height * aspectRatio;
-			if (newWidth > width) {
+			if (newWidth > width && width > 0) {
 				double overSizeRatio = newWidth / width;
-				newWidth = Math.floor((overSizeRatio * width));
-				height = (int) Math.floor((overSizeRatio * height));
+				newWidth = width;
+				height = (int) Math.floor(height / overSizeRatio);
 			}
 			width = (int) newWidth;
 		}
