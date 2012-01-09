@@ -64,6 +64,7 @@ import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.core.memory.LowMemoryManager;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
+import com.mobilesorcery.sdk.core.stats.Stats;
 import com.mobilesorcery.sdk.internal.ErrorPackager;
 import com.mobilesorcery.sdk.internal.PID;
 import com.mobilesorcery.sdk.internal.PROCESS;
@@ -177,11 +178,16 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         initLaunchers();
         initSecureProperties();
         initWorkspaceToken();
+        initStats();
 		getPreferenceStore().addPropertyChangeListener(this);
 		initializeOnSeparateThread();
     }
 
-    private void initSecureProperties() {
+    private void initStats() {
+		Stats.getStats().start();
+	}
+
+	private void initSecureProperties() {
 		secureProperties = new SecureProperties(new PreferenceStorePropertyOwner(getPreferenceStore()), getPasswordProvider(), null);
 	}
 
@@ -270,6 +276,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	public void stop(BundleContext context) throws Exception {
         plugin = null;
         projectDependencyManager = null;
+        Stats.getStats().stop();
         disposeUpdater();
         MoSyncProject.removeGlobalPropertyChangeListener(reindexListener);
         bpSync.uninstall();
