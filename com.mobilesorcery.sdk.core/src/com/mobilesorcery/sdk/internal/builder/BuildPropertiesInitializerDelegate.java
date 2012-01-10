@@ -108,7 +108,7 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
     		result.append("-O2");
     	}
     	if (profileManagerType == MoSyncTool.DEFAULT_PROFILE_TYPE) {
-    		result.append(" -D%platform-family% -D%platform-variant%");
+    		result.append(" -DPLATFORM_%platform-family% -DVARIANT_%platform-variant%");
     	}
     	return result.toString();
 	}
