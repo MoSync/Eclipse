@@ -2,6 +2,8 @@ package com.mobilesorcery.sdk.builder.s60;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
@@ -18,6 +20,7 @@ import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
+import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
@@ -49,16 +52,12 @@ public class V2V3Packager extends PackageToolPackager {
 	}
 
 	@Override
-	public void createPackage(MoSyncProject project, IBuildSession session,
-			IBuildVariant variant, IFileTreeDiff diff, IBuildResult buildResult)
-			throws CoreException {
+	protected Map<String, List<File>> computeBuildResult(MoSyncProject project,
+			IBuildVariant variant) throws ParameterResolverException, CoreException {
 		DefaultPackager internal = new DefaultPackager(project, variant);
 		File packageOutputDir = internal.resolveFile("%package-output-dir%"); //$NON-NLS-1$
 		String appName = internal.getParameters( ).get( DefaultPackager.APP_NAME );
-
-		super.createPackage(project, session, variant, diff, buildResult);
-		// TODO: Extract build result from packager?
-		buildResult.setBuildResult(IBuildResult.MAIN, new File(packageOutputDir, appName + resultExtension));
+		return createBuildResult(new File(packageOutputDir, appName + resultExtension));
 	}
 
 	/**
