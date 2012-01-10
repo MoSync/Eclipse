@@ -70,9 +70,9 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
     		return namespaceSegment;
         } else if (MoSyncBuilder.DEFAULT_LIBRARIES.equals(namespacedKey)) {
         	if (IBuildConfiguration.DEBUG_ID.equals(namespace)) {
-        		return PropertyUtil.fromPaths(new IPath[] { new Path("mastdD.lib") });
+        		return PropertyUtil.fromPaths(new IPath[] { new Path("mastdD.lib"), new Path("rescompilerD.lib") });
         	} else {
-        		return PropertyUtil.fromPaths(new IPath[] { new Path("mastd.lib") });
+        		return PropertyUtil.fromPaths(new IPath[] { new Path("mastd.lib"), new Path("rescompiler.lib")  });
         	}
         } else if (MoSyncBuilder.MEMORY_HEAPSIZE_KB.equals(namespacedKey)) {
         	return PropertyUtil.fromInteger(PipeTool.DEFAULT_HEAP_SIZE_KB);
