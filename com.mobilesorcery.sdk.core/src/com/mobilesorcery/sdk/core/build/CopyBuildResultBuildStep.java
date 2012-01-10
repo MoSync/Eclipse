@@ -134,7 +134,7 @@ public class CopyBuildResultBuildStep extends AbstractBuildStep {
 									.toFile();
 							Util.copy(new NullProgressMonitor(), file, dest,
 									null);
-							getConsole().addMessage(dest.getAbsolutePath());
+							getConsole().addMessage("\t" + dest.getAbsolutePath());
 						}
 					}
 					IFolder toRefresh = project.getWrappedProject().getFolder(

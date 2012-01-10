@@ -26,6 +26,7 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.Profile;
@@ -84,7 +85,9 @@ public class PackBuildStep extends AbstractBuildStep {
         	}
         	throw new IOException(MessageFormat.format("Failed to create package for {0}", targetProfile));
         } else {
-            console.addMessage(MessageFormat.format("Created package: {0} (profile: {1})", buildResult.getBuildResult(), MoSyncTool.toString(targetProfile)));
+            console.addMessage(MessageFormat.format("Created package for profile {0}:\n\t{1}",
+            		 MoSyncTool.toString(targetProfile),
+            		 Util.join(buildResult.getBuildResult().values().toArray(), "\n\t")));
         }
 
         return CONTINUE;
