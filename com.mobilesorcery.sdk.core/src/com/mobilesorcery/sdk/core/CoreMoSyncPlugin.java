@@ -274,9 +274,10 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
     @Override
 	public void stop(BundleContext context) throws Exception {
+    	// Must be here, before nulling the plugin
+        Stats.getStats().stop();
         plugin = null;
         projectDependencyManager = null;
-        Stats.getStats().stop();
         disposeUpdater();
         MoSyncProject.removeGlobalPropertyChangeListener(reindexListener);
         bpSync.uninstall();
