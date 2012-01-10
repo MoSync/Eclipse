@@ -32,8 +32,10 @@ import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 import com.mobilesorcery.sdk.builder.android.launch.ADB;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
+import com.mobilesorcery.sdk.profiles.ProfileDBManager;
 import com.mobilesorcery.sdk.profiles.filter.AbstractDeviceFilter;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransportDelegate;
@@ -42,19 +44,20 @@ import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegate {
 
 	private static final String ID = "android";
-	
+
 	static final Pattern androidPlatformRegexp = Pattern.compile("^profiles\\\\runtimes\\\\android.*");
 	private static final IDeviceFilter ANDROID_DEVICE_FILTER = new AbstractDeviceFilter() {
+		@Override
 		public boolean acceptProfile(IProfile profile) {
-			String platform = profile.getRuntime();
-			boolean match = androidPlatformRegexp.matcher(platform).matches();
-			return match;
+			return "android".equalsIgnoreCase(ProfileDBManager.getPlatform(profile));
 		}
 
+		@Override
 		public String getFactoryId() {
 			return null;
 		}
 
+		@Override
 		public void saveState(IMemento memento) {
 		}
 	};
@@ -62,31 +65,35 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 	public AndroidTargetPhoneTransport() {
 	}
 
+	@Override
 	public ITargetPhone load(IMemento memento, String name) {
 		String serialNo = memento.getString("serialno");
 		return new AndroidTargetPhone(name, serialNo, ID);
 	}
 
+	@Override
 	public boolean store(ITargetPhone phone, IMemento memento) {
 		if (phone instanceof AndroidTargetPhone) {
 			AndroidTargetPhone androidPhone = (AndroidTargetPhone) phone;
 			memento.putString("serialno", androidPhone.getSerialNumber());
-			return true;	
+			return true;
 		} else {
 			return false;
 		}
 	}
 
+	@Override
 	public ITargetPhone scan(IShellProvider shellProvider, IProgressMonitor monitor) throws CoreException {
 		final List<String> devices = ADB.getDefault().listDeviceSerialNumbers(true);
 		if (devices.size() == 0) {
 			throw new CoreException(new Status(IStatus.ERROR, TargetPhonePlugin.PLUGIN_ID, "No android devices connected"));
 		}
-		
+
 		final AndroidTargetPhone[] phone = new AndroidTargetPhone[1];
 		final Shell shell = shellProvider.getShell();
-	
+
 		shell.getDisplay().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				ListDialog dialog = new ListDialog(shell);
 				dialog.setTitle("Android Device");
@@ -103,10 +110,11 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 				}
 			}
 		});
-		
+
 		return phone[0];
 	}
 
+	@Override
 	public void send(IShellProvider shell, MoSyncProject project, ITargetPhone phone, File packageToSend, IProgressMonitor monitor)
 			throws CoreException {
 		if (phone instanceof AndroidTargetPhone) {
@@ -120,14 +128,17 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 		}
 	}
 
+	@Override
 	public String getDescription(String context) {
 		return "Android USB";
 	}
 
+	@Override
 	public boolean isAvailable() {
 		return ADB.getDefault().isValid();
 	}
 
+	@Override
 	public IDeviceFilter getAcceptedProfiles() {
 		return ANDROID_DEVICE_FILTER;
 	}
