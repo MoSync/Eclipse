@@ -91,7 +91,7 @@ public class FinalizerParser {
 		int lineNo = 1;
 		LineNumberReader lines = new LineNumberReader(script);
 		for (String line = lines.readLine(); line != null; line = lines.readLine()) {
-			IProfile profileToBuild = parse(line, lineNo);
+			IProfile profileToBuild = parse(project, line, lineNo);
 			if (profileToBuild != null) {
 			    IBuildConfiguration cfg = this.cfgId == null ? project.getActiveBuildConfiguration() : project.getBuildConfiguration(cfgId);
 				IBuildVariant variant = MoSyncBuilder.getVariant(project, profileToBuild, cfg);
@@ -108,7 +108,7 @@ public class FinalizerParser {
 		buildJob.run(monitor);
 	}
 
-	private IProfile parse(String line, int lineNo) throws ParseException {
+	private IProfile parse(MoSyncProject project, String line, int lineNo) throws ParseException {
 		if (line.trim().length() == 0 || line.trim().startsWith("#")) { //$NON-NLS-1$
 			return null;
 		}
@@ -119,7 +119,7 @@ public class FinalizerParser {
 			String vendorName = m.group(1).trim();
 			String profileName = m.group(2).trim();
 
-			IVendor vendor = MoSyncTool.getDefault().getVendor(vendorName);
+			IVendor vendor = project.getProfileManager().getVendor(vendorName);
 			if (vendor == null) {
 				throw new ParseException(MessageFormat.format(Messages.FinalizerParser_ParseError_UnknownVender, vendorName), lineNo);
 			}

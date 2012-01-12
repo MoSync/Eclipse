@@ -42,7 +42,7 @@ public class ProfileFilter extends AbstractDeviceFilter {
 
     public void setVendors(String[] vendorNames) {
         for (int i = 0; i < vendorNames.length; i++) {
-            setVendor(MoSyncTool.getDefault().getVendor(vendorNames[i]), true);
+            setVendor(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE).getVendor(vendorNames[i]), true);
         }
     }
 

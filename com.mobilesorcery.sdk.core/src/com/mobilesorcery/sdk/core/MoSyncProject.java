@@ -358,7 +358,6 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			formatVersion = formatVersionStr == null ? VERSION_1_0
 					: new Version(formatVersionStr);
 
-			initTargetProfileFromProjectMetaData(memento);
 			// Special case; device filters are always shared.
 			if (store == SHARED_PROPERTY) {
 				deviceFilter = CompositeDeviceFilter.read(memento);
@@ -368,6 +367,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 
 			initProperties(initPropertiesFromProjectMetaData(memento), store);
 
+			initTargetProfileFromProjectMetaData(memento);
 		} catch (Exception e) {
 			CoreMoSyncPlugin.getDefault().log(e);
 		} finally {
@@ -452,8 +452,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		if (targetMemento != null) {
 			String vendorName = targetMemento.getString(VENDOR_KEY);
 			String profileName = targetMemento.getString(PROFILE_KEY);
-			IVendor vendor = vendorName == null ? null : MoSyncTool
-					.getDefault().getVendor(vendorName);
+			IVendor vendor = vendorName == null ? null : getProfileManager().getVendor(vendorName);
 			if (vendor != null) {
 				IProfile targetProfile = vendor.getProfile(profileName);
 				if (targetProfile != null) {

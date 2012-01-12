@@ -409,10 +409,6 @@ public class MoSyncTool {
 		return getMoSyncHome().append("etc").append("config.xml");
 	}
 
-	public IVendor getVendor(String vendorName) {
-		return getProfileManager(profileManagerType).getVendor(vendorName);
-	}
-
 	public IPath getVendorsPath() {
 		IPath profiles = getProfilesPath();
 		return profiles.append("vendors");

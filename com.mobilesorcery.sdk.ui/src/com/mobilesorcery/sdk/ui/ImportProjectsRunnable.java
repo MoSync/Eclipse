@@ -78,8 +78,8 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 	public final static int DO_NOT_COPY = 2;
 
 	/**
-	 * A constant indicating we should use the .mosyncproject file (if it exists)
-	 * rather than the legacy .msp/.mopro file format.
+	 * A constant indicating we should use the .mosyncproject file (if it
+	 * exists) rather than the legacy .msp/.mopro file format.
 	 */
 	public final static int USE_NEW_PROJECT_IF_AVAILABLE = 1 << 12;
 
@@ -92,87 +92,90 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 	};
 
 	private final File[] projectDescriptions;
-    private final String[] preferredProjectNames;
+	private final String[] preferredProjectNames;
 	private Map<String, String> keyMap;
 	private final int copyStrategy;
 	private final boolean useNewProjectIfAvailable;
 	private final List<IProject> result;
-    private boolean showDialogOnSuccess = false;
+	private boolean showDialogOnSuccess = false;
 
-    public ImportProjectsRunnable(File[] projectDescriptions, int strategy) {
-        this(projectDescriptions, null, strategy, null);
-    }
+	public ImportProjectsRunnable(File[] projectDescriptions, int strategy) {
+		this(projectDescriptions, null, strategy, null);
+	}
 
-    public ImportProjectsRunnable(File[] projectDescriptions, String[] preferredProjectNames, int strategy) {
-        this(projectDescriptions, preferredProjectNames, strategy, null);
-    }
+	public ImportProjectsRunnable(File[] projectDescriptions,
+			String[] preferredProjectNames, int strategy) {
+		this(projectDescriptions, preferredProjectNames, strategy, null);
+	}
 
-    public ImportProjectsRunnable(File[] projectDescriptions, int strategy, List<IProject> result) {
-        this(projectDescriptions, null, strategy, result);
-    }
+	public ImportProjectsRunnable(File[] projectDescriptions, int strategy,
+			List<IProject> result) {
+		this(projectDescriptions, null, strategy, result);
+	}
 
-    public ImportProjectsRunnable(File[] projectDescriptions, String[] preferredProjectNames, int strategy, List<IProject> result) {
-    	this.projectDescriptions = projectDescriptions;
-    	this.preferredProjectNames = preferredProjectNames;
+	public ImportProjectsRunnable(File[] projectDescriptions,
+			String[] preferredProjectNames, int strategy, List<IProject> result) {
+		this.projectDescriptions = projectDescriptions;
+		this.preferredProjectNames = preferredProjectNames;
 		this.copyStrategy = strategy & 0x3; // Max value of copy strategies.
 		this.useNewProjectIfAvailable = (strategy & USE_NEW_PROJECT_IF_AVAILABLE) == USE_NEW_PROJECT_IF_AVAILABLE;
 		this.result = result == null ? new ArrayList<IProject>() : result;
 	}
 
-    /**
-     * Temporary fix for using the new copy filter only when
-     * importing from the welcome screen.
-     */
-    public void useNewCopyFilter()
-    {
-    	copyFilter = new FileFilter() {
-    		@Override
+	/**
+	 * Temporary fix for using the new copy filter only when importing from the
+	 * welcome screen.
+	 */
+	public void useNewCopyFilter() {
+		copyFilter = new FileFilter() {
+			@Override
 			public boolean accept(File file) {
-    			String name = file.getName();
-    			return !name.equals(".project") && !name.equals(".cproject"); //$NON-NLS-1$ //$NON-NLS-2$
-    		}
-    	};
-    }
-
-	public Job createJob(boolean schedule) {
-	    Job importJob = new Job("Import projects") {
-            @Override
-			protected IStatus run(IProgressMonitor monitor) {
-                try {
-                    execute(monitor);
-                    if (showDialogOnSuccess) {
-                       showImportSuccessDialog(result.size());
-                    }
-                    return Status.OK_STATUS;
-                } catch (CoreException e) {
-                    return e.getStatus();
-                }
-            }
-	    };
-
-	    importJob.setUser(true);
-	    importJob.setRule(ResourcesPlugin.getWorkspace().getRoot());
-	    if (schedule) {
-	        importJob.schedule();
-	    }
-	    return importJob;
+				String name = file.getName();
+				return !name.equals(".project") && !name.equals(".cproject"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+		};
 	}
 
-    private void showImportSuccessDialog(final int newProjectCount) {
-        if (newProjectCount > 0) {
-            final Display d = PlatformUI.getWorkbench().getDisplay();
-            d.syncExec(new Runnable() {
-                @Override
+	public Job createJob(boolean schedule) {
+		Job importJob = new Job("Import projects") {
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				try {
+					execute(monitor);
+					if (showDialogOnSuccess) {
+						showImportSuccessDialog(result.size());
+					}
+					return Status.OK_STATUS;
+				} catch (CoreException e) {
+					return e.getStatus();
+				}
+			}
+		};
+
+		importJob.setUser(true);
+		importJob.setRule(ResourcesPlugin.getWorkspace().getRoot());
+		if (schedule) {
+			importJob.schedule();
+		}
+		return importJob;
+	}
+
+	private void showImportSuccessDialog(final int newProjectCount) {
+		if (newProjectCount > 0) {
+			final Display d = PlatformUI.getWorkbench().getDisplay();
+			d.syncExec(new Runnable() {
+				@Override
 				public void run() {
-                    Shell shell = new Shell(d);
-                    MessageDialog.openInformation(new Shell(d),
-                            "Imported Example Projects",
-                            MessageFormat.format("Imported {0} example projects", newProjectCount));
-                    shell.dispose();
-                }
-            });
-        }
-    }
+					Shell shell = new Shell(d);
+					MessageDialog.openInformation(new Shell(d),
+							"Imported Example Projects", MessageFormat.format(
+									"Imported {0} example projects",
+									newProjectCount));
+					shell.dispose();
+				}
+			});
+		}
+	}
 
 	@Override
 	protected void execute(IProgressMonitor monitor) throws CoreException {
@@ -186,17 +189,20 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 				return;
 			}
 			try {
-				importProject(monitor, getPreferredProjectName(i), projectDescriptions[i]);
+				importProject(monitor, getPreferredProjectName(i),
+						projectDescriptions[i]);
 			} catch (Exception e) {
-				errorStatus.add(new Status(IStatus.ERROR, MosyncUIPlugin.PLUGIN_ID,
-						projectDescriptions[i] + "; " + e.getMessage(), e));
+				errorStatus.add(new Status(IStatus.ERROR,
+						MosyncUIPlugin.PLUGIN_ID, projectDescriptions[i] + "; "
+								+ e.getMessage(), e));
 				CoreMoSyncPlugin.getDefault().log(e);
 			}
 		}
 
 		if (!errorStatus.isEmpty()) {
-			MultiStatus compoundError = new MultiStatus(MosyncUIPlugin.PLUGIN_ID,
-					IStatus.ERROR, errorStatus.toArray(new IStatus[0]),
+			MultiStatus compoundError = new MultiStatus(
+					MosyncUIPlugin.PLUGIN_ID, IStatus.ERROR,
+					errorStatus.toArray(new IStatus[0]),
 					Messages.ImportProjectsRunnable_SomeProjectsFailed, null);
 			CoreException ex = new CoreException(compoundError);
 			CoreMoSyncPlugin.getDefault().log(ex);
@@ -205,25 +211,35 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 	}
 
 	private String getPreferredProjectName(int ix) {
-	    if (preferredProjectNames == null || ix < 0 || ix >= preferredProjectNames.length) {
-	        return null;
-	    } else {
-	        return preferredProjectNames[ix];
-	    }
-    }
+		if (preferredProjectNames == null || ix < 0
+				|| ix >= preferredProjectNames.length) {
+			return null;
+		} else {
+			return preferredProjectNames[ix];
+		}
+	}
 
-    private void importProject(IProgressMonitor monitor, String preferredProjectName, File projectDescription)
+	private void importProject(IProgressMonitor monitor,
+			String preferredProjectName, File projectDescription)
 			throws CoreException {
 		if (projectDescription.isDirectory()) {
-			throw new CoreException(new Status(IStatus.ERROR, MosyncUIPlugin.PLUGIN_ID, "Project description must not be a directory"));
+			throw new CoreException(new Status(IStatus.ERROR,
+					MosyncUIPlugin.PLUGIN_ID,
+					"Project description must not be a directory"));
 		}
 
-		/*if (shouldUseNewFormatIfAvailable() && copyStrategy != COPY_ALL_FILES) {
-			throw new CoreException(new Status(IStatus.ERROR, MosyncUIPlugin.PLUGIN_ID, "\'Use new format if available\' can only be used with copy all files"));
-		}*/
+		/*
+		 * if (shouldUseNewFormatIfAvailable() && copyStrategy !=
+		 * COPY_ALL_FILES) { throw new CoreException(new Status(IStatus.ERROR,
+		 * MosyncUIPlugin.PLUGIN_ID,
+		 * "\'Use new format if available\' can only be used with copy all files"
+		 * )); }
+		 */
 
 		monitor = new SubProgressMonitor(monitor, 4);
-		String projectName = preferredProjectName == null ? Util.getNameWithoutExtension(projectDescription) : preferredProjectName;
+		String projectName = preferredProjectName == null ? Util
+				.getNameWithoutExtension(projectDescription)
+				: preferredProjectName;
 
 		IPath projectMetaDataLocation = getProjectMetaDataLocation(projectDescription);
 
@@ -238,15 +254,20 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
 
 		if (!shouldUseNewFormatIfAvailable() || projectMetaDataLocation == null) {
-			parseProjectDescription(new SubProgressMonitor(monitor, 1), mosyncProject, projectDescription);
+			parseProjectDescription(new SubProgressMonitor(monitor, 1),
+					mosyncProject, projectDescription);
 		} else if (shouldCopy()) {
-			copyFilesToProject(monitor, mosyncProject, projectDescription, new String[] { projectMetaDataLocation.toFile().getParent() });
+			copyFilesToProject(
+					monitor,
+					mosyncProject,
+					projectDescription,
+					new String[] { projectMetaDataLocation.toFile().getParent() });
 		}
 
-		// And we will have to re-initialize in case there is a .mosyncproject file
+		// And we will have to re-initialize in case there is a .mosyncproject
+		// file
 		// available.
-		MoSyncProject.create(project,
-				projectMetaDataLocation);
+		MoSyncProject.create(project, projectMetaDataLocation);
 
 		project.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(
 				monitor, 1));
@@ -260,16 +281,15 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		File projectMetaDataFile = new File(projectDescription.getParentFile(),
 				MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME);
 		return projectMetaDataFile.exists() && shouldUseNewFormatIfAvailable() ? new Path(
-				projectMetaDataFile.getAbsolutePath())
-				: null;
+				projectMetaDataFile.getAbsolutePath()) : null;
 	}
 
 	public boolean shouldUseNewFormatIfAvailable() {
 		return useNewProjectIfAvailable;
 	}
 
-	public IProject createProjectWithUniqueName(String projectName, URI location,
-			IProgressMonitor monitor) throws CoreException {
+	public IProject createProjectWithUniqueName(String projectName,
+			URI location, IProgressMonitor monitor) throws CoreException {
 		String newProjectName = projectName;
 		IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace().getRoot();
 		IProject result = workspaceRoot.getProject(projectName);
@@ -335,6 +355,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 
 			if (targetVendor != null && targetDevice != null) {
 				IVendor vendor = MoSyncTool.getDefault()
+						.getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE)
 						.getVendor(targetVendor);
 				if (vendor != null) {
 					IProfile profile = vendor.getProfile(targetDevice);
@@ -351,8 +372,8 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 
 			if (!success) {
 				throw new IOException(MessageFormat.format(
-						Messages.ImportProjectsRunnable_ImportFailed, project
-								.getName()));
+						Messages.ImportProjectsRunnable_ImportFailed,
+						project.getName()));
 			}
 
 		} catch (Exception e) {
@@ -401,8 +422,8 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 							path);
 					File copyDest = projectFile.getLocation().toFile();
 					try {
-						Util.copy(new SubProgressMonitor(monitor, 1),
-								copySrc, copyDest, copyFilter);
+						Util.copy(new SubProgressMonitor(monitor, 1), copySrc,
+								copyDest, copyFilter);
 					} catch (IOException e) {
 						e.printStackTrace();
 						success = false;
@@ -453,25 +474,18 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		Map<String, String> result = new HashMap<String, String>();
 
 		// Builder
-		result
-				.put(
-						"ignoreDefaultIncludeDirectories", MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS); //$NON-NLS-1$
-		result
-				.put(
-						"ignoreDefaultLibraryDirectories", MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS); //$NON-NLS-1$
-		result
-				.put(
-						"ignoreDefaultLibraries", MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES); //$NON-NLS-1$
+		result.put(
+				"ignoreDefaultIncludeDirectories", MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS); //$NON-NLS-1$
+		result.put(
+				"ignoreDefaultLibraryDirectories", MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS); //$NON-NLS-1$
+		result.put(
+				"ignoreDefaultLibraries", MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES); //$NON-NLS-1$
 
-		result
-				.put(
-						"additionalIncludeDirectories", MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS); //$NON-NLS-1$
-		result
-				.put(
-						"additionalLibraryDirectories", MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS); //$NON-NLS-1$
-		result
-				.put(
-						"additionalDependencies", MoSyncBuilder.ADDITIONAL_LIBRARIES); //$NON-NLS-1$
+		result.put(
+				"additionalIncludeDirectories", MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS); //$NON-NLS-1$
+		result.put(
+				"additionalLibraryDirectories", MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS); //$NON-NLS-1$
+		result.put("additionalDependencies", MoSyncBuilder.ADDITIONAL_LIBRARIES); //$NON-NLS-1$
 
 		result.put("extraCmd", MoSyncBuilder.EXTRA_COMPILER_SWITCHES); //$NON-NLS-1$
 		result.put("deadCodeElim", MoSyncBuilder.DEAD_CODE_ELIMINATION); //$NON-NLS-1$
@@ -485,7 +499,8 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		// Symbian
 		// NOTE: Changed link time dependency to s60 plugin, since
 		// we do not want that dependency. Also, we will kill this
-		// class soon (or, at least put it in some legacy plugin), so no problem.
+		// class soon (or, at least put it in some legacy plugin), so no
+		// problem.
 		//result.put("S60v2UID", PropertyInitializer.S60V2_UID); //$NON-NLS-1$
 		//result.put("S60v3UID", PropertyInitializer.S60V3_UID); //$NON-NLS-1$
 		result.put("S60v2UID", "symbian.uids:s60v2uid"); //$NON-NLS-1$
@@ -586,6 +601,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 				ProfileFilter requiredVendorFilter = new ProfileFilter();
 				requiredVendorFilter.setStyle(ProfileFilter.REQUIRE);
 				requiredVendorFilter.setVendor(MoSyncTool.getDefault()
+						.getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE)
 						.getVendor(requiredVendor), true);
 				filter.addFilter(requiredVendorFilter);
 			}
@@ -594,6 +610,7 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 				ProfileFilter disallowedVendorFilter = new ProfileFilter();
 				disallowedVendorFilter.setStyle(ProfileFilter.DISALLOW);
 				disallowedVendorFilter.setVendor(MoSyncTool.getDefault()
+						.getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE)
 						.getVendor(disallowedVendor), true);
 				filter.addFilter(disallowedVendorFilter);
 			}
@@ -677,8 +694,8 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 
 	}
 
-    public void setShowDialogOnSuccess(boolean showDialogOnSuccess) {
-        this.showDialogOnSuccess = showDialogOnSuccess;
-    }
+	public void setShowDialogOnSuccess(boolean showDialogOnSuccess) {
+		this.showDialogOnSuccess = showDialogOnSuccess;
+	}
 
 }
