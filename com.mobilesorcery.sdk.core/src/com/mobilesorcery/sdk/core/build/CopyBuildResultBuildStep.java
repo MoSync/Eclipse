@@ -18,6 +18,7 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
@@ -139,6 +140,7 @@ public class CopyBuildResultBuildStep extends AbstractBuildStep {
 					}
 					IFolder toRefresh = project.getWrappedProject().getFolder(
 							prototype.getFolderName());
+					MoSyncBuilder.ensureFolderIsMarkedDerived(toRefresh);
 					toRefresh.refreshLocal(IResource.DEPTH_INFINITE, monitor);
 				} else {
 					getConsole()

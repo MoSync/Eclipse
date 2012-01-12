@@ -46,9 +46,9 @@ import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
  * <p>
  * It has support for aggregating changed, added, and deleted resources.
  * </p>
- * 
+ *
  * @author Mattias Bybro
- * 
+ *
  */
 public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 
@@ -61,11 +61,13 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	private IDependencyProvider<IResource> dependencyProvider;
 	private ParameterResolver resolver;
 
+	@Override
 	public boolean visit(IResource resource) throws CoreException {
-		if (doesAffectBuild(resource)) {
+		boolean isDerived = resource.isDerived();
+		if (!isDerived && doesAffectBuild(resource)) {
 			changedOrAddedResources.add(resource);
 		}
-		return !resource.isDerived();
+		return !isDerived;
 	}
 
 	public void addChangedOrAddedResources(IResource[] changedOrAddedResources) {
@@ -74,7 +76,7 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 			addChangedOrAddedResource(resource);
 		}
 	}
-	
+
 	public void addChangedOrAddedResource(IResource changedOrAddedResource) {
         if (doesAffectBuild(changedOrAddedResource)) {
             this.changedOrAddedResources.add(changedOrAddedResource);
@@ -87,7 +89,7 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
             addDeletedResource(resource);
         }
     }
-    
+
     public void addDeletedResource(IResource deletedResource) {
         if (doesAffectBuild(deletedResource)) {
             this.deletedResources.add(deletedResource);
@@ -143,18 +145,18 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	public void setProject(IProject project) {
 		this.project = project;
 	}
-	
+
 	public IProject getProject() {
 	    return project;
 	}
-	
+
 	public void setConsole(IProcessConsole console) {
 		this.console = console;
 	}
 
 	/**
 	 * Sets the resources delta, which is used to produce change sets.
-	 * 
+	 *
 	 * @param delta
 	 *            May be null, which indicates a full build and in which case a
 	 *            full visit is performed
@@ -179,12 +181,12 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	/**
 	 * Checks whether a resource affects this visitor's build process; if not,
 	 * then it will not show up as a changed, added or deleted resource.
-	 * 
+	 *
 	 * @param resource
 	 * @return
 	 */
 	public boolean doesAffectBuild(IResource resource) {
-	    if (resource == null) {
+	    if (resource == null || resource.isDerived() || MoSyncBuilder.isInOutput(resource.getProject(), resource)) {
 	        return false;
 	    }
 		// TODO: Make this much faster!
@@ -211,7 +213,7 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	public boolean isBuildable(IResource resource) {
 		return doesAffectBuild(resource);
 	}
-	
+
 	public Set<IResource> computeResourcesToRebuild(
 			DependencyManager<IResource> dependencies) {
 		Set<IResource> recompileThese = new HashSet<IResource>(
@@ -237,46 +239,46 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 				result.add(recompileThis);
 			}
 		}
-		
+
 		return result;
 	}
 
 	public void setVariant(IBuildVariant variant) {
 		this.variant = variant;
 	}
-	
+
 	protected IBuildVariant getVariant() {
 	    return variant;
 	}
-	
+
 	public IPropertyOwner getBuildProperties() {
 		return MoSyncBuilder.getPropertyOwner(MoSyncProject.create(project), variant.getConfigurationId());
 	}
-	
+
 	public void setResourceFilter(IFilter<IResource> resourceFilter) {
 		this.resourceFilter = resourceFilter;
 	}
-	
+
 	public void setDependencyProvider(IDependencyProvider<IResource> dependencyProvider) {
 		this.dependencyProvider = dependencyProvider;
 	}
-	
+
 	public IDependencyProvider<IResource> getDependencyProvider() {
 		return dependencyProvider;
 	}
-	
+
 	public void setParameterResolver(ParameterResolver resolver) {
 		this.resolver = resolver;
 	}
-	
+
 	protected ParameterResolver getParameterResolver() {
 		return resolver;
 	}
-	
+
 	protected void resolvePaths(IPath[] paths) throws ParameterResolverException {
 		MoSyncBuilder.resolvePaths(paths, resolver);
 	}
-	
+
 	protected String resolve(String value) throws ParameterResolverException {
 		return Util.replace(value, resolver);
 	}

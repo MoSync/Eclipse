@@ -248,7 +248,11 @@ public class MoSyncBuilder extends ACBuilder {
      */
     public static boolean isInOutput(IProject project, IResource res) {
     	IPath projectRelativePath = res.getProjectRelativePath();
-    	return new Path(OUTPUT).isPrefixOf(projectRelativePath);
+    	MoSyncProject mosyncProject = MoSyncProject.create(project);
+    	String outputFolder = IsReleasePackageTester.getReleasePackageFolder(mosyncProject);
+    	boolean isOutputFolder = outputFolder != null && new Path(outputFolder).isPrefixOf(projectRelativePath);
+    	boolean isLegacyOutputFolder = new Path(OUTPUT).isPrefixOf(projectRelativePath);
+    	return  isLegacyOutputFolder || isOutputFolder;
     }
 
     /**
@@ -712,7 +716,7 @@ public class MoSyncBuilder extends ACBuilder {
         }
     }
 
-    private void ensureFolderExists(IFolder folder) throws CoreException {
+    private static void ensureFolderExists(IFolder folder) throws CoreException {
         if (!folder.exists()) {
             if (!folder.getParent().exists() && folder.getParent().getType() == IResource.FOLDER) {
                 ensureFolderExists((IFolder) folder.getParent());
@@ -721,7 +725,7 @@ public class MoSyncBuilder extends ACBuilder {
         }
     }
 
-    private void ensureFolderIsMarkedDerived(IFolder folder) throws CoreException {
+    public static void ensureFolderIsMarkedDerived(IFolder folder) throws CoreException {
         ensureFolderExists(folder);
 
         if (!folder.isDerived()) {

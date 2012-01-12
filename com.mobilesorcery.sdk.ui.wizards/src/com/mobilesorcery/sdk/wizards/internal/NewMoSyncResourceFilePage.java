@@ -27,19 +27,20 @@ public class NewMoSyncResourceFilePage extends WizardNewFileCreationPage {
 
     public NewMoSyncResourceFilePage(String pageName, IStructuredSelection selection) {
         super(pageName, selection);
-        setFileExtension("lst");
+        setFileExtension("lstx");
     }
-   
-    public InputStream getInitialContents() {
+
+    @Override
+	public InputStream getInitialContents() {
         ITemplate template = Activator.getDefault().getTemplate(Activator.RESOURCE_TEMPLATE_ID);
         String templateContents = ""; // Empty file, worst case.
-        
+
         try {
             templateContents = template.resolve(null);
         } catch (IOException e) {
             // Ignore.
         }
-        
+
         return new ByteArrayInputStream(templateContents.getBytes());
     }
 

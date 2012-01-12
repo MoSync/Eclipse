@@ -33,21 +33,30 @@ public class IsReleasePackageTester extends MoSyncNatureTester {
 		if (receiver instanceof IResource) {
 			project = MoSyncProject.create(((IResource) receiver).getProject());
 		}
-		if (project != null && receiver instanceof IFolder) {
+		if (receiver instanceof IFolder) {
 			IFolder folder = (IFolder) receiver;
 			// Only top-level
 			if (folder.getProjectRelativePath().segmentCount() == 1) {
-				BuildSequence seq = new BuildSequence(project);
-				List<CopyBuildResultBuildStep.Factory> factories = seq
-						.getBuildStepFactories(CopyBuildResultBuildStep.Factory.class);
-				for (CopyBuildResultBuildStep.Factory factory : factories) {
-					String folderName = factory.getFolderName();
-					if (folderName.equalsIgnoreCase(folder.getName())) {
-						return true;
-					}
+				String folderName = getReleasePackageFolder(project);
+				if (Util.equals(folderName.toLowerCase(), folder.getName()
+						.toLowerCase())) {
+					return true;
 				}
 			}
 		}
 		return false;
+	}
+
+	public static String getReleasePackageFolder(MoSyncProject project) {
+		if (project != null) {
+			BuildSequence seq = BuildSequence.getCached(project);
+			List<CopyBuildResultBuildStep.Factory> factories = seq
+					.getBuildStepFactories(CopyBuildResultBuildStep.Factory.class);
+			for (CopyBuildResultBuildStep.Factory factory : factories) {
+				String folderName = factory.getFolderName();
+				return folderName;
+			}
+		}
+		return null;
 	}
 }

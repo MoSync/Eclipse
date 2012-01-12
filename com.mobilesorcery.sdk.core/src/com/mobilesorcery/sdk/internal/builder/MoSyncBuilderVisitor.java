@@ -12,7 +12,7 @@
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
 */
 /**
- * 
+ *
  */
 package com.mobilesorcery.sdk.internal.builder;
 
@@ -52,16 +52,16 @@ import com.mobilesorcery.sdk.internal.dependencies.ResourceFileDependencyProvide
 public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
     private static final String GCC_WALL_STR = "-Wall";
-    
+
     private static final String GCC_WEXTRA_STR = "-Wextra";
-    
+
     private static final String GCC_WERROR_STR = "-Werror";
 
     /**
      * The standard extensions for C/C++ files
      */
     public static final String[] C_SOURCE_FILE_EXTS = new String[] { "cpp", "c++", "c" };
-    
+
     /**
      * The standard extensions for C++ files (no C file extensions)
      */
@@ -70,7 +70,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     public static final String[] C_HEADER_FILE_EXTS = new String[] { "hpp", "h++", "h" };
 
     public static final String[] CPP_HEADER_FILE_EXTS = new String[] { "hpp", "h++" };
-    
+
     public static final String[] RESOURCE_FILE_EXTS = new String[] { "lst" };
 
     public MoSyncBuilderVisitor() {
@@ -88,7 +88,8 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
 	private CompoundDependencyProvider<IResource> dependencyProvider;
 
-    public boolean visit(IResource resource) throws CoreException {
+    @Override
+	public boolean visit(IResource resource) throws CoreException {
     	boolean shouldVisitChildren = super.visit(resource);
     	if (isBuildable(resource)) {
 	        IFile cFile = getCFile(resource, false);
@@ -96,7 +97,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 	            objectFiles.add(mapFileToOutput(cFile).toOSString());
 	        }
     	}
-        
+
         return shouldVisitChildren;
     }
 
@@ -104,19 +105,19 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
      * Performs an incremental compile; either setChangedOrAddedResources
      * and setDeletedResources must have been called, or a project must
      * have been visited by this visitor (visit method)
-     * @param monitor 
+     * @param monitor
      * @throws CoreException
-     * @throws ParameterResolverException 
+     * @throws ParameterResolverException
      */
     public void incrementalCompile(IProgressMonitor monitor, DependencyManager<IResource> dependencies, DependencyManager.Delta<IResource> delta) throws CoreException, ParameterResolverException {
     	Set<IResource> recompileThese = computeResourcesToRebuild(dependencies);
-    	
+
         IResource[] deletedResources = this.deletedResources.toArray(new IResource[0]);
         for (int i = 0; i < deletedResources.length; i++) {
             if (monitor.isCanceled()) {
                 return;
             }
-            
+
             if (shouldBuild(deletedResources[i])) {
             	deleteBuildResult(deletedResources[i], dependencies);
             }
@@ -129,7 +130,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             if (shouldBuild(recompileThis)) {
             	compile(recompileThis, delta);
             }
-        }        
+        }
     }
 
     private boolean shouldBuild(IResource recompileThis) {
@@ -151,7 +152,9 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
     /**
      * Returns a cast resource if the resource is a c source file,
-     * otherwise null.
+     * otherwise null. If the resource is a derived resource
+     * (such as for example generated C files), {@code null} is
+     * returned
      * @param res
      * @param if true, also header files are included in the filtering
      * @return
@@ -160,7 +163,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
         if (hasExtension(resource, C_SOURCE_FILE_EXTS)) {
             return (IFile) resource;
         }
-        
+
         if (header && hasExtension(resource, C_HEADER_FILE_EXTS)) {
             return (IFile) resource;
         }
@@ -168,7 +171,8 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
         return null;
     }
 
-    public boolean doesAffectBuild(IResource resource) {
+    @Override
+	public boolean doesAffectBuild(IResource resource) {
         return (MoSyncBuilderVisitor.hasExtension(resource, MoSyncBuilderVisitor.C_SOURCE_FILE_EXTS) ||
                 MoSyncBuilderVisitor.hasExtension(resource, MoSyncBuilderVisitor.C_HEADER_FILE_EXTS) ||
                 MoSyncBuilderVisitor.hasExtension(resource, MoSyncBuilderVisitor.RESOURCE_FILE_EXTS)) && super.doesAffectBuild(resource);
@@ -189,12 +193,12 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
                 if (extensions[i].equalsIgnoreCase(ext)) {
                     return true;
                 }
-            }        
+            }
         }
-        
+
         return false;
     }
-    
+
     public void compile(IResource resource, DependencyManager.Delta<IResource> dependenciesDelta) throws CoreException, ParameterResolverException {
     	if (!CoreMoSyncPlugin.isHeadless()) {
     		MoSyncBuilder.clearCMarkers(resource);
@@ -211,11 +215,11 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
             MoSyncProject project = MoSyncProject.create(resource.getProject());
             List<IPath> includePaths = new ArrayList<IPath>(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, getVariant())));
-            
+
 			// TODO: Too much 'secret sauce' here; add special dialogs for this instead,
-			// like JDT/CDT, to allow user to control this better. Like %output%?			
+			// like JDT/CDT, to allow user to control this better. Like %output%?
             includePaths.add(outputPath);
-            
+
             String[] includeStr = assembleIncludeString(includePaths.toArray(new IPath[0]));
 
             ArrayList<String> args = new ArrayList<String>();
@@ -224,13 +228,13 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             args.add(output.toOSString());
             args.add("-S");
             args.add("-g");
-            
+
             if (generateDependencies) {
             	args.add("-MMD");
             	args.add("-MF");
             	args.add(mapToDependencyFile(output.toOSString()));
             }
-            
+
             addGccWarnings(args);
             args.add("-DMAPIP");
             String[] extra = extraSwitches == null ? new String[0] : Util.parseCommandLine(resolve(extraSwitches));
@@ -243,7 +247,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
             String argsAsArray[] = new String[args.size()];
             args.toArray(argsAsArray);
-            
+
             // Display invocation in console
             String cmdLine = Util.join(argsAsArray, " ");
             console.addMessage(cmdLine);
@@ -260,19 +264,19 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
                     if (buildResult != null) {
                         buildResult.addError("Failed to compile " + cFile.getLocation());
                     }
-                }               
+                }
                 compileCount ++;
             } catch (Exception e) {
                 throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
-            }     
+            }
         }
-        
+
         if (dependenciesDelta != null) {
         	dependenciesDelta.addDependencies(resource, getDependencyProvider());
         }
 
     }
-    
+
 	public static String mapToDependencyFile(String filename) {
     	 return filename + ".deps";
     }
@@ -280,16 +284,16 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 	public void setGenerateDependencies(boolean generateDependencies) {
     	this.generateDependencies = generateDependencies;
     }
-    
+
     private void addGccWarnings(List<String> args) {
         if ((gccWarnings & MoSyncBuilder.GCC_WALL) != 0) {
             args.add(GCC_WALL_STR);
         }
-        
+
         if ((gccWarnings & MoSyncBuilder.GCC_WEXTRA) != 0) {
             args.add(GCC_WEXTRA_STR);
         }
-        
+
         if ((gccWarnings & MoSyncBuilder.GCC_WERROR) != 0) {
             args.add(GCC_WERROR_STR);
         }
@@ -312,23 +316,23 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     public IPath mapFileToOutput(IResource file) {
     	return mapFileToOutput(file, outputPath);
     }
-    
+
     public static IPath mapFileToOutput(IResource file, IPath outputPath) {
         String name = file.getName();
         String newName = Util.replaceExtension(name, "s");
-        return outputPath.append(newName);    	
+        return outputPath.append(newName);
     }
 
     public String[] getObjectFilesForProject(IProject project) throws CoreException {
         objectFiles = new ArrayList<String>();
-        project.accept(this);        
-        return (String[]) objectFiles.toArray(new String[0]);
+        project.accept(this);
+        return objectFiles.toArray(new String[0]);
     }
 
     public int getErrorCount() {
         return errors;
     }
-    
+
     public int getCompileCount() {
     	return compileCount;
     }

@@ -16,6 +16,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.XMLMemento;
 
+import com.mobilesorcery.sdk.core.Cache;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -27,9 +28,31 @@ public class BuildSequence implements IBuildSequence {
 	private ArrayList<IBuildStepFactory> buildStepFactories = new ArrayList<IBuildStepFactory>();
 	private ArrayList<IBuildStep> buildSteps;
 
+	// Can leak max 8 prjs.
+	private static Cache<MoSyncProject, BuildSequence> cache = new Cache<MoSyncProject, BuildSequence> (8);
+
 	public BuildSequence(MoSyncProject project) {
 		this.project = project;
 		load();
+	}
+
+	/**
+	 * Returns a cached copy the build sequence for a specific project.
+	 * @param project
+	 * @return
+	 */
+	public static BuildSequence getCached(MoSyncProject project) {
+		// TODO: cache all projects, dispose when project is disposed.
+		if (project.isDisposed()) {
+			cache.remove(project);
+			return null;
+		}
+		BuildSequence cached = cache.get(project);
+		if (cached == null) {
+			cached = new BuildSequence(project);
+			cache.put(project, cached);
+		}
+		return cached;
 	}
 
 	private void initDefaultFactories() {

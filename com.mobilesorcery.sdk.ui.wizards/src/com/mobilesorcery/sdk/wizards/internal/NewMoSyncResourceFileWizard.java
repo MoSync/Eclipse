@@ -27,17 +27,20 @@ public class NewMoSyncResourceFileWizard extends Wizard implements INewWizard {
     private NewMoSyncResourceFilePage mainPage;
     private IWorkbench workbench;
 
-    public void init(IWorkbench workbench, IStructuredSelection selection) {
+    @Override
+	public void init(IWorkbench workbench, IStructuredSelection selection) {
         this.workbench = workbench;
         setWindowTitle("New Resource Wizard");
         mainPage = new NewMoSyncResourceFilePage("New Resource File", selection);
     }
 
-    public void addPages() {
+    @Override
+	public void addPages() {
         addPage(mainPage);
     }
-    
-    public boolean performFinish() {
+
+    @Override
+	public boolean performFinish() {
         IFile file = mainPage.createNewFile();
         try {
             IDE.openEditor(workbench.getActiveWorkbenchWindow().getActivePage(), file);
