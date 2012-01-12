@@ -1,0 +1,8 @@
+<resources>
+  <condition platform="Android">
+    <string id="A_STRING">Android string</string>
+  </condition>
+  <condition platform="iOS">
+    <string id="A_STRING">IPhone string</string>
+  </condition>
+</resources>

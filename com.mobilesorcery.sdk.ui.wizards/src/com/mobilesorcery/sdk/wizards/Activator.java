@@ -119,7 +119,7 @@ public class Activator extends AbstractUIPlugin {
 			}
 		}
 
-        addTemplate(new Template(RESOURCE_TEMPLATE_ID, "Resource File",  "New Resource File", getClass().getResource("/templates/resources.lst.template"), "resource.lst", null));
+        addTemplate(new Template(RESOURCE_TEMPLATE_ID, "Resource File",  "New Resource File", getClass().getResource("/templates/resources.lstx.template"), "Resources/resource.lstx", null));
 	}
 
     private void addProjectTemplate(ProjectTemplate template) {
