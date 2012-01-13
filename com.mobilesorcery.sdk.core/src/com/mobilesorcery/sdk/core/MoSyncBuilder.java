@@ -62,6 +62,8 @@ import com.mobilesorcery.sdk.core.LineReader.LineAdapter;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
 import com.mobilesorcery.sdk.core.build.IBuildStep;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
+import com.mobilesorcery.sdk.core.stats.CounterVariable;
+import com.mobilesorcery.sdk.core.stats.Stats;
 import com.mobilesorcery.sdk.internal.BuildSession;
 import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.PipeTool;
@@ -470,6 +472,8 @@ public class MoSyncBuilder extends ACBuilder {
         if (CoreMoSyncPlugin.getDefault().isDebugging()) {
             CoreMoSyncPlugin.trace("Building project {0}", project);
         }
+
+        Stats.getStats().getVariables().get(CounterVariable.class, "builds").inc();
 
         BuildResult buildResult = new BuildResult(project);
         buildResult.setVariant(variant);

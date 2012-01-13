@@ -14,6 +14,7 @@
 package com.mobilesorcery.sdk.core;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileFilter;
@@ -527,40 +528,10 @@ public class Util {
 		return filename + (isEmpty(newExtension) ? "" : ".") + newExtension;
 	}
 
-	public static void safeClose(InputStream input) {
-		if (input != null) {
+	public static void safeClose(Closeable closeable) {
+		if (closeable != null) {
 			try {
-				input.close();
-			} catch (IOException e) {
-				// Ignore.
-			}
-		}
-	}
-
-	public static void safeClose(OutputStream output) {
-		if (output != null) {
-			try {
-				output.close();
-			} catch (IOException e) {
-				// Ignore.
-			}
-		}
-	}
-
-	public static void safeClose(Writer output) {
-		if (output != null) {
-			try {
-				output.close();
-			} catch (IOException e) {
-				// Ignore.
-			}
-		}
-	}
-
-	public static void safeClose(Reader input) {
-		if (input != null) {
-			try {
-				input.close();
+				closeable.close();
 			} catch (IOException e) {
 				// Ignore.
 			}
@@ -774,8 +745,13 @@ public class Util {
      */
     public static String toGetUrl(String baseURL, Map<String, String> params) {
         StringBuffer paramsStr = new StringBuffer();
+        if (baseURL == null) {
+        	baseURL = "";
+        }
         if (params != null && !params.isEmpty()) {
-            paramsStr.append("?"); //$NON-NLS-1$
+        	if (Util.isEmpty(baseURL)) {
+        		paramsStr.append("?"); //$NON-NLS-1$
+        	}
             int paramCnt = 0;
             for (Map.Entry<String, String> param : params.entrySet()) {
                 paramCnt++;

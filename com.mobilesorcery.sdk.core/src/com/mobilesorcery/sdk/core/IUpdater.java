@@ -13,6 +13,11 @@
 */
 package com.mobilesorcery.sdk.core;
 
+import java.io.IOException;
+import java.util.List;
+
+import com.mobilesorcery.sdk.core.stats.Variables;
+
 /**
  * <p>An interface for updating the entire MoSync SDK, including
  * this eclipse-based IDE.</p>
@@ -29,7 +34,7 @@ public interface IUpdater {
      * was explicitly invoked by the user
      */
 	public void update(boolean isStartedByUser);
-	
+
 	/**
 	 * Launches a user interface allowing the user
 	 * to register with MoSync
@@ -37,7 +42,14 @@ public interface IUpdater {
      * was explicitly invoked by the user
 	 */
 	public void register(boolean isStartedByUser);
-	
+
+	/**
+	 * Sends statistics info
+	 * @param stats
+	 * @throws IOException
+	 */
+	public void sendStats(String stats) throws IOException;
+
 	/**
 	 * This method is called by the framework to
 	 * indicate that the <code>IUpdater</code> will

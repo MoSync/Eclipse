@@ -32,8 +32,11 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.WorkspaceModifyDelegatingOperation;
 import org.eclipse.ui.wizards.newresource.BasicNewResourceWizard;
+import org.w3c.dom.css.Counter;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.stats.CounterVariable;
+import com.mobilesorcery.sdk.core.stats.Stats;
 import com.mobilesorcery.sdk.core.templates.ProjectTemplate;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.UIUtils;
@@ -120,9 +123,11 @@ public class NewMoSyncProjectWizard extends Wizard implements INewWizard {
         		UIUtils.openResource(PlatformUI.getWorkbench(), mainFile);
         	}
 
+        	Stats.getStats().getVariables().get(CounterVariable.class, "project-count-" + mainTemplate.getId()).inc();
             IResource revealThis = mainFile == null ? project : mainFile;
             BasicNewResourceWizard.selectAndReveal(revealThis, PlatformUI.getWorkbench().getActiveWorkbenchWindow());
         }
+        Stats.getStats().getVariables().get(CounterVariable.class, "project-count").inc();
         configureProject(mosyncProject);
     }
 

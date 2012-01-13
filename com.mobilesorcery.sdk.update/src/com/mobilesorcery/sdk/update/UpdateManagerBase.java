@@ -34,16 +34,16 @@ import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
  * the 'new' registration process - might want to remove this later.
  */
 public abstract class UpdateManagerBase {
-    
+
     public static class UpdateException extends IOException {
         public UpdateException(String msg) {
             super(msg);
         }
     }
-    
+
     protected class Response {
-        private InputStream input;
-        private int length;
+        private final InputStream input;
+        private final int length;
 
         Response(InputStream input, int length) {
             this.input = input;
@@ -59,10 +59,10 @@ public abstract class UpdateManagerBase {
         }
 
         public void close() {
-            UpdateManagerBase.this.close(input);
+            Util.safeClose(input);
         }
     }
-    
+
     protected Response sendRequest(URL url) throws IOException {
         if (CoreMoSyncPlugin.getDefault().isDebugging()) {
             CoreMoSyncPlugin.trace(url);
@@ -76,9 +76,9 @@ public abstract class UpdateManagerBase {
     }
 
     protected String getServiceURL(String serviceName) {
-        String baseURL = MoSyncTool.getDefault().getProperty("update-baseurl"); //$NON-NLS-1$ 
+        String baseURL = MoSyncTool.getDefault().getProperty("update-baseurl"); //$NON-NLS-1$
         if (baseURL == null) {
-            baseURL = "http://www.mosync.com/{0}"; //$NON-NLS-1$ 
+            baseURL = "http://www.mosync.com/{0}"; //$NON-NLS-1$
         }
         return MessageFormat.format(baseURL, serviceName).trim();
     }
@@ -87,7 +87,7 @@ public abstract class UpdateManagerBase {
         String service = getServiceURL(serviceName);
         return new URL(Util.toGetUrl(service, params));
     }
-    
+
     protected boolean getBooleanResponse(Response response, String errmsg) throws IOException {
         int result = response.getContent().read();
         if (result == '0') {
@@ -96,9 +96,9 @@ public abstract class UpdateManagerBase {
             return true;
         } else {
             throw new UpdateException(errmsg);
-        }        
+        }
     }
-     
+
     public void setUserHash(String hash) {
         hash = hash == null ? null : hash.trim();
         MoSyncTool.getDefault().setProperty(MoSyncTool.USER_HASH_PROP_2, hash);
@@ -107,31 +107,11 @@ public abstract class UpdateManagerBase {
     public boolean shouldPerformAutoUpdate() {
         IPreferenceStore prefStore = MosyncUpdatePlugin.getDefault().getPreferenceStore();
         prefStore.setDefault(MoSyncTool.AUTO_UPDATE_PREF, true);
-        
+
         boolean shouldPerformAutoUpdate = MoSyncTool.getDefault().isValid() && prefStore.getBoolean(MoSyncTool.AUTO_UPDATE_PREF);
         return shouldPerformAutoUpdate;
     }
 
-    protected void close(OutputStream output) {
-        if (output != null) {
-            try {
-                output.close();
-            } catch (IOException e) {
-                // Ignore.
-            }
-        }
-    }
-
-    protected void close(InputStream input) {
-        if (input != null) {
-            try {
-                input.close();
-            } catch (IOException e) {
-                // Ignore.
-            }
-        }
-    }
-    
     protected void addHalfHash(Map<String, String> request) {
         request.put("hhash", MosyncUIPlugin.getDefault().getUserHalfHash()); //$NON-NLS-1$
     }

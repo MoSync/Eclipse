@@ -35,9 +35,9 @@ import com.mobilesorcery.sdk.core.Util;
  *
  */
 public class UpdateManager extends UpdateManagerBase {
-    
+
     private static final UpdateManager INSTANCE = new UpdateManager();
-  
+
     // TODO: Should not be here...?
     private static final int HARDCODED_BASE_VERSION_CODE = 24;
 
@@ -46,7 +46,7 @@ public class UpdateManager extends UpdateManagerBase {
     }
 
     public static UpdateManager getDefault() {
-        return INSTANCE;    
+        return INSTANCE;
     }
 
     public boolean isUpdateAvailable() throws IOException {
@@ -80,11 +80,11 @@ public class UpdateManager extends UpdateManagerBase {
             response.close();
         }
     }
-    
+
     public File getUpdateZip() {
         return MoSyncTool.getDefault().getMoSyncHome().append("update.zip").toFile(); //$NON-NLS-1$
     }
-    
+
     public void downloadProfileUpdate(IProgressMonitor monitor) throws IOException {
         Map<String, String> params = new HashMap<String, String>();
         addVersionInfo(params);
@@ -110,11 +110,11 @@ public class UpdateManager extends UpdateManagerBase {
                 monitor.worked(read);
             }
         } finally {
-            close(updateZip);
+            Util.safeClose(updateZip);
         }
-        
+
         //monitor.setTaskName("Unpacking database...");
-        
+
         //Util.unzip(updateZipFile, MoSyncTool.getDefault().getMoSyncHome().toFile());
         //MoSyncTool.getDefault().reinit();
     }
@@ -126,34 +126,35 @@ public class UpdateManager extends UpdateManagerBase {
 
     public void runUpdater(IProgressMonitor monitor) throws IOException {
         monitor.setTaskName(Messages.UpdateManager_RestartingProgress);
-        
+
         // QUASI-HARD-CODED LOCATION!
         String absoluteMosyncExe = MoSyncTool.getDefault().getBinary("eclipse/mosync").toOSString();
         String pid = CoreMoSyncPlugin.getPid();
         String updaterExe = MoSyncTool.getDefault().getBinary("bin/updater").toOSString(); //$NON-NLS-1$
-        
+
         if (!new File(absoluteMosyncExe).exists() || !new File(updaterExe).exists()) {
             throw new IOException(Messages.UpdateManager_UpdaterNotFoundError);
         }
-        
-        String args[] = new String[] { 
-        							Util.ensureQuoted(updaterExe), 
-        							pid, 
-        							absoluteMosyncExe 
+
+        String args[] = new String[] {
+        							Util.ensureQuoted(updaterExe),
+        							pid,
+        							absoluteMosyncExe
         						   };
         Process p = Runtime.getRuntime().exec(args, null, MoSyncTool.getMoSyncHomeFromEnv().toFile());
         //SpawnedProcess p = new SpawnedProcess(, pid + " " + relativeMosyncExe, );
         //System.err.println(p);
         //p.start();
-        
+
         // Kill platform ui.
         PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-            public void run() {
+            @Override
+			public void run() {
                 PlatformUI.getWorkbench().close();
-            }            
+            }
         });
     }
-    
+
 	public void clearRegistrationInfo() {
 		MoSyncTool.getDefault().setProperty(MoSyncTool.EMAIL_PROP, null);
         MoSyncTool.getDefault().setProperty(MoSyncTool.USER_HASH_PROP, null);
@@ -172,7 +173,7 @@ public class UpdateManager extends UpdateManagerBase {
         System.err.println(UpdateManager.getDefault().isValid());*/
         //System.err.println(UpdateManager.getDefault().resend());
         UpdateManager.getDefault().downloadProfileUpdate(new NullProgressMonitor());
-        
+
     }
 
 

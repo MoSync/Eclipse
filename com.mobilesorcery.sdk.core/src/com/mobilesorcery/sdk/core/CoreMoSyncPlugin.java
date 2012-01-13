@@ -178,7 +178,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         initLaunchers();
         initSecureProperties();
         initWorkspaceToken();
-        initStats();
 		getPreferenceStore().addPropertyChangeListener(this);
 		initializeOnSeparateThread();
     }
@@ -229,6 +228,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 			@Override
 			public void run() {
 				checkAutoUpdate();
+				initStats();
 			}
     	}, "Initializer");
 

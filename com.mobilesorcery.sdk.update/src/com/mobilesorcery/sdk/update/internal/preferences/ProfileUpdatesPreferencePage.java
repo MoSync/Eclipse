@@ -42,19 +42,20 @@ public class ProfileUpdatesPreferencePage extends FieldEditorPreferencePage impl
 
 	public ProfileUpdatesPreferencePage() {
         super(Messages.ProfileUpdatesPreferencePage_Title, CoreMoSyncPlugin.getImageDescriptor("/icons/mosyncproject.png"), GRID); //$NON-NLS-2$
-        
+
         IPreferenceStore store = MosyncUpdatePlugin.getDefault().getPreferenceStore();
         setPreferenceStore(store);
     }
-    
+
+	@Override
 	protected void createFieldEditors() {
 		BooleanFieldEditor autoUpdate = new BooleanFieldEditor(MoSyncTool.AUTO_UPDATE_PREF, Messages.ProfileUpdatesPreferencePage_AutoUpdate, getFieldEditorParent());
     	addField(autoUpdate);
-    	
+
     	Composite registration = new Composite(getFieldEditorParent(), SWT.NONE);
     	registration.setLayout(new GridLayout(2, false));
     	registration.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-    	
+
     	Label reg = new Label(registration, SWT.NONE);
     	reg.setText(Messages.ProfileUpdatesPreferencePage_RegistrationDescription);
     	reg.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -67,19 +68,19 @@ public class ProfileUpdatesPreferencePage extends FieldEditorPreferencePage impl
     	GridData emailData = new GridData(GridData.FILL_HORIZONTAL);
     	emailData.horizontalSpan = 2;
     	hhashText.setLayoutData(emailData);
-    	
+
     	updateUI();
-    	
-    	
+
     	clearSettings.addListener(SWT.Selection, new Listener() {
+			@Override
 			public void handleEvent(Event event) {
 				boolean result = MessageDialog.openQuestion(getShell(), Messages.ProfileUpdatesPreferencePage_AreYouSureTitle, Messages.ProfileUpdatesPreferencePage_AreYouSureMessage);
-				
+
 				if (result) {
 					UpdateManager.getDefault().clearRegistrationInfo();
 					updateUI();
 				}
-			}    		
+			}
     	});
 	}
 
@@ -90,11 +91,12 @@ public class ProfileUpdatesPreferencePage extends FieldEditorPreferencePage impl
 		} else {
 			hhashText.setText(hhash);
 		}
-		
+
 		hhashText.setEnabled(!Util.isEmpty(hhash));
     	clearSettings.setEnabled(!Util.isEmpty(hhash));
 	}
 
+	@Override
 	public void init(IWorkbench window) {
 	}
 
