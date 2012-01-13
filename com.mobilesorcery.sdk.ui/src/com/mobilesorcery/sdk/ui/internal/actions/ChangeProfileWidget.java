@@ -67,7 +67,7 @@ public class ChangeProfileWidget extends MoSyncProjectWidget {
 				}
 			}
 		};
-		icon = new Label(dummy, SWT.BORDER);
+		icon = new Label(dummy, SWT.NONE);
 		icon.setAlignment(SWT.CENTER);
 		icon.setLayoutData(new GridData(24, height));
 		name = new Label(dummy, SWT.NONE);
