@@ -17,6 +17,7 @@ import org.eclipse.debug.ui.IDebugUIConstants;
 import org.eclipse.ui.IFolderLayout;
 import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.IPerspectiveFactory;
+import org.eclipse.ui.IPlaceholderFolderLayout;
 import org.eclipse.ui.console.IConsoleConstants;
 
 public class PerspectiveFactory implements IPerspectiveFactory {
@@ -56,12 +57,12 @@ public class PerspectiveFactory implements IPerspectiveFactory {
         topLeft.addView("org.eclipse.ui.navigator.ProjectExplorer");
         topLeft.addPlaceholder("com.mobilesorcery.sdk.testing.view");
 
-        IFolderLayout topRight =
-        	layout.createFolder("topRight", IPageLayout.RIGHT, 0.70f, layout.getEditorArea());
+        IPlaceholderFolderLayout topRight = layout.createPlaceholderFolder("topRight", IPageLayout.RIGHT, 0.70f, layout.getEditorArea());
 
         topRight.addPlaceholder("com.mobilesorcery.sdk.profiles.ui.view");
         topRight.addPlaceholder("com.mobilesorcery.sdk.finalizer.ui.view");
-        topRight.addView("org.eclipse.ui.views.ContentOutline");
+        // MOSYNC-1552: Remove the default outline view
+        topRight.addPlaceholder("org.eclipse.ui.views.ContentOutline");
     }
 
     private void addPerspectiveShortcuts() {
