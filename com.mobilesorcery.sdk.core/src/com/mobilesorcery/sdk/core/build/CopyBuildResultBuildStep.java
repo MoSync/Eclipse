@@ -74,7 +74,7 @@ public class CopyBuildResultBuildStep extends AbstractBuildStep {
 
 		@Override
 		public boolean isDefault() {
-			return isActive && cfgId == null && folderName == null;
+			return isActive() && cfgId == null && folderName == null;
 		}
 
 		@Override

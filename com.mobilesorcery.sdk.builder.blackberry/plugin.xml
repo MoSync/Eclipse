@@ -12,6 +12,7 @@
             platform="BlackBerry">
       </packager>
    </extension>
+      <!-- Disabled until we re-enable cod packaging for BB 
       <extension
             point="com.mobilesorcery.core.launcher">
          <launcher
@@ -58,7 +59,7 @@
                                    </test>
                                 </enabledWhen>                
           </page>          
-       </extension>
+       </extension> -->
          <extension
          point="org.eclipse.core.runtime.preferences">
       <initializer

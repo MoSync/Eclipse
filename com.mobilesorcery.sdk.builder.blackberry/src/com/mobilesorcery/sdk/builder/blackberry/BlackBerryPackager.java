@@ -36,35 +36,48 @@ public class BlackBerryPackager extends JavaPackager {
 					"Can only package BlackBerry with platform-based profiles"));
 		}
 
-		JDE jde = matchingJDE(JDE.TYPE_DEV_TOOLS, project, variant.getProfile());
-		if (jde == null) {
-			throw new CoreException(new Status(IStatus.ERROR, BlackBerryPlugin.PLUGIN_ID, "Found no matching JDE for this Blackberry platform. " +
-					"Please note that "));
+		boolean packAsCOD = shouldPackAsCOD(project, variant);
+		if (!packAsCOD) {
+			// TODO: Warning; but we'll wait until we've re-enabled cod packaging
 		}
 
-		commandLine.flag("--blackberry-jde").with(jde.getLocation().toFile());
+		if (packAsCOD) {
+			commandLine.flag("--blackberry-packcod");
 
-		if (shouldSign(project)) {
-			// We just reuse this java cert info, it's not quite blackberry-ish...
-			KeystoreCertificateInfo certInfo = KeystoreCertificateInfo.loadOne(
-					BlackBerryPlugin.BLACKBERRY_SIGNING_INFO, new PreferenceStorePropertyOwner(BlackBerryPlugin.getDefault().getPreferenceStore()),
-							CoreMoSyncPlugin.getDefault().getSecureProperties());
-			String signFileKey = (certInfo == null ? null : certInfo.getKeyPassword());
-			if (Util.isEmpty(signFileKey)) {
-				throw new CoreException(new Status(IStatus.OK, BlackBerryPlugin.PLUGIN_ID, "No key password for blackberry signing. Please note that for security reasons, passwords are locally stored. You may need to set the password in the BlackBerry preference page."));
+			JDE jde = matchingJDE(JDE.TYPE_DEV_TOOLS, project, variant.getProfile());
+			commandLine.flag("--blackberry-jde").with(jde.getLocation().toFile());
+
+			if (shouldSign(project)) {
+				// We just reuse this java cert info, it's not quite blackberry-ish...
+				KeystoreCertificateInfo certInfo = KeystoreCertificateInfo.loadOne(
+						BlackBerryPlugin.BLACKBERRY_SIGNING_INFO, new PreferenceStorePropertyOwner(BlackBerryPlugin.getDefault().getPreferenceStore()),
+								CoreMoSyncPlugin.getDefault().getSecureProperties());
+				String signFileKey = (certInfo == null ? null : certInfo.getKeyPassword());
+				if (Util.isEmpty(signFileKey)) {
+					throw new CoreException(new Status(IStatus.OK, BlackBerryPlugin.PLUGIN_ID, "No key password for blackberry signing. Please note that for security reasons, passwords are locally stored. You may need to set the password in the BlackBerry preference page."));
+				}
+				commandLine.flag("--blackberry-signkey").with(signFileKey);
 			}
-			commandLine.flag("--blackberry-signkey").with(signFileKey);
 		}
+	}
+
+	private boolean shouldPackAsCOD(MoSyncProject project, IBuildVariant variant) {
+		JDE jde = matchingJDE(JDE.TYPE_DEV_TOOLS, project, variant.getProfile());
+		return jde != null;
 	}
 
 	@Override
 	public Map<String, List<File>> computeBuildResult(MoSyncProject project, IBuildVariant variant) throws ParameterResolverException {
-		File jar = super.getProducedJar(project, variant);
-		File cod = new File(Util.replaceExtension(jar.getAbsolutePath(), "cod"));
-		Map<String, List<File>> result = new HashMap<String, List<File>>();
-		result.put(IBuildResult.MAIN, Arrays.asList(cod));
-		result.put(BlackBerryPlugin.JAD, Arrays.asList(cod));
-		return result;
+		if (shouldPackAsCOD(project, variant)) {
+			File jar = super.getProducedJar(project, variant);
+			File cod = new File(Util.replaceExtension(jar.getAbsolutePath(), "cod"));
+			Map<String, List<File>> result = new HashMap<String, List<File>>();
+			result.put(IBuildResult.MAIN, Arrays.asList(cod));
+			result.put(BlackBerryPlugin.JAD, Arrays.asList(cod));
+			return result;
+		} else {
+			return super.computeBuildResult(project, variant);
+		}
 	}
 
 	/*@Override

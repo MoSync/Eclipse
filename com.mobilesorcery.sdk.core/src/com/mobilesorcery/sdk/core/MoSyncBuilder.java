@@ -64,6 +64,7 @@ import com.mobilesorcery.sdk.core.build.IBuildStep;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.core.stats.CounterVariable;
 import com.mobilesorcery.sdk.core.stats.Stats;
+import com.mobilesorcery.sdk.core.stats.Variables;
 import com.mobilesorcery.sdk.internal.BuildSession;
 import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.PipeTool;
@@ -473,8 +474,6 @@ public class MoSyncBuilder extends ACBuilder {
             CoreMoSyncPlugin.trace("Building project {0}", project);
         }
 
-        Stats.getStats().getVariables().get(CounterVariable.class, "builds").inc();
-
         BuildResult buildResult = new BuildResult(project);
         buildResult.setVariant(variant);
         Calendar timestamp = Calendar.getInstance();
@@ -482,6 +481,13 @@ public class MoSyncBuilder extends ACBuilder {
 
         MoSyncProject mosyncProject = MoSyncProject.create(project);
         IBuildState buildState = mosyncProject.getBuildState(variant);
+
+        Variables vars = Stats.getStats().getVariables();
+        vars.get(CounterVariable.class, "builds").inc();
+        if (mosyncProject.getProfileManagerType() == MoSyncTool.DEFAULT_PROFILE_TYPE) {
+        	String family = variant.getProfile().getVendor().getName();
+        	vars.get(CounterVariable.class, "builds-" + family).inc();
+        }
 
         ParameterResolver resolver = createParameterResolver(mosyncProject, variant);
 
