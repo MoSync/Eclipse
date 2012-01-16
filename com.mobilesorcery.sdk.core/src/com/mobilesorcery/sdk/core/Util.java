@@ -749,7 +749,7 @@ public class Util {
         	baseURL = "";
         }
         if (params != null && !params.isEmpty()) {
-        	if (Util.isEmpty(baseURL)) {
+        	if (!Util.isEmpty(baseURL)) {
         		paramsStr.append("?"); //$NON-NLS-1$
         	}
             int paramCnt = 0;
