@@ -96,6 +96,9 @@ public class EditDeviceListDialog extends Dialog {
         Composite contents = new Composite(main, SWT.NONE);
         contents.setLayout(new GridLayout(1, false));
 
+        Label deviceLabel = new Label(main, SWT.NONE | SWT.WRAP);
+        deviceLabel.setText("Target &Device:");
+
         if (!fixedDevice) {
             deviceList = new ComboViewer(contents, SWT.BORDER | SWT.READ_ONLY);
             deviceList.setContentProvider(new ArrayContentProvider());
@@ -123,9 +126,7 @@ public class EditDeviceListDialog extends Dialog {
         }
 
         Label instructions = new Label(contents, SWT.NONE | SWT.WRAP);
-        String instructionMsg = getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE ?
-        		"Click to select new target device" :
-    			"Click to select new target platform";
+        String instructionMsg = "Click to select new target profile";
         instructions.setText(instructionMsg);
 
         if (getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
