@@ -451,22 +451,6 @@ public class MoSyncBuilder extends ACBuilder {
         return PipeTool.BUILD_C_MODE;
     }
 
-    /**
-     * Returns true if any of the libraries that the given project depends
-     * on have changed.
-     *
-     * @param mosyncProject Project to check for changes.
-     * @param buildProperties Build properties of project.
-     * @param programComb Latest built program file.
-     * @return true if any of the libraries have changed, false otherwise.
-     */
-    private boolean haveLibrariesChanged(MoSyncProject mosyncProject, IPropertyOwner buildProperties, IPath programComb)
-    {
-        long librariesTouched = mosyncProject.getLibraryLookup(buildProperties).getLastTouched();
-        long programCombTouched = programComb.toFile().exists() ? programComb.toFile().lastModified() : Long.MAX_VALUE;
-        return librariesTouched > programCombTouched;
-    }
-
     IBuildResult incrementalBuild(IProject project, IBuildSession session, IBuildVariant variant,
             IFilter<IResource> resourceFilter, IProgressMonitor monitor) throws CoreException
     {
@@ -943,9 +927,16 @@ public class MoSyncBuilder extends ACBuilder {
         return result.toArray(new IPath[0]);
     }
 
-    public static IPath[] getLibraries(IPropertyOwner buildProperties) {
+    public static IPath[] getLibraries(MoSyncProject project, IBuildVariant variant, IPropertyOwner buildProperties) {
         // Ehm, I think I've seen this code elsewhere...
         ArrayList<IPath> result = new ArrayList<IPath>();
+
+        // MOSYNC-1564: we must add that rescompiler.lib
+        if (!isLib(project)) {
+        	IBuildConfiguration cfg = project.getBuildConfiguration(variant.getConfigurationId());
+        	boolean debug = cfg != null && cfg.isType(IBuildConfiguration.DEBUG_TYPE);
+        	result.add(debug ? new Path("rescompilerD.lib") : new Path("rescompiler.lib"));
+        }
         if (!PropertyUtil.getBoolean(buildProperties, IGNORE_DEFAULT_LIBRARIES)) {
             result.addAll(Arrays.asList(PropertyUtil.getPaths(buildProperties, DEFAULT_LIBRARIES)));
         }

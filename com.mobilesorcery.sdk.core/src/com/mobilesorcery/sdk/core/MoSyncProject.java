@@ -1449,11 +1449,11 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		return securePropertyOwner;
 	}
 
-	public LibraryLookup getLibraryLookup(IPropertyOwner buildProperties) {
+	public LibraryLookup getLibraryLookup(IBuildVariant variant, IPropertyOwner buildProperties) {
 		// TODO: cache?
 		return new LibraryLookup(MoSyncBuilder.getLibraryPaths(
 				getWrappedProject(), buildProperties),
-				MoSyncBuilder.getLibraries(buildProperties));
+				MoSyncBuilder.getLibraries(this, variant, buildProperties));
 	}
 
 	public IApplicationPermissions getPermissions() {

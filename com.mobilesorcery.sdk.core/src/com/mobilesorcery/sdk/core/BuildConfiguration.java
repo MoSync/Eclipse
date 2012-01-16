@@ -27,19 +27,20 @@ import org.eclipse.core.runtime.IAdaptable;
 public class BuildConfiguration implements IBuildConfiguration, IAdaptable {
 
     public final static Comparator<IBuildConfiguration> DEFAULT_COMPARATOR = new Comparator<IBuildConfiguration>() {
-        public int compare(IBuildConfiguration cfg1, IBuildConfiguration cfg2) {
+        @Override
+		public int compare(IBuildConfiguration cfg1, IBuildConfiguration cfg2) {
             return cfg1.getId().compareTo(cfg2.getId());
         }
     };
-    
+
     private final static Set<String> DEFAULT_TYPE_SET = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(RELEASE_TYPE)));
     private final static Set<String> DEFAULT_DEBUG_TYPE_SET = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(DEBUG_TYPE)));
 
     public static final String TYPE_EXTENSION_POINT = "com.mobilesorcery.core.buildconfigurationtypes";
-    
-	private MoSyncProject project;
-	private String id;
-	private NameSpacePropertyOwner properties;
+
+	private final MoSyncProject project;
+	private final String id;
+	private final NameSpacePropertyOwner properties;
     private HashSet<String> types;
 
 	public BuildConfiguration(MoSyncProject project, String id, String... types) {
@@ -49,14 +50,17 @@ public class BuildConfiguration implements IBuildConfiguration, IAdaptable {
 		properties = new NameSpacePropertyOwner(project, id);
 	}
 
+	@Override
 	public String getId() {
 		return id;
 	}
 
+	@Override
 	public NameSpacePropertyOwner getProperties() {
 		return properties;
 	}
 
+	@Override
 	public IBuildConfiguration clone(String id) {
 		BuildConfiguration clone = new BuildConfiguration(project, id);
 		clone.types = types;
@@ -76,32 +80,41 @@ public class BuildConfiguration implements IBuildConfiguration, IAdaptable {
             uniqueId = suggestedId + i;
             i++;
         }
-        
+
         return uniqueId;
 	}
 
-    public Object getAdapter(Class adapter) {
+    @Override
+	public Object getAdapter(Class adapter) {
         if (IBuildConfiguration.class.equals(adapter)) {
             return this;
         } else if (MoSyncProject.class.equals(adapter)) {
             return project;
         }
-        
+
         return null;
     }
 
-    public Set<String> getTypes() {
+    @Override
+	public Set<String> getTypes() {
         if (types.isEmpty()) {
             return DEBUG_ID.equals(id) ? DEFAULT_DEBUG_TYPE_SET : DEFAULT_TYPE_SET;
         }
         return types;
     }
-    
-    public void setTypes(Collection<String> types) {
+
+    @Override
+	public boolean isType(String type) {
+    	return getTypes().contains(type);
+    }
+
+    @Override
+	public void setTypes(Collection<String> types) {
         this.types = new HashSet<String>(types);
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
     	return id;
     }
 }

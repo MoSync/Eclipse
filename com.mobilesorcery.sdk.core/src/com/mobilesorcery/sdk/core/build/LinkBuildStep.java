@@ -82,7 +82,7 @@ public class LinkBuildStep extends AbstractBuildStep {
         IPath programComb = MoSyncBuilder.getProgramCombOutputPath(project, variant);
         IPath libraryOutput = isLib ? MoSyncBuilder.computeLibraryOutput(mosyncProject, buildProperties) : null;
 
-        boolean librariesHaveChanged = haveLibrariesChanged(mosyncProject, buildProperties, programComb);
+        boolean librariesHaveChanged = haveLibrariesChanged(mosyncProject, variant, buildProperties, programComb);
         boolean requiresLinking = librariesHaveChanged || diff == null || !diff.isEmpty();
         if (librariesHaveChanged) {
         	console.addMessage("Libraries have changed, will require re-linking");
@@ -98,7 +98,7 @@ public class LinkBuildStep extends AbstractBuildStep {
             pipeTool.setMode(pipeToolMode);
             pipeTool.setOutputFile(isLib ? libraryOutput : program);
             pipeTool.setLibraryPaths(MoSyncBuilder.resolvePaths(MoSyncBuilder.getLibraryPaths(project, buildProperties), resolver));
-            pipeTool.setLibraries(MoSyncBuilder.getLibraries(buildProperties));
+            pipeTool.setLibraries(MoSyncBuilder.getLibraries(mosyncProject, variant, buildProperties));
             boolean elim = !isLib && PropertyUtil.getBoolean(buildProperties, MoSyncBuilder.DEAD_CODE_ELIMINATION);
             pipeTool.setDeadCodeElimination(elim);
             pipeTool.setCollectStabs(true);
@@ -176,13 +176,14 @@ public class LinkBuildStep extends AbstractBuildStep {
      * on have changed.
      *
      * @param mosyncProject Project to check for changes.
+	 * @param variant
      * @param buildProperties Build properties of project.
      * @param programComb Latest built program file.
      * @return true if any of the libraries have changed, false otherwise.
      */
-    private boolean haveLibrariesChanged(MoSyncProject mosyncProject, IPropertyOwner buildProperties, IPath programComb)
+    private boolean haveLibrariesChanged(MoSyncProject mosyncProject, IBuildVariant variant, IPropertyOwner buildProperties, IPath programComb)
     {
-        long librariesTouched = mosyncProject.getLibraryLookup(buildProperties).getLastTouched();
+        long librariesTouched = mosyncProject.getLibraryLookup(variant, buildProperties).getLastTouched();
         long programCombTouched = programComb.toFile().exists() ? programComb.toFile().lastModified() : Long.MAX_VALUE;
         return librariesTouched > programCombTouched;
     }

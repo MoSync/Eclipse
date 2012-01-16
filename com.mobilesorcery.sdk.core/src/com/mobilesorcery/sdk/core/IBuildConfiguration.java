@@ -35,27 +35,27 @@ public interface IBuildConfiguration {
 	 * <p>The 'default' debug configuration id</p>
 	 */
 	public final static String DEBUG_ID = "Debug";
-	
+
 	/**
      * <p>The release build configuration type</p>
      */
     public static String RELEASE_TYPE = "Release";
-	
+
     /**
      * <p>The debug build configuration type</p>
      */
     public static String DEBUG_TYPE = "Debug";
-    
-	
-	
+
+
+
 	/**
 	 * Returns the (unique) id of this build configuration.
 	 * @return
 	 */
 	public String getId();
-	
+
 	/**
-	 * <p>Returns the build configuration types this 
+	 * <p>Returns the build configuration types this
 	 * configuration matches (eg "debug", "release", "test",
 	 * "profile", "finalize", etc).</p>
 	 * <p>This method will always return at least one type.
@@ -67,9 +67,16 @@ public interface IBuildConfiguration {
 	 * @return
 	 */
 	public Set<String> getTypes();
-	
+
+	/**
+	 * Returns whether this build configuration is of a certain type.
+	 * @param type
+	 * @return
+	 */
+	public boolean isType(String type);
+
 	public void setTypes(Collection<String> list);
-	    
+
 	public NameSpacePropertyOwner getProperties();
 
 	/**
