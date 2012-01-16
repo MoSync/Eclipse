@@ -32,4 +32,9 @@ public class DecimalVariable extends SimpleVariable {
 	public void read(JSONObject o) {
 		value.set(Long.parseLong(readValue(o)));
 	}
+
+	@Override
+	public void write(JSONObject output) {
+		output.put("value", value.longValue());
+	}
 }

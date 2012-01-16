@@ -23,7 +23,11 @@ public class Messages extends NLS {
     public static String ImportProjectsRunnable_SomeProjectsFailed;
     public static String ImportProjectsRunnable_UniqueNameCreationFailed;
     
-    static {
+    public static String MosyncUIPlugin_0;
+	public static String MosyncUIPlugin_12;
+	public static String MosyncUIPlugin_13;
+
+	static {
         // initialize resource bundle
         NLS.initializeMessages(BUNDLE_NAME, Messages.class);
     }

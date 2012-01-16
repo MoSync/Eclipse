@@ -85,8 +85,6 @@ public class Stats {
 
 	private void initVariables(boolean load) {
 		variables = new Variables();
-		String uid = Long.toHexString(Math.abs(new Random().nextLong()));
-		variables.get(StringVariable.class, "uid").set(uid);
 		if (load) {
 			loadState();
 		}

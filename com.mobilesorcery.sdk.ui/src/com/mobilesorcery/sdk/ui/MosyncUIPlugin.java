@@ -44,6 +44,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
@@ -65,6 +66,7 @@ import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWindowListener;
+import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchSite;
@@ -91,6 +93,7 @@ import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
 import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.core.memory.MemoryLowListener;
+import com.mobilesorcery.sdk.core.stats.Stats;
 import com.mobilesorcery.sdk.profiles.IVendor;
 import com.mobilesorcery.sdk.ui.internal.LegacyProfileViewOpener;
 import com.mobilesorcery.sdk.ui.internal.MemoryLowDialog;
@@ -109,35 +112,35 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		IProvider<IProcessConsole, String>, MemoryLowListener {
 
 	// The plug-in ID
-	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.ui";
+	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.ui"; //$NON-NLS-1$
 
 	/**
 	 * A property indicating the current project has changed
 	 */
 	public static final String CURRENT_PROJECT_CHANGED = PLUGIN_ID
-			+ ":current.project.changed";
+			+ ":current.project.changed"; //$NON-NLS-1$
 
-	public static final String IMG_OVR_EXCLUDED_RESOURCE = "excl.res";
+	public static final String IMG_OVR_EXCLUDED_RESOURCE = "excl.res"; //$NON-NLS-1$
 
-	static final String PASSWORD_SHOW = "p.show";
+	static final String PASSWORD_SHOW = "p.show"; //$NON-NLS-1$
 
-	static final String PASSWORD_HIDE = "p.hide";
+	static final String PASSWORD_HIDE = "p.hide"; //$NON-NLS-1$
 
-	static final String COLLAPSE_ALL = "collapse.all";
+	static final String COLLAPSE_ALL = "collapse.all"; //$NON-NLS-1$
 
-	static final String EXPAND_ALL = "expand.all";
+	static final String EXPAND_ALL = "expand.all"; //$NON-NLS-1$
 
-	public static final String FONT_INFO_TEXT = "font.instr";
+	public static final String FONT_INFO_TEXT = "font.instr"; //$NON-NLS-1$
 
-	public static final String FONT_DEFAULT_BOLD = "b";
+	public static final String FONT_DEFAULT_BOLD = "b"; //$NON-NLS-1$
 
-	public static final String FONT_DEFAULT_ITALIC = "i";
+	public static final String FONT_DEFAULT_ITALIC = "i"; //$NON-NLS-1$
 
 	public static final String PHONE_IMAGE = "phone"; //$NON-NLS-1$
 
 	public static final String TARGET_PHONE_IMAGE = "target.phone"; //$NON-NLS-1$
 
-	public static final String IMG_BINARY = "binary";
+	public static final String IMG_BINARY = "binary"; //$NON-NLS-1$
 
 	private final static Object NULL = new Object();
 
@@ -199,9 +202,10 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		CoreMoSyncPlugin.getLowMemoryManager().addMemoryLowListener(this, 1);
 		UIUtils.awaitWorkbenchStartup(new IWorkbenchStartupListener() {
 			@Override
-			public void started() {
+			public void started(IWorkbench wb) {
 				initializeCustomActivities();
 				initializeLauncherParts();
+				askForUsageStatistics(wb);
 			}
 		});
 		legacyProfileViewOpener = new LegacyProfileViewOpener();
@@ -216,7 +220,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 						IEmulatorLaunchConfigurationPart.EXTENSION_POINT_ID);
 		for (int i = 0; i < launcherParts.length; i++) {
 			IConfigurationElement launcherPart = launcherParts[i];
-			String id = launcherPart.getAttribute("launcher");
+			String id = launcherPart.getAttribute("launcher"); //$NON-NLS-1$
 			this.launcherParts.put(id,
 					new EmulatorLaunchConfigurationPartProxy(launcherPart));
 		}
@@ -224,6 +228,22 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		this.launcherParts.put(AutomaticEmulatorLauncher.ID,
 				new AutomaticEmulatorLauncherPart());
 		this.launcherParts.put(MoReLauncher.ID, new MoreLauncherPart());
+	}
+
+	private void askForUsageStatistics(final IWorkbench wb) {
+		final Stats stats = Stats.getStats();
+		if (stats.getSendInterval() == Stats.UNASSIGNED_SEND_INTERVAL) {
+			Display display = wb.getDisplay();
+			display.asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					Shell shell = wb.getActiveWorkbenchWindow().getShell();
+					boolean ok = MessageDialog.openQuestion(shell, Messages.MosyncUIPlugin_12,
+							Messages.MosyncUIPlugin_13);
+					stats.setSendInterval(ok ? Stats.DEFAULT_SEND_INTERVAL : Stats.DISABLE_SEND);
+				}
+			});
+		}
 	}
 
 	public boolean isExampleWorkspace() {
@@ -336,7 +356,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	 * selected project.
 	 */
 	private void updateCurrentlySelectedProjectFallback() {
-		updateCurrentlySelectedProjectFromView("org.eclipse.ui.navigator.ProjectExplorer");
+		updateCurrentlySelectedProjectFromView("org.eclipse.ui.navigator.ProjectExplorer"); //$NON-NLS-1$
 	}
 
 	private boolean updateCurrentlySelectedProjectFromView(String viewId) {
@@ -556,15 +576,15 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		super.initializeImageRegistry(reg);
 		reg.put(IMG_OVR_EXCLUDED_RESOURCE, AbstractUIPlugin
 				.imageDescriptorFromPlugin(MosyncUIPlugin.PLUGIN_ID,
-						"$nl$/icons/exclude_ovr.png"));
+						"$nl$/icons/exclude_ovr.png")); //$NON-NLS-1$
 		reg.put(PASSWORD_HIDE, AbstractUIPlugin.imageDescriptorFromPlugin(
-				MosyncUIPlugin.PLUGIN_ID, "$nl$/icons/hide_pwd.png"));
+				MosyncUIPlugin.PLUGIN_ID, "$nl$/icons/hide_pwd.png")); //$NON-NLS-1$
 		reg.put(PASSWORD_SHOW, AbstractUIPlugin.imageDescriptorFromPlugin(
-				MosyncUIPlugin.PLUGIN_ID, "$nl$/icons/show_pwd.png"));
+				MosyncUIPlugin.PLUGIN_ID, "$nl$/icons/show_pwd.png")); //$NON-NLS-1$
 		reg.put(COLLAPSE_ALL, AbstractUIPlugin.imageDescriptorFromPlugin(
-				PLUGIN_ID, "$nl$/icons/collapseall.gif"));
+				PLUGIN_ID, "$nl$/icons/collapseall.gif")); //$NON-NLS-1$
 		reg.put(EXPAND_ALL, AbstractUIPlugin.imageDescriptorFromPlugin(
-				PLUGIN_ID, "$nl$/icons/expandall.gif"));
+				PLUGIN_ID, "$nl$/icons/expandall.gif")); //$NON-NLS-1$
 		reg.put(PHONE_IMAGE,
 				ImageDescriptor.createFromFile(getClass(), "/icons/phone.png")); //$NON-NLS-1$
 		reg.put(TARGET_PHONE_IMAGE, ImageDescriptor.createFromFile(getClass(),
@@ -608,7 +628,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 			if (showInExternalBrowser) {
 				try {
 					URL urlToHelpDoc = FileLocator.find(
-							Platform.getBundle("com.mobilesorcery.sdk.help"),
+							Platform.getBundle("com.mobilesorcery.sdk.help"), //$NON-NLS-1$
 							new Path(helpResource), null);
 					URL fileUrlToHelpDoc = FileLocator.toFileURL(urlToHelpDoc);
 
@@ -654,12 +674,12 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 			int version = MoSyncTool.getDefault().getCurrentBinaryVersion();
 			String versionStr = Integer.toString(version);
 			// For now we send the same version for all components.
-			params.put("db", versionStr);
-			params.put("sdk", versionStr);
-			params.put("ide", versionStr);
+			params.put("db", versionStr); //$NON-NLS-1$
+			params.put("sdk", versionStr); //$NON-NLS-1$
+			params.put("ide", versionStr); //$NON-NLS-1$
 		}
 		addHalfHash(params);
-		params.put("hhash", getUserHalfHash());
+		params.put("hhash", getUserHalfHash()); //$NON-NLS-1$
 		return params;
 	}
 
@@ -672,7 +692,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 			IWorkbenchActivitySupport activitySupport = PlatformUI
 					.getWorkbench().getActivitySupport();
 			ICategory category = activitySupport.getActivityManager()
-					.getCategory("com.mobilesorcery.activities.experimental");
+					.getCategory("com.mobilesorcery.activities.experimental"); //$NON-NLS-1$
 			if (category != null) {
 				HashSet<String> activityIds = new HashSet<String>(
 						activitySupport.createWorkingCopy()
@@ -706,7 +726,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	 */
 	public Font getFont(String fontId) {
 		if (Display.getCurrent() == null) {
-			throw new AssertionFailedException("Must be called from UI thread");
+			throw new AssertionFailedException("Must be called from UI thread"); //$NON-NLS-1$
 		}
 		return getFontRegistry(Display.getCurrent()).get(fontId);
 	}
@@ -739,7 +759,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	}
 
 	public Image getPlatformImage(IVendor vendor, Point imageSize) {
-		String key = imageSize + ":" + vendor.getName();
+		String key = imageSize + Messages.MosyncUIPlugin_0 + vendor.getName();
 		Object image = platformImages.get(key);
 		if (image == null) {
 			Object addImage = NULL;

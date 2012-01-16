@@ -482,11 +482,16 @@ public class MoSyncBuilder extends ACBuilder {
         MoSyncProject mosyncProject = MoSyncProject.create(project);
         IBuildState buildState = mosyncProject.getBuildState(variant);
 
+        // STATS.
         Variables vars = Stats.getStats().getVariables();
         vars.get(CounterVariable.class, "builds").inc();
+        String templateId = mosyncProject.getProperty(MoSyncProject.TEMPLATE_ID);
+        if (templateId != null) {
+        	vars.get(CounterVariable.class, "builds-template-" + templateId).inc();
+        }
         if (mosyncProject.getProfileManagerType() == MoSyncTool.DEFAULT_PROFILE_TYPE) {
         	String family = variant.getProfile().getVendor().getName();
-        	vars.get(CounterVariable.class, "builds-" + family).inc();
+        	vars.get(CounterVariable.class, "builds-platform-" + family).inc();
         }
 
         ParameterResolver resolver = createParameterResolver(mosyncProject, variant);

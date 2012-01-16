@@ -54,11 +54,30 @@ import com.mobilesorcery.sdk.ui.internal.console.PathLink;
 
 public class UIUtils {
 
+	private static final class WorkbenchStartupJob extends WorkbenchJob {
+		private IWorkbench workbench;
+
+		private WorkbenchStartupJob(String name) {
+			super(name);
+		}
+
+		@Override
+		public IStatus runInUIThread(IProgressMonitor monitor) {
+			this.workbench = PlatformUI.getWorkbench();
+		    // Do nothing; actually we'll never get here.
+		    return Status.OK_STATUS;
+		}
+
+		public IWorkbench getWorkbench() {
+			return workbench;
+		}
+	}
+
 	private static final class AwaitWorkbenchJobRunnable implements Runnable {
-		private final Job workbenchStartupJob;
+		private final WorkbenchStartupJob workbenchStartupJob;
 		private final IWorkbenchStartupListener listener;
 
-		private AwaitWorkbenchJobRunnable(Job workbenchStartupJob,
+		private AwaitWorkbenchJobRunnable(WorkbenchStartupJob workbenchStartupJob,
 				IWorkbenchStartupListener listener) {
 			this.workbenchStartupJob = workbenchStartupJob;
 			this.listener = listener;
@@ -69,7 +88,7 @@ public class UIUtils {
 			try {
 				workbenchStartupJob.join();
 				if (listener != null) {
-					listener.started();
+					listener.started(workbenchStartupJob.getWorkbench());
 				}
 			} catch (InterruptedException e) {
 		        // Ignore.
@@ -285,13 +304,7 @@ public class UIUtils {
      * method should block until the workbench has started.
      */
     public synchronized static void awaitWorkbenchStartup(IWorkbenchStartupListener listener) {
-    	final WorkbenchJob workbenchStartupJob = new WorkbenchJob("Awaiting workbench") {
-            @Override
-			public IStatus runInUIThread(IProgressMonitor monitor) {
-                // Do nothing; actually we'll never get here.
-                return Status.OK_STATUS;
-            }
-        };
+    	final WorkbenchStartupJob workbenchStartupJob = new WorkbenchStartupJob("Awaiting workbench");
         workbenchStartupJob.setSystem(true);
         workbenchStartupJob.schedule();
 
