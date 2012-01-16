@@ -11,8 +11,6 @@ public class WinMobileCSPlugin extends AbstractUIPlugin {
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.builder.winmobilecs"; //$NON-NLS-1$
 
-	public static final String EMULATOR_LOCATION = "emulator.location";
-
 	public static final String WP_EMULATOR_SPECIFIER = "emulator";
 
 	// The shared instance

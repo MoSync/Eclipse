@@ -34,9 +34,9 @@ public class WindowsPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 
 	@Override
 	public int isLaunchable(ILaunchConfiguration launchConfiguration, String mode) {
-		/*if (!Util.isWindows()) {
+		if (!Util.isWindows()) {
 			return UNLAUNCHABLE;
-		} else*/ if (!isCorrectPackager(launchConfiguration)) {
+		} else if (!isCorrectPackager(launchConfiguration)) {
 			return IEmulatorLauncher.UNLAUNCHABLE;
 		} if (shouldAskUserForLauncher(launchConfiguration, mode)) {
 			return IEmulatorLauncher.REQUIRES_CONFIGURATION;

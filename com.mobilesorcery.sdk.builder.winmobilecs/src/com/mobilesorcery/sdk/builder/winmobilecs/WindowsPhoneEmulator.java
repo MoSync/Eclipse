@@ -9,17 +9,18 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 
 import com.mobilesorcery.sdk.core.AbstractTool;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 
 public class WindowsPhoneEmulator extends AbstractTool {
 
 	private static WindowsPhoneEmulator instance;
-	private static String toolPath = null;
+	private static IPath toolPath = null;
 
 	public static WindowsPhoneEmulator getDefault() {
-		String newToolPath = WinMobileCSPlugin.getDefault().getPreferenceStore().getString(WinMobileCSPlugin.EMULATOR_LOCATION);
+		IPath newToolPath = MoSyncTool.getDefault().getBinary("WP7AppLauncher");
 		if (instance == null || !Util.equals(toolPath, newToolPath)) {
-			Path path = newToolPath == null ? null : new Path(newToolPath);
+			IPath path = newToolPath == null ? null : newToolPath;
 			instance = new WindowsPhoneEmulator(path);
 		}
 		return instance;

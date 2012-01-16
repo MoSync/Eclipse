@@ -17,13 +17,4 @@
                implementation="com.mobilesorcery.sdk.builder.winmobilecs.launch.WindowsPhoneEmulatorLauncher">
          </launcher>
       </extension>
-                 <extension
-         point="org.eclipse.ui.preferencePages">
-      <page
-            category="com.mobilesorcery.sdk.preferences.main"
-            class="com.mobilesorcery.sdk.builder.winmobilecs.ui.preferences.WindowsPhoneEmulatorPreferencePage"
-            id="com.mobilesorcery.sdk.builder.winmobilecs.emulator.prefs"
-            name="Windows Phone Emulator">
-      </page>
-      </extension>
 </plugin>
