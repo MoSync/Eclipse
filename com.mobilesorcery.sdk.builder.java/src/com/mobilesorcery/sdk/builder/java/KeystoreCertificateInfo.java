@@ -16,6 +16,8 @@ import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.ISecurePropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.ParameterResolver;
+import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PreferenceStorePropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.SecurePropertyException;
@@ -95,8 +97,18 @@ public class KeystoreCertificateInfo {
     }
 
     public IMessageProvider validate(boolean strict) {
+    	return validate(strict, null);
+    }
+
+    public IMessageProvider validate(boolean strict, ParameterResolver resolver) {
         String msg = null;
         int type = IMessageProvider.NONE;
+        File keystoreFile = null;
+		try {
+			keystoreFile = new File(Util.replace(keystoreLocation, resolver));
+		} catch (ParameterResolverException e) {
+			msg = e.getMessage();
+		}
         if (exception != null) {
             msg = "Could not read encrypted passwords (this happens for shared projects, for security reasons).";
             type = IMessageProvider.WARNING;
@@ -109,7 +121,7 @@ public class KeystoreCertificateInfo {
         } else if (Util.isEmpty(keystoreLocation)) {
         	msg = "Keystore location must be provided";
         	type = IMessageProvider.WARNING;
-        } else if (!new File(keystoreLocation).exists()) {
+        } else if (resolver != null && keystoreFile != null && !keystoreFile.exists()) {
         	msg = MessageFormat.format("Keystore {0} does not exist", keystoreLocation);
         	type = IMessageProvider.WARNING;
         } else if (strict && CoreMoSyncPlugin.getDefault().usesEclipseSecureStorage()) {

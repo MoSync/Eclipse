@@ -31,8 +31,13 @@ public class KeystoreCertificateInfoEditor extends Composite implements IUpdatab
     public KeystoreCertificateInfoEditor(Composite parent, int style) {
         super(parent, style);
 
-        keyStore = new FileFieldEditor("dummy.1", "Key&store", this); //$NON-NLS-1$
-        //keyStore.setPage(this);
+        keyStore = new FileFieldEditor("dummy.1", "Key&store", this) {  //$NON-NLS-1$
+        	@Override
+			protected boolean checkState() {
+        		clearErrorMessage();
+        		return true;
+        	}
+        };
 
         storekeyLabel = new Label(this, SWT.PASSWORD);
         storekeyLabel.setText("&Keystore password");

@@ -38,8 +38,11 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.ParameterResolver;
+import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.SecurePropertyException;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
@@ -129,7 +132,7 @@ public class JavaPackager2 extends AbstractPackager {
                 }
             }
 
-            signPackage(internal, project, projectJad, projectJar);
+            signPackage(internal, project, variant, projectJad, projectJar);
 
             buildResult.setBuildResult(IBuildResult.MAIN, projectJar);
             buildResult.setBuildResult(Activator.JAD, projectJad);
@@ -139,18 +142,19 @@ public class JavaPackager2 extends AbstractPackager {
         }
     }
 
-    private void signPackage(DefaultPackager internal, MoSyncProject project, File projectJad, File projectJar) throws IOException, SecurePropertyException, CoreException {
+    private void signPackage(DefaultPackager internal, MoSyncProject project, IBuildVariant variant, File projectJad, File projectJar) throws IOException, SecurePropertyException, CoreException, ParameterResolverException {
         List<KeystoreCertificateInfo> keystoreCertInfos = KeystoreCertificateInfo.load(
         		PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS,
         		project, project.getSecurePropertyOwner());
 
+        ParameterResolver resolver = MoSyncBuilder.createParameterResolver(project, variant);
         for (KeystoreCertificateInfo keystoreCertInfo : keystoreCertInfos) {
-            String keystore = keystoreCertInfo.getKeystoreLocation();
+            String keystore = Util.replace(keystoreCertInfo.getKeystoreLocation(), resolver);
             String alias = keystoreCertInfo.getAlias();
             String storepass = keystoreCertInfo.getKeystorePassword();
             String keypass = keystoreCertInfo.getKeyPassword();
 
-            if (!DefaultMessageProvider.isEmpty(keystoreCertInfo.validate(false))) {
+            if (!DefaultMessageProvider.isEmpty(keystoreCertInfo.validate(false, resolver))) {
             	throw new CoreException(new Status(IStatus.OK, Activator.PLUGIN_ID, "No or invalid key/keystore password for java signing. Please note that for security reasons, passwords are locally stored. You may need to set the password in the Java preference page."));
             }
 

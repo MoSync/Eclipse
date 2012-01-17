@@ -24,9 +24,11 @@ import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.ICapabilities;
 import com.mobilesorcery.sdk.core.ICapability;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
+import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
@@ -56,6 +58,8 @@ public class JavaPackager extends PackageToolPackager {
 				.getPreferenceStore()
 				.getBoolean(PropertyInitializer.JAVAME_DO_SIGN);
 
+		ParameterResolver resolver = MoSyncBuilder.createParameterResolver(project, variant);
+
 		if (doSign) {
 			keystoreCertInfo = KeystoreCertificateInfo.loadOne(
 					PropertyInitializer.JAVAME_KEYSTORE_CERT_INFOS,
@@ -63,15 +67,15 @@ public class JavaPackager extends PackageToolPackager {
 					Activator.getDefault().getPreferenceStore());
 			if (keystoreCertInfo == null
 					|| !DefaultMessageProvider.isEmpty(keystoreCertInfo
-							.validate(false))) {
+							.validate(false, resolver))) {
 				throw new CoreException(new Status(IStatus.OK,
-						Activator.PLUGIN_ID, keystoreCertInfo.validate(false)
+						Activator.PLUGIN_ID, keystoreCertInfo.validate(false, resolver)
 								.getMessage()));
 			}
 		}
 
 		if (keystoreCertInfo != null) {
-			String keystore = keystoreCertInfo.getKeystoreLocation();
+			String keystore = Util.replace(keystoreCertInfo.getKeystoreLocation(), resolver);
 			String alias = keystoreCertInfo.getAlias();
 			String storepass = keystoreCertInfo.getKeystorePassword();
 			String keypass = keystoreCertInfo.getKeyPassword();

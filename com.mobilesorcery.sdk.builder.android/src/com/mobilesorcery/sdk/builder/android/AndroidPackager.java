@@ -14,9 +14,12 @@ import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
+import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.ParameterResolverException;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 
 public class AndroidPackager extends PackageToolPackager {
@@ -38,11 +41,12 @@ public class AndroidPackager extends PackageToolPackager {
 				project,
 				Activator.getDefault().getPreferenceStore());
 
-        if (keystoreCertInfo == null || !DefaultMessageProvider.isEmpty(keystoreCertInfo.validate(false))) {
-        	throw new CoreException(new Status(IStatus.OK, Activator.PLUGIN_ID, keystoreCertInfo.validate(false).getMessage()));
+		ParameterResolver resolver = MoSyncBuilder.createParameterResolver(project, variant);
+        if (keystoreCertInfo == null || !DefaultMessageProvider.isEmpty(keystoreCertInfo.validate(false, resolver))) {
+        	throw new CoreException(new Status(IStatus.OK, Activator.PLUGIN_ID, keystoreCertInfo.validate(false, resolver).getMessage()));
         }
 
-        String keystore = keystoreCertInfo.getKeystoreLocation();
+        String keystore = Util.replace(keystoreCertInfo.getKeystoreLocation(), resolver);
         String alias = keystoreCertInfo.getAlias();
         String storepass = keystoreCertInfo.getKeystorePassword();
         String keypass = keystoreCertInfo.getKeyPassword();

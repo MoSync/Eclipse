@@ -15,3 +15,4 @@ Bundle-ActivationPolicy: lazy
 Bundle-Activator: com.mobilesorcery.sdk.builder.java.Activator
 Export-Package: com.mobilesorcery.sdk.builder.java,
  com.mobilesorcery.sdk.builder.java.ui
+Import-Package: org.eclipse.cdt.core.resources

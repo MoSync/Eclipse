@@ -715,7 +715,7 @@ public class Util {
                         if (paramName.length() == 0) { // Escape pattern %% => %
                             result.append("%"); //$NON-NLS-1$
                         } else {
-                            String paramValue = map.get(paramName);
+                            String paramValue = map == null ? null : map.get(paramName);
                             if (paramValue != null) {
                                 result.append(innerReplace(paramValue, map, depth + 1));
                             } else {
