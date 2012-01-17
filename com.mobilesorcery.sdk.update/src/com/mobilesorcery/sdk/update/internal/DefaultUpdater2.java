@@ -206,8 +206,8 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 					MoSyncTool.USER_HASH_PROP_2);
 
 			try {
-				boolean requestNewKey = userKey == null;
-				if (userKey != null) {
+				boolean requestNewKey = Util.isEmpty(userKey);
+				if (!Util.isEmpty(userKey)) {
 					boolean isValidKey = validateKey();
 					if (!isValidKey) {
 						MoSyncTool.getDefault().setProperty(

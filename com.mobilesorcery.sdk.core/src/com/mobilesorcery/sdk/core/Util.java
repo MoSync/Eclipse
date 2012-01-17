@@ -754,12 +754,16 @@ public class Util {
         	}
             int paramCnt = 0;
             for (Map.Entry<String, String> param : params.entrySet()) {
-                paramCnt++;
-                if (paramCnt > 1) {
-                    paramsStr.append("&"); //$NON-NLS-1$
-                }
+                String key = param.getKey();
+                String value = param.getValue();
+                if (key != null && value != null) {
+	            	paramCnt++;
+	                if (paramCnt > 1) {
+	                    paramsStr.append("&"); //$NON-NLS-1$
+	                }
 
-                paramsStr.append(URLEncoder.encode(param.getKey()) + "=" + URLEncoder.encode(param.getValue())); //$NON-NLS-1$
+	                paramsStr.append(URLEncoder.encode(key) + "=" + URLEncoder.encode(value)); //$NON-NLS-1$
+                }
             }
         }
 
