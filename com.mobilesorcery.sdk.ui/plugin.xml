@@ -413,29 +413,6 @@ icon="icons/launchshortcut.png">
                   <handler
                class="com.mobilesorcery.sdk.ui.internal.handlers.CompileFilesHandler"
                commandId="com.mobilesorcery.sdk.ui.compilefiles">
-               <!-- <activeWhen>
-               <and>
-                     <with
-            variable="selection">
-         <iterate
-               ifEmpty="false"
-               operator="and">
-            <or>
-            <instanceof
-                  value="org.eclipse.cdt.core.model.ITranslationUnit">
-            </instanceof>
-            <instanceof
-                  value="org.eclipse.core.resources.IProject">
-            </instanceof>
-            </or>
-         </iterate> 
-      </with>
-      <test
-                           forcePluginActivation="true"
-                     property="com.mobilesorcery.sdk.testers.hasMoreNature">
-      </test>
-      </and>
-                     </activeWhen> -->
          </handler>
                   <handler
                class="com.mobilesorcery.sdk.ui.internal.handlers.BuildProjectHandler"
@@ -468,7 +445,11 @@ icon="icons/launchshortcut.png">
                   style="push">
                <visibleWhen
                      checkEnabled="true">
-               </visibleWhen>
+                     <test
+                           forcePluginActivation="true"
+                     property="com.mobilesorcery.sdk.testers.hasMoreNature">
+      			</test>
+                                      </visibleWhen>
             </command>
             </menuContribution>
    	 	<menuContribution locationURI="popup:#CEditorContext?after=additions">

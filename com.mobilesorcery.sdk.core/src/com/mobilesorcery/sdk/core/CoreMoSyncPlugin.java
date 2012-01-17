@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -769,12 +770,12 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
             receiver = ((IAdaptable) receiver).getAdapter(IResource.class);
         }
 
-        if (receiver instanceof List) {
-            if (((List)(receiver)).size() == 0) {
+        if (receiver instanceof Collection) {
+            if (((Collection)(receiver)).size() == 0) {
                 return null;
             }
 
-            return extractProject(((List)receiver).get(0));
+            return extractProject(((Collection)receiver).iterator().next());
         }
 
         if(receiver == null) {
