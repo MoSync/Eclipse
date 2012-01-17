@@ -41,7 +41,21 @@ public abstract class MoSyncPropertyPage extends PropertyPage implements IWorkbe
 
 	private final FieldValidationHelper validationHelper = new FieldValidationHelper();
 
-    /**
+	public MoSyncPropertyPage() {
+		if (!shouldHaveDefaultAndApplyButton()) {
+			noDefaultAndApplyButton();
+		}
+	}
+
+	/**
+	 * Clients may override
+	 * @return {@code false} by default
+	 */
+    protected boolean shouldHaveDefaultAndApplyButton() {
+		return false;
+	}
+
+	/**
      * Returns the project currently being edited
      * @return
      */
