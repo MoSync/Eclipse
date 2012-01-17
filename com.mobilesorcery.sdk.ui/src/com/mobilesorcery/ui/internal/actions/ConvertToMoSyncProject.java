@@ -26,21 +26,24 @@ public class ConvertToMoSyncProject implements IObjectActionDelegate {
 
     private ISelection selection;
 
-    public void setActivePart(IAction action, IWorkbenchPart part) {
+    @Override
+	public void setActivePart(IAction action, IWorkbenchPart part) {
     }
 
-    public void run(IAction action) {
+    @Override
+	public void run(IAction action) {
         if (selection instanceof IStructuredSelection) {
             Object first = ((IStructuredSelection)selection).getFirstElement();
             if (first instanceof IProject) {
                 IProject project = (IProject) first;
-                MoSyncNature.addNatureToProject(project);
+                MoSyncNature.addNatureToProject(project, true);
             }
         }
     }
 
-    public void selectionChanged(IAction action, ISelection selection) {
-        this.selection = selection;        
+    @Override
+	public void selectionChanged(IAction action, ISelection selection) {
+        this.selection = selection;
     }
 
 }

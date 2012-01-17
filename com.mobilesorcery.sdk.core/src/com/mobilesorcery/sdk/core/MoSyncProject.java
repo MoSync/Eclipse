@@ -656,7 +656,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			}
 		}
 
-		addNatureToProject(project);
+		MoSyncNature.addNatureToProject(project, false);
 		addDefaultResourceFilter(project, new NullProgressMonitor());
 		MoSyncProject result = create(project);
 		result.activateBuildConfigurations();
@@ -665,6 +665,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		result.setProperty(PROFILE_MANAGER_TYPE_KEY,
 				PropertyUtil.fromInteger(pt));
 		addDefaultFilters(result);
+		MoSyncNature.modifyIncludePaths(project);
 		return result;
 	}
 
@@ -1219,15 +1220,6 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	 */
 	public String getName() {
 		return getWrappedProject().getName();
-	}
-
-	/**
-	 * Adds a MoSync Project Nature to an Eclipse project.
-	 *
-	 * @param project
-	 */
-	public static void addNatureToProject(IProject project) {
-		MoSyncNature.addNatureToProject(project);
 	}
 
 	/**

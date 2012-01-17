@@ -32,6 +32,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.internal.cdt.MoSyncIncludePathContainer;
+import com.mobilesorcery.sdk.internal.cdt.MoSyncPathInitializer;
 
 public class MoSyncNature implements IProjectNature {
 
@@ -47,25 +48,29 @@ public class MoSyncNature implements IProjectNature {
 
     private IProject project;
 
-    public void configure() throws CoreException {
+    @Override
+	public void configure() throws CoreException {
         addBuilder(project, MoSyncBuilder.ID);
         removeBuilder(project, MoSyncBuilder.COMPATIBLE_ID);
     }
 
-    public void deconfigure() throws CoreException {
+    @Override
+	public void deconfigure() throws CoreException {
     	removeBuilder(project, MoSyncBuilder.ID);
     	removeBuilder(project, MoSyncBuilder.COMPATIBLE_ID);
     }
 
-    public IProject getProject() {
+    @Override
+	public IProject getProject() {
         return project;
     }
 
-    public void setProject(IProject project) {
+    @Override
+	public void setProject(IProject project) {
         this.project = project;
     }
 
-    public static void addNatureToProject(IProject project) {
+    public static void addNatureToProject(IProject project, boolean modifyIncludePaths) {
         try {
             if (!project.isOpen()) {
                 project.open(new NullProgressMonitor());
@@ -90,17 +95,20 @@ public class MoSyncNature implements IProjectNature {
             description.setNatureIds(newNatures.toArray(new String[0]));
             project.setDescription(description, null);
 
-            modifyIncludePaths(project);
+            if (modifyIncludePaths) {
+            	modifyIncludePaths(project);
+            }
         } catch (CoreException e) {
             CoreMoSyncPlugin.getDefault().getLog().log(
                     new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could not assígn project to be a MoSync Project", e));
         }
     }
-    
-    private static void modifyIncludePaths(IProject project) throws CModelException {
+
+    public static void modifyIncludePaths(IProject project) throws CoreException {
         ICProject cProject = CoreModel.getDefault().create(project);
         IContainerEntry includePaths = CoreModel.newContainerEntry(MoSyncIncludePathContainer.CONTAINER_ID);
         CoreModel.setRawPathEntries(cProject, new IPathEntry[] { includePaths }, new NullProgressMonitor());
+        MoSyncPathInitializer.getInstance().initialize(MoSyncIncludePathContainer.CONTAINER_ID, cProject);
     }
 
     /*private static void modifyIncludePaths(IProject project) throws CoreException {
@@ -112,9 +120,9 @@ public class MoSyncNature implements IProjectNature {
 		LinkedHashSet<String> externalSettingsProviders = new LinkedHashSet<String>(Arrays.asList(configDesc.getExternalSettingsProviderIds()));
 		externalSettingsProviders.add(MoSyncExternalSettingProvider.ID);
 		configDesc.setExternalSettingsProviderIds(externalSettingsProviders.toArray(new String[0]));
-        CoreModel.getDefault().setProjectDescription(project, projectDesc);        
+        CoreModel.getDefault().setProjectDescription(project, projectDesc);
 	}*/
-    
+
 
     private static void addCNature(IProject project) throws CoreException {
         IProjectDescription description = project.getDescription();
@@ -136,13 +144,13 @@ public class MoSyncNature implements IProjectNature {
         nc[0] = command;
         desc.setBuildSpec(nc);
         project.setDescription(desc, null);
-    }       
-    
+    }
+
     private void removeBuilder(IProject project, String builderID) throws CoreException {
         IProjectDescription desc = project.getDescription();
         ICommand[] commands = desc.getBuildSpec();
         ArrayList<ICommand> newCommands = new ArrayList<ICommand>();
-        
+
         for (int i = 0; i < commands.length; i++) {
             if (!commands[i].getBuilderName().equals(builderID)) {
             	newCommands.add(commands[i]);
@@ -150,7 +158,7 @@ public class MoSyncNature implements IProjectNature {
         }
 
         desc.setBuildSpec(newCommands.toArray(new ICommand[0]));
-        project.setDescription(desc, null); 
+        project.setDescription(desc, null);
     }
 
     /**
@@ -165,7 +173,7 @@ public class MoSyncNature implements IProjectNature {
 	public static boolean isCompatible(IProject project) throws CoreException {
 		return project != null && (project.hasNature(MoSyncNature.ID) || project.hasNature(MoSyncNature.COMPATIBLE_ID));
 	}
-	
+
 	public static boolean hasNature(IProject project) throws CoreException {
 		return project.hasNature(MoSyncNature.ID);
 	}

@@ -34,6 +34,7 @@ import org.eclipse.ui.actions.WorkspaceModifyDelegatingOperation;
 import org.eclipse.ui.wizards.newresource.BasicNewResourceWizard;
 import org.w3c.dom.css.Counter;
 
+import com.mobilesorcery.sdk.core.MoSyncNature;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.stats.CounterVariable;
 import com.mobilesorcery.sdk.core.stats.Stats;
@@ -129,6 +130,8 @@ public class NewMoSyncProjectWizard extends Wizard implements INewWizard {
         }
         Stats.getStats().getVariables().get(CounterVariable.class, "project-count").inc();
         configureProject(mosyncProject);
+        // Just to make sure we have the correct paths right after creation.
+        MoSyncNature.modifyIncludePaths(mosyncProject.getWrappedProject());
     }
 
 	protected void configureProject(MoSyncProject mosyncProject) throws CoreException {
