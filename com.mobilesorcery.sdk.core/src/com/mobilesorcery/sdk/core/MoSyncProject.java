@@ -52,15 +52,15 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.equinox.security.storage.StorageException;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.XMLMemento;
 import org.eclipse.ui.ide.undo.CreateProjectOperation;
 
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.BuildState;
-import com.mobilesorcery.sdk.internal.MoSyncProjectConverter1_2;
 import com.mobilesorcery.sdk.internal.SecureProperties;
+import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_2;
+import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_4;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
@@ -235,11 +235,11 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	 *
 	 * @see MoSyncProject#getFormatVersion()
 	 */
-	public static final Version CURRENT_VERSION = new Version("1.3");
+	public static final Version CURRENT_VERSION = new Version("1.4");
 
 	private static final Version VERSION_1_0 = new Version("1");
 
-	private static final Version VERSION_1_2 = new Version("1.2");
+	private static final Version VERSION_1_3 = new Version("1.3");
 
 	/**
 	 * The name of the file where this project's <b>shared</b> meta data is
@@ -624,6 +624,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	private static void upgrade(MoSyncProject project) throws CoreException {
 		// TODO: Whenever the need arises we may want to fix something smarter
 		MoSyncProjectConverter1_2.getInstance().convert(project);
+		MoSyncProjectConverter1_4.getInstance().convert(project);
 	}
 
 	/**
@@ -664,15 +665,15 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			MoSyncTool.LEGACY_PROFILE_TYPE;
 		result.setProperty(PROFILE_MANAGER_TYPE_KEY,
 				PropertyUtil.fromInteger(pt));
-		addDefaultFilters(result);
+		addCapabilityFilters(result, new String[0]);
 		MoSyncNature.modifyIncludePaths(project);
 		return result;
 	}
 
-	private static void addDefaultFilters(MoSyncProject result) {
+	private static void addCapabilityFilters(MoSyncProject result, String[] requiredCapabilities) {
 		if (result.getProfileManagerType() == MoSyncTool.DEFAULT_PROFILE_TYPE) {
 			result.getDeviceFilter().addFilter(
-				DeviceCapabilitiesFilter.create(new String[0], new String[0]));
+				DeviceCapabilitiesFilter.create(requiredCapabilities, new String[0]));
 		}
 	}
 
@@ -1041,7 +1042,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	 * Sets the profile manager type of this project, and if it
 	 * is different from it's current type: makes
 	 * sure to change the target profile to a default one as well
-	 * as clearing all filters. (This is actually more of a conversion
+	 * as setting all filters to a reasonable value. (This is actually more of a conversion
 	 * method than a setter).
 	 * @param type
 	 */
@@ -1049,9 +1050,23 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		if (getProfileManagerType() != type) {
 			PropertyUtil.setInteger(this, MoSyncProject.PROFILE_MANAGER_TYPE_KEY, type);
 			getDeviceFilter().removeAllFilters();
-			addDefaultFilters(this);
+			addCapabilityFilters(this, createCapabilitiesFromPermissions());
 			setTargetProfile(null);
 		}
+	}
+
+	private String[] createCapabilitiesFromPermissions() {
+		List<String> permissions = getPermissions().getRequestedPermissions(true);
+		TreeSet<String> availableCapabilities = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+		availableCapabilities.addAll(
+				Arrays.asList(ProfileDBManager.getInstance().getAvailableCapabilities(true)));
+		ArrayList<String> result = new ArrayList<String>();
+		for (String permission : permissions) {
+			if (availableCapabilities.contains(permission)) {
+				result.add(permission);
+			}
+		}
+		return result.toArray(new String[0]);
 	}
 
 	/**

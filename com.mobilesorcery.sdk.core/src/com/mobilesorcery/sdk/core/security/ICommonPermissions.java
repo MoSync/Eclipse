@@ -48,11 +48,13 @@ public interface ICommonPermissions {
     public final static String SMS_RECEIVE = SMS + "/Receive";
     public final static String SMS_READ = SMS + "/Read";
 
-    public final static String VIBRATE = "Vibrate";
+    public final static String VIBRATE = "Vibration";
+    public final static String VIBRATE_1_2 = "Vibrate";
 
     public final static String HOMESCREEN = "Home Screen";
 
-    public final static String AUTOSTART = "Auto Start";
+    public final static String AUTOSTART = "Autostart";
+    public final static String AUTOSTART_1_2 = "Auto Start";
 
 	public static final String NFC = "NFC";
 

@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.internal;
+package com.mobilesorcery.sdk.internal.convert;
 
 import java.util.ArrayList;
 import java.util.HashSet;
