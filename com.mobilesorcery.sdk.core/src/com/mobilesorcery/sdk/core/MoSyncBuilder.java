@@ -1086,10 +1086,8 @@ public class MoSyncBuilder extends ACBuilder {
 					.getConfigurationId());
 			boolean debug = cfg != null
 					&& cfg.isType(IBuildConfiguration.DEBUG_TYPE);
-			if (doesRescompilerLibExist()) {
-				result.add(debug ? new Path("rescompilerD.lib") : new Path(
-						"rescompiler.lib"));
-			}
+			result.add(debug ? new Path("rescompilerD.lib") : new Path(
+					"rescompiler.lib"));
 		}
 		if (!PropertyUtil.getBoolean(buildProperties, IGNORE_DEFAULT_LIBRARIES)) {
 			result.addAll(Arrays.asList(PropertyUtil.getPaths(buildProperties,
@@ -1106,7 +1104,7 @@ public class MoSyncBuilder extends ACBuilder {
 		return result.toArray(new IPath[0]);
 	}
 
-	private static boolean doesRescompilerLibExist() {
+	/*private static boolean doesRescompilerLibExist() {
 		if (doesRescompilerLibExist == null) {
 			try {
 				doesRescompilerLibExist = MoSyncTool.getDefault()
@@ -1117,7 +1115,7 @@ public class MoSyncBuilder extends ACBuilder {
 			}
 		}
 		return doesRescompilerLibExist;
-	}
+	}*/
 
 	public static boolean isBuilderPreference(String preferenceKey) {
 		return preferenceKey != null
