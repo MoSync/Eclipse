@@ -462,7 +462,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		}
 	}
 
-	protected void updateProjectSpec() {
+	public void updateProjectSpec() {
 		updateProjectSpec(SHARED_PROPERTY);
 		updateProjectSpec(LOCAL_PROPERTY);
 		updateProjectSpec(WORKSPACE_LOCAL_PROPERTY);
@@ -1056,13 +1056,15 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	}
 
 	private String[] createCapabilitiesFromPermissions() {
-		List<String> permissions = getPermissions().getRequestedPermissions(true);
+		IApplicationPermissions permissions = getPermissions();
+		List<String> permissionNames = permissions.getRequestedPermissions(true);
 		TreeSet<String> availableCapabilities = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
 		availableCapabilities.addAll(
 				Arrays.asList(ProfileDBManager.getInstance().getAvailableCapabilities(true)));
 		ArrayList<String> result = new ArrayList<String>();
-		for (String permission : permissions) {
-			if (availableCapabilities.contains(permission)) {
+		for (String permission : permissionNames) {
+			// We only support one-level permissions as of now
+			if (availableCapabilities.contains(permission) && permission.indexOf('/') == -1) {
 				result.add(permission);
 			}
 		}

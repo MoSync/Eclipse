@@ -29,9 +29,14 @@ import com.mobilesorcery.sdk.profiles.filter.elementfactories.ProfileFilterFacto
 public class ProfileFilter extends AbstractDeviceFilter {
 
     private final TreeSet<IProfile> profiles = new TreeSet<IProfile>();
+	private final int profileManagerType;
 
-    public ProfileFilter() {
+	public ProfileFilter() {
+    	this(MoSyncTool.LEGACY_PROFILE_TYPE);
+    }
 
+	public ProfileFilter(int profileManagerType) {
+    	this.profileManagerType = profileManagerType;
     }
 
     public void setVendors(IVendor[] vendorsToAccept, boolean add) {
@@ -42,7 +47,7 @@ public class ProfileFilter extends AbstractDeviceFilter {
 
     public void setVendors(String[] vendorNames) {
         for (int i = 0; i < vendorNames.length; i++) {
-            setVendor(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE).getVendor(vendorNames[i]), true);
+            setVendor(MoSyncTool.getDefault().getProfileManager(profileManagerType).getVendor(vendorNames[i]), true);
         }
     }
 
@@ -54,7 +59,7 @@ public class ProfileFilter extends AbstractDeviceFilter {
 
     public void setProfiles(String[] profileNames) {
         for (int i = 0; i < profileNames.length; i++) {
-            setProfile(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE).getProfile(profileNames[i]), true);
+            setProfile(MoSyncTool.getDefault().getProfileManager(profileManagerType).getProfile(profileNames[i]), true);
         }
     }
 
@@ -158,6 +163,7 @@ public class ProfileFilter extends AbstractDeviceFilter {
         memento.putString("vendors", Util.join(vendors.toArray(new IVendor[vendors.size()]), ","));
         memento.putString("profiles", Util.join(getProfilesWithoutVendor(vendors), ","));
         memento.putInteger("require", required ? REQUIRE : DISALLOW);
+        memento.putInteger("mgr", profileManagerType);
     }
 
     public void clear() {

@@ -296,7 +296,7 @@ public class DefaultProfileFilterComposite extends Composite implements
 
 	public void updateProject() {
 		project.getDeviceFilter().removeAllFilters();
-		ProfileFilter platformFilter = new ProfileFilter();
+		ProfileFilter platformFilter = new ProfileFilter(MoSyncTool.DEFAULT_PROFILE_TYPE);
 		platformFilter.setStyle(ProfileFilter.REQUIRE);
 		for (IVendor platform : platforms) {
 			platformFilter.setVendor(platform, true);

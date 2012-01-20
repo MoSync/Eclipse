@@ -41,11 +41,7 @@ public class WindowsPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 		} if (shouldAskUserForLauncher(launchConfiguration, mode)) {
 			return IEmulatorLauncher.REQUIRES_CONFIGURATION;
 		} else if (!isCorrectlyInstalled()) {
-			IEmulatorLauncher preferredLauncher = CoreMoSyncPlugin.getDefault().getPreferredLauncher(WinMobileCSPackager.ID);
-			boolean useOtherLauncher = !shouldAskUserForLauncher(WinMobileCSPackager.ID) && !Util.equals(preferredLauncher.getId(), ID);
-			return isAutoSelectLaunch(launchConfiguration, mode) && useOtherLauncher ?
-					IEmulatorLauncher.UNLAUNCHABLE :
-					IEmulatorLauncher.REQUIRES_CONFIGURATION;
+			return IEmulatorLauncher.UNLAUNCHABLE;
 		} else {
 			return super.isLaunchable(launchConfiguration, mode);
 		}
@@ -74,34 +70,29 @@ public class WindowsPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 	@Override
 	public IEmulatorLauncher configure(ILaunchConfiguration config, String mode) {
 		Display d = PlatformUI.getWorkbench().getDisplay();
-		// If we are not auto-select, don't fallback to MoRe.
-		final boolean isAutomaticSelection = isAutoSelectLaunch(config, mode);
-		// And if we are supposed to ask the user, we do not really need to configure anything.
-		final boolean needsConfig = !shouldAskUserForLauncher(config, mode);
 
 		final IEmulatorLauncher[] result = new IEmulatorLauncher[] { null };
 		d.syncExec(new Runnable() {
 			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-				result[0] = showConfigureDialog(shell, isAutomaticSelection, needsConfig);
+				result[0] = showConfigureDialog(shell);
 			}
 		});
 		return result[0];
 	}
 
-	protected IEmulatorLauncher showConfigureDialog(Shell shell,
-			boolean showFallbackAlternative, boolean needsConfig) {
+	protected IEmulatorLauncher showConfigureDialog(Shell shell) {
 		ConfigureWindowsPhoneEmulatorDialog dialog = new ConfigureWindowsPhoneEmulatorDialog(shell);
-		dialog.setIsAutomaticSelection(showFallbackAlternative);
-		dialog.setNeedsConfig(needsConfig);
+		dialog.setIsAutomaticSelection(true);
+		dialog.setNeedsConfig(false);
 		dialog.open();
 		return dialog.getSelectedLauncher();
 	}
 
 	@Override
 	public int getLaunchType(IPackager packager) {
-		return Util.equals(packager.getId(), WinMobileCSPackager.ID) /*&& Util.isWindows()*/ ? LAUNCH_TYPE_NATIVE : LAUNCH_TYPE_NONE;
+		return Util.equals(packager.getId(), WinMobileCSPackager.ID) && Util.isWindows() ? LAUNCH_TYPE_NATIVE : LAUNCH_TYPE_NONE;
 	}
 
 	protected boolean isCorrectlyInstalled() {

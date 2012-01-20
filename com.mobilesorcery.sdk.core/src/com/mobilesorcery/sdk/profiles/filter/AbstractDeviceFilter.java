@@ -27,14 +27,15 @@ import com.mobilesorcery.sdk.profiles.IVendor;
 public abstract class AbstractDeviceFilter implements IDeviceFilter, IAdaptable {
 
     public static final int REQUIRE = 0;
-    
+
     public static final int DISALLOW = 1;
-    
-    private PropertyChangeSupport listeners = new PropertyChangeSupport(this);
+
+    private final PropertyChangeSupport listeners = new PropertyChangeSupport(this);
 
     protected boolean required;
 
-    public boolean accept(Object vendorOrProfile) {
+    @Override
+	public boolean accept(Object vendorOrProfile) {
         if (vendorOrProfile instanceof IProfile) {
             return acceptProfile((IProfile)vendorOrProfile);
         } else if (vendorOrProfile instanceof IVendor) {
@@ -49,7 +50,7 @@ public abstract class AbstractDeviceFilter implements IDeviceFilter, IAdaptable 
      * May be overridden by clients - the default implementation
      * iterates through all the profiles of this vendor
      * and return <code>true</code> if and only if at least
-     * one of these profiles is accepted (using the acceptProfile method). 
+     * one of these profiles is accepted (using the acceptProfile method).
      * @param vendor
      * @return
      */
@@ -60,21 +61,23 @@ public abstract class AbstractDeviceFilter implements IDeviceFilter, IAdaptable 
                 return true;
             }
         }
-        
+
         return false;
     }
 
-    public void addPropertyChangeListener(PropertyChangeListener listener) {
+    @Override
+	public void addPropertyChangeListener(PropertyChangeListener listener) {
         this.listeners.addPropertyChangeListener(listener);
     }
-    
-    public void removePropertyChangeListener(PropertyChangeListener listener) {
+
+    @Override
+	public void removePropertyChangeListener(PropertyChangeListener listener) {
         this.listeners.addPropertyChangeListener(listener);
     }
-    
+
     /**
      * Subclasses may use this method to notify any listeners about changes.
-     * 
+     *
      * @param event
      */
     protected void notifyListeners(PropertyChangeEvent event) {
@@ -88,23 +91,24 @@ public abstract class AbstractDeviceFilter implements IDeviceFilter, IAdaptable 
                 result.add(vendors[i]);
             }
         }
-        
+
         return result.toArray(new IVendor[0]);
     }
-    
+
     public void setStyle(int style) {
         this.required = style == REQUIRE;
     }
-    
+
     public int getStyle() {
         return required ? REQUIRE : DISALLOW;
     }
 
-    public Object getAdapter(Class adapter) {
+    @Override
+	public Object getAdapter(Class adapter) {
         if (IDeviceFilter.class.isAssignableFrom(adapter)) {
             return this;
         }
-        
+
         return null;
     }
 }

@@ -20,9 +20,6 @@ public class WinMobileCSPackager extends PackageToolPackager {
 
 	public static final String ID = "com.mobilesorcery.sdk.build.winmobilecs.packager";
 
-	private static final String REBUILD = "rebuild";
-	private static final String INTERPRETED = "interpreted";
-
 	private static final String PROJECT_FILE = "project";
 
 	@Override
@@ -31,7 +28,7 @@ public class WinMobileCSPackager extends PackageToolPackager {
 		if (shouldBuildWithVS(project, variant)) {
 			String config = getConfig(project, variant);
 			File xapFile =
-				internal.resolveFile("%package-output-dir%/project/bin/" + config + "/mosync.xap");
+				internal.resolveFile("%package-output-dir%/project/bin/" + config + "/%app-name%.xap");
 			return createBuildResult(xapFile);
 		} else {
 			File csProjFile =
@@ -57,6 +54,8 @@ public class WinMobileCSPackager extends PackageToolPackager {
 
 		String config = getConfig(project, variant);
 		commandLine.flag("--wp-config").with(config);
+
+		commandLine.flag("--wp-guid").with(project.getProperty(PropertyInitializer.GUID));
 	}
 
 	private String getConfig(MoSyncProject project, IBuildVariant variant) {
@@ -64,15 +63,11 @@ public class WinMobileCSPackager extends PackageToolPackager {
 				.getConfigurationId());
 		boolean isDebugBuild = cfg != null
 				&& cfg.getTypes().contains(IBuildConfiguration.DEBUG_TYPE);
-		if (REBUILD.equals(getOutputType())) {
+		if (shouldUseStaticRecompile(project, variant)) {
 			return isDebugBuild ? "rebuild_debug" : "rebuild_release";
 		} else {
 			return isDebugBuild ? "Debug" : "Release";
 		}
-	}
-
-	public String getOutputType() {
-		return REBUILD;
 	}
 
 	private boolean shouldBuildWithVS(MoSyncProject project,

@@ -17,4 +17,13 @@
                implementation="com.mobilesorcery.sdk.builder.winmobilecs.launch.WindowsPhoneEmulatorLauncher">
          </launcher>
       </extension>
+             <extension
+             point="com.mobilesorcery.core.propertyinitializers">
+          <initializer
+                class="com.mobilesorcery.sdk.builder.winmobilecs.PropertyInitializer"
+                context="com.mobilesorcery.sdk.mosync.project.context"
+                id="com.mobilesorcery.sdk.builder.winmobilecs.initializer"
+                prefix="winmobilecs">
+          </initializer>
+       </extension>
 </plugin>
