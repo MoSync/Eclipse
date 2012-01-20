@@ -16,6 +16,7 @@ package com.mobilesorcery.sdk.core;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
+import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,9 +29,11 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import javax.crypto.spec.PBEKeySpec;
+import javax.rmi.CORBA.Tie;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -106,6 +109,9 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	private static final String PREFERRED_LAUNCER_PREF_PREFIX = PLUGIN_ID + "preferred.launcher.";
 
+	// Days since Oct 15, 1528 until Jan 1, 1970
+	private static final long DCE_OFFSET = 141427 * 86400;
+
     // The shared instance
     private static CoreMoSyncPlugin plugin;
 
@@ -152,6 +158,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	private final SecurePasswordProvider passwordProvider = new SecurePasswordProvider();
 
 	private String workspaceToken;
+
+	private SecureRandom secureRnd;
 
     /**
      * The constructor
@@ -909,6 +917,30 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	}
 
 	/**
+	 * Generates a time-based 128-bit UUID.
+	 * @return
+	 */
+	public UUID generateUUID() {
+		if (secureRnd == null) {
+			secureRnd = new SecureRandom();
+		}
+		// Generate a 48-bit random node id; set the multicast bit to 1
+		long nodeId = (secureRnd.nextLong() & 0xffffffffffffL) | 0x010000000000L;
+		long clockSeq = secureRnd.nextInt(0x4fff);
+		long clockSeq_lo = clockSeq & 0xff;
+		long clockSeq_hi_and_res = ((clockSeq >> 16) & 0x4f) | 0x80;
+		long lsb = (clockSeq_hi_and_res << 56) | (clockSeq_lo << 48) | nodeId;
+
+		long utcTimestamp = System.currentTimeMillis();
+		long timestamp = DCE_OFFSET + 10000 * utcTimestamp;
+		long timestamp_lo = timestamp & 0xffffffff;
+		long timestamp_mid = (timestamp >> 32) & 0xffff;
+		long timestamp_hi_and_version = ((timestamp >> 48) & 0x0fff) | 0x1000;
+		long msb = (timestamp_lo << 32) | (timestamp_mid << 16) | timestamp_hi_and_version;
+		return new UUID(msb, lsb);
+	}
+
+	/**
 	 * Returns the 'low memory manager' for notifications on low memory
 	 * @return
 	 */
@@ -918,4 +950,5 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		}
 		return lowMemoryManager;
 	}
+
 }
