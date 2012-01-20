@@ -38,7 +38,7 @@ public class IsReleasePackageTester extends MoSyncNatureTester {
 			// Only top-level
 			if (folder.getProjectRelativePath().segmentCount() == 1) {
 				String folderName = getReleasePackageFolder(project);
-				if (Util.equals(folderName.toLowerCase(), folder.getName()
+				if (folderName != null && Util.equals(folderName.toLowerCase(), folder.getName()
 						.toLowerCase())) {
 					return true;
 				}
