@@ -69,9 +69,6 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 
 		private IProfile getProfile(MoSyncProject project, ITargetPhone phone) {
 			IProfile targetProfile = phone == null ? null : phone.getPreferredProfile(project.getProfileManagerType());
-			if (targetProfile == null) {
-				targetProfile = project == null ? null : project.getTargetProfile();
-			}
 			return targetProfile;
 		}
 
@@ -87,10 +84,11 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
                 // Fix for MOSYNC-569
                 MoSyncBuilder.saveAllEditors(project.getWrappedProject(), true, true);
 
-				if (phone == null) {
+				int profileManagerType = project.getProfileManagerType();
+				if (phone == null || phone.getPreferredProfile(profileManagerType) == null) {
 					SubProgressMonitor subMonitor = new SubProgressMonitor(
 							monitor, 1);
-					phone = SelectTargetPhoneAction.selectPhone(project.getProfileManagerType(), window,
+					phone = SelectTargetPhoneAction.selectPhone(phone, profileManagerType, window,
 							subMonitor);
 				}
 

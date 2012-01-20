@@ -239,24 +239,27 @@ public class SelectTargetPhoneAction implements
 	 *
 	 * @return
 	 */
-	public static ITargetPhone selectPhone(int profileManagerType, IShellProvider shellProvider,
+	public static ITargetPhone selectPhone(ITargetPhone targetPhone, int profileManagerType, IShellProvider shellProvider,
 			IProgressMonitor monitor) throws CoreException {
-	    ITargetPhone result = null;
-		ITargetPhoneTransport selectedTransport = selectTransport(shellProvider);
-		if (selectedTransport != null) {
-			result = selectedTransport.scan(shellProvider, monitor);
-			if (result != null) {
-			    TargetPhonePlugin.getDefault().addToHistory(result);
-			    if (result.getPreferredProfile(profileManagerType) == null) {
-                    monitor.setTaskName(MessageFormat.format(
-                            "Assigning profile to {0}", result.getName()));
-                    SelectTargetPhoneAction.selectProfileForPhone(profileManagerType, result,
-                            shellProvider, true);
-                }
-			}
+		ITargetPhoneTransport selectedTransport = targetPhone == null ? null : targetPhone.getTransport();
+	    if (selectedTransport == null) {
+	    	selectedTransport = selectTransport(shellProvider);
+	    	if (selectedTransport != null) {
+				targetPhone = selectedTransport.scan(shellProvider, monitor);
+		    }
+	    }
+
+		if (targetPhone != null) {
+		    TargetPhonePlugin.getDefault().addToHistory(targetPhone);
+		    if (targetPhone.getPreferredProfile(profileManagerType) == null) {
+                monitor.setTaskName(MessageFormat.format(
+                        "Assigning profile to {0}", targetPhone.getName()));
+                SelectTargetPhoneAction.selectProfileForPhone(profileManagerType, targetPhone,
+                        shellProvider, true);
+            }
 		}
 
-		return result;
+		return targetPhone;
 	}
 
 	public static ITargetPhoneTransport selectTransport(
