@@ -18,7 +18,7 @@ public class WindowsPhoneEmulator extends AbstractTool {
 	private static IPath toolPath = null;
 
 	public static WindowsPhoneEmulator getDefault() {
-		IPath newToolPath = MoSyncTool.getDefault().getBinary("WP7AppLauncher");
+		IPath newToolPath = MoSyncTool.getDefault().getBinary("WP7AppLauncher/WP7AppLauncher");
 		if (instance == null || !Util.equals(toolPath, newToolPath)) {
 			IPath path = newToolPath == null ? null : newToolPath;
 			instance = new WindowsPhoneEmulator(path);
