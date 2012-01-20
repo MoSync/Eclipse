@@ -20,6 +20,7 @@ import org.eclipse.jface.preference.IPreferenceStore;
 
 import com.mobilesorcery.sdk.core.IPropertyInitializerDelegate;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 
@@ -35,11 +36,11 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
     private static final String UID_PREFIX = PREFIX + "uid."; //$NON-NLS-1$
 
 	public static final String S60V2_UID = UID_PREFIX + "s60v2uid"; //$NON-NLS-1$
-    
+
     public static final String S60V3_UID = UID_PREFIX + "s60v3uid"; //$NON-NLS-1$
-    
+
     public static final String S60_KEY_FILE = PREFIX + "key.file"; //$NON-NLS-1$
-    
+
     public static final String S60_CERT_FILE = PREFIX + "cert.file"; //$NON-NLS-1$
 
     public static final String S60_PASS_KEY = PREFIX + "pass.key"; //$NON-NLS-1$
@@ -47,43 +48,45 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
     public static final String S60_PROJECT_SPECIFIC_KEYS = PREFIX + "proj.spec.keys"; //$NON-NLS-1$
 
     private static Random rnd = new Random(System.currentTimeMillis());
-    
+
 	public PropertyInitializer() {
 	}
 
+	@Override
 	public String getDefaultValue(IPropertyOwner p, String key) {
-		if (key.startsWith(UID_PREFIX)) {		    
+		if (key.startsWith(UID_PREFIX)) {
 			String value = generateUID(key);
 			// We'll actually set the value.
 			p.initProperty(key, value);
-			
+
 			return value;
 		} else if (key.equals(S60_PROJECT_SPECIFIC_KEYS)) {
             return PropertyUtil.fromBoolean(false);
         } else if (key.equals(S60_KEY_FILE) || key.equals(S60_CERT_FILE) || key.equals(S60_PASS_KEY)) {
             return Activator.getDefault().getPreferenceStore().getString(key);
         }
-		
+
 		return null;
 	}
 
 
     public static String generateUID(String property) {
         long startRange = getStartOfRange(property);
-        String uid = Long.toHexString(startRange + rnd.nextInt(getLengthOfRange(property)));        
+        String uid = Long.toHexString(startRange + rnd.nextInt(getLengthOfRange(property)));
         uid = Util.fill('0', 8 - uid.length()) + uid;
         return "0x" + uid;         //$NON-NLS-1$
     }
-    
+
     public static long getStartOfRange(String property) {
-    	return S60V3_UID == property ? 0xE0000000L : 0L;	
+    	return S60V3_UID == property ? 0xE0000000L : 0L;
     }
-    
+
     public static int getLengthOfRange(String property) {
     	return 0x0FFFFFFF;
     }
 
-    public void initializeDefaultPreferences() {
+    @Override
+	public void initializeDefaultPreferences() {
         IPreferenceStore store = Activator.getDefault().getPreferenceStore();
         store.setDefault(S60_KEY_FILE, DefaultKeyInitializer.getDefaultKeyFile().getAbsolutePath());
         store.setDefault(S60_CERT_FILE, DefaultKeyInitializer.getDefaultCertFile().getAbsolutePath());
