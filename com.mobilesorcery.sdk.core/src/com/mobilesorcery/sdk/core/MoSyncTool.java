@@ -52,7 +52,7 @@ public class MoSyncTool {
 
 	public final static String CONSTANT_PREFIX = "MA_PROF_CONST_";
 
-	public static final int UNVERSIONED = -1;
+	public static final String UNVERSIONED = "";
 
 	/**
 	 * A filter for excluding constants from the constants.
@@ -602,51 +602,36 @@ public class MoSyncTool {
 	 *
 	 * @return
 	 */
-	public int getCurrentBinaryVersion() {
+	public String getCurrentBinaryVersion() {
 		return getCurrentVersionFromFile(MoSyncTool.getDefault().getMoSyncBin()
 				.append("version.dat").toFile()); //$NON-NLS-1$
 	}
 
-	/**
-	 * Returns the version of the current set of installed device profiles.
-	 *
-	 * @return
-	 */
-	public int getCurrentProfileVersion() {
-		return getCurrentVersionFromFile(MoSyncTool.getDefault()
-				.getProfilesPath().append("version.dat").toFile()); //$NON-NLS-1$
-	}
-
-	private int getCurrentVersionFromFile(File versionFile) {
+	private String getCurrentVersionFromFile(File versionFile) {
 		if (versionFile.exists()) {
 			try {
 				return readVersion(versionFile);
 			} catch (IOException e) {
-				return UNVERSIONED;
+				// Fallback
 			}
 		}
-
-		return 0;
+		return UNVERSIONED;
 	}
 
-	private int readVersion(File versionFile) throws IOException {
+	private String readVersion(File versionFile) throws IOException {
 		FileReader input = new FileReader(versionFile);
 		try {
 			LineNumberReader lineInput = new LineNumberReader(input);
 			String version = lineInput.readLine();
 			if (version != null) {
-				version = version.trim();
-				return Integer.parseInt(version);
+				return version;
 			}
-
-			return 0;
 		} catch (Exception e) {
-			return UNVERSIONED;
+			// Fall-thru
 		} finally {
-			if (input != null) {
-				input.close();
-			}
+			Util.safeClose(input);
 		}
+		return UNVERSIONED;
 	}
 
 	/**

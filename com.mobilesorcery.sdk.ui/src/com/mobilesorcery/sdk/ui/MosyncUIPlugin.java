@@ -671,8 +671,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	public Map<String, String> getVersionParameters(boolean hashOnly) {
 		HashMap<String, String> params = new HashMap<String, String>();
 		if (!hashOnly) {
-			int version = MoSyncTool.getDefault().getCurrentBinaryVersion();
-			String versionStr = Integer.toString(version);
+			String versionStr = MoSyncTool.getDefault().getCurrentBinaryVersion();
 			// For now we send the same version for all components.
 			params.put("db", versionStr); //$NON-NLS-1$
 			params.put("sdk", versionStr); //$NON-NLS-1$

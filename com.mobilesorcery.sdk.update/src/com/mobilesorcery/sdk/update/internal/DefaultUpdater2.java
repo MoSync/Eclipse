@@ -29,8 +29,11 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IPerspectiveDescriptor;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWindowListener;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
@@ -121,10 +124,8 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 				}
 
 				try {
-					PlatformUI
-							.getWorkbench()
-							.showPerspective(
-									RegistrationPerspectiveFactory.REGISTRATION_PERSPECTIVE_ID,
+					IWorkbench wb = PlatformUI.getWorkbench();
+					IWorkbenchPage page = wb.showPerspective(RegistrationPerspectiveFactory.REGISTRATION_PERSPECTIVE_ID,
 									window);
 				} catch (WorkbenchException e) {
 					// We can still do SOMETHING.
