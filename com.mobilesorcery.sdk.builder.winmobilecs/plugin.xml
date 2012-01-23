@@ -26,4 +26,20 @@
                 prefix="winmobilecs">
           </initializer>
        </extension>
+       <extension
+             point="org.eclipse.ui.propertyPages">
+          <page
+                class="com.mobilesorcery.sdk.builder.winmobilecs.ui.properties.WindowsPhoneGUIDPropertyPage"
+                id="com.mobilesorcery.sdk.ui.properties.windowscs.guid"
+                name="Windows Phone GUID"
+                objectClass="org.eclipse.core.resources.IProject"
+                category="com.mobilesorcery.sdk.ui.properties.project">
+                                <enabledWhen>
+                                   <test
+                                         forcePluginActivation="true"
+                                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                                   </test>
+                                </enabledWhen>
+                                </page>
+             </extension>
 </plugin>
