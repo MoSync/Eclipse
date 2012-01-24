@@ -3,6 +3,7 @@ package com.mobilesorcery.sdk.ui.internal;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
+import org.eclipse.ui.IPerspectiveDescriptor;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
@@ -10,6 +11,7 @@ import org.eclipse.ui.PlatformUI;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.internal.properties.MoSyncProjectPropertyPage;
 
@@ -28,6 +30,13 @@ public class LegacyProfileViewOpener implements PropertyChangeListener {
 				@Override
 				public void run() {
 					IWorkbenchWindow wWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+					IPerspectiveDescriptor perspective = wWindow.getActivePage().getPerspective();
+					if (perspective == null || !Util.equals(perspective.getId(), "com.mobilesorcery.ui.perspective")) {
+						// We are only interested if we are in the mosync perspective; the best option
+						// in 99.99% of the cases.
+						return;
+					}
+
 					MoSyncProject currentProject = project[0];
 					if (currentProject == null) {
 						currentProject = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(wWindow);
