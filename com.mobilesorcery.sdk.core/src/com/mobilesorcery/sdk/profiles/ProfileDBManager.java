@@ -301,7 +301,11 @@ public class ProfileDBManager extends ProfileManager {
 			return profile.getVendor().getName();
 		} else {
 			IProfile platformProfile = DeviceCapabilitiesFilter.matchLegacyProfile(profile);
-			return platformProfile.getVendor().getName();
+			if (platformProfile != null) {
+				return platformProfile.getVendor().getName();
+			} else {
+				return null;
+			}
 		}
 	}
 }
