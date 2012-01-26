@@ -30,159 +30,177 @@ import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
 import com.mobilesorcery.sdk.ui.ImportProjectsRunnable;
 
 /**
- * An action that imports examples into the current workspace,
- * and closes the welcome screen.
- * 
+ * An action that imports examples into the current workspace, and closes the
+ * welcome screen.
+ *
  * @author Mattias F
  */
-public class ImportExamplesAction implements IIntroAction 
-{
+public class ImportExamplesAction implements IIntroAction {
 	/**
-	 * Represents a job that imports all examples into the
-	 * current workspace.
-	 * 
+	 * Represents a job that imports all examples into the current workspace.
+	 *
 	 * @author Mattias
 	 */
-	private final class ImportExamplesProjectJob extends WorkbenchJob
-	{
-        private ImportExamplesProjectJob(String name)
-        {
-            super(name);
-        }
+	private final class ImportExamplesProjectJob extends WorkbenchJob {
+		private String type;
 
-        public IStatus runInUIThread(IProgressMonitor monitor)
-        {
-            File examplesDir = MoSyncTool.getDefault().getMoSyncExamplesDirectory().toFile();
-            File exampleManifestFile = new File(examplesDir, "examples.list");
-            
-            if( !exampleManifestFile.exists( ) )
-            {
-            	return Status.OK_STATUS;
-            }
-            
-            try {
-            	/* Parse examples list */
-                Map<String, String> exampleMap = parseExampleManifest( exampleManifestFile );
-                
-                /* Do not import examples that we already have in the workspace */
-                removeExistingExamples( exampleMap );
+		private ImportExamplesProjectJob(String name) {
+			super(name);
+		}
 
-                /* If there are any examples left to import, add them to the example lists */
-                ArrayList<File> projectFiles = new ArrayList<File>( );
-                ArrayList<String> preferredProjectNames = new ArrayList<String>( );
-                addExamples( exampleMap, projectFiles, preferredProjectNames );
-                
-                /* Create the import job */
-                File projectFileArray[] = projectFiles.toArray( new File[0] );
-                String preferredProjectNameArray[] = preferredProjectNames.toArray( new String[0] );
-                ImportProjectsRunnable importer = new ImportProjectsRunnable(projectFileArray, 
-                															 preferredProjectNameArray , 
-                															 ImportProjectsRunnable.COPY_ALL_FILES | 
-                															 ImportProjectsRunnable.USE_NEW_PROJECT_IF_AVAILABLE);
-                importer.useNewCopyFilter( );
-                Job job = importer.createJob( true );
-                
-                closeWelcomeWhenDone( job );
+		@Override
+		public IStatus runInUIThread(IProgressMonitor monitor) {
+			File examplesDir = MoSyncTool.getDefault()
+					.getMoSyncExamplesDirectory().toFile();
+			File exampleManifestFile = new File(examplesDir, "examples.list");
 
-            } 
-            catch (Exception e)
-            {
-                return new Status(IStatus.ERROR, "com.mobilesorcery.sdk.product", "Could not import examples", e);
-            }
-            
-            return Status.OK_STATUS;
-        }
+			if (!exampleManifestFile.exists()) {
+				return Status.OK_STATUS;
+			}
 
+			try {
+				String type = getType();
+				/* Parse examples list */
+				Map<String, String> exampleMap = parseExampleManifest(type, exampleManifestFile);
 
-        
-        /**
-         * Parses the example manifest file.
-         * 
-         * @param exampleManifestFile
-         * @return A map from example names to their path.
-         * @throws IOException
-         */
-		private Map<String, String> parseExampleManifest(File exampleManifestFile)
-		throws IOException 
-		{
-			SectionedPropertiesFile exampleManifest = SectionedPropertiesFile.parse( exampleManifestFile );
-			Section exampleSection = exampleManifest.getFirstSection( "examples" );
-			return exampleSection.getEntriesAsMap( );
+				/* Do not import examples that we already have in the workspace */
+				removeExistingExamples(exampleMap);
+
+				/*
+				 * If there are any examples left to import, add them to the
+				 * example lists
+				 */
+				ArrayList<File> projectFiles = new ArrayList<File>();
+				ArrayList<String> preferredProjectNames = new ArrayList<String>();
+				addExamples(type, exampleMap, projectFiles, preferredProjectNames);
+
+				/* Create the import job */
+				File projectFileArray[] = projectFiles.toArray(new File[0]);
+				String preferredProjectNameArray[] = preferredProjectNames
+						.toArray(new String[0]);
+				ImportProjectsRunnable importer = new ImportProjectsRunnable(
+						projectFileArray,
+						preferredProjectNameArray,
+						ImportProjectsRunnable.COPY_ALL_FILES
+								| ImportProjectsRunnable.USE_NEW_PROJECT_IF_AVAILABLE);
+				importer.useNewCopyFilter();
+				Job job = importer.createJob(true);
+
+				closeWelcomeWhenDone(job);
+
+			} catch (Exception e) {
+				return new Status(IStatus.ERROR,
+						"com.mobilesorcery.sdk.product",
+						"Could not import examples", e);
+			}
+
+			return Status.OK_STATUS;
+		}
+
+		/**
+		 * Parses the example manifest file.
+		 * @param type
+		 *
+		 * @param exampleManifestFile
+		 * @return A map from example names to their path.
+		 * @throws IOException
+		 */
+		private Map<String, String> parseExampleManifest(
+				String type, File exampleManifestFile) throws IOException {
+			SectionedPropertiesFile exampleManifest = SectionedPropertiesFile
+					.parse(exampleManifestFile);
+			Section exampleSection = exampleManifest
+					.getFirstSection(type);
+			return exampleSection.getEntriesAsMap();
 		}
 
 		/**
 		 * Removes the examples that already exists in the current workspace,
 		 * from the list of examples to be imported.
-		 * 
-		 * @param exampleMap Map of example names to directories.
+		 *
+		 * @param exampleMap
+		 *            Map of example names to directories.
 		 */
-		private void removeExistingExamples(Map<String, String> exampleMap)
-		{
-			IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace( ).getRoot( );
-			IProject[] alreadyImportedProjects = wsRoot.getProjects( );
-			for (int i = 0; i < alreadyImportedProjects.length; i++)
-			{
-			    IProject project = alreadyImportedProjects[ i ];
-			    exampleMap.remove( project.getName( ) );
+		private void removeExistingExamples(Map<String, String> exampleMap) {
+			IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
+			IProject[] alreadyImportedProjects = wsRoot.getProjects();
+			for (int i = 0; i < alreadyImportedProjects.length; i++) {
+				IProject project = alreadyImportedProjects[i];
+				exampleMap.remove(project.getName());
 			}
 		}
-		
+
 		/**
 		 * Adds the examples with full paths to the given lists.
-		 * 
-		 * @param exampleMap Map of example names to directories.
-		 * @param projectFiles Output list of absolute paths to example projects.
-		 * @param preferredProjectNames Output list of preferred project names.
+		 *
+		 * @param exampleMap
+		 *            Map of example names to directories.
+		 * @param projectFiles
+		 *            Output list of absolute paths to example projects.
+		 * @param preferredProjectNames
+		 *            Output list of preferred project names.
 		 */
-		private void addExamples(Map<String, String> exampleMap,
+		private void addExamples(String type, Map<String, String> exampleMap,
 				ArrayList<File> projectFiles,
-				ArrayList<String> preferredProjectNames) 
-		{
-			if( exampleMap.isEmpty( ) )
-			{
+				ArrayList<String> preferredProjectNames) {
+			if (exampleMap.isEmpty()) {
 				return;
 			}
 
-		    for(String newExample : exampleMap.keySet( )) 
-		    {
-		        String newExampleDir = exampleMap.get( newExample );
-		        IPath newExampleFullDir = MoSyncTool.getDefault( ).getMoSyncExamplesDirectory( ).append( newExampleDir );
-		        projectFiles.add( newExampleFullDir.append( MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME ).toFile( ) );
-		        preferredProjectNames.add( newExample );
-		    }
+			for (String newExample : exampleMap.keySet()) {
+				String newExampleDir = exampleMap.get(newExample);
+				IPath newExampleFullDir = MoSyncTool.getDefault()
+						.getMoSyncExamplesDirectory().append(type).append(newExampleDir);
+				projectFiles.add(newExampleFullDir.append(
+						MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME)
+						.toFile());
+				preferredProjectNames.add(newExample);
+			}
 		}
-    }
-	
+
+		public void setType(String type) {
+			this.type = type;
+		}
+
+		public String getType() {
+			return type == null ? "cpp" : type;
+		}
+	}
+
 	/**
 	 * Makes the given job close the welcome screen when it is done.
-	 *   
-	 * @param job The job that should close the welcome screen
-	 *            upon completion.
+	 *
+	 * @param job
+	 *            The job that should close the welcome screen upon completion.
 	 */
-	private void closeWelcomeWhenDone(Job job)
-	{
-        /* Close the welcome screen. */
-        final IIntroManager im = PlatformUI.getWorkbench( ).getIntroManager( );
-        job.addJobChangeListener(new JobChangeAdapter( ) {
-            public void done(IJobChangeEvent event) {
-                im.getIntro( ).getIntroSite( ).getShell( ).getDisplay( ).asyncExec(new Runnable( ) {
-                    public void run()
-                    {
-                    	IIntroPart part = im.getIntro();
-                		im.closeIntro(part);
-                    }
-                });
-            }
-        });
+	private void closeWelcomeWhenDone(Job job) {
+		/* Close the welcome screen. */
+		final IIntroManager im = PlatformUI.getWorkbench().getIntroManager();
+		job.addJobChangeListener(new JobChangeAdapter() {
+			@Override
+			public void done(IJobChangeEvent event) {
+				im.getIntro().getIntroSite().getShell().getDisplay()
+						.asyncExec(new Runnable() {
+							@Override
+							public void run() {
+								IIntroPart part = im.getIntro();
+								im.closeIntro(part);
+							}
+						});
+			}
+		});
 	}
-	
+
 	/**
 	 * @see IIntroAction.run.
 	 */
-	public void run(IIntroSite site, Properties params) 
-	{
-		WorkbenchJob job = new ImportExamplesProjectJob("Importing example projects");
-        job.setUser(true);
-        job.schedule();
+	@Override
+	public void run(IIntroSite site, Properties params) {
+		ImportExamplesProjectJob job = new ImportExamplesProjectJob(
+				"Importing example projects");
+		String type = params.getProperty("type");
+		job.setType(type);
+		job.setUser(true);
+		job.schedule();
 	}
 }

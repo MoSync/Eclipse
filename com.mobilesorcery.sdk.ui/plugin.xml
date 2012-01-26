@@ -187,9 +187,17 @@ icon="icons/launchshortcut.png">
            visible="true">
 			<action id="com.mobilesorcery.sdk.help.doxygen"
 				menubarPath="help/intro"
-				label="MoSync API Reference">
+				label="MoSync C++ API Reference">
 				<class class="com.mobilesorcery.ui.internal.actions.ShowHelpAction">
 				    <parameter name="resource" value="/docs/html/index.html"/>
+				    <parameter name="showInExternalBrowser" value="true"/>
+				</class>
+			</action>
+						<action id="com.mobilesorcery.sdk.help.doxygen.html5"
+				menubarPath="help/intro"
+				label="MoSync HTML5/JavaScript API Reference">
+				<class class="com.mobilesorcery.ui.internal.actions.ShowHelpAction">
+				    <parameter name="resource" value="/docs/html5/index.html"/>
 				    <parameter name="showInExternalBrowser" value="true"/>
 				</class>
 			</action>

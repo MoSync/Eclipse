@@ -75,7 +75,6 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.activities.ICategory;
 import org.eclipse.ui.activities.ICategoryActivityBinding;
 import org.eclipse.ui.activities.IWorkbenchActivitySupport;
-import org.eclipse.ui.internal.presentations.util.LeftToRightTabOrder;
 import org.eclipse.ui.intro.IIntroManager;
 import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -144,7 +143,6 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 
 	private final static Object NULL = new Object();
 
-
 	// The shared instance
 	private static MosyncUIPlugin plugin;
 
@@ -209,7 +207,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 			}
 		});
 		legacyProfileViewOpener = new LegacyProfileViewOpener();
-		// Do not use addListener here, since it will trigger a deadlock-type error
+		// Do not use addListener here, since it will trigger a deadlock-type
+		// error
 		listeners.addPropertyChangeListener(legacyProfileViewOpener);
 		MoSyncProject.addGlobalPropertyChangeListener(legacyProfileViewOpener);
 	}
@@ -238,9 +237,11 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 				@Override
 				public void run() {
 					Shell shell = wb.getActiveWorkbenchWindow().getShell();
-					boolean ok = MessageDialog.openQuestion(shell, Messages.MosyncUIPlugin_12,
+					boolean ok = MessageDialog.openQuestion(shell,
+							Messages.MosyncUIPlugin_12,
 							Messages.MosyncUIPlugin_13);
-					stats.setSendInterval(ok ? Stats.DEFAULT_SEND_INTERVAL : Stats.DISABLE_SEND);
+					stats.setSendInterval(ok ? Stats.DEFAULT_SEND_INTERVAL
+							: Stats.DISABLE_SEND);
 				}
 			});
 		}
@@ -589,8 +590,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 				ImageDescriptor.createFromFile(getClass(), "/icons/phone.png")); //$NON-NLS-1$
 		reg.put(TARGET_PHONE_IMAGE, ImageDescriptor.createFromFile(getClass(),
 				"/icons/phoneTarget.png")); //$NON-NLS-1$
-		reg.put(IMG_BINARY, ImageDescriptor.createFromFile(getClass(),
-				"/icons/binary.gif")); //$NON-NLS-1$
+		reg.put(IMG_BINARY,
+				ImageDescriptor.createFromFile(getClass(), "/icons/binary.gif")); //$NON-NLS-1$
 	}
 
 	public static Image resize(Image original, int width, int height,
@@ -600,7 +601,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		if (keepAspectRatio) {
 			int originalWidth = original.getBounds().width;
 			int originalHeight = original.getBounds().height;
-			double aspectRatio = (double) originalWidth / (double) originalHeight;
+			double aspectRatio = (double) originalWidth
+					/ (double) originalHeight;
 			double newWidth = height * aspectRatio;
 			if (newWidth > width && width > 0) {
 				double overSizeRatio = newWidth / width;
@@ -630,11 +632,18 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 					URL urlToHelpDoc = FileLocator.find(
 							Platform.getBundle("com.mobilesorcery.sdk.help"), //$NON-NLS-1$
 							new Path(helpResource), null);
+					if (urlToHelpDoc == null) {
+						throw new IllegalStateException("Help files not available!");
+					}
 					URL fileUrlToHelpDoc = FileLocator.toFileURL(urlToHelpDoc);
 
 					PlatformUI.getWorkbench().getBrowserSupport()
 							.getExternalBrowser().openURL(fileUrlToHelpDoc);
 				} catch (Exception e) {
+					org.eclipse.jface.util.Policy.getStatusHandler().show(
+							new Status(IStatus.ERROR, PLUGIN_ID,
+									"Could not show help", e),
+							"Could not show help");
 					CoreMoSyncPlugin.getDefault().log(e);
 				}
 			} else {
@@ -671,7 +680,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	public Map<String, String> getVersionParameters(boolean hashOnly) {
 		HashMap<String, String> params = new HashMap<String, String>();
 		if (!hashOnly) {
-			String versionStr = MoSyncTool.getDefault().getCurrentBinaryVersion();
+			String versionStr = MoSyncTool.getDefault()
+					.getCurrentBinaryVersion();
 			// For now we send the same version for all components.
 			params.put("db", versionStr); //$NON-NLS-1$
 			params.put("sdk", versionStr); //$NON-NLS-1$
