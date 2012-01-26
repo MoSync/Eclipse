@@ -100,7 +100,6 @@ public class JavaPackager extends PackageToolPackager {
 					"META-INF/MANIFEST.MF");
 			mdStream = new FileInputStream(mfFile);
 			Manifest mf = new Manifest();
-			mdStream = new FileInputStream(mfFile);
 			mf.read(mdStream);
 		} catch (Exception e) {
 			throw new CoreException(new Status(IStatus.ERROR,
@@ -137,6 +136,10 @@ public class JavaPackager extends PackageToolPackager {
 					.getCapabilities(profile);
 			DeviceCapabilitiesFilter filter = DeviceCapabilitiesFilter.extractFilterFromProject(project);
 			if (caps != null && filter != null) {
+				ICapability cldc = caps.getCapability("CLDC");
+				if (cldc != null) {
+					result.add("CLDC " + cldc.getValue());
+				}
 				ICapability iconSize = caps.getCapability("IconSize");
 				if (iconSize != null) {
 					result.add(iconSize.getValue());
