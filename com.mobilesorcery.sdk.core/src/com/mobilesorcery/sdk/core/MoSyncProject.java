@@ -625,6 +625,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		// TODO: Whenever the need arises we may want to fix something smarter
 		MoSyncProjectConverter1_2.getInstance().convert(project);
 		MoSyncProjectConverter1_4.getInstance().convert(project);
+		project.setFormatVersion(CURRENT_VERSION);
 	}
 
 	/**

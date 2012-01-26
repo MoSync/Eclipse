@@ -111,6 +111,9 @@ public class ImportExamplesAction implements IIntroAction {
 					.parse(exampleManifestFile);
 			Section exampleSection = exampleManifest
 					.getFirstSection(type);
+			if (exampleSection == null) {
+				throw new IOException("No examples of type: " + type);
+			}
 			return exampleSection.getEntriesAsMap();
 		}
 

@@ -26,7 +26,6 @@ public class MoSyncProjectConverter1_4 implements IConverter {
 			replacePermission(wc, ICommonPermissions.AUTOSTART_1_2, ICommonPermissions.AUTOSTART);
 			replacePermission(wc, ICommonPermissions.VIBRATE_1_2, ICommonPermissions.VIBRATE);
 			permissions.apply(wc);
-			project.setFormatVersion(VERSION);
 		}
 	}
 
