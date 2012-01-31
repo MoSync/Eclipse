@@ -41,7 +41,7 @@ public class LegacyProfileViewOpener implements PropertyChangeListener {
 					if (currentProject == null) {
 						currentProject = MosyncUIPlugin.getDefault().getCurrentlySelectedProject(wWindow);
 					}
-					if (currentProject.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
+					if (currentProject != null && currentProject.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
 						try {
 					        wWindow.getActivePage().showView("com.mobilesorcery.sdk.finalizer.ui.view");
 							wWindow.getActivePage().showView("com.mobilesorcery.sdk.profiles.ui.view");

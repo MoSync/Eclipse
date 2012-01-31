@@ -85,7 +85,7 @@ public class ProjectTemplateDescription {
 		desc.type = defaultEntries.get("type");
 		String requiredCapabilitiesStr = defaultEntries.get("required-capabilities");
 		if (requiredCapabilitiesStr != null) {
-			String[] requiredCapabilities = requiredCapabilitiesStr.split(",\\s");
+			String[] requiredCapabilities = requiredCapabilitiesStr.split(",\\s*");
 			desc.requiredCapabilities = new HashSet<String>(Arrays.asList(requiredCapabilities));
 		}
 
