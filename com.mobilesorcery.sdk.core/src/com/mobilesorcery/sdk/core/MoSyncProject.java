@@ -52,6 +52,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.XMLMemento;
 import org.eclipse.ui.ide.undo.CreateProjectOperation;
@@ -668,6 +669,8 @@ public class MoSyncProject extends PropertyOwnerBase implements
 				PropertyUtil.fromInteger(pt));
 		addCapabilityFilters(result, new String[0]);
 		MoSyncNature.modifyIncludePaths(project);
+		// MOSYNC-1735: Set to UTF-8 by default
+		project.setDefaultCharset("UTF-8", new SubProgressMonitor(monitor, 1));
 		return result;
 	}
 
