@@ -1,18 +1,20 @@
 package com.mobilesorcery.sdk.ui.internal.actions;
 
 import java.beans.PropertyChangeEvent;
+import java.text.MessageFormat;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -26,76 +28,46 @@ import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class ChangeProfileWidget extends MoSyncProjectWidget {
 
-	//private Button profileButton;
-	private Label icon;
-	private Label name;
+	private Button profileButton;
 	private ProfileLabelProvider lp;
-	private boolean projectSelected;
 
 	@Override
 	protected Control createControl(Composite parent) {
 		lp = new ProfileLabelProvider(SWT.NONE);
-		lp.setImageSize(new Point(16, 16));
+		lp.setImageSize(new Point(12, 12));
 
 		attachListeners();
 		final Composite dummy = new Composite(parent, SWT.NONE);
-		GridLayout layout = UIUtils.newPrefsLayout(3);
-		layout.marginTop = 2;
-		layout.marginWidth = 2;
+		GridLayout layout = UIUtils.newPrefsLayout(1);
 		dummy.setLayout(layout);
 		GridData dummyData = new GridData(UIUtils.getDefaultFieldSize(),
 				SWT.DEFAULT);
 		dummy.setLayoutData(dummyData);
 		Combo justToGetTheHeight = new Combo(dummy, SWT.READ_ONLY);
-		int height = justToGetTheHeight.computeSize(SWT.DEFAULT, SWT.DEFAULT).y - 5;
-		justToGetTheHeight.dispose();
-		/*profileButton = new SquareButton(dummy, SWT.PUSH);
-		profileButton.addListener(SWT.Selection, this);
-		GridData profileButtonData = new GridData(
-				UIUtils.getDefaultFieldSize(), height);
-		profileButtonData.verticalAlignment = SWT.CENTER;
-		profileButton.setLayoutData(profileButtonData);*/
+		int height = justToGetTheHeight.computeSize(SWT.DEFAULT, SWT.DEFAULT).y + 2;
+
 		Listener listener = new Listener() {
 			@Override
 			public void handleEvent(Event event) {
-				if (event.type == SWT.MouseDown) {
+				if (event.type == SWT.Selection) {
 					PlatformSelectionComposite psc = new PlatformSelectionComposite(dummy, SWT.SEARCH | SWT.BACKGROUND);
 					psc.setProject(project);
 					psc.show(SWT.NONE);
-				} else if (event.widget == name) {
-					showAsLink(event.type == SWT.MouseEnter);
 				}
 			}
 		};
-		icon = new Label(dummy, SWT.NONE);
-		icon.setAlignment(SWT.CENTER);
-		icon.setLayoutData(new GridData(24, height));
-		name = new Label(dummy, SWT.NONE);
-		name.setLayoutData(new GridData(UIUtils.getDefaultFieldSize() / 2, SWT.DEFAULT));
-		icon.addListener(SWT.MouseDown, listener);
-		name.addListener(SWT.MouseDown, listener);
-		name.addListener(SWT.MouseEnter, listener);
-		name.addListener(SWT.MouseExit, listener);
-
-		/*profileButton = new Button(dummy, SWT.PUSH);
+		profileButton = new Button(dummy, SWT.PUSH);
 		profileButton.setLayoutData(new GridData(SWT.DEFAULT, height));
-		profileButton.setText("...");
-		profileButton.addListener(SWT.Selection, this);*/
+		profileButton.addListener(SWT.Selection, listener);
+		GridData profileButtonData = new GridData(UIUtils.getDefaultFieldSize(), height);
+		profileButtonData.verticalIndent = 2;
+		profileButton.setLayoutData(profileButtonData);
+		profileButton.setFont(justToGetTheHeight.getFont());
+		dummy.pack();
+		justToGetTheHeight.dispose();
+
 		updateUI(true);
 		return dummy;
-	}
-
-	protected void showAsLink(boolean asLink) {
-		if (projectSelected) {
-			String profileName = project == null ? "" : lp.getText(project
-					.getTargetProfile());
-			name.setText(profileName);
-		} else {
-			name.setText("No project");
-		}
-		Display d = name.getDisplay();
-		name.setCursor(d.getSystemCursor(projectSelected && asLink ? SWT.CURSOR_HAND : SWT.CURSOR_ARROW));
-		name.setForeground(projectSelected && asLink ? d.getSystemColor(SWT.COLOR_BLUE) : null);
 	}
 
 	@Override
@@ -114,27 +86,15 @@ public class ChangeProfileWidget extends MoSyncProjectWidget {
 		updateUI(false);
 	}
 
-	@Override
-	protected void noProjectSelected() {
-		showAsLink(false);
-		icon.setImage(null);
-	}
-
 	public void updateUI(boolean force) {
-		boolean activeButton = project != null;
-				/*&& project.getProfileManagerType() == MoSyncTool.DEFAULT_PROFILE_TYPE;*/
-		projectSelected = activeButton || force;
-		if (projectSelected) {
-			Image image = project == null ? null : lp.getImage(project
-					.getTargetProfile().getVendor());
-			showAsLink(false);
-			icon.setImage(image);
-			//profileButton.setToolTipText(MessageFormat.format(
-			//		"Set target profile for project {0}", projectName));
-		} else {
-			noProjectSelected();
-		}
-		//profileButton.setEnabled(activeButton);
+		String projectName = project == null ? "" : project.getName();
+		Image image = project == null ? null : lp.getImage(project.getTargetProfile().getVendor());
+		profileButton.setImage(image);
+		String profileName = project == null ? "No project selected" : lp.getText(project.getTargetProfile());
+		profileButton.setText(profileName);
+		profileButton.setToolTipText(MessageFormat.format("Set active profile for project {0}", projectName));
+
+		profileButton.setEnabled(project != null);
 	}
 
 }

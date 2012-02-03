@@ -26,7 +26,7 @@ import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.filter.FeatureFilter;
 import com.mobilesorcery.sdk.profiles.filter.ProfileFilter;
-import com.mobilesorcery.sdk.profiles.ui.ProfileContentProvider;
+import com.mobilesorcery.sdk.ui.ProfileContentProvider;
 import com.mobilesorcery.sdk.ui.ProfileLabelProvider;
 import com.mobilesorcery.sdk.ui.UIUtils;
 

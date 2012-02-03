@@ -64,11 +64,11 @@ import com.mobilesorcery.sdk.profiles.IVendor;
 import com.mobilesorcery.sdk.profiles.filter.CompositeDeviceFilter;
 import com.mobilesorcery.sdk.profiles.ui.DeviceFilterComposite;
 import com.mobilesorcery.sdk.profiles.ui.DeviceViewerFilter;
-import com.mobilesorcery.sdk.profiles.ui.ProfileContentProvider;
 import com.mobilesorcery.sdk.profiles.ui.internal.actions.FinalizeForProfileAction;
 import com.mobilesorcery.sdk.profiles.ui.internal.actions.SetTargetProfileAction;
 import com.mobilesorcery.sdk.profiles.ui.internal.actions.ShowProfileInfoAction;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
+import com.mobilesorcery.sdk.ui.ProfileContentProvider;
 import com.mobilesorcery.sdk.ui.ProfileLabelProvider;
 
 public class ProfilesView extends ViewPart implements PropertyChangeListener {

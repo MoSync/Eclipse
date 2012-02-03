@@ -1091,6 +1091,10 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		return profiles;
 	}
 
+	public IProfile[] getFilteredProfiles(IVendor vendor) {
+		return ProfileManager.filterProfiles(vendor.getProfiles(), deviceFilter);
+	}
+
 	/**
 	 * Returns the default value of a project specific property
 	 */

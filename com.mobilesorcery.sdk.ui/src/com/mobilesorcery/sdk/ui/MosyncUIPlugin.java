@@ -141,6 +141,10 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 
 	public static final String IMG_BINARY = "binary"; //$NON-NLS-1$
 
+	public static final String IMG_FILTER = "filter"; //$NON-NLS-1$
+
+	public static final String IMG_LOOKUP = "lookup"; //$NON-NLS-1$
+
 	private final static Object NULL = new Object();
 
 	// The shared instance
@@ -592,6 +596,10 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 				"/icons/phoneTarget.png")); //$NON-NLS-1$
 		reg.put(IMG_BINARY,
 				ImageDescriptor.createFromFile(getClass(), "/icons/binary.gif")); //$NON-NLS-1$
+		reg.put(IMG_FILTER,
+				ImageDescriptor.createFromFile(getClass(), "/icons/filter.gif")); //$NON-NLS-1$
+		reg.put(IMG_LOOKUP,
+				ImageDescriptor.createFromFile(getClass(), "/icons/search.gif")); //$NON-NLS-1$
 	}
 
 	public static Image resize(Image original, int width, int height,

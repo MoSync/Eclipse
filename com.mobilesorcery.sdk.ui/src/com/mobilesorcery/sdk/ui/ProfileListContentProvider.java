@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.ui.internal.actions;
+package com.mobilesorcery.sdk.ui;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +35,7 @@ public class ProfileListContentProvider implements IStructuredContentProvider {
 			profiles = new HashSet<IProfile>(Arrays.asList(mgr.getProfiles()));
 		} else if (inputElement instanceof MoSyncProject) {
 			MoSyncProject project = (MoSyncProject) inputElement;
-			vendors = (project).getFilteredVendors();
+			vendors = project.getFilteredVendors();
 			profiles = new HashSet<IProfile>(Arrays.asList(project.getFilteredProfiles()));
 		}
 

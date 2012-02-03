@@ -30,7 +30,6 @@ public class ChangeActiveProfileHandler extends MoSyncCommandHandler {
 		} else {
 			PlatformSelectionComposite psc = new PlatformSelectionComposite(shell, getStyle());
 			psc.setProject(project);
-			psc.setMode(getMode());
 			psc.show(SWT.NONE);
 		}
 		return null;
