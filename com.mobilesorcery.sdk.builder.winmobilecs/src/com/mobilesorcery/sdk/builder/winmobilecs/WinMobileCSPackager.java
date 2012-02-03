@@ -32,7 +32,7 @@ public class WinMobileCSPackager extends PackageToolPackager {
 			return createBuildResult(xapFile);
 		} else {
 			File csProjFile =
-				internal.resolveFile("%package-output-dir%/project/mosync.csproj");
+				internal.resolveFile("%package-output-dir%/project");
 			Map<String, List<File>> buildResult = new HashMap<String, List<File>>();
 			buildResult.put(WinMobileCSPackager.PROJECT_FILE, Arrays.asList(csProjFile));
 			return buildResult;
