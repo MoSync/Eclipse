@@ -30,8 +30,7 @@ public class PropertyInitializer extends AbstractPreferenceInitializer
 
 	@Override
 	public void initializeDefaultPreferences() {
-		// TODO Auto-generated method stub
-
+		WinMobileCSPlugin.getDefault().getPreferenceStore().setDefault(WinMobileCSPlugin.ONLY_GENERATE_MS_BUILD_PROJECT, true);
 	}
 
 }

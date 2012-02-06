@@ -12,6 +12,7 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
 import com.mobilesorcery.sdk.builder.iphoneos.Activator;
+import com.mobilesorcery.sdk.ui.Note;
 import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class XCodePreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
@@ -35,9 +36,10 @@ public class XCodePreferencePage extends PreferencePage implements IWorkbenchPre
 		editor.load();
 		boolean isMac = Util.isMac();
 		if (!isMac) {
-			Label info = new Label(main, SWT.NONE);
-			info.setText("(This option is only available on Mac OS X)");
+			Note info = new Note(main, SWT.NONE);
+			info.setText("This option is only available on Mac OS X");
 			editor.setEnabled(false, main);
+			info.moveAbove(null);
 		}
 		return main;
 	}

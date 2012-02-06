@@ -42,4 +42,13 @@
                                 </enabledWhen>
                                 </page>
              </extension>
+                              <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            category="com.mobilesorcery.sdk.preferences.main"
+            class="com.mobilesorcery.sdk.builder.winmobilecs.ui.preferences.MSBuildPreferencePage"
+            id="com.mobilesorcery.sdk.builder.winmobilecs.preferences.msbuild"
+            name="Visual Studio (WP7)">
+      </page>
+      </extension>
 </plugin>

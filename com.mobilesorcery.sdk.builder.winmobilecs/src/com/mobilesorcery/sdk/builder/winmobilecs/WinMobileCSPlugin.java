@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.builder.winmobilecs;
 
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -12,6 +13,10 @@ public class WinMobileCSPlugin extends AbstractUIPlugin {
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.builder.winmobilecs"; //$NON-NLS-1$
 
 	public static final String WP_EMULATOR_SPECIFIER = "emulator";
+
+	public static final String ONLY_GENERATE_MS_BUILD_PROJECT = PLUGIN_ID + "build.ms";
+
+	public static final String MS_BUILD_PATH = PLUGIN_ID + "ms.build";
 
 	// The shared instance
 	private static WinMobileCSPlugin plugin;
@@ -49,6 +54,14 @@ public class WinMobileCSPlugin extends AbstractUIPlugin {
 	 */
 	public static WinMobileCSPlugin getDefault() {
 		return plugin;
+	}
+
+	public static String getSystemRoot() {
+		String sysRoot = System.getenv("SYSTEMROOT");
+		if (sysRoot == null) {
+			return "C:\\Windows";
+		}
+		return sysRoot;
 	}
 
 }
