@@ -803,7 +803,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	 * @return The old target profile.
 	 */
 	public IProfile initTargetProfile(IProfile newTarget) {
-		IProfile oldTarget = this.target;
+		IProfile oldTarget = getTargetProfile();
 		this.target = newTarget;
 		updateProjectSpec();
 		return oldTarget;
