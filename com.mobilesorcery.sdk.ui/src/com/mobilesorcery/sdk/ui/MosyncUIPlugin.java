@@ -29,6 +29,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceChangeEvent;
+import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.AssertionFailedException;
@@ -75,6 +78,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.activities.ICategory;
 import org.eclipse.ui.activities.ICategoryActivityBinding;
 import org.eclipse.ui.activities.IWorkbenchActivitySupport;
+import org.eclipse.ui.ide.ResourceUtil;
 import org.eclipse.ui.intro.IIntroManager;
 import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -108,7 +112,8 @@ import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
  */
 public class MosyncUIPlugin extends AbstractUIPlugin implements
 		IWindowListener, ISelectionListener,
-		IProvider<IProcessConsole, String>, MemoryLowListener {
+		IProvider<IProcessConsole, String>, MemoryLowListener,
+		IResourceChangeListener {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.ui"; //$NON-NLS-1$
@@ -180,6 +185,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 
 	private LegacyProfileViewOpener legacyProfileViewOpener;
 
+	private boolean isUpdating;
+
 	/**
 	 * The constructor
 	 */
@@ -215,6 +222,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		// error
 		listeners.addPropertyChangeListener(legacyProfileViewOpener);
 		MoSyncProject.addGlobalPropertyChangeListener(legacyProfileViewOpener);
+		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.POST_CHANGE);
 	}
 
 	private void initializeLauncherParts() {
@@ -284,6 +292,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
+		ResourcesPlugin.getWorkspace().removeResourceChangeListener(this);
 		CoreMoSyncPlugin.getLowMemoryManager().removeMemoryLowListener(this);
 		deregisterGlobalProjectListener();
 		disposePlatformImages();
@@ -350,7 +359,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 			return null;
 		}
 
-		updateCurrentlySelectedProject(window);
+		//updateCurrentlySelectedProject(window);
 		IProject project = currentProjects.get(window);
 
 		return project == null ? null : MoSyncProject.create(project);
@@ -388,6 +397,10 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	}
 
 	private void updateCurrentlySelectedProject(final IWorkbenchWindow window) {
+		if (isUpdating) {
+			return;
+		}
+		isUpdating = true;
 		initProjectChangeListener();
 
 		Runnable r = new Runnable() {
@@ -401,7 +414,13 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 				}
 			}
 		};
-		UIUtils.onUiThread(window.getWorkbench().getDisplay(), r);
+		try {
+			if (window != null) {
+				UIUtils.onUiThread(window.getWorkbench().getDisplay(), r, false);
+			}
+		} finally {
+			isUpdating = false;
+		}
 	}
 
 	private void updateCurrentlySelectedProject(final IWorkbenchWindow window,
@@ -412,7 +431,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 				if (editor != null) {
 					IEditorInput input = editor.getEditorInput();
 					if (input instanceof IFileEditorInput) {
-						IFile file = ((IFileEditorInput) input).getFile();
+						IFile file = ResourceUtil.getFile(input);
 						if (file != null) {
 							setCurrentProject(window, file.getProject());
 						}
@@ -426,11 +445,14 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 				}
 			}
 		};
-		UIUtils.onUiThread(window.getWorkbench().getDisplay(), r);
+		UIUtils.onUiThread(window.getWorkbench().getDisplay(), r, true);
 	}
 
 	private void setCurrentProject(IWorkbenchWindow window, IProject project) {
 		IProject oldProject = currentProjects.get(window);
+		if (MoSyncProject.create(project) == null) {
+			project = null;
+		}
 		currentProjects.put(window, project);
 		if (oldProject != project) {
 			listeners.firePropertyChange(new PropertyChangeEvent(this,
@@ -641,7 +663,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 							Platform.getBundle("com.mobilesorcery.sdk.help"), //$NON-NLS-1$
 							new Path(helpResource), null);
 					if (urlToHelpDoc == null) {
-						throw new IllegalStateException("Help files not available!");
+						throw new IllegalStateException(
+								"Help files not available!");
 					}
 					URL fileUrlToHelpDoc = FileLocator.toFileURL(urlToHelpDoc);
 
@@ -804,4 +827,20 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		platformImages.clear();
 	}
 
+	@Override
+	public void resourceChanged(final IResourceChangeEvent event) {
+		UIUtils.onUiThread(PlatformUI.getWorkbench().getDisplay(),
+				new Runnable() {
+					@Override
+					public void run() {
+						if (event.getType() == IResourceChangeEvent.POST_CHANGE) {
+							if (event.getSource() instanceof IProject || event.getSource() instanceof IWorkspace) {
+								updateCurrentlySelectedProject(PlatformUI
+										.getWorkbench()
+										.getActiveWorkbenchWindow());
+							}
+						}
+					}
+				}, true);
+	}
 }

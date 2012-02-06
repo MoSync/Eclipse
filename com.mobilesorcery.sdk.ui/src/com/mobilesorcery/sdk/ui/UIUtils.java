@@ -360,11 +360,15 @@ public class UIUtils {
 	 * @param display
 	 * @param r
 	 */
-	public static void onUiThread(Display display, Runnable r) {
+	public static void onUiThread(Display display, Runnable r, boolean fork) {
 		if (display == Display.getCurrent()) {
 			r.run();
 		} else {
-			display.asyncExec(r);
+			if (fork) {
+				display.asyncExec(r);
+			} else {
+				display.syncExec(r);
+			}
 		}
 	}
 
