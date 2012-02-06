@@ -17,6 +17,8 @@ import com.mobilesorcery.sdk.ui.internal.properties.MoSyncProjectPropertyPage;
 
 public class LegacyProfileViewOpener implements PropertyChangeListener {
 
+	private static final String LEGACY_PROFILE_INHIBIT_AUTO_OPEN_PREF = "legacy.profile.inhibit.auto.open";
+
 	@Override
 	public void propertyChange(PropertyChangeEvent event) {
 		final MoSyncProject[] project = new MoSyncProject[1];
@@ -31,7 +33,9 @@ public class LegacyProfileViewOpener implements PropertyChangeListener {
 				public void run() {
 					IWorkbenchWindow wWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 					IPerspectiveDescriptor perspective = wWindow.getActivePage().getPerspective();
-					if (perspective == null || !Util.equals(perspective.getId(), "com.mobilesorcery.ui.perspective")) {
+					boolean introShowing = PlatformUI.getWorkbench().getIntroManager().getIntro() != null;
+
+					if (perspective == null || !Util.equals(perspective.getId(), "com.mobilesorcery.ui.perspective") || introShowing) {
 						// We are only interested if we are in the mosync perspective; the best option
 						// in 99.99% of the cases.
 						return;
@@ -48,11 +52,20 @@ public class LegacyProfileViewOpener implements PropertyChangeListener {
 						} catch (PartInitException e) {
 							CoreMoSyncPlugin.getDefault().log(e);
 						}
+						setActive(false);
 						MosyncUIPlugin.getDefault().removeListener(LegacyProfileViewOpener.this);
 					}
 				}
 			});
 		}
+	}
+
+	public boolean isActive() {
+		return !MosyncUIPlugin.getDefault().getPreferenceStore().getBoolean(LEGACY_PROFILE_INHIBIT_AUTO_OPEN_PREF);
+	}
+
+	public void setActive(boolean active) {
+		MosyncUIPlugin.getDefault().getPreferenceStore().setValue(LEGACY_PROFILE_INHIBIT_AUTO_OPEN_PREF, !active);
 	}
 
 }

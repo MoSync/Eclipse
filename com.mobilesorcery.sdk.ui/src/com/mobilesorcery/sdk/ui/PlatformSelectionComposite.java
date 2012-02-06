@@ -15,6 +15,7 @@ import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.StyledCellLabelProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
@@ -255,7 +256,7 @@ public class PlatformSelectionComposite implements Listener,
 		extrasPanel = toolkit.createComposite(main);
 		extrasPanel.setLayout(new GridLayout(project.getProfileManagerType() == MoSyncTool.DEFAULT_PROFILE_TYPE ? 3 : 1, false));
 
-		createExtrasPanel();
+		createExtrasPanel(toolkit);
 		/*extrasPanel = new DescriptiveButtonBar(main, SWT.NONE);
 		extrasPanel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
@@ -287,6 +288,7 @@ public class PlatformSelectionComposite implements Listener,
 		if (currentProfile != null) {
 			profileTable.refresh(currentProfile);
 			profileTable.reveal(currentProfile);
+			profileTable.setSelection(new StructuredSelection(currentProfile));
 		}
 
 		toolkit.adapt(profileTable.getControl(), true, true);
@@ -294,7 +296,7 @@ public class PlatformSelectionComposite implements Listener,
 		return main;
 	}
 
-	private void createExtrasPanel() {
+	private void createExtrasPanel(FormToolkit toolkit) {
 		if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
 			convertButton = new Button(extrasPanel, SWT.PUSH);
 			convertButton.setImage(MosyncUIPlugin.getDefault().getImageRegistry().get(MosyncUIPlugin.IMG_FILTER));
@@ -306,6 +308,7 @@ public class PlatformSelectionComposite implements Listener,
 			convertTextData.verticalAlignment = SWT.TOP;
 			convertText.setLayoutData(convertTextData);
 			convertText.setText("Click the button above to convert this project into a platform based one (instead of the current device based).");
+			toolkit.adapt(convertText, true, true);
 		} else {
 			filterButton = new Button(extrasPanel, SWT.PUSH);
 			filterButton.setText("Select Capabilities");
@@ -327,12 +330,14 @@ public class PlatformSelectionComposite implements Listener,
 			GridData filterTextData = new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT);
 			filterTextData.verticalAlignment = SWT.TOP;
 			filterText.setLayoutData(filterTextData);
+			toolkit.adapt(filterText, true, true);
 
 			lookupText = new Text(extrasPanel, SWT.WRAP | SWT.READ_ONLY);
 			lookupText.setFont(MosyncUIPlugin.getDefault().getFont(MosyncUIPlugin.FONT_INFO_TEXT));
 			GridData lookupTextData = new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT);
 			lookupTextData.verticalAlignment = SWT.TOP;
 			lookupText.setLayoutData(lookupTextData);
+			toolkit.adapt(lookupText, true, true);
 		}
 		CURRENT_SHELL.layout();
 	}
@@ -345,6 +350,7 @@ public class PlatformSelectionComposite implements Listener,
 		filterBox.getParent().layout();
 		filterBox.getParent().redraw();
 		filterBox.forceFocus();
+		filterBox.setVisible(show);
 		if (!show) {
 			filterBox.setText("");
 			updateFilter();

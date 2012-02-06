@@ -59,6 +59,7 @@ public class ChangeProfileWidget extends MoSyncProjectWidget {
 		profileButton = new Button(dummy, SWT.PUSH);
 		profileButton.setLayoutData(new GridData(SWT.DEFAULT, height));
 		profileButton.addListener(SWT.Selection, listener);
+		profileButton.setAlignment(SWT.CENTER);
 		GridData profileButtonData = new GridData(UIUtils.getDefaultFieldSize(), height);
 		profileButtonData.verticalIndent = 2;
 		profileButton.setLayoutData(profileButtonData);
@@ -90,7 +91,7 @@ public class ChangeProfileWidget extends MoSyncProjectWidget {
 		String projectName = project == null ? "" : project.getName();
 		Image image = project == null ? null : lp.getImage(project.getTargetProfile().getVendor());
 		profileButton.setImage(image);
-		String profileName = project == null ? "No project selected" : lp.getText(project.getTargetProfile());
+		String profileName = project == null ? "No project selected" : MoSyncTool.toString(project.getTargetProfile());
 		profileButton.setText(profileName);
 		profileButton.setToolTipText(MessageFormat.format("Set active profile for project {0}", projectName));
 

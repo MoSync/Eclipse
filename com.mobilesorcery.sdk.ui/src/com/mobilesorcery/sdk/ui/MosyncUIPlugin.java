@@ -220,8 +220,10 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		legacyProfileViewOpener = new LegacyProfileViewOpener();
 		// Do not use addListener here, since it will trigger a deadlock-type
 		// error
-		listeners.addPropertyChangeListener(legacyProfileViewOpener);
-		MoSyncProject.addGlobalPropertyChangeListener(legacyProfileViewOpener);
+		if (legacyProfileViewOpener.isActive()) {
+			listeners.addPropertyChangeListener(legacyProfileViewOpener);
+			MoSyncProject.addGlobalPropertyChangeListener(legacyProfileViewOpener);
+		}
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.POST_CHANGE);
 	}
 
