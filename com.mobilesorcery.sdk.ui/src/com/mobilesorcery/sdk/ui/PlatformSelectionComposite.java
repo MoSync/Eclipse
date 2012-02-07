@@ -133,9 +133,11 @@ public class PlatformSelectionComposite implements Listener,
 				subText = getProfileDescription(project, profile);
 				if (subText.equals(mainText))
 					subText = "";
-				image = isTargetProfile ?
-					MosyncUIPlugin.getDefault().getImageRegistry().get(MosyncUIPlugin.TARGET_PHONE_IMAGE) :
-					MosyncUIPlugin.getDefault().getImageRegistry().get(MosyncUIPlugin.PHONE_IMAGE);
+				image = isTargetProfile ? MosyncUIPlugin.getDefault()
+						.getImageRegistry()
+						.get(MosyncUIPlugin.TARGET_PHONE_IMAGE)
+						: MosyncUIPlugin.getDefault().getImageRegistry()
+								.get(MosyncUIPlugin.PHONE_IMAGE);
 			} else if (obj instanceof IVendor) {
 				IVendor platform = (IVendor) obj;
 				image = MosyncUIPlugin.getDefault().getPlatformImage(platform,
@@ -164,14 +166,18 @@ public class PlatformSelectionComposite implements Listener,
 			String fullText = mainText + space + subText;
 			cell.setText(fullText);
 			StyleRange[] styleRanges = new StyleRange[2];
-			styleRanges[0] = new StyleRange(0, mainText.length(), null, null, mainTextStyle);
-			Color gray = cell.getControl().getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY);
-			styleRanges[1] = new StyleRange(mainText.length(), fullText.length() - mainText.length(), gray, null, mainTextStyle);
+			styleRanges[0] = new StyleRange(0, mainText.length(), null, null,
+					mainTextStyle);
+			Color gray = cell.getControl().getDisplay()
+					.getSystemColor(SWT.COLOR_DARK_GRAY);
+			styleRanges[1] = new StyleRange(mainText.length(),
+					fullText.length() - mainText.length(), gray, null,
+					mainTextStyle);
 			cell.setStyleRanges(styleRanges);
 		}
 
 		private boolean isTargetProfile(IProfile profile) {
-			return profile != null && profile.equals(currentProfile);
+			return profile != null && getProfileToApply() != null && profile.equals(currentProfile);
 		}
 
 	}
@@ -222,9 +228,9 @@ public class PlatformSelectionComposite implements Listener,
 
 	protected Composite createContentArea(Composite parent) {
 		Shell main = CURRENT_SHELL;
-		//main.setLayout(UIUtils.newPrefsLayout(1));
-		//inner = new Composite(main, SWT.NONE);
-		//inner.setLayoutData(new GridData(GridData.FILL_BOTH));
+		// main.setLayout(UIUtils.newPrefsLayout(1));
+		// inner = new Composite(main, SWT.NONE);
+		// inner.setLayoutData(new GridData(GridData.FILL_BOTH));
 
 		FormToolkit toolkit = new FormToolkit(parent.getDisplay());
 
@@ -243,8 +249,8 @@ public class PlatformSelectionComposite implements Listener,
 		content = new ProfileContentProvider(project);
 		profileTable.setContentProvider(content);
 		GridData profileTableData = new GridData(SWT.FILL, SWT.FILL, true, true);
-		//profileTableData.grabExcessVerticalSpace = true;
-		//profileTableData.verticalAlignment = SWT.TOP;
+		// profileTableData.grabExcessVerticalSpace = true;
+		// profileTableData.verticalAlignment = SWT.TOP;
 		profileTable.getControl().setLayoutData(profileTableData);
 		profileTable.getControl().setFocus();
 		profileTable.getControl().addListener(SWT.KeyDown, this);
@@ -254,24 +260,34 @@ public class PlatformSelectionComposite implements Listener,
 		profileTable.addOpenListener(this);
 
 		extrasPanel = toolkit.createComposite(main);
-		extrasPanel.setLayout(new GridLayout(project.getProfileManagerType() == MoSyncTool.DEFAULT_PROFILE_TYPE ? 3 : 1, false));
+		extrasPanel
+				.setLayout(new GridLayout(
+						project.getProfileManagerType() == MoSyncTool.DEFAULT_PROFILE_TYPE ? 3
+								: 1, false));
 
 		createExtrasPanel(toolkit);
-		/*extrasPanel = new DescriptiveButtonBar(main, SWT.NONE);
-		extrasPanel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
-		extrasPanel.add(FILTER, MosyncUIPlugin.getDefault().getImageRegistry().get(MosyncUIPlugin.IMG_FILTER), "Select Capabilities", "!");
-		extrasPanel.add(LOOKUP, MosyncUIPlugin.getDefault().getImageRegistry().get(MosyncUIPlugin.IMG_LOOKUP), "Find Profile for Device", "!");
-
-		toolkit.adapt(extrasPanel);
-*/
+		/*
+		 * extrasPanel = new DescriptiveButtonBar(main, SWT.NONE);
+		 * extrasPanel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		 *
+		 * extrasPanel.add(FILTER,
+		 * MosyncUIPlugin.getDefault().getImageRegistry()
+		 * .get(MosyncUIPlugin.IMG_FILTER), "Select Capabilities", "!");
+		 * extrasPanel.add(LOOKUP,
+		 * MosyncUIPlugin.getDefault().getImageRegistry()
+		 * .get(MosyncUIPlugin.IMG_LOOKUP), "Find Profile for Device", "!");
+		 *
+		 * toolkit.adapt(extrasPanel);
+		 */
 		Composite buttonBar = toolkit.createComposite(main);
 		buttonBar.setLayout(new GridLayout(2, true));
-		buttonBar.setLayoutData(new GridData(SWT.RIGHT, SWT.DEFAULT, false, false));
+		buttonBar.setLayoutData(new GridData(SWT.RIGHT, SWT.DEFAULT, false,
+				false));
 
 		cancelButton = new Button(buttonBar, SWT.PUSH);
 		cancelButton.setText("&Cancel");
-		cancelButton.setLayoutData(new GridData(SWT.RIGHT, SWT.DEFAULT, false, false));
+		cancelButton.setLayoutData(new GridData(SWT.RIGHT, SWT.DEFAULT, false,
+				false));
 		cancelButton.addListener(SWT.Selection, this);
 
 		applyButton = new Button(buttonBar, SWT.PUSH);
@@ -299,42 +315,56 @@ public class PlatformSelectionComposite implements Listener,
 	private void createExtrasPanel(FormToolkit toolkit) {
 		if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
 			convertButton = new Button(extrasPanel, SWT.PUSH);
-			convertButton.setImage(MosyncUIPlugin.getDefault().getImageRegistry().get(MosyncUIPlugin.IMG_FILTER));
+			convertButton.setImage(MosyncUIPlugin.getDefault()
+					.getImageRegistry().get(MosyncUIPlugin.IMG_FILTER));
 			convertButton.setText("Make Platform Based");
 			convertButton.addListener(SWT.Selection, this);
 			Text convertText = new Text(extrasPanel, SWT.WRAP | SWT.READ_ONLY);
-			convertText.setFont(MosyncUIPlugin.getDefault().getFont(MosyncUIPlugin.FONT_INFO_TEXT));
-			GridData convertTextData = new GridData(2 * UIUtils.getDefaultFieldSize(), SWT.DEFAULT);
+			convertText.setFont(MosyncUIPlugin.getDefault().getFont(
+					MosyncUIPlugin.FONT_INFO_TEXT));
+			GridData convertTextData = new GridData(
+					2 * UIUtils.getDefaultFieldSize(), SWT.DEFAULT);
 			convertTextData.verticalAlignment = SWT.TOP;
 			convertText.setLayoutData(convertTextData);
-			convertText.setText("Click the button above to convert this project into a platform based one (instead of the current device based).");
+			convertText
+					.setText("Click the button above to convert this project into a platform based one (instead of the current device based).");
 			toolkit.adapt(convertText, true, true);
 		} else {
 			filterButton = new Button(extrasPanel, SWT.PUSH);
 			filterButton.setText("Select Capabilities");
-			filterButton.setImage(MosyncUIPlugin.getDefault().getImageRegistry().get(MosyncUIPlugin.IMG_FILTER));
+			filterButton.setImage(MosyncUIPlugin.getDefault()
+					.getImageRegistry().get(MosyncUIPlugin.IMG_FILTER));
 			filterButton.setLayoutData(new GridData(SWT.DEFAULT, SWT.DEFAULT));
 			filterButton.addListener(SWT.Selection, this);
 
-			Label separator = new Label(extrasPanel, SWT.SEPARATOR | SWT.VERTICAL);
-			separator.setLayoutData(new GridData(SWT.DEFAULT, SWT.FILL, true, false, 1, 2));
+			Label separator = new Label(extrasPanel, SWT.SEPARATOR
+					| SWT.VERTICAL);
+			separator.setLayoutData(new GridData(SWT.DEFAULT, SWT.FILL, true,
+					false, 1, 2));
 			lookupButton = new Button(extrasPanel, SWT.PUSH);
-			lookupButton.setLayoutData(new GridData(SWT.LEFT, SWT.DEFAULT, true, false));
+			lookupButton.setLayoutData(new GridData(SWT.LEFT, SWT.DEFAULT,
+					true, false));
 			initLookupButton();
-			Point lookupButtonSize = lookupButton.computeSize(SWT.DEFAULT, SWT.DEFAULT);
-			filterButton.setLayoutData(new GridData(lookupButtonSize.x, lookupButtonSize.y));
+			Point lookupButtonSize = lookupButton.computeSize(SWT.DEFAULT,
+					SWT.DEFAULT);
+			filterButton.setLayoutData(new GridData(lookupButtonSize.x,
+					lookupButtonSize.y));
 			lookupButton.addListener(SWT.Selection, this);
 
 			filterText = new Text(extrasPanel, SWT.WRAP | SWT.READ_ONLY);
-			filterText.setFont(MosyncUIPlugin.getDefault().getFont(MosyncUIPlugin.FONT_INFO_TEXT));
-			GridData filterTextData = new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT);
+			filterText.setFont(MosyncUIPlugin.getDefault().getFont(
+					MosyncUIPlugin.FONT_INFO_TEXT));
+			GridData filterTextData = new GridData(
+					UIUtils.getDefaultFieldSize(), SWT.DEFAULT);
 			filterTextData.verticalAlignment = SWT.TOP;
 			filterText.setLayoutData(filterTextData);
 			toolkit.adapt(filterText, true, true);
 
 			lookupText = new Text(extrasPanel, SWT.WRAP | SWT.READ_ONLY);
-			lookupText.setFont(MosyncUIPlugin.getDefault().getFont(MosyncUIPlugin.FONT_INFO_TEXT));
-			GridData lookupTextData = new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT);
+			lookupText.setFont(MosyncUIPlugin.getDefault().getFont(
+					MosyncUIPlugin.FONT_INFO_TEXT));
+			GridData lookupTextData = new GridData(
+					UIUtils.getDefaultFieldSize(), SWT.DEFAULT);
 			lookupTextData.verticalAlignment = SWT.TOP;
 			lookupText.setLayoutData(lookupTextData);
 			toolkit.adapt(lookupText, true, true);
@@ -360,8 +390,8 @@ public class PlatformSelectionComposite implements Listener,
 	public void show(int style) {
 		boolean asDropdown = (style & SWT.DROP_DOWN) != 0;
 		close(false);
-		int shellStyle = (asDropdown ? SWT.ON_TOP | SWT.TOOL : SWT.RESIZE | SWT.TITLE
-				| SWT.CLOSE);
+		int shellStyle = (asDropdown ? SWT.ON_TOP | SWT.TOOL : SWT.RESIZE
+				| SWT.TITLE | SWT.CLOSE);
 		final Shell shell = new Shell(control.getShell(), shellStyle);
 		shell.setText("Select active profile");
 		CURRENT_SHELL = shell;
@@ -387,9 +417,18 @@ public class PlatformSelectionComposite implements Listener,
 			CURRENT_SHELL.close();
 		}
 		CURRENT_SHELL = null;
-		if (saveTargetProfile && currentProfile != null) {
-			project.setTargetProfile(currentProfile);
+		IProfile newProfile = getProfileToApply();
+		if (saveTargetProfile && newProfile != null) {
+			project.setTargetProfile(newProfile);
 		}
+	}
+
+	private IProfile getProfileToApply() {
+		IProfile result = currentProfile;
+		if (mode == SWT.SEARCH && result != null) {
+			result = matchLegacyProfile(project, result);
+		}
+		return result;
 	}
 
 	private void attachListeners(Shell shell, boolean asDropdown) {
@@ -423,7 +462,8 @@ public class PlatformSelectionComposite implements Listener,
 				profileTable.getControl().forceFocus();
 				if (profileTable.getSelection().isEmpty()
 						&& profileTable.getExpandedElements().length > 0) {
-					profileTable.getTree().select((TreeItem) profileTable.getExpandedElements()[0]);
+					profileTable.getTree().select(
+							(TreeItem) profileTable.getExpandedElements()[0]);
 				}
 			}
 		} else if (event.widget == filterBox && event.type == SWT.KeyUp
@@ -445,7 +485,8 @@ public class PlatformSelectionComposite implements Listener,
 				&& (event.type == SWT.KeyDown || event.type == SWT.KeyUp)) {
 			close(false);
 		} else if (event.widget == filterButton) {
-			DefaultProfileFilterDialog dialog = new DefaultProfileFilterDialog(CURRENT_SHELL);
+			DefaultProfileFilterDialog dialog = new DefaultProfileFilterDialog(
+					CURRENT_SHELL);
 			dialog.setProject(project);
 			dialog.open();
 			setMode(SWT.NONE, true);
@@ -467,16 +508,17 @@ public class PlatformSelectionComposite implements Listener,
 	}
 
 	private void updateFilter() {
-		profileTable.setFilters(new ViewerFilter[] { new ProfileTextFilter(filterBox.getText()) });
+		profileTable.setFilters(new ViewerFilter[] { new ProfileTextFilter(
+				filterBox.getText()) });
 	}
 
 	private void resize(int width, int height) {
-	/*	GridLayout innerData = UIUtils.newPrefsLayout(1);
-		innerData.verticalSpacing = 0;
-		inner.setLayout(innerData);
-		inner.setLayoutData(new GridData(width, height));
-		inner.setSize(width, height);
-		inner.getParent().layout(true, true);*/
+		/*
+		 * GridLayout innerData = UIUtils.newPrefsLayout(1);
+		 * innerData.verticalSpacing = 0; inner.setLayout(innerData);
+		 * inner.setLayoutData(new GridData(width, height));
+		 * inner.setSize(width, height); inner.getParent().layout(true, true);
+		 */
 	}
 
 	private boolean shouldCharBeSentToSearchBox(char ch) {
@@ -490,8 +532,8 @@ public class PlatformSelectionComposite implements Listener,
 			if (mode == SWT.SEARCH) {
 				// The content provider uses the mosync tool to get
 				// 'legacy' devices.
-				profileTable.setInput(MoSyncTool.getDefault());
 				content.setProject(null);
+				profileTable.setInput(MoSyncTool.getDefault());
 				showFilterBox(true);
 			} else {
 				profileTable.setInput(project);
@@ -506,22 +548,28 @@ public class PlatformSelectionComposite implements Listener,
 		if (filterText != null) {
 			int total = project.getProfileManager().getVendors().length;
 			int filteredOut = total - project.getFilteredVendors().length;
-			filterText.setText(MessageFormat.format("{0} of {1} platforms are filtered out, click the button above to filter platforms based on available capabilites.", filteredOut, total));
+			filterText
+					.setText(MessageFormat
+							.format("{0} of {1} platforms are filtered out, click the button above to filter platforms based on available capabilites.",
+									filteredOut, total));
 		}
 	}
 
 	private void initLookupButton() {
 		lookupButton.setText("Find Profile for Device");
-		lookupButton.setImage(MosyncUIPlugin.getDefault().getImageRegistry().get(MosyncUIPlugin.IMG_LOOKUP));
+		lookupButton.setImage(MosyncUIPlugin.getDefault().getImageRegistry()
+				.get(MosyncUIPlugin.IMG_LOOKUP));
 		if (lookupText != null) {
-			lookupText.setText("Click the button above to find out which platform a specific device has.");
+			lookupText
+					.setText("Click the button above to find out which platform a specific device has.");
 		}
 	}
 
 	private void updateLookupMessage() {
 		if (lookupButton != null) {
 			if (mode == SWT.SEARCH) {
-				Image back = PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_TOOL_BACK);
+				Image back = PlatformUI.getWorkbench().getSharedImages()
+						.getImage(ISharedImages.IMG_TOOL_BACK);
 				lookupButton.setImage(back);
 				lookupButton.setText("Back");
 				if (lookupText != null) {
@@ -545,9 +593,6 @@ public class PlatformSelectionComposite implements Listener,
 		currentProfile = null;
 		if (element instanceof IProfile) {
 			IProfile profile = (IProfile) element;
-			if (mode == SWT.SEARCH) {
-				profile = matchLegacyProfile(project, profile);
-			}
 			currentProfile = profile;
 		}
 		if (oldProfile != null) {
@@ -561,7 +606,7 @@ public class PlatformSelectionComposite implements Listener,
 	}
 
 	private void updateUI() {
-		applyButton.setEnabled(currentProfile != null);
+		applyButton.setEnabled(getProfileToApply() != null);
 	}
 
 	private IProfile matchLegacyProfile(MoSyncProject project,
@@ -576,7 +621,7 @@ public class PlatformSelectionComposite implements Listener,
 
 	public void setAndClose(ISelection selection) {
 		updateFromSelection(selection);
-		if (currentProfile != null) {
+		if (getProfileToApply() != null) {
 			close(true);
 		}
 	}
@@ -588,16 +633,18 @@ public class PlatformSelectionComposite implements Listener,
 
 	@Override
 	public void doubleClick(DoubleClickEvent event) {
-		IStructuredSelection selection = (IStructuredSelection) event.getSelection();
+		IStructuredSelection selection = (IStructuredSelection) event
+				.getSelection();
 		if (selection.getFirstElement() instanceof IVendor) {
-            profileTable.setExpandedState(selection.getFirstElement(), !profileTable.getExpandedState(selection.getFirstElement()));
+			profileTable
+					.setExpandedState(selection.getFirstElement(),
+							!profileTable.getExpandedState(selection
+									.getFirstElement()));
 		}
 		setAndClose(selection);
 	}
 
-
-	private String getProfileDescription(MoSyncProject project,
-			IProfile profile) {
+	private String getProfileDescription(MoSyncProject project, IProfile profile) {
 		if (mode == SWT.SEARCH) {
 			IProfile platformProfile = matchLegacyProfile(project, profile);
 			if (platformProfile != null) {
@@ -606,8 +653,7 @@ public class PlatformSelectionComposite implements Listener,
 				List<IProfile> filteredOutProfile = MoSyncTool.getDefault()
 						.getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE)
 						.getProfilesForRuntime(profile.getRuntime());
-				if (filteredOutProfile != null
-						&& filteredOutProfile.size() > 0) {
+				if (filteredOutProfile != null && filteredOutProfile.size() > 0) {
 					return MessageFormat.format("(Filtered out - {0})",
 							MoSyncTool.toString(filteredOutProfile.get(0)));
 				}
