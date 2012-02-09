@@ -2,6 +2,16 @@
 <?eclipse version="3.2"?>
 <plugin>
    <extension-point id="com.mobilesorcery.sdk.targetphonetransports" name="Target Phone Transports" schema="schema/com.mobilesorcery.sdk.targetphonetransports.exsd"/>
+      <extension
+            point="org.eclipse.ui.commands">
+         <command
+               categoryId="com.mobilesorcery.sdk.ui.category.main"
+               description="Select Target Device"
+               id="com.mobilesorcery.sdk.ui.targetphone.select"
+               name="Select Target Device">
+         </command>
+         </extension>
+
         <extension
          point="org.eclipse.ui.actionSets">
       <actionSet
@@ -24,7 +34,20 @@
                label="Send To Target Device"
                toolbarPath="targetphone">
          </action>
-        
+
+          <action
+               class="com.mobilesorcery.sdk.ui.targetphone.internal.SelectTargetPhoneAction"
+               id="com.mobilesorcery.sdk.ui.targetphone.select"
+               label="Select Target Device"
+               menubarPath="project/additions">
+         </action>
+
+	    <action
+               class="com.mobilesorcery.sdk.ui.targetphone.internal.SendToTargetPhoneAction"
+               id="com.mobilesorcery.sdk.ui.targetphone.send.menu"
+               label="Send To Target Device"
+               menubarPath="project/additions">
+         </action>
       </actionSet>
    </extension>
 

@@ -514,6 +514,17 @@ icon="icons/launchshortcut.png">
             <visibleWhen
                      checkEnabled="true">
             </visibleWhen>
+            </command></menuContribution>
+                        <menuContribution
+               locationURI="menu:project?after=buildProject">
+            <command
+                  commandId="com.mobilesorcery.sdk.ui.finalize"
+                  label="Build Project for All Profiles"
+                  style="push">
+            <visibleWhen
+                     checkEnabled="true">
+            </visibleWhen>
+            <parameter name="com.mobilesorcery.sdk.ui.finalize.scope" value="all"/>
             </command></menuContribution> 
                  <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
     <toolbar id="com.mobilesorcery.sdk.ui.profile.toolbar">
@@ -543,7 +554,7 @@ icon="icons/launchshortcut.png">
                id="com.mobilesorcery.sdk.ui.profile.toolbar">
                 <command
                   commandId="com.mobilesorcery.sdk.ui.finalize"
-                  label="Build for all Profiles"
+                  label="Build for All Profiles"
                   tooltip="Build for all profiles of this project"
                   icon="icons/build_all.png"
                   style="push">
