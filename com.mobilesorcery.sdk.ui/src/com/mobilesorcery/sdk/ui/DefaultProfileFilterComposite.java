@@ -200,6 +200,8 @@ public class DefaultProfileFilterComposite extends Composite implements
 		if (image != null) {
 			iconLabel.setImage(image);
 		}
+		toolkit.adapt(iconLabel, true, true);
+
 		Button nameButton = new Button(result, SWT.CHECK);
 		nameButton.setText(name);
 		nameButton.addListener(SWT.Selection, this);
