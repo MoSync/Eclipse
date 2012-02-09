@@ -56,8 +56,8 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			buildResult.setBuildResult(computeBuildResult(project, variant));
 		} catch (Exception e) {
 			String errorMsg = MessageFormat.format(
-					"Failed to create package for {0} (platform: {1})",
-					profile, Profile.getAbbreviatedPlatform(profile));
+					"Failed to create package for {0} (platform: {1}). Reason: {2}",
+					profile, Profile.getAbbreviatedPlatform(profile), e.getMessage());
 			throw new CoreException(new Status(IStatus.ERROR,
 					CoreMoSyncPlugin.PLUGIN_ID, errorMsg, e));
 		}

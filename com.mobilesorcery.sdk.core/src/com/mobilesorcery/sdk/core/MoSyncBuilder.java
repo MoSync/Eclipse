@@ -551,6 +551,10 @@ public class MoSyncBuilder extends ACBuilder {
 
 		ErrorParserManager epm = createErrorParserManager(project);
 
+		IProcessConsole console = createConsole(session);
+
+		CoreException errorToShowInConsole = null;
+
 		try {
 			/* Set up build monitor */
 			monitor.beginTask(MessageFormat.format("Building {0}", project), 4);
@@ -578,7 +582,6 @@ public class MoSyncBuilder extends ACBuilder {
 			buildResult.setDependencyDelta(buildState.getDependencyManager()
 					.createDelta());
 
-			IProcessConsole console = createConsole(session);
 			IPropertyOwner buildProperties = MoSyncBuilder.getPropertyOwner(
 					mosyncProject, variant.getConfigurationId());
 
@@ -651,6 +654,11 @@ public class MoSyncBuilder extends ACBuilder {
 				monitor.worked(1);
 			}
 
+			CoreException buildError = buildResult.createException();
+			if (buildError != null) {
+				throw buildError;
+			}
+
 			// Update the current set of dependencies.
 			buildState.getDependencyManager().applyDelta(
 					buildResult.getDependencyDelta());
@@ -670,13 +678,13 @@ public class MoSyncBuilder extends ACBuilder {
 						buildState.getDependencyManager());
 			}
 
-			return buildResult;
 		} catch (OperationCanceledException e) {
 			// That's ok, why? MB 11-01-10: Because :)
 			return buildResult;
+		} catch (CoreException e) {
+			errorToShowInConsole = e;
 		} catch (Exception e) {
-			e.printStackTrace();
-			throw new CoreException(new Status(IStatus.ERROR,
+			errorToShowInConsole = new CoreException(new Status(IStatus.ERROR,
 					CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
 		} finally {
 			epm.reportProblems();
@@ -688,7 +696,13 @@ public class MoSyncBuilder extends ACBuilder {
 			}
 
 			saveBuildState(buildState, mosyncProject, buildResult);
+
+			if (errorToShowInConsole != null) {
+				console.addMessage(IProcessConsole.ERR, errorToShowInConsole.getMessage());
+				throw errorToShowInConsole;
+			}
 		}
+		return buildResult;
 	}
 
 	public static boolean requiresPrivilegedAccess(MoSyncProject mosyncProject) {
@@ -1172,10 +1186,7 @@ public class MoSyncBuilder extends ACBuilder {
 					IBuildResult buildResult = new MoSyncBuilder().build(
 							project, session, variant, null, monitor);
 					if (!buildResult.success()) {
-						throw new InvocationTargetException(new CoreException(
-								new Status(IStatus.ERROR,
-										CoreMoSyncPlugin.PLUGIN_ID,
-										"Build failed")));
+						throw new InvocationTargetException(buildResult.createException());
 					}
 				} catch (CoreException e) {
 					throw new InvocationTargetException(e, variant.getProfile()

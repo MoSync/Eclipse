@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
 
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager.Delta;
 
@@ -47,6 +48,13 @@ public interface IBuildResult {
      * @return
      */
     public abstract List<String> getErrors();
+
+    /**
+     * Creates an exception from the list of errors,
+     * or {@code null} if no errors were generated.
+     * @return
+     */
+    public abstract CoreException createException();
 
     /**
      * Returns the files representing

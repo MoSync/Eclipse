@@ -14,7 +14,7 @@ public class WinMobileCSPlugin extends AbstractUIPlugin {
 
 	public static final String WP_EMULATOR_SPECIFIER = "emulator";
 
-	public static final String ONLY_GENERATE_MS_BUILD_PROJECT = PLUGIN_ID + "build.ms";
+	public static final String BUILD_WITH_VS = PLUGIN_ID + "build.vs";
 
 	public static final String MS_BUILD_PATH = PLUGIN_ID + "ms.build";
 

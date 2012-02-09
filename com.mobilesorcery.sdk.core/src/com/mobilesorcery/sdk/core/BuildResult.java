@@ -22,6 +22,10 @@ import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.MultiStatus;
+import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager.Delta;
 
@@ -48,6 +52,20 @@ public class BuildResult implements IBuildResult {
     @Override
 	public List<String> getErrors() {
     	return errors;
+    }
+
+    @Override
+	public CoreException createException() {
+		if (errors.isEmpty()) {
+			return null;
+		} else {
+			MultiStatus status = new MultiStatus(CoreMoSyncPlugin.PLUGIN_ID, 1, "Build failed", null);
+			for (String error : errors) {
+				IStatus subStatus = new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, error);
+				status.add(subStatus);
+			}
+			return new CoreException(status);
+		}
     }
 
     @Override

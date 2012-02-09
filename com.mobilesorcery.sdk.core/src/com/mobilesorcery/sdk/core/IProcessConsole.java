@@ -20,11 +20,15 @@ import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
  * <p>Clients may choose to handle calls to this interface
  * any way they wish - and callers to this interface should
  * not assume any specific behaviour.</p>
- * 
+ *
  * @author Mattias Bybro, mattias.bybro@purplescout.se
  *
  */
 public interface IProcessConsole {
+
+	public final static int OUT = 0;
+	public final static int ERR = 1;
+	public final static int MESSAGE = 2;
 
     /**
 	 * Attaches this process console to a running process,
@@ -57,9 +61,18 @@ public interface IProcessConsole {
 	/**
 	 * Adds a message to the console, intended for
 	 * the user to see.
+	 * Same as {@code #addMessage(IProcessConsole.MESSAGE, String)}
 	 * @param line
 	 */
 	public void addMessage(String line);
+
+	/**
+	 * Adds a message to the console, intended for
+	 * the user to see.
+	 * @param type The type of message (OUT, ERR or MESSAGE)
+	 * @param line
+	 */
+	public void addMessage(int type, String line);
 
 	/**
 	 * A hint to clear the console. Subclasses are allowed to ignore this instruction.

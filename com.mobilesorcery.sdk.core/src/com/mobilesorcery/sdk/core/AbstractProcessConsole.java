@@ -22,13 +22,10 @@ import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 
 public abstract class AbstractProcessConsole implements IProcessConsole {
 
-	protected final static int OUT = 0;
-	protected final static int ERR = 1;
-	protected final static int MESSAGE = 2;
-	
 	/* (non-Javadoc)
 	 * @see com.mobilesorcery.sdk.core.api.IProcessConsole#attachProcess(java.lang.Process)
 	 */
+	@Override
 	public void attachProcess(Process process) {
         attachProcess(process, null);
     }
@@ -36,14 +33,16 @@ public abstract class AbstractProcessConsole implements IProcessConsole {
     /* (non-Javadoc)
 	 * @see com.mobilesorcery.sdk.core.api.IProcessConsole#attachProcess(java.lang.Process, com.mobilesorcery.sdk.core.api.LineReader.LineHandler)
 	 */
-    public void attachProcess(Process process, final ILineHandler delegate) {
+    @Override
+	public void attachProcess(Process process, final ILineHandler delegate) {
     	attachProcess(process, delegate, delegate);
     }
-    
+
     /* (non-Javadoc)
 	 * @see com.mobilesorcery.sdk.core.api.IProcessConsole#attachProcess(java.lang.Process, com.mobilesorcery.sdk.core.api.LineReader.LineHandler, com.mobilesorcery.sdk.core.api.LineReader.LineHandler)
 	 */
-    public void attachProcess(Process process, final ILineHandler stdoutDelegate, final ILineHandler stderrDelegate) {
+    @Override
+	public void attachProcess(Process process, final ILineHandler stdoutDelegate, final ILineHandler stderrDelegate) {
         final InputStream input = process.getInputStream();
         final InputStream error = process.getErrorStream();
 
@@ -51,41 +50,47 @@ public abstract class AbstractProcessConsole implements IProcessConsole {
         Reader errorReader = new InputStreamReader(error);
 
         LineReader inputPump = new LineReader(inputReader, new ILineHandler() {
-        	public void start(Process process) {
+        	@Override
+			public void start(Process process) {
             	if (stdoutDelegate != null) {
                 	stdoutDelegate.start(process);
                 }
             }
-            
-        	public void newLine(String line) {
+
+        	@Override
+			public void newLine(String line) {
         		if (stdoutDelegate != null) {
                 	stdoutDelegate.newLine(line);
                 }
                 writeLine(OUT, line);
             }
 
-            public void stop(IOException e) {
+            @Override
+			public void stop(IOException e) {
                 if (stdoutDelegate != null) {
                     stdoutDelegate.stop(e);
                 }
             }
         });
-        
+
         LineReader errorPump = new LineReader(errorReader, new ILineHandler() {
-        	public void start(Process process) {
+        	@Override
+			public void start(Process process) {
             	if (stderrDelegate != null) {
                 	stderrDelegate.start(process);
                 }
             }
-        	
-        	public void newLine(String line) {
+
+        	@Override
+			public void newLine(String line) {
                 if (stderrDelegate != null) {
                     stderrDelegate.newLine(line);
                 }
                 writeLine(ERR, line);
             }
-            
-            public void stop(IOException e) {
+
+            @Override
+			public void stop(IOException e) {
                 if (stderrDelegate != null) {
                     stderrDelegate.stop(e);
                 }
@@ -98,30 +103,38 @@ public abstract class AbstractProcessConsole implements IProcessConsole {
     }
 
     /**
-     * The default implementation is equivalent to 
+     * The default implementation is equivalent to
      * to writeLine(MESSAGE, line)
      */
-    public void addMessage(String line) {
-    	writeLine(MESSAGE, line);
+    @Override
+	public void addMessage(String line) {
+    	addMessage(MESSAGE, line);
     }
-    
+
+    @Override
+	public void addMessage(int type, String line) {
+    	writeLine(type, line);
+    }
+
     /**
      * Clients must implement this method
      * @param type OUT, ERR or MESSAGE
      * @param line
      */
     protected abstract void writeLine(int type, String line);
-       
+
 
     /**
      * The default implementation does nothing.
      */
+	@Override
 	public void clear() {
 	}
 
     /**
      * The default implementation does nothing.
      */
+	@Override
 	public void prepare() {
 	}
 }

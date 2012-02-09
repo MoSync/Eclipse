@@ -14,7 +14,10 @@ import org.eclipse.jface.util.Util;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
+import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -24,6 +27,26 @@ public class WinMobileCSPackager extends PackageToolPackager {
 	public static final String ID = "com.mobilesorcery.sdk.build.winmobilecs.packager";
 
 	private static final String PROJECT_FILE = "project";
+
+	@Override
+	public void createPackage(MoSyncProject project, IBuildSession session,
+			IBuildVariant variant, IFileTreeDiff diff, IBuildResult buildResult)
+			throws CoreException {
+		DefaultPackager intern = new DefaultPackager(project, variant);
+
+		super.createPackage(project, session, variant, diff, buildResult);
+
+		// Notify user if we did not build the generated project and say why
+		if (!Util.isWindows()) {
+			intern.getConsole()
+					.addMessage(
+							"Visual Studio building only available in Windows, will not build generated project");
+		} else if (!shouldBuildWithVS(project, variant)) {
+			intern.getConsole()
+					.addMessage(
+							"Visual Studio building disabled, will not build generated project");
+		}
+	}
 
 	@Override
 	public Map<String, List<File>> computeBuildResult(MoSyncProject project,
@@ -95,8 +118,9 @@ public class WinMobileCSPackager extends PackageToolPackager {
 
 	private boolean shouldBuildWithVS(MoSyncProject project,
 			IBuildVariant variant) {
-		boolean generateOnly = !Util.isWindows() ||
-				WinMobileCSPlugin.getDefault().getPreferenceStore().getBoolean(WinMobileCSPlugin.ONLY_GENERATE_MS_BUILD_PROJECT);
+		boolean generateOnly = !Util.isWindows()
+				|| !WinMobileCSPlugin.getDefault().getPreferenceStore()
+						.getBoolean(WinMobileCSPlugin.BUILD_WITH_VS);
 		return !generateOnly || isEmulatorBuild(project, variant);
 	}
 
