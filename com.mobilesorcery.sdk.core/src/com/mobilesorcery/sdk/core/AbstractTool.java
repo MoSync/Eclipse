@@ -62,7 +62,7 @@ public abstract class AbstractTool {
 		toolExists = toolPath != null && toolPath.exists();
 	}
 
-	protected File getToolPath() {
+	public File getToolPath() {
 		return toolPath;
 	}
 

@@ -79,19 +79,14 @@ public class WinMobileCSPackager extends PackageToolPackager {
 		if (!shouldBuildWithVS(project, variant)) {
 			commandLine.flag("--wp-project-only");
 		} else {
-			String vsBuildExeStr = WinMobileCSPlugin.getDefault()
-					.getPreferenceStore()
-					.getString(WinMobileCSPlugin.MS_BUILD_PATH);
-			File vsBuildExe = new File(vsBuildExeStr);
-			if (com.mobilesorcery.sdk.core.Util.isEmpty(vsBuildExeStr)
-					|| !vsBuildExe.exists()) {
+			if (!MSBuild.getDefault().isValid()) {
 				throw new CoreException(
 						new Status(
 								IStatus.ERROR,
 								WinMobileCSPlugin.PLUGIN_ID,
 								"Could not find Visual Studio executable; see Preferences > MoSync Tool > Visual Studio (WP7)"));
 			}
-			commandLine.flag("--wp-vs-build-path").with(vsBuildExe);
+			commandLine.flag("--wp-vs-build-path").with(MSBuild.getDefault().getToolPath());
 		}
 		String target = isEmulatorBuild(project, variant) ? "emulator"
 				: "device";

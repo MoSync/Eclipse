@@ -11,6 +11,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 
+import com.mobilesorcery.sdk.builder.winmobilecs.MSBuild;
 import com.mobilesorcery.sdk.builder.winmobilecs.WinMobileCSPackager;
 import com.mobilesorcery.sdk.builder.winmobilecs.WinMobileCSPlugin;
 import com.mobilesorcery.sdk.builder.winmobilecs.WindowsPhoneEmulator;
@@ -41,7 +42,7 @@ public class WindowsPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 		} if (shouldAskUserForLauncher(launchConfiguration, mode)) {
 			return IEmulatorLauncher.REQUIRES_CONFIGURATION;
 		} else if (!isCorrectlyInstalled()) {
-			return IEmulatorLauncher.UNLAUNCHABLE;
+			return IEmulatorLauncher.REQUIRES_CONFIGURATION;
 		} else {
 			return super.isLaunchable(launchConfiguration, mode);
 		}
@@ -68,24 +69,29 @@ public class WindowsPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 	}
 
 	@Override
-	public IEmulatorLauncher configure(ILaunchConfiguration config, String mode) {
+	public IEmulatorLauncher configure(final ILaunchConfiguration config, final String mode) {
 		Display d = PlatformUI.getWorkbench().getDisplay();
+
+		// If we are not auto-select, don't fallback to MoRe.
+		final boolean isAutomaticSelection = isAutoSelectLaunch(config, mode);
+		// And if we are supposed to ask the user, we do not really need to configure anything.
+		final boolean needsConfig = !shouldAskUserForLauncher(config, mode);
 
 		final IEmulatorLauncher[] result = new IEmulatorLauncher[] { null };
 		d.syncExec(new Runnable() {
 			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-				result[0] = showConfigureDialog(shell);
+				result[0] = showConfigureDialog(shell, isAutomaticSelection, needsConfig);
 			}
 		});
 		return result[0];
 	}
 
-	protected IEmulatorLauncher showConfigureDialog(Shell shell) {
+	protected IEmulatorLauncher showConfigureDialog(Shell shell, boolean isAutomaticSelection, boolean needsConfig) {
 		ConfigureWindowsPhoneEmulatorDialog dialog = new ConfigureWindowsPhoneEmulatorDialog(shell);
-		dialog.setIsAutomaticSelection(true);
-		dialog.setNeedsConfig(false);
+		dialog.setIsAutomaticSelection(isAutomaticSelection);
+		dialog.setNeedsConfig(needsConfig);
 		dialog.open();
 		return dialog.getSelectedLauncher();
 	}
@@ -96,6 +102,6 @@ public class WindowsPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 	}
 
 	protected boolean isCorrectlyInstalled() {
-		return WindowsPhoneEmulator.getDefault().isValid();
+		return WindowsPhoneEmulator.getDefault().isValid() && MSBuild.getDefault().isValid();
 	}
 }

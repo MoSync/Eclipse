@@ -38,7 +38,7 @@
           <action
                class="com.mobilesorcery.sdk.ui.targetphone.internal.SelectTargetPhoneAction"
                id="com.mobilesorcery.sdk.ui.targetphone.select"
-               label="Select Target Device"
+               label="Scan for Target Device"
                menubarPath="project/additions">
          </action>
 

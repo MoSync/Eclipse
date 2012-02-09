@@ -51,4 +51,10 @@
             name="Visual Studio (WP7)">
       </page>
       </extension>
+            <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="com.mobilesorcery.sdk.builder.winmobilecs.PropertyInitializer">
+      </initializer>
+   </extension>
 </plugin>

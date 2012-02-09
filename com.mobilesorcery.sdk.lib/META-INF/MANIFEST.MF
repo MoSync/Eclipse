@@ -6,9 +6,11 @@ Bundle-Version: 1.0.0
 Bundle-Vendor: MOBILESORCERY
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ClassPath: .,
- lib/jna.jar
+ lib/jna.jar,
+ lib/platform.jar
 Export-Package: com.mobilesorcery.sdk.lib,
  com.sun.jna,
+ com.sun.jna.platform.win32,
  com.sun.jna.ptr,
  com.sun.jna.win32
 Require-Bundle: org.eclipse.core.runtime;bundle-version="3.4.0"

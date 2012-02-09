@@ -124,7 +124,7 @@ public class EmulatorLauncherPreferences extends PreferencePage implements IWork
 
 		List<IPackager> packagers = CoreMoSyncPlugin.getDefault().getPackagers();
 		for (IPackager packager : packagers) {
-			if (packager.getId() != null && packager.getPlatform() != null) {
+			if (packager.getId() != null && packager.getPlatform() != null && getAvailableLaunchers(packager).size() > 1) {
 				PlatformLauncherUI platformUI = new PlatformLauncherUI(main, SWT.NONE);
 				platformUI.setPackager(packager);
 				platformUIs.add(platformUI);
