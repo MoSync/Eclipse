@@ -102,6 +102,8 @@ public class ProfileDBManager extends ProfileManager {
 					if (Util.isEmpty(type)) {
 						// Ok, this is the list of available caps!
 						result.capabilities.add(name);
+					} else if ("property".equals(type) && currentProfile != null) {
+						currentProfile.getModifiableProperties().put(name, value);
 					}
 					if (currentProfile != null) {
 						Capabilities caps = result.capabilitiesForProfiles.get(currentProfile);

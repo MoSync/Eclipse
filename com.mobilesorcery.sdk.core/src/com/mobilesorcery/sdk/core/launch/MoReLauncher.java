@@ -84,8 +84,8 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
 	public void launch(ILaunchConfiguration launchConfig, String mode, ILaunch launch, int emulatorId, IProgressMonitor monitor) throws CoreException {
     	boolean debug = EmulatorLaunchConfigurationDelegate.isDebugMode(mode);
 
-    	String width = launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_WIDTH, "176");
-        String height = launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, "220");
+    	String width = launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_WIDTH, "320");
+        String height = launchConfig.getAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, "480");
 
         IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
         IBuildVariant variant = EmulatorLaunchConfigurationDelegate.getVariant(launchConfig, mode);
@@ -99,7 +99,7 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
             if (profile != null) {
                 Object profileWidth = profile.getProperties().get(IProfile.SCREEN_SIZE_X);
                 Object profileHeight = profile.getProperties().get(IProfile.SCREEN_SIZE_Y);
-                if (profileWidth instanceof Number && profileHeight instanceof Number) {
+                if (isNumber(profileWidth) && isNumber(profileHeight)) {
                     width = "" + profileWidth;
                     height = "" + profileHeight;
                 }
@@ -185,7 +185,16 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
         pu.pipe_close(dupWriteFd);
 	}
 
-    private void attachDebugger(ILaunch launch, IProcess process, IPath program) throws CoreException {
+    private boolean isNumber(Object profileHeight) {
+    	try {
+    		return profileHeight instanceof Number || Integer.parseInt("" + profileHeight) >= 0;
+    	} catch (Exception e) {
+    		//
+    	}
+    	return false;
+	}
+
+	private void attachDebugger(ILaunch launch, IProcess process, IPath program) throws CoreException {
     	IFile[] programFiles = ResourcesPlugin.getWorkspace().getRoot().findFilesForLocation(program);
     	IProject project = EmulatorLaunchConfigurationDelegate.getProject(launch.getLaunchConfiguration());
     	IFile programFile = null;
@@ -274,8 +283,8 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
 
 	@Override
 	public void setDefaultAttributes(ILaunchConfigurationWorkingCopy wc) {
-        wc.setAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, "220");
-        wc.setAttribute(ILaunchConstants.SCREEN_SIZE_WIDTH, "176");
+        wc.setAttribute(ILaunchConstants.SCREEN_SIZE_HEIGHT, "480");
+        wc.setAttribute(ILaunchConstants.SCREEN_SIZE_WIDTH, "320");
 	}
 
 	@Override

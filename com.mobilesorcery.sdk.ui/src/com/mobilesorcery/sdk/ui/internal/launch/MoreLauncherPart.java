@@ -33,9 +33,9 @@ public class MoreLauncherPart implements IEmulatorLaunchConfigurationPart {
 		useTargetProfile.setSelection(config.getAttribute(
 				ILaunchConstants.SCREEN_SIZE_OF_TARGET, true));
 		widthText.setText(config.getAttribute(
-				ILaunchConstants.SCREEN_SIZE_WIDTH, "176"));
+				ILaunchConstants.SCREEN_SIZE_WIDTH, "480"));
 		heightText.setText(config.getAttribute(
-				ILaunchConstants.SCREEN_SIZE_HEIGHT, "220"));
+				ILaunchConstants.SCREEN_SIZE_HEIGHT, "320"));
 	}
 
 	@Override
