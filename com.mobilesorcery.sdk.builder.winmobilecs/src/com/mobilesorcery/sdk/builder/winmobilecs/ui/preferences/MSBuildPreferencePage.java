@@ -4,6 +4,7 @@ import java.io.File;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.BooleanFieldEditor;
+import org.eclipse.jface.preference.DirectoryFieldEditor;
 import org.eclipse.jface.preference.FileFieldEditor;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.util.Util;
@@ -31,7 +32,7 @@ public class MSBuildPreferencePage extends PreferencePage implements
 		IWorkbenchPreferencePage, IUpdatableControl {
 
 	private Button onlyGenerateEditor;
-	private FileFieldEditor msBuildPathEditor;
+	private DirectoryFieldEditor msBuildPathEditor;
 	private Label infoLabel;
 	private Composite main;
 	private Link guessLocationLink;
@@ -59,9 +60,16 @@ public class MSBuildPreferencePage extends PreferencePage implements
 
 		boolean isWin = Util.isWindows();
 		if (isWin) {
-			msBuildPathEditor = new FileFieldEditor(
+			msBuildPathEditor = new DirectoryFieldEditor(
 					WinMobileCSPlugin.MS_BUILD_PATH,
-					"&Visual Studio location:", main);
+					"&Visual Studio location:", main) {
+				@Override
+				protected String changePressed() {
+					String dir = super.changePressed();
+					// We add the MSBuild.exe by default...
+					return dir + File.separator + "MSBuild.exe";
+				}
+			};
 			msBuildPathEditor.setPreferenceStore(getPreferenceStore());
 			msBuildPathEditor.setFilterPath(new File(WinMobileCSPlugin
 					.getSystemRoot(), "/Microsoft.NET/Framework"));
@@ -72,7 +80,7 @@ public class MSBuildPreferencePage extends PreferencePage implements
 			infoLabel.setFont(MosyncUIPlugin.getDefault().getFont(
 					MosyncUIPlugin.FONT_INFO_TEXT));
 			infoLabel
-					.setText("Select which Visual Studio SDKs to use for building. To let the IDE try to find it, click the \"Guess Location\" link.\n(If you select manually, select the msbuild.exe executable, usually located at something like C:\\Windows\\Microsoft.NET\\Framework\\{VERSION}.)");
+					.setText("Select which Visual Studio SDKs to use for building. To let the IDE try to find it, click the \"Guess Location\" link.\n(If you select using the 'Browse...' button, select the directory that contains the MSBuild.exe executable, usually located at something like C:\\Windows\\Microsoft.NET\\Framework\\{VERSION}.)");
 			infoLabel.setLayoutData(new GridData(SWT.FILL,
 					SWT.DEFAULT, true, false, 2, 1));
 
