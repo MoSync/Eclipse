@@ -40,7 +40,7 @@
 
 /* In OS X and Linux we need to explicitly pass the environment
  * to the spawned process. Usually it is linked in with ld, but
- * not in the case of shared libraries, and in OS X you have to use 
+ * not in the case of shared libraries, and in OS X you have to use
  * the trick below to find the address of the environment array. On
  * Linux it can however be accessed through unistd.h.
  */
@@ -82,16 +82,16 @@ terminateWindows(HWND hwnd, LPARAM pid)
 
 /**
  * Frees the allocated argument strings, should
- * be called after a call to parseCmdLine to 
+ * be called after a call to parseCmdLine to
  * release the memory.
  *
  * @param a An array of pointers previously allocated
  *          parseCmdLine.
  */
-static void 
+static void
 parseFreeMem ( char * a[] )
 {
-	while ( *a != NULL ) 
+	while ( *a != NULL )
 	{
 		free( *a++ );
 	}
@@ -100,7 +100,7 @@ parseFreeMem ( char * a[] )
 /**
  * Copies the given string to a string that is allocted by
  * this function and the returned.
- * 
+ *
  * Note: The user is reponsible for freeing the memory
  *       allocated by this function.
  *
@@ -113,12 +113,12 @@ parseStrCopyN ( char *s )
 {
 	size_t len = strlen( s );
 	char * res = (char *) malloc( len+1 );
-	
+
 	if (res == NULL)
 	{
 		return NULL;
 	}
-	
+
 	strcpy( res, s );
 	return res;
 }
@@ -139,37 +139,37 @@ parseCmdLineN ( const char *cmd )
 	static char tmpStr[BUFFER_SIZE];
 	static char tmpCmd[BUFFER_SIZE];
 	static char *tmpArr[MAX_ARGV_SIZE];
-	
+
 	strcpy( tmpCmd, cmd );
 	tok = strtok( tmpCmd, " \t\f\n" );
 	while ( tok != NULL && i < MAX_ARGV_SIZE )
 	{
+		bool quoted = tok[0] == '\"';
 		/* Copy first token */
-		strcpy( tmpStr, tok );
-		
+		strcpy( tmpStr, tok + (quoted ? 1 : 0) );
+
 		/* Is there a quotation mark? */
-		if ( tok[0] == '\"' )
+		if ( quoted )
 		{
 			tok = strtok( NULL, "\"" );
 			strcat( tmpStr, " " );
 			if ( tok != NULL )
 			{
-				strcat( tmpStr, tok );
+				strcat( tmpStr, tok);
 			}
-			strcat( tmpStr, "\"" );
 		}
-		
+
 		/* Copy argument */
 		char *copiedString = parseStrCopyN( tmpStr );
 		if(copiedString == NULL)
 		{
 			return NULL;
 		}
-		
+
 		tmpArr[i++] = copiedString;
 		tok = strtok( NULL, " \t\f\n" );
 	}
-	
+
 	tmpArr[i] = NULL;
 	return tmpArr;
 }
@@ -205,7 +205,7 @@ PIPELIB_API int pipe_close(int fd) {
 	return close(fd);
 }
 
-PIPELIB_API int proc_spawn(char* cmd, char* args, char* dir) 
+PIPELIB_API int proc_spawn(char* cmd, char* args, char* dir)
 {
 	if(chdir(dir) != 0)
 	{
@@ -218,7 +218,7 @@ PIPELIB_API int proc_spawn(char* cmd, char* args, char* dir)
 #else
 	pid_t pid = 0;
 	char **argv = parseCmdLineN( args );
-	
+
 	pid = fork();
 	if( pid == 0 ) {
 		/* The child creates a new session and becomes process group leader,
@@ -227,7 +227,7 @@ PIPELIB_API int proc_spawn(char* cmd, char* args, char* dir)
 		execvp(cmd, argv);
 	}
 	parseFreeMem( argv );
-	
+
 	return pid;
 #endif
 }
@@ -276,7 +276,7 @@ PIPELIB_API int proc_kill(int pid, int exit_code) {
 	CloseHandle(procHandle);
 
 	return killStatus;
-#else	
+#else
 	// exit_code is ignored.
 	pid_t processGroup = getpgid( pid );
 	return killpg(processGroup, SIGTERM);

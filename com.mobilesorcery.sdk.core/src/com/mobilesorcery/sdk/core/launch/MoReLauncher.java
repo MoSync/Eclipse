@@ -141,8 +141,8 @@ public class MoReLauncher extends AbstractEmulatorLauncher {
         IPath outputPath = EmulatorLaunchConfigurationDelegate.getLaunchDir(mosyncProject, variant);
         File dir = outputPath.toFile();
 
-        String command = Util.join(Util.ensureQuoted(cmdline), " ");
-        final SpawnedProcess process = new SpawnedProcess(getMoREExe(), command, dir);
+        //String command = Util.join(Util.ensureQuoted(cmdline), " ");
+        final SpawnedProcess process = new SpawnedProcess(getMoREExe(), cmdline, dir);
 
         final EmulatorOutputParser parser = new EmulatorOutputParser(emulatorId, handler);
         startEmulatorListener(process, parser, readFd, dupWriteFd);

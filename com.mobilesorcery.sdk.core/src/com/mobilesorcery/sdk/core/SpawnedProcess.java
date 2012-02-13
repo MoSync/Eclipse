@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.core.runtime.ListenerList;
@@ -31,16 +33,16 @@ public class SpawnedProcess extends Process {
     	public final static int START = 0;
     	public final static int EXIT = 1;
     	public final static int DESTROY_CALLED = 2;
-    	
+
     	public void handleEvent(SpawnedProcess process, int type);
-    	
+
 	}
 
 	private static final int INITIAL_EXIT_VALUE = Integer.MIN_VALUE;
-    
-	private String cmd;
-    private String args;
-    private File dir;
+
+	private final String cmd;
+    private final String[] args;
+    private final File dir;
 
     private int handle = 0;
 
@@ -49,51 +51,53 @@ public class SpawnedProcess extends Process {
     private InputStream errStream = new ByteArrayInputStream(new byte[0]);
     private InputStream inpStream = new ByteArrayInputStream(new byte[0]);
 
-    private OutputStream outputStream = new ByteArrayOutputStream();
+    private final OutputStream outputStream = new ByteArrayOutputStream();
 
-    private CountDownLatch waitFor;
-    
-    private ListenerList processListeners = new ListenerList();
+    private final CountDownLatch waitFor;
+
+    private final ListenerList processListeners = new ListenerList();
 
 	private Runnable shutdownHook = null;
-    
-    public SpawnedProcess(String cmd, String args, File dir) {
+
+    public SpawnedProcess(String cmd, String[] args, File dir) {
         waitFor = new CountDownLatch(1);
         this.cmd = cmd;
         this.args = args;
         this.dir = dir;
     }
 
-    public void start() {
+    public void start() throws IOException {
     	notifyListeners(IProcessListener.START);
     	final IProcessUtil pu = CoreMoSyncPlugin.getDefault().getProcessUtil();
-    	
+
     	if (!dir.exists()) {
     	    throw new IllegalStateException("The directory to launch in does not exist");
     	}
-    	
+
+    	String args = Util.join(Util.ensureQuoted(this.args), " ");
         handle = pu.proc_spawn((cmd + '\0').getBytes(), (args + '\0').getBytes(), (dir.getAbsolutePath() + '\0')
                 .getBytes());
-        
+
         Thread waitForThread = new Thread(new Runnable() {
-            public void run() {
+            @Override
+			public void run() {
                 int tmpExitValue = pu.proc_wait_for(handle);
             	runShutdownHook();
             	exitValue = tmpExitValue;
                 notifyListeners(IProcessListener.EXIT);
                 waitFor.countDown();
-            }            
+            }
         });
-        
+
         waitForThread.setName("Waiting for process " + cmd);
         waitForThread.setDaemon(true);
         waitForThread.start();
-        
+
         if (handle < 0) {
             throw new IllegalStateException("Could not spawn process");
         }
     }
-    
+
     public static int[] createPipe() {
         int[] fds = new int[2];
         CoreMoSyncPlugin.getDefault().getProcessUtil().pipe_create(fds);
@@ -120,11 +124,12 @@ public class SpawnedProcess extends Process {
         throw new UnsupportedOperationException("Only need read in this app");
     }
 
-    public void destroy() {
+    @Override
+	public void destroy() {
     	notifyListeners(IProcessListener.DESTROY_CALLED);
-    	
+
     	if (exitValue != INITIAL_EXIT_VALUE) {
-    		closeStreams();    		
+    		closeStreams();
     		return;
     	}
 
@@ -142,7 +147,7 @@ public class SpawnedProcess extends Process {
 				// Ignore.
 			}
     	}
-    	
+
     	if (errStream != null) {
     		try {
 				errStream.close();
@@ -150,7 +155,7 @@ public class SpawnedProcess extends Process {
 				// Ignore.
 			}
     	}
-    	
+
     	if (inpStream != null) {
     		try {
 				inpStream.close();
@@ -160,6 +165,7 @@ public class SpawnedProcess extends Process {
     	}
 	}
 
+	@Override
 	public int exitValue() {
         if (exitValue == INITIAL_EXIT_VALUE) {
             throw new IllegalThreadStateException("Process not terminated");
@@ -167,33 +173,38 @@ public class SpawnedProcess extends Process {
         return exitValue;
     }
 
-    public InputStream getErrorStream() {
+    @Override
+	public InputStream getErrorStream() {
         return errStream;
     }
 
-    public InputStream getInputStream() {
+    @Override
+	public InputStream getInputStream() {
         return inpStream;
     }
 
-    public OutputStream getOutputStream() {
+    @Override
+	public OutputStream getOutputStream() {
         return outputStream;
     }
 
     public void setShutdownHook(Runnable shutdownHook) {
     	this.shutdownHook = shutdownHook;
     }
-    
+
     private void runShutdownHook() {
     	if (shutdownHook != null) {
     		shutdownHook.run();
     	}
 	}
 
+	@Override
 	public String toString() {
         return "[" + dir + ":] " + cmd + " " + args;
     }
 
-    public int waitFor() throws InterruptedException {
+    @Override
+	public int waitFor() throws InterruptedException {
         waitFor.await();
         return exitValue;
     }
@@ -201,11 +212,11 @@ public class SpawnedProcess extends Process {
     public void addProcessListener(IProcessListener listener) {
     	processListeners.add(listener);
     }
-    
+
     public void removeProcessListener(IProcessListener listener) {
     	processListeners.remove(listener);
     }
-    
+
     protected void notifyListeners(int type) {
     	Object[] listeners = processListeners.getListeners();
     	for (int i = 0; i < listeners.length; i++) {
