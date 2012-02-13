@@ -106,15 +106,12 @@ public class LinkBuildStep extends AbstractBuildStep {
             String[] extraLinkerSwitches = PropertyUtil.getStrings(buildProperties, MoSyncBuilder.EXTRA_LINK_SWITCHES);
             pipeTool.setExtraSwitches(extraLinkerSwitches);
 
-            if (objectFiles.length > 0) {
-            	// TODO: Dependencies?
-                continueFlag = (pipeTool.run() == PipeTool.SKIP_RETURN_CODE ? IBuildStep.SKIP : IBuildStep.CONTINUE);
+            continueFlag = (pipeTool.run() == PipeTool.SKIP_RETURN_CODE ? IBuildStep.SKIP : IBuildStep.CONTINUE);
 
-                // If needed, run a second time to generate IL
-                if (isLib == false && pipeToolMode.equals(PipeTool.BUILD_C_MODE) == false) {
-                	pipeTool.setMode(PipeTool.BUILD_C_MODE);
-            		pipeTool.run();
-                }
+            // If needed, run a second time to generate IL
+            if (isLib == false && pipeToolMode.equals(PipeTool.BUILD_C_MODE) == false) {
+            	pipeTool.setMode(PipeTool.BUILD_C_MODE);
+        		pipeTool.run();
             }
 
             if (elim) {
