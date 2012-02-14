@@ -30,7 +30,7 @@ public class DecimalVariable extends SimpleVariable {
 
 	@Override
 	public void read(JSONObject o) {
-		value.set(Long.parseLong(readValue(o)));
+		value.set((Long) o.get("value"));
 	}
 
 	@Override

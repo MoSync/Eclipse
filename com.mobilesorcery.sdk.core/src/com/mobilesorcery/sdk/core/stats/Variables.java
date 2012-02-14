@@ -41,6 +41,7 @@ public class Variables implements IVariable {
 			String key = variableEntry.getKey();
 			IVariable v = variableEntry.getValue();
 			JSONObject o = new JSONObject();
+			o.put("type", v.getType());
 			v.write(o);
 			output.put(key, o);
 		}
