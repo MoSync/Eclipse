@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.util.Util;
 
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
@@ -41,11 +39,14 @@ public class WinMobileCSPackager extends PackageToolPackager {
 			intern.getConsole()
 					.addMessage(
 							"Visual Studio building only available in Windows, will not build generated project");
-		} else if (!shouldBuildWithVS(project, variant)) {
+		} else if (!shouldBuildWithVSPref(project) && !isEmulatorBuild(project, variant)) {
 			intern.getConsole()
 					.addMessage(
 							"Visual Studio building disabled, will not build generated project");
-		}
+		} else if (!MSBuild.getDefault().isValid()) {
+			intern.getConsole().addMessage("Visual Studio building disabled.");
+			intern.getConsole().addMessage("Could not find Visual Studio executable; see Preferences > MoSync Tool > Visual Studio (WP7)");
+        }
 	}
 
 	@Override
@@ -79,13 +80,6 @@ public class WinMobileCSPackager extends PackageToolPackager {
 		if (!shouldBuildWithVS(project, variant)) {
 			commandLine.flag("--wp-project-only");
 		} else {
-			if (!MSBuild.getDefault().isValid()) {
-				throw new CoreException(
-						new Status(
-								IStatus.ERROR,
-								WinMobileCSPlugin.PLUGIN_ID,
-								"Could not find Visual Studio executable; see Preferences > MoSync Tool > Visual Studio (WP7)"));
-			}
 			commandLine.flag("--wp-vs-build-path").with(MSBuild.getDefault().getToolPath());
 		}
 		String target = isEmulatorBuild(project, variant) ? "emulator"
@@ -114,9 +108,13 @@ public class WinMobileCSPackager extends PackageToolPackager {
 	private boolean shouldBuildWithVS(MoSyncProject project,
 			IBuildVariant variant) {
 		boolean generateOnly = !Util.isWindows()
-				|| !WinMobileCSPlugin.getDefault().getPreferenceStore()
-						.getBoolean(WinMobileCSPlugin.BUILD_WITH_VS);
-		return !generateOnly || isEmulatorBuild(project, variant);
+				|| !shouldBuildWithVSPref(project);
+		return MSBuild.getDefault().isValid() && (!generateOnly || isEmulatorBuild(project, variant));
+	}
+
+	private boolean shouldBuildWithVSPref(MoSyncProject project) {
+		return WinMobileCSPlugin.getDefault().getPreferenceStore()
+				.getBoolean(WinMobileCSPlugin.BUILD_WITH_VS);
 	}
 
 	private boolean isEmulatorBuild(MoSyncProject project, IBuildVariant variant) {

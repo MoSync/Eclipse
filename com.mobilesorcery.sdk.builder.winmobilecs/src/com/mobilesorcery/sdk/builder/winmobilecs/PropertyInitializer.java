@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.util.Util;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IPropertyInitializerDelegate;
@@ -32,7 +33,7 @@ public class PropertyInitializer extends AbstractPreferenceInitializer
 	@Override
 	public void initializeDefaultPreferences() {
 		IPreferenceStore store = WinMobileCSPlugin.getDefault().getPreferenceStore();
-		store.setDefault(WinMobileCSPlugin.BUILD_WITH_VS, false);
+		store.setDefault(WinMobileCSPlugin.BUILD_WITH_VS, Util.isWindows());
 		MSBuild guessed = MSBuild.guess();
 		String guessedMSBuild = guessed == null ? "" : guessed.getToolPath().getAbsolutePath();
 		store.setDefault(WinMobileCSPlugin.MS_BUILD_PATH, guessedMSBuild);
