@@ -84,11 +84,15 @@ public abstract class MoSyncPropertyPage extends PropertyPage implements IWorkbe
 
     	String str = text.getText().trim();
         IPath[] paths = PropertyUtil.toPaths(str);
+        IPath[] pathsWithQuotes = PropertyUtil.toPaths(str, false);
         for (int i = 0; i < paths.length; i++) {
-            if (paths[i].toOSString().indexOf(' ') != -1) {
-                result = new DefaultMessageProvider(
-                        MessageFormat.format("\"{0}\": space is an invalid delimiter - use comma (,) instead", fieldName),
-                        DefaultMessageProvider.WARNING);
+        	IPath path = paths[i];
+        	IPath pathWithQuotes = pathsWithQuotes[i];
+        	boolean hasQuotes = !path.equals(pathWithQuotes);
+            if (!hasQuotes && path.toOSString().indexOf(' ') != -1) {
+            	result = new DefaultMessageProvider(
+                        MessageFormat.format("\"{0}\": space is an invalid delimiter - use quotation marks (\") and comma (,) to separate", fieldName),
+                        DefaultMessageProvider.ERROR);
             }
 
             if (DefaultMessageProvider.isEmpty(result)) {

@@ -82,7 +82,9 @@ public class PropertyUtil {
 
     	for (int i = 0; i < pathsArray.length; i++) {
     	    String trimmed = pathsArray[i].trim();
-    	    trimmed = Util.trimQuotes(trimmed);
+    	    if (trimQuotes) {
+    	    	trimmed = Util.trimQuotes(trimmed);
+    	    }
     	    if (!existingPaths.contains(trimmed) && trimmed.length() > 0) {
     	        paths.add(new Path(trimmed));
     	        existingPaths.add(trimmed);
