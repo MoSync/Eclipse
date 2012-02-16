@@ -26,19 +26,26 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
+import com.mobilesorcery.sdk.ui.PlatformSelectionComposite;
 
 public class MoSyncProjectPropertyPage extends MoSyncPropertyPage {
 
-    protected Control createContents(Composite parent) {
+    public MoSyncProjectPropertyPage() {
+		super(false);
+	}
+
+	@Override
+	protected Control createContents(Composite parent) {
         Composite main = new Composite(parent, SWT.NONE);
         main.setLayout(new GridLayout(2, false));
 
         Label currentProfile = new Label(main, SWT.NONE);
         currentProfile.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-        MoSyncProject project = getProject();
+        final MoSyncProject project = getProject();
         IProfile profile = project.getTargetProfile();
 
         if (profile == null) {
@@ -49,16 +56,15 @@ public class MoSyncProjectPropertyPage extends MoSyncPropertyPage {
 
         if (PlatformUI.getWorkbench().getViewRegistry().find("com.mobilesorcery.sdk.profiles.ui.view") != null) {
             Link showProfilesView = new Link(main, SWT.NONE);
-            showProfilesView.setText("<a>Show &Profiles View</a>");
+            showProfilesView.setText("<a>Show &Profiles</a>");
             showProfilesView.setLayoutData(new GridData(SWT.RIGHT, SWT.TOP, true, false));
             showProfilesView.addListener(SWT.Selection, new Listener() {
-                public void handleEvent(Event event) {
-                    try {
-                        PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(
-                                "com.mobilesorcery.sdk.profiles.ui.view");
-                    } catch (PartInitException e) {
-                        e.printStackTrace();
-                    }
+                @Override
+				public void handleEvent(Event event) {
+            		PlatformSelectionComposite psc = new PlatformSelectionComposite(getShell(), SWT.SEARCH | SWT.BACKGROUND);
+					psc.setProject(project);
+					psc.show(SWT.NONE);
+                    MoSyncProjectPropertyPage.this.performCancel();
                 }
             });
         }

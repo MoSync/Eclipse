@@ -21,6 +21,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.dialogs.WizardNewFileCreationPage;
 
 import com.mobilesorcery.sdk.core.templates.ITemplate;
+import com.mobilesorcery.sdk.core.templates.TemplateManager;
 import com.mobilesorcery.sdk.wizards.Activator;
 
 public class NewMoSyncResourceFilePage extends WizardNewFileCreationPage {
@@ -32,7 +33,7 @@ public class NewMoSyncResourceFilePage extends WizardNewFileCreationPage {
 
     @Override
 	public InputStream getInitialContents() {
-        ITemplate template = Activator.getDefault().getTemplate(Activator.RESOURCE_TEMPLATE_ID);
+        ITemplate template = TemplateManager.getDefault().getTemplate(Activator.RESOURCE_TEMPLATE_ID);
         String templateContents = ""; // Empty file, worst case.
 
         try {

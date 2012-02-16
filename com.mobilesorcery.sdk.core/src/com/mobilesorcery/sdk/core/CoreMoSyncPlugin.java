@@ -69,6 +69,7 @@ import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.core.memory.LowMemoryManager;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.core.stats.Stats;
+import com.mobilesorcery.sdk.core.templates.TemplateManager;
 import com.mobilesorcery.sdk.internal.ErrorPackager;
 import com.mobilesorcery.sdk.internal.PID;
 import com.mobilesorcery.sdk.internal.PROCESS;

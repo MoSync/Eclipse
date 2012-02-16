@@ -22,38 +22,46 @@ import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class TestingPropertyPage extends MoSyncPropertyPage {
 
-    private Text testFolders;
+    public TestingPropertyPage() {
+		super(false);
+	}
 
-    protected Control createContents(Composite parent) {
+	private Text testFolders;
+
+    @Override
+	protected Control createContents(Composite parent) {
         Composite main = new Composite(parent, SWT.NONE);
         main.setLayout(new GridLayout(2, false));
-        
+
         Label testFoldersLabel = new Label(main, SWT.NONE);
         testFoldersLabel.setText("&Folders containing tests:");
         testFolders = new Text(main, SWT.BORDER | SWT.SINGLE);
         testFolders.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         testFolders.addModifyListener(new ModifyListener() {
-            public void modifyText(ModifyEvent event) {
+            @Override
+			public void modifyText(ModifyEvent event) {
                 validate();
             }
         });
         setText(testFolders, getProject().getProperty(MoSyncProjectTestManager.TEST_RESOURCES));
-        
+
         Label spacer = new Label(main, SWT.NONE);
         Label infoLabel = new Label(main, SWT.WRAP);
         infoLabel.setText("These folders will by default be excluded from non-testing build configurations");
         infoLabel.setFont(MosyncUIPlugin.getDefault().getFont(MosyncUIPlugin.FONT_INFO_TEXT));
-        
+
         validate();
-        
+
         return main;
     }
 
-    protected void validate() {
+    @Override
+	protected void validate() {
         setMessage(validatePathsField(null, "Folders containing tests", testFolders, new IPath[] { getProject().getWrappedProject().getLocation() }));
     }
 
-    public boolean performOk() {
+    @Override
+	public boolean performOk() {
         getProject().setProperty(MoSyncProjectTestManager.TEST_RESOURCES, testFolders.getText());
         return true;
     }
