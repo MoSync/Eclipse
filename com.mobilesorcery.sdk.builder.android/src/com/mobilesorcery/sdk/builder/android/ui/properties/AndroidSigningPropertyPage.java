@@ -49,6 +49,7 @@ public class AndroidSigningPropertyPage extends MoSyncPropertyPage implements IW
 	private Boolean wasEnabled;
 
     public AndroidSigningPropertyPage() {
+    	super(true);
     }
 
     @Override
@@ -115,6 +116,13 @@ public class AndroidSigningPropertyPage extends MoSyncPropertyPage implements IW
 			return false;
 		}
         return true;
+    }
+
+    @Override
+	public void performDefaults() {
+    	keyCertUI.setToDefault();
+    	useProjectSpecific.setSelection(PropertyUtil.toBoolean(getProject().getDefaultProperty(PropertyInitializer.ANDROID_PROJECT_SPECIFIC_KEYS)));
+    	updateUI();
     }
 
     private void handleSecurePropertyException(SecurePropertyException e) {

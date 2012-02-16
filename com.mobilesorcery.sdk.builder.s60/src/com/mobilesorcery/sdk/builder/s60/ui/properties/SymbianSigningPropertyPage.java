@@ -13,7 +13,6 @@
 */
 package com.mobilesorcery.sdk.builder.s60.ui.properties;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.preference.FileFieldEditor;
 import org.eclipse.swt.SWT;
@@ -28,14 +27,13 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbenchPropertyPage;
-import org.eclipse.ui.dialogs.PropertyPage;
 
 import com.mobilesorcery.sdk.builder.s60.PropertyInitializer;
-import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
 import com.mobilesorcery.sdk.ui.PasswordTextFieldDecorator;
 
-public class SymbianSigningPropertyPage extends PropertyPage implements IWorkbenchPropertyPage {
+public class SymbianSigningPropertyPage extends MoSyncPropertyPage implements IWorkbenchPropertyPage {
 
     private Button useProjectSpecific;
     private FileFieldEditor certFile;
@@ -46,6 +44,7 @@ public class SymbianSigningPropertyPage extends PropertyPage implements IWorkben
     private PasswordTextFieldDecorator passkeyDec;
 
     public SymbianSigningPropertyPage() {
+    	super(true);
     }
 
     @Override
@@ -101,7 +100,8 @@ public class SymbianSigningPropertyPage extends PropertyPage implements IWorkben
         return main;
     }
 
-    private void updateUI() {
+    @Override
+	public void updateUI() {
         keyFile.setEnabled(useProjectSpecific.getSelection(), signingGroup);
         certFile.setEnabled(useProjectSpecific.getSelection(), signingGroup);
         passkeyLabel.setEnabled(useProjectSpecific.getSelection());
@@ -124,12 +124,13 @@ public class SymbianSigningPropertyPage extends PropertyPage implements IWorkben
         return true;
     }
 
-    private MoSyncProject getProject() {
-        IProject wrappedProject = (IProject) getElement();
-        MoSyncProject project = MoSyncProject.create(wrappedProject);
-
-        return project;
+    @Override
+	public void performDefaults() {
+    	useProjectSpecific.setSelection(PropertyUtil.toBoolean(getProject().getDefaultProperty(PropertyInitializer.S60_PROJECT_SPECIFIC_KEYS)));
+    	keyFile.setStringValue(getProject().getDefaultProperty(PropertyInitializer.S60_KEY_FILE));
+    	certFile.setStringValue(getProject().getDefaultProperty(PropertyInitializer.S60_CERT_FILE));
+    	setText(passkey, getProject().getDefaultProperty(PropertyInitializer.S60_PASS_KEY));
+    	updateUI();
     }
-
 
 }

@@ -23,7 +23,11 @@ import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
 
 public class PermissionsPropertyPage extends MoSyncPropertyPage {
 
-    public class PermissionsContentProvider implements ITreeContentProvider {
+    public PermissionsPropertyPage() {
+		super(true);
+	}
+
+	public class PermissionsContentProvider implements ITreeContentProvider {
         private final IApplicationPermissions permissions;
 
         public PermissionsContentProvider(IApplicationPermissions permissions) {

@@ -28,17 +28,16 @@ import java.util.TreeMap;
  * <p>
  * Likewise, the key <code>property/overridden/overriddenagain</code> will
  * potentially use an additional lookup.
- * <emph>TODO: Use something like CascadingProperties instead, much less bookkeeping!!</emph> 
+ * <emph>TODO: Use something like CascadingProperties instead, much less bookkeeping!!</emph>
  * @author Mattias Bybro
  *
  */
-public class NameSpacePropertyOwner implements IPropertyOwner {
+public class NameSpacePropertyOwner extends PropertyOwnerBase implements IPropertyOwner {
 
-
-	private IPropertyOwner parent;
-	private String[] namespace;
-	private int levels;
-	private String fullNamespace;
+	private final IPropertyOwner parent;
+	private final String[] namespace;
+	private final int levels;
+	private final String fullNamespace;
 
 	public NameSpacePropertyOwner(IPropertyOwner parent, String namespace) {
 		this.parent = parent;
@@ -46,11 +45,15 @@ public class NameSpacePropertyOwner implements IPropertyOwner {
 		this.fullNamespace = namespace;
 		this.levels = this.namespace.length;
 	}
-	
+
+	public String getNamespace() {
+		return fullNamespace;
+	}
+
 	private String assembleFullKey(String key, int level) {
 		return assembleFullKeys(key)[level];
 	}
-	
+
 	private String[] assembleFullKeys(String key) {
 		String[] result = new String[levels + 1];
 		StringBuffer buffer = new StringBuffer(key);
@@ -60,21 +63,15 @@ public class NameSpacePropertyOwner implements IPropertyOwner {
 			buffer.append(namespace[i]);
 			result[i + 1] = buffer.toString();
 		}
-		return result;		
-	}
-	
-	public boolean applyProperties(Map<String, String> properties) {
-		boolean result = false;
-		for (String key : properties.keySet()) {
-			result |= setProperty(key, properties.get(key));
-		}
 		return result;
 	}
 
+	@Override
 	public String getContext() {
 		return parent.getContext();
 	}
 
+	@Override
 	public String getDefaultProperty(String key) {
 		String[] fullKeys = assembleFullKeys(key);
 		for (int i = 0; i < levels + 1; i++) {
@@ -83,10 +80,11 @@ public class NameSpacePropertyOwner implements IPropertyOwner {
 				return prop;
 			}
 		}
-		
+
 		return null;
 	}
 
+	@Override
 	public String getProperty(String key) {
 		String[] fullKeys = assembleFullKeys(key);
 		for (int i = 0; i < levels + 1; i++) {
@@ -94,15 +92,17 @@ public class NameSpacePropertyOwner implements IPropertyOwner {
 			if (prop != null) {
 				return prop;
 			}
-		}		
-		
+		}
+
 		return null;
 	}
 
+	@Override
 	public void initProperty(String key, String value) {
 		parent.initProperty(assembleFullKey(key, levels), value);
 	}
 
+	@Override
 	public boolean setProperty(String key, String value) {
 		if (equals(getProperty(key), value)) {
 			return false;
@@ -110,21 +110,17 @@ public class NameSpacePropertyOwner implements IPropertyOwner {
 			return parent.setProperty(assembleFullKey(key, levels), value);
 		}
 	}
-	
+
 	public static boolean equals(String oldValue, String value) {
 		if (oldValue == null) {
 			return value == null;
 		}
-		
+
 		return oldValue.equals(value);
 	}
 
-	public IWorkingCopy createWorkingCopy() {
-		return new PropertyOwnerWorkingCopy(this);
-	}
-
 	/**
-	 * Returns the key part of a namespaced key 
+	 * Returns the key part of a namespaced key
 	 * @param key
 	 * @param fullKey
 	 * @return
@@ -138,7 +134,7 @@ public class NameSpacePropertyOwner implements IPropertyOwner {
 		}
 	}
 
-	public static String[] getNamespace(String key) {		
+	public static String[] getNamespace(String key) {
 		String[] parts = key.split("/");
 		if (parts.length == 1) {
 			return new String[] { "" };
@@ -166,10 +162,11 @@ public class NameSpacePropertyOwner implements IPropertyOwner {
 				result.put(getKey(key), parentProperties.get(key));
 			}
 		}
-		
+
 		return result;
 	}
 
+	@Override
 	public Map<String, String> getProperties() {
 	    Map<String, String> result = parent.getProperties();
 	    result.putAll(getProperties(fullNamespace));
