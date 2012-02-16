@@ -507,12 +507,10 @@ public class MoSyncBuilder extends ACBuilder {
 			} else if (properties.containsKey("MA_PROF_OUTPUT_CS")) {
 				return PipeTool.BUILD_GEN_CS_MODE;
 			}
-		} else {
-			return profile.getPackager().getGenerateMode(profile);
 		}
 
-		// The default mode
-		return PipeTool.BUILD_C_MODE;
+		// The default mode.
+		return profile.getPackager().getGenerateMode(profile);
 	}
 
 	IBuildResult incrementalBuild(IProject project, IBuildSession session,
