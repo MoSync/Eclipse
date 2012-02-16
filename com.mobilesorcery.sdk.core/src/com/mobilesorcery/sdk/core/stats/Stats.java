@@ -89,7 +89,7 @@ public class Stats {
 			loadState();
 		}
 		variables.get(TimeStamp.class, "ide.started").set(started);
-		variables.get(TimeStamp.class, "time.elapsed").set();
+		variables.get(TimeStamp.class, "stats.collection.started").set();
 	}
 
 	public void stop() throws Exception {
