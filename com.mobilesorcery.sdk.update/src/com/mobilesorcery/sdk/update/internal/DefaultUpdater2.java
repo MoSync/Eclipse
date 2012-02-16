@@ -579,7 +579,6 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 		try {
 			URL statsURL = getRequestURL("stats", null);
 			// HTTP POST - fake HTML form :)
-			statsURL.openConnection().getOutputStream();
 			connection = statsURL.openConnection();
 			connection.setDoInput(true);
 			connection.setDoOutput(true);
