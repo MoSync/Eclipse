@@ -51,7 +51,6 @@ public class IPhoneOSSSDKPropertyPage extends MoSyncPropertyPage {
 
 	}
 	public IPhoneOSSSDKPropertyPage() {
-		super(true);
 		XCodeBuild.getDefault().refresh();
 	}
 
@@ -94,23 +93,12 @@ public class IPhoneOSSSDKPropertyPage extends MoSyncPropertyPage {
 		return combo;
 	}
 
-	private void setToAutomatic(ComboViewer combo) {
-		combo.setSelection(new StructuredSelection(AUTOMATIC_SDK), true);
-	}
-
 	@Override
 	public boolean performOk() {
 		updateProperties(iOSSDKs, XCodeBuild.IOS_SDKS);
 		updateProperties(iOSSimulatorSDKs, XCodeBuild.IOS_SIMULATOR_SDKS);
 
 		return super.performOk();
-	}
-
-	@Override
-	public void performDefaults() {
-		// Default is automatic...
-		setToAutomatic(iOSSDKs);
-		setToAutomatic(iOSSimulatorSDKs);
 	}
 
 	private void updateProperties(ComboViewer sdkCombo, int sdkType) {

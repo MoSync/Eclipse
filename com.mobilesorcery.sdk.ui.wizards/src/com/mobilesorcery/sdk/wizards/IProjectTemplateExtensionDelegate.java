@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.core.templates;
+package com.mobilesorcery.sdk.wizards;
 
 import org.eclipse.core.runtime.CoreException;
 

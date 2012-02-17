@@ -35,7 +35,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
-import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
@@ -153,10 +152,6 @@ public class ProjectTemplate {
         }
 
         return null;
-	}
-
-	public Map<String, String> getSettings() {
-		return desc.getSettings();
 	}
 
 	private void mkParents(IResource resource) throws CoreException {

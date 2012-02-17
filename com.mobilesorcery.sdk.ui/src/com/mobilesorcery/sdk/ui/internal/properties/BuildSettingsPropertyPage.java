@@ -17,14 +17,10 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.jface.dialogs.IMessageProvider;
-import org.eclipse.jface.viewers.AbstractListViewer;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -44,23 +40,18 @@ import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
 
-import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncProjectParameterResolver;
-import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
 import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.PropertyOwnerWorkingCopy;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.core.IPropertyOwner.IWorkingCopy;
-import com.mobilesorcery.sdk.core.templates.ITemplate;
-import com.mobilesorcery.sdk.core.templates.ProjectTemplate;
-import com.mobilesorcery.sdk.core.templates.TemplateManager;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
 import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
@@ -72,11 +63,7 @@ import com.mobilesorcery.sdk.ui.ValidationMessageProvider;
 
 public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements PropertyChangeListener {
 
-    public BuildSettingsPropertyPage() {
-		super(true);
-	}
-
-	public class BuildConfigurationChangedListener implements ISelectionChangedListener {
+    public class BuildConfigurationChangedListener implements ISelectionChangedListener {
 
         private boolean active = true;
 
@@ -124,11 +111,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private ComboViewer buildConfigurations;
     private String currentConfigId;
     private BuildConfigurationChangedListener buildConfigurationListener;
-    private final HashMap<Object, IPropertyOwner> workingCopies = new HashMap<Object, IPropertyOwner>();
-    private IWorkingCopy projectWorkingCopy;
-	private final HashSet<String> buildProperties = new HashSet<String>();
-
-	private Composite main;
+    private final HashMap<Object, IWorkingCopy> workingCopies = new HashMap<Object, IWorkingCopy>();
+    private Composite main;
     private Composite placeHolder;
 
     private Text excludeFiles;
@@ -432,62 +416,54 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
     private void initUI() {
     	listener.setActive(false);
+    	IWorkingCopy configProperties = getWorkingCopyOfBuildConfiguration();
 
-    	IPropertyOwner projectWorkingCopy = getWorkingCopyOfBuildConfiguration(getProject());
+    	incrementalBuildStrategy.select(PropertyUtil.getInteger(getProject(), MoSyncProject.DEPENDENCY_STRATEGY, MoSyncProject.GCC_DEPENDENCY_STRATEGY));
 
-        boolean isLibraryProject = MoSyncBuilder.PROJECT_TYPE_LIBRARY.equals(projectWorkingCopy.getProperty(addBuildProperty(MoSyncBuilder.PROJECT_TYPE)));
+        ignoreDefaultIncludePaths.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS));
+        setText(additionalIncludePathsText, configProperties.getProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS));
+
+        ignoreDefaultLibraryPaths.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS));
+        setText(additionalLibraryPathsText, configProperties.getProperty(MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS));
+
+        ignoreDefaultLibraries.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES));
+        setText(additionalLibrariesText, configProperties.getProperty(MoSyncBuilder.ADDITIONAL_LIBRARIES));
+
+        setText(excludeFiles, configProperties.getProperty(MoSyncProject.EXCLUDE_FILTER_KEY));
+
+        setText(libOutputPath, configProperties.getProperty(MoSyncBuilder.LIB_OUTPUT_PATH));
+        setText(appOutputPath, configProperties.getProperty(MoSyncBuilder.APP_OUTPUT_PATH));
+
+        boolean isLibraryProject = MoSyncBuilder.PROJECT_TYPE_LIBRARY.equals(getProject().getProperty(MoSyncBuilder.PROJECT_TYPE));
         libraryProjectType.setSelection(isLibraryProject);
         applicationProjectType.setSelection(!isLibraryProject);
 
-        incrementalBuildStrategy.select(PropertyUtil.getInteger(projectWorkingCopy, addBuildProperty(MoSyncProject.DEPENDENCY_STRATEGY), MoSyncProject.GCC_DEPENDENCY_STRATEGY));
+        deadCodeElim.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.DEAD_CODE_ELIMINATION));
 
-    	IPropertyOwner configProperties = getWorkingCopyOfBuildConfiguration();
+        setText(gccFlags, configProperties.getProperty(MoSyncBuilder.EXTRA_COMPILER_SWITCHES));
+        setText(extraRes, configProperties.getProperty(MoSyncBuilder.EXTRA_RES_SWITCHES));
+        setText(extraLink, configProperties.getProperty(MoSyncBuilder.EXTRA_LINK_SWITCHES));
 
-        ignoreDefaultIncludePaths.setSelection(PropertyUtil.getBoolean(configProperties, addBuildProperty(MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS)));
-        setText(additionalIncludePathsText, configProperties.getProperty(addBuildProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS)));
-
-        ignoreDefaultLibraryPaths.setSelection(PropertyUtil.getBoolean(configProperties, addBuildProperty(MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS)));
-        setText(additionalLibraryPathsText, configProperties.getProperty(addBuildProperty(MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS)));
-
-        ignoreDefaultLibraries.setSelection(PropertyUtil.getBoolean(configProperties, addBuildProperty(MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES)));
-        setText(additionalLibrariesText, configProperties.getProperty(addBuildProperty(MoSyncBuilder.ADDITIONAL_LIBRARIES)));
-
-        setText(excludeFiles, configProperties.getProperty(addBuildProperty(MoSyncProject.EXCLUDE_FILTER_KEY)));
-
-        setText(libOutputPath, configProperties.getProperty(addBuildProperty(MoSyncBuilder.LIB_OUTPUT_PATH)));
-        setText(appOutputPath, configProperties.getProperty(addBuildProperty(MoSyncBuilder.APP_OUTPUT_PATH)));
-
-        deadCodeElim.setSelection(PropertyUtil.getBoolean(configProperties, addBuildProperty(MoSyncBuilder.DEAD_CODE_ELIMINATION)));
-
-        setText(gccFlags, configProperties.getProperty(addBuildProperty(MoSyncBuilder.EXTRA_COMPILER_SWITCHES)));
-        setText(extraRes, configProperties.getProperty(addBuildProperty(MoSyncBuilder.EXTRA_RES_SWITCHES)));
-        setText(extraLink, configProperties.getProperty(addBuildProperty(MoSyncBuilder.EXTRA_LINK_SWITCHES)));
-
-        Integer gcc = PropertyUtil.getInteger(configProperties, addBuildProperty(MoSyncBuilder.GCC_WARNINGS));
+        Integer gcc = PropertyUtil.getInteger(configProperties, MoSyncBuilder.GCC_WARNINGS);
 
         gccWerror.setSelection(gcc != null && (gcc & MoSyncBuilder.GCC_WERROR) != 0);
         gccWall.setSelection(gcc != null && (gcc & MoSyncBuilder.GCC_WALL) != 0);
         gccWextra.setSelection(gcc != null && (gcc & MoSyncBuilder.GCC_WEXTRA) != 0);
 
-        setText(heapSize, configProperties.getProperty(addBuildProperty(MoSyncBuilder.MEMORY_HEAPSIZE_KB)));
-        setText(stackSize, configProperties.getProperty(addBuildProperty(MoSyncBuilder.MEMORY_STACKSIZE_KB)));
-        setText(dataSize, configProperties.getProperty(addBuildProperty(MoSyncBuilder.MEMORY_DATASIZE_KB)));
+        setText(heapSize, configProperties.getProperty(MoSyncBuilder.MEMORY_HEAPSIZE_KB));
+        setText(stackSize, configProperties.getProperty(MoSyncBuilder.MEMORY_STACKSIZE_KB));
+        setText(dataSize, configProperties.getProperty(MoSyncBuilder.MEMORY_DATASIZE_KB));
 
-        useDebugRuntimes.setSelection(PropertyUtil.getBoolean(configProperties, addBuildProperty(MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)));
-        staticRecompilation.setSelection(PropertyUtil.getBoolean(configProperties, addBuildProperty(MoSyncBuilder.USE_STATIC_RECOMPILATION)));
-        setText(version, configProperties.getProperty(addBuildProperty(MoSyncBuilder.PROJECT_VERSION)));
-        setText(vendor, configProperties.getProperty(addBuildProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP)));
-        setText(appName, configProperties.getProperty(addBuildProperty(MoSyncBuilder.APP_NAME)));
+        useDebugRuntimes.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS));
+        staticRecompilation.setSelection(PropertyUtil.getBoolean(configProperties, MoSyncBuilder.USE_STATIC_RECOMPILATION));
+        setText(version, configProperties.getProperty(MoSyncBuilder.PROJECT_VERSION));
+        setText(vendor, configProperties.getProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP));
+        setText(appName, configProperties.getProperty(MoSyncBuilder.APP_NAME));
         listener.setActive(true);
         updateUI();
     }
 
-    private String addBuildProperty(String buildProperty) {
-		buildProperties.add(buildProperty);
-		return buildProperty;
-	}
-
-	public void changeConfiguration(IBuildConfiguration cfg) {
+    public void changeConfiguration(IBuildConfiguration cfg) {
         this.currentConfigId = cfg == null ? null : cfg.getId();
     }
 
@@ -504,21 +480,11 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         }
     }
 
-    public IPropertyOwner getWorkingCopyOfBuildConfiguration() {
-    	IPropertyOwner original = getBuildConfigurationProperties();
-    	return getWorkingCopyOfBuildConfiguration(original);
-    }
-
-    public IPropertyOwner getWorkingCopyOfBuildConfiguration(IPropertyOwner original) {
-        IPropertyOwner workingCopy = workingCopies.get(original);
+    public IWorkingCopy getWorkingCopyOfBuildConfiguration() {
+        IPropertyOwner original = getBuildConfigurationProperties();
+        IWorkingCopy workingCopy = workingCopies.get(original);
         if (workingCopy == null) {
-        	if (original == getProject()) {
-        		projectWorkingCopy = new PropertyOwnerWorkingCopy(original);
-        		workingCopy = projectWorkingCopy;
-        	} else {
-        		String ns = ((NameSpacePropertyOwner) original).getNamespace();
-        		workingCopy = new NameSpacePropertyOwner(getWorkingCopyOfBuildConfiguration(getProject()), ns);
-        	}
+            workingCopy = new PropertyOwnerWorkingCopy(original);
             workingCopies.put(original, workingCopy);
         }
 
@@ -530,7 +496,11 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     }
 
     boolean applyWorkingCopies() {
-        boolean result = projectWorkingCopy.apply();
+        boolean result = false;
+        for (IWorkingCopy workingCopy : workingCopies.values()) {
+            result |= workingCopy.apply();
+        }
+
         return result;
     }
 
@@ -623,48 +593,24 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
     @Override
 	public void performDefaults() {
-        ArrayList<IPropertyOwner> workingCopies = new ArrayList<IPropertyOwner>();
-        MoSyncProject project = getProject();
-        if (project.areBuildConfigurationsSupported()) {
-	        for (String configId : project.getBuildConfigurations()) {
-	        	IPropertyOwner wc = getWorkingCopyOfBuildConfiguration(project.getBuildConfiguration(configId).getProperties());
-	        	workingCopies.add(wc);
-	        }
-        }
-        IPropertyOwner projectWorkingCopy = getWorkingCopyOfBuildConfiguration(project);
-    	workingCopies.add(projectWorkingCopy);
-
-        for (IPropertyOwner workingCopy : workingCopies) {
-        	for (String property : buildProperties) {
-        		workingCopy.setToDefault(property);
-        	}
-        }
-
-        // TODO: That container based properties stuff :)
-        // Because we might have wanted this behaviour in all
-        // property & preference pages
-        String templateId = getProject().getProperty(MoSyncProject.TEMPLATE_ID);
-        ProjectTemplate template = templateId == null ? null : TemplateManager.getDefault().getProjectTemplate(templateId);
-        if (template != null) {
-        	Map<String, String> defaultTemplateProperties = template.getSettings();
-        	for (String property : defaultTemplateProperties.keySet()) {
-        		// This is not fool-proof, but will cover most of the templates we've created I guess.
-        		String key = NameSpacePropertyOwner.getKey(property);
-        		if (buildProperties.contains(key)) {
-        			String value = defaultTemplateProperties.get(property);
-        			projectWorkingCopy.setProperty(property, value);
-        		}
-        	}
-        }
-        initUI();
+        ignoreDefaultIncludePaths.setSelection(false);
+        additionalIncludePathsText.setText("");
     }
 
     @Override
 	public boolean performOk() {
         // First, update.
         updateCurrentBuildConfiguration();
+
         // Then, apply.
         boolean changed = applyWorkingCopies();
+
+        if (changed && (getProject().getActiveBuildConfiguration() == null || getProject().getActiveBuildConfiguration().getId().equals(currentConfigId))) {
+            ProjectBuildAction action = new ProjectBuildAction(getShell(), IncrementalProjectBuilder.FULL_BUILD);
+            action.setProject(getProject().getWrappedProject());
+            action.run();
+        }
+
         return true;
     }
 
@@ -675,7 +621,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     }
 
     public boolean updateCurrentBuildConfiguration() {
-        IPropertyOwner configProperties = getWorkingCopyOfBuildConfiguration();
+        IWorkingCopy configProperties = getWorkingCopyOfBuildConfiguration();
 
         boolean changed = false;
         changed |= PropertyUtil.setInteger(getProject(), MoSyncProject.DEPENDENCY_STRATEGY, incrementalBuildStrategy.getSelectionIndex());

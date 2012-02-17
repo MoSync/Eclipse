@@ -16,8 +16,8 @@ package com.mobilesorcery.sdk.html5.wizards;
 import org.eclipse.core.runtime.CoreException;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.templates.IProjectTemplateExtensionDelegate;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.wizards.IProjectTemplateExtensionDelegate;
 
 public class HTML5TemplateExtension implements IProjectTemplateExtensionDelegate {
 

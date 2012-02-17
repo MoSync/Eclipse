@@ -63,9 +63,7 @@ public class JavaMESigningPreferencePage extends PreferencePage implements IWork
 
     @Override
 	public void performDefaults() {
-    	editor.setToDefault();
-    	doSign.setSelection(Activator.getDefault().getPreferenceStore().getDefaultBoolean(PropertyInitializer.JAVAME_DO_SIGN));
-    	updateUI();
+
     }
 
     @Override

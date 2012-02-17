@@ -74,10 +74,6 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
         	} else {
         		return PropertyUtil.fromPaths(new IPath[] { new Path("mastd.lib") });
         	}
-        } else if (MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS.equals(namespacedKey) ||
-        		MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS.equals(namespacedKey) ||
-        		MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES.equals(namespacedKey)) {
-        	return PropertyUtil.fromBoolean(false);
         } else if (MoSyncBuilder.MEMORY_HEAPSIZE_KB.equals(namespacedKey)) {
         	return PropertyUtil.fromInteger(PipeTool.DEFAULT_HEAP_SIZE_KB);
         } else if (MoSyncBuilder.MEMORY_STACKSIZE_KB.equals(namespacedKey)) {

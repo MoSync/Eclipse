@@ -1,7 +1,8 @@
-package com.mobilesorcery.sdk.core.templates;
+package com.mobilesorcery.sdk.wizards.internal;
 
 import org.eclipse.jface.resource.ImageDescriptor;
 
+import com.mobilesorcery.sdk.wizards.IProjectTemplateExtensionDelegate;
 
 public interface IProjectTemplateExtension extends IProjectTemplateExtensionDelegate {
 

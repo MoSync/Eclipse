@@ -3,10 +3,10 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Tests
 Bundle-SymbolicName: com.mobilesorcery.sdk.core.templates.tests
 Bundle-Version: 1.0.0.qualifier
-Fragment-Host: com.mobilesorcery.sdk.core;bundle-version="1.0.0"
+Fragment-Host: com.mobilesorcery.sdk.core.templates;bundle-version="1.0.0"
 Bundle-Vendor: MOBILESORCERY
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
-Require-Bundle: 
+Require-Bundle: com.mobilesorcery.sdk.core;bundle-version="1.0.0",
  org.eclipse.jdt.junit;bundle-version="3.5.0",
  org.junit4,
  org.eclipse.jdt.ui;bundle-version="3.5.0"

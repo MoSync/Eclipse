@@ -166,6 +166,7 @@ Creative Commons 3.0 Attribution License covers the Android Icon, a &quot;modifi
       <plugin id="com.mobilesorcery.sdk.builder.s60"/>
       <plugin id="com.mobilesorcery.sdk.builder.winmobile"/>
       <plugin id="com.mobilesorcery.sdk.core"/>
+      <plugin id="com.mobilesorcery.sdk.core.templates"/>
       <plugin id="com.mobilesorcery.sdk.core.templates.tests" fragment="true"/>
       <plugin id="com.mobilesorcery.sdk.core.tests" fragment="true"/>
       <plugin id="com.mobilesorcery.sdk.docs" fragment=""/>

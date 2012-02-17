@@ -24,60 +24,65 @@ import com.mobilesorcery.sdk.core.IPropertyOwner.IWorkingCopy;
  * @author Mattias Bybro
  *
  */
-public class PropertyOwnerWorkingCopy extends PropertyOwnerBase implements IWorkingCopy {
+public class PropertyOwnerWorkingCopy implements IWorkingCopy {
 
-	private final IPropertyOwner original;
-	private final HashMap<String, String> deferredMap = new HashMap<String, String>();
+	private IPropertyOwner original;
+	private HashMap<String, String> deferredMap = new HashMap<String, String>(); 
 
 	public PropertyOwnerWorkingCopy(IPropertyOwner original) {
 		this.original = original;
 	}
-
-	@Override
+	
 	public boolean apply() {
 		return original.applyProperties(deferredMap);
 	}
 
-	@Override
 	public void cancel() {
 		deferredMap.clear();
 	}
 
-	@Override
+	public boolean applyProperties(Map<String, String> properties) {
+		boolean result = false;
+		for (String key : properties.keySet()) {
+			result |= setProperty(key, properties.get(key));
+		}
+		return result;
+	}
+
 	public String getContext() {
 		return original.getContext();
 	}
 
-	@Override
-	public String getDefaultProperty(String key) {
+	public String getDefaultProperty(String key) {		
 		return original.getDefaultProperty(key);
 	}
 
-	@Override
 	public String getProperty(String key) {
-		if (deferredMap.containsKey(key)) {
-			return deferredMap.get(key);
-		} else {
+		String deferredValue = deferredMap.get(key);
+		if (deferredValue == null) {
 			return original.getProperty(key);
 		}
+		
+		return deferredValue;
 	}
 
-	@Override
 	public void initProperty(String key, String value) {
 		throw new UnsupportedOperationException();
 	}
 
-	@Override
 	public boolean setProperty(String key, String value) {
 		String oldValue = getProperty(key);
-		if (!Util.equals(value, oldValue)) {
+		if (!value.equals(oldValue)) {
 			deferredMap.put(key, value);
 			return true;
 		}
 		return false;
 	}
 
-	@Override
+	public IWorkingCopy createWorkingCopy() {
+		return new PropertyOwnerWorkingCopy(this);
+	}
+
 	public Map<String, String> getProperties() {
 		TreeMap<String, String> result = new TreeMap<String, String>();
 		result.putAll(original.getProperties());
@@ -88,11 +93,6 @@ public class PropertyOwnerWorkingCopy extends PropertyOwnerBase implements IWork
 	@Override
 	public boolean isDefault(String key) {
 		return !deferredMap.containsKey(key) && original.isDefault(key);
-	}
-
-	@Override
-	public IPropertyOwner getOriginal() {
-		return original;
 	}
 
 }

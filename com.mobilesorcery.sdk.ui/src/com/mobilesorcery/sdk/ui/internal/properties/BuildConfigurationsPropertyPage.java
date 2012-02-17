@@ -45,14 +45,13 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 		private Text name;
         private Table cfgTypesTable;
 		protected EditDialog(Shell parentShell) {
-			super(parentShell);
+			super(parentShell);			
 		}
 
 		public void setBuildConfiguration(IBuildConfiguration configuration) {
 			this.configuration = configuration;
 		}
-
-		@Override
+		
 		public Control createDialogArea(Composite parent) {
 			getShell().setText("Edit Build Configuration");
 			Composite main = (Composite) super.createDialogArea(parent);
@@ -62,14 +61,14 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 			name.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 			name.setText(configuration.getId());
 			name.selectAll();
-
+			
 			Label cfgTypesLabel = new Label(main, SWT.NONE);
 			cfgTypesLabel.setText("Configuration &Types:");
 			cfgTypesTable = new Table(main, SWT.CHECK | SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
 			GridData cfgTypesData = new GridData(GridData.FILL_HORIZONTAL);
-			cfgTypesData.heightHint = UIUtils.getDefaultListHeight() / 2;
+			cfgTypesData.heightHint = UIUtils.getDefaultListHeight() / 2; 
 			cfgTypesTable.setLayoutData(cfgTypesData);
-
+			
 			TreeSet<String> sortedCfgTypes = new TreeSet<String>(Arrays.asList(CoreMoSyncPlugin.getDefault().getBuildConfigurationTypes()));
 			for (String cfgType : sortedCfgTypes) {
 			    TableItem cfgTypeItem = new TableItem(cfgTypesTable, SWT.NONE);
@@ -77,25 +76,24 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 			    cfgTypeItem.setData(cfgType);
 			    cfgTypeItem.setChecked(configuration.getTypes().contains(cfgType));
 			}
-
+			
 			return main;
 		}
-
-		@Override
+		
 		public void okPressed() {
 			IBuildConfiguration newConfiguration = configuration.clone(name.getText());
 			newConfiguration.setTypes(getSelectedBuildConfigurationTypes());
-
+			
 			boolean wasActive = getProject().getActiveBuildConfiguration() == configuration;
             getProject().deinstallBuildConfiguration(configuration.getId());
 			getProject().installBuildConfiguration(newConfiguration);
 			if (wasActive) {
 				getProject().setActiveBuildConfiguration(newConfiguration.getId());
 			}
-
+			
 			super.okPressed();
 		}
-
+		
 		List<String> getSelectedBuildConfigurationTypes() {
 		    ArrayList<String> cfgTypes = new ArrayList<String>();
             TableItem[] tableItems = cfgTypesTable.getItems();
@@ -104,7 +102,7 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
                     cfgTypes.add((String) tableItems[i].getData());
                 }
             }
-
+            
             return cfgTypes;
 		}
 	}
@@ -116,7 +114,6 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 			this.project = project;
 		}
 
-		@Override
 		public void handleEvent(Event event) {
 			doHandleEvent(event);
 			updateUI();
@@ -124,33 +121,30 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 
 		protected abstract void doHandleEvent(Event event);
 	}
-
+	
 	class ActivateButtonListener extends DefaultListener {
 		public ActivateButtonListener(MoSyncProject project) {
 			super(project);
 		}
 
-		@Override
 		public void doHandleEvent(Event event) {
 			if (!project.areBuildConfigurationsSupported() && project.getBuildConfigurations().isEmpty()) {
 				project.activateBuildConfigurations();
 			} else {
-				project.setBuildConfigurationsSupported(!project.areBuildConfigurationsSupported());
+				project.setBuildConfigurationsSupported(!project.areBuildConfigurationsSupported());				
 			}
 		}
 	}
-
+	
 	public class SetActiveListener extends DefaultListener implements IDoubleClickListener {
 		public SetActiveListener(MoSyncProject project) {
 			super(project);
 		}
 
-		@Override
 		public void doHandleEvent(Event event) {
 			setActive();
 		}
 
-		@Override
 		public void doubleClick(DoubleClickEvent event) {
 			setActive();
 		}
@@ -161,26 +155,24 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 			}
 		}
 	}
-
+	
 	public class AddListener extends DefaultListener {
 		public AddListener(MoSyncProject project) {
 			super(project);
 		}
 
-		@Override
 		public void doHandleEvent(Event event) {
 			String uniqueId = BuildConfiguration.createUniqueId(getProject(), "Configuration");
 			getProject().installBuildConfiguration(uniqueId, new String[] { IBuildConfiguration.RELEASE_TYPE });
 		}
 
 	}
-
+	
 	public class DuplicateListener extends AddListener {
 		public DuplicateListener(MoSyncProject project) {
 			super(project);
 		}
 
-		@Override
 		public void doHandleEvent(Event event) {
 			String cfg = getSelectedConfiguration();
 			if (cfg != null) {
@@ -190,14 +182,13 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 			}
 		}
 	}
-
+	
 	public class EditListener extends DefaultListener {
 
 		public EditListener(MoSyncProject project) {
 			super(project);
 		}
 
-		@Override
 		protected void doHandleEvent(Event event) {
 			Display d = event.display;
 			Shell shell = new Shell(d);
@@ -206,7 +197,7 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 			dialog.open();
 			shell.dispose();
 		}
-
+		
 	}
 
 	public class RemoveListener extends DefaultListener {
@@ -214,7 +205,6 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 			super(project);
 		}
 
-		@Override
 		public void doHandleEvent(Event event) {
 			if (getSelectedConfiguration() != null) {
 				getProject().deinstallBuildConfiguration(getSelectedConfiguration());
@@ -231,11 +221,6 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 	private Button deleteButton;
 	private Button editButton;
 
-	public BuildConfigurationsPropertyPage() {
-		noDefaultAndApplyButton();
-	}
-
-	@Override
 	protected Control createContents(Composite parent) {
         Composite main = new Composite(parent, SWT.NONE);
         main.setLayout(new GridLayout(2, false));
@@ -254,17 +239,16 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
         viewer.getControl().setLayoutData(viewerData);
         viewer.addDoubleClickListener(new SetActiveListener(getProject()));
         viewer.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				updateUI();
 			}
 		});
-
+        
         setActiveButton = new Button(main, SWT.PUSH);
         setActiveButton.setText("&Set Active");
         setActiveButton.addListener(SWT.Selection, new SetActiveListener(getProject()));
         setActiveButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, false, false));
-
+        
         addButton = new Button(main, SWT.PUSH);
         addButton.setText("&Add");
         addButton.addListener(SWT.Selection, new AddListener(getProject()));
@@ -279,21 +263,21 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
         editButton.setText("&Edit...");
         editButton.addListener(SWT.Selection, new EditListener(getProject()));
         editButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, false, false));
-
+        
         deleteButton = new Button(main, SWT.PUSH);
         deleteButton.setText("&Remove");
         deleteButton.addListener(SWT.Selection, new RemoveListener(getProject()));
         deleteButton.setLayoutData(new GridData(SWT.FILL, SWT.TOP, false, false));
-
+        
         updateUI();
         return main;
 	}
-
+	
 	protected void updateUI() {
 		activateButton.setSelection(getProject().areBuildConfigurationsSupported());
 		viewer.refresh();
 		viewer.getControl().setEnabled(getProject().areBuildConfigurationsSupported());
-
+		
 		boolean enableActions = getProject().areBuildConfigurationsSupported();
 		boolean hasSelection = !viewer.getSelection().isEmpty();
 		setActiveButton.setEnabled(enableActions && hasSelection);
@@ -308,7 +292,7 @@ public class BuildConfigurationsPropertyPage extends PropertyPage {
 		IStructuredSelection selection = (IStructuredSelection) viewer.getSelection();
 		return (String) selection.getFirstElement();
 	}
-
+	
     private MoSyncProject getProject() {
         IProject wrappedProject = (IProject) getElement();
         MoSyncProject project = MoSyncProject.create(wrappedProject);

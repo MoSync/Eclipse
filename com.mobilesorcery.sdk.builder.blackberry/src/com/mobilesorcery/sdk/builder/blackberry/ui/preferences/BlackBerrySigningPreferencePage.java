@@ -31,7 +31,7 @@ public class BlackBerrySigningPreferencePage extends MoSyncPropertyPage implemen
 	private PasswordTextFieldDecorator passwordDec;
 
 	public BlackBerrySigningPreferencePage() {
-		super(true);
+		super();
 		setPreferenceStore(BlackBerryPlugin.getDefault().getPreferenceStore());
 	}
 
@@ -82,8 +82,4 @@ public class BlackBerrySigningPreferencePage extends MoSyncPropertyPage implemen
 		return super.performOk();
 	}
 
-	@Override
-	public void performDefaults() {
-		password.setText(BlackBerryPlugin.getDefault().getPreferenceStore().getDefaultString(BlackBerryPlugin.BLACKBERRY_SIGNING_INFO));
-	}
 }

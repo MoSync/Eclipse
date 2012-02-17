@@ -22,7 +22,7 @@ public class BlackBerrySigningPropertyPage extends MoSyncPropertyPage implements
 	private Button doSign;
 
 	public BlackBerrySigningPropertyPage() {
-		super(true);
+		// TODO Auto-generated constructor stub
 	}
 
 	@Override
@@ -47,11 +47,6 @@ public class BlackBerrySigningPropertyPage extends MoSyncPropertyPage implements
 	public boolean performOk() {
 		PropertyUtil.setBoolean(getProject(), BlackBerryPlugin.PROPERTY_SHOULD_SIGN, doSign.getSelection());
 		return super.performOk();
-	}
-
-	@Override
-	public void performDefaults() {
-		doSign.setSelection(PropertyUtil.toBoolean(getProject().getDefaultProperty(BlackBerryPlugin.PROPERTY_SHOULD_SIGN)));
 	}
 
 }
