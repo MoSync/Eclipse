@@ -30,12 +30,6 @@ import com.mobilesorcery.sdk.core.Util;
  */
 public class Stats {
 
-	private static final String STATS_PREF = "stats";
-
-	private static final String UNSENT_STATS_PREF = "stats.unsent";
-
-	private static final String LAST_SEND_TRY_PREF = "last.send";
-
 	private static final String SEND_INTERVAL_PROP = "send.interval";
 
 	public static final long DISABLE_SEND = 0;

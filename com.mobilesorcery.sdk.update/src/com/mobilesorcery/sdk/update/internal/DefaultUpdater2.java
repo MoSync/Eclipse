@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.HashMap;
 
@@ -574,12 +576,12 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 	public void sendStats(String stats) throws IOException {
 		OutputStream output = null;
 		InputStream input = null;
-		URLConnection connection = null;
+		HttpURLConnection connection = null;
 
 		try {
-			URL statsURL = getRequestURL("stats", null);
+			URL statsURL = getRequestURL("stats.php", null);
 			// HTTP POST - fake HTML form :)
-			connection = statsURL.openConnection();
+			connection = (HttpURLConnection) statsURL.openConnection();
 			connection.setDoInput(true);
 			connection.setDoOutput(true);
 			connection.setUseCaches(false);
@@ -589,9 +591,18 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 			params.putAll(MosyncUIPlugin.getDefault().getVersionParameters(true));
 			params.put("stats", stats);
 			String postRequest = Util.toGetUrl(null, params);
+			byte[] postRequestData = postRequest.getBytes();
+			connection.setRequestProperty("Content-Length", Integer.toString(postRequestData.length));
 			output = connection.getOutputStream();
+			output.write(postRequestData);
 			input = connection.getInputStream();
-			output.write(postRequest.getBytes());
+			int code = connection.getResponseCode();
+			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+				Util.transfer(input, System.err);
+			}
+			if (code != HttpURLConnection.HTTP_OK) {
+				throw new IOException("Stats server did not accept stats data.");
+			}
 		} finally {
 			Util.safeClose(output);
 			Util.safeClose(input);
