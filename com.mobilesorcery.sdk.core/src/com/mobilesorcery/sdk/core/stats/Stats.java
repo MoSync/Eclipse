@@ -74,10 +74,10 @@ public class Stats {
 		initVariables(true);
 		try {
 			setSendInterval(Long.parseLong(MoSyncTool.getDefault().getProperty(
-					SEND_INTERVAL_PROP)));
+					SEND_INTERVAL_PROP)), true);
 		} catch (Exception e) {
 			// Ignore.
-			setSendInterval(UNASSIGNED_SEND_INTERVAL);
+			setSendInterval(UNASSIGNED_SEND_INTERVAL, true);
 		}
 	}
 
@@ -142,6 +142,9 @@ public class Stats {
 
 	private void loadState(boolean force) {
 		if (force || !anotherIDEIsRunning()) {
+			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+				CoreMoSyncPlugin.trace("Loading previously saved usage statistics.");
+			}
 			try {
 				File unsentFile = getStatsLocation().append("unsent.json")
 						.toFile();
@@ -277,6 +280,10 @@ public class Stats {
 	}
 
 	public void setSendInterval(long sendInterval) {
+		setSendInterval(sendInterval, false);
+	}
+
+	private void setSendInterval(long sendInterval, boolean init) {
 		long previousInterval = this.sendInterval;
 		if (previousInterval != sendInterval) {
 			MoSyncTool.getDefault().setProperty(SEND_INTERVAL_PROP,
@@ -288,7 +295,7 @@ public class Stats {
 		if (sendInterval == DISABLE_SEND) {
 			clear();
 		} else {
-			if (wasDisabled) {
+			if (wasDisabled && !init) {
 				// Don't try right away.
 				lastSendTry = System.currentTimeMillis();
 			}
@@ -304,12 +311,13 @@ public class Stats {
 		stopTimer();
 		if (interval > 0) {
 			sendTimer = new Timer();
+			long delay = Math.max(0, interval - timeSinceLastSendTry());
 			sendTimer.schedule(new TimerTask() {
 				@Override
 				public void run() {
 					send();
 				}
-			}, Math.max(0, interval - timeSinceLastSendTry()), interval);
+			}, delay, interval);
 		}
 	}
 

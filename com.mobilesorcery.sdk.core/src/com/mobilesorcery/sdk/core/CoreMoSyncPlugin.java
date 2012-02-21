@@ -70,6 +70,7 @@ import com.mobilesorcery.sdk.core.memory.LowMemoryManager;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.core.stats.Stats;
 import com.mobilesorcery.sdk.internal.ErrorPackager;
+import com.mobilesorcery.sdk.internal.HeadlessUpdater;
 import com.mobilesorcery.sdk.internal.PID;
 import com.mobilesorcery.sdk.internal.PROCESS;
 import com.mobilesorcery.sdk.internal.PackagerProxy;
@@ -685,7 +686,9 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	}
 
 	public IUpdater getUpdater() {
-		if (!updaterInitialized) {
+		if (isHeadless) {
+			return HeadlessUpdater.getInstance();
+		} else if (!updaterInitialized) {
 			IExtensionRegistry registry = Platform.getExtensionRegistry();
 			IConfigurationElement[] elements = registry
 					.getConfigurationElementsFor("com.mobilesorcery.sdk.updater");

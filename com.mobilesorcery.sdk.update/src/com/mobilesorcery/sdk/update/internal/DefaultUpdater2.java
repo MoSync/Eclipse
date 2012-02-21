@@ -579,7 +579,8 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 		HttpURLConnection connection = null;
 
 		try {
-			URL statsURL = getRequestURL("stats", null);
+			// Yep, we use .php
+			URL statsURL = getRequestURL("stats.php", null);
 			// HTTP POST - fake HTML form :)
 			connection = (HttpURLConnection) statsURL.openConnection();
 			connection.setDoInput(true);
@@ -595,6 +596,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 			connection.setRequestProperty("Content-Length", Integer.toString(postRequestData.length));
 			output = connection.getOutputStream();
 			output.write(postRequestData);
+			output.flush();
 			input = connection.getInputStream();
 			int code = connection.getResponseCode();
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
