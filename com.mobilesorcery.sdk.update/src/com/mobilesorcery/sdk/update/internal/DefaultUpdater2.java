@@ -579,7 +579,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 		HttpURLConnection connection = null;
 
 		try {
-			URL statsURL = getRequestURL("stats.php", null);
+			URL statsURL = getRequestURL("stats", null);
 			// HTTP POST - fake HTML form :)
 			connection = (HttpURLConnection) statsURL.openConnection();
 			connection.setDoInput(true);
@@ -588,7 +588,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 			connection.setRequestProperty("Content-Type",
 					"application/x-www-form-urlencoded");
 			HashMap<String, String> params = new HashMap<String, String>();
-			params.putAll(MosyncUIPlugin.getDefault().getVersionParameters(true));
+			params.putAll(MosyncUIPlugin.getDefault().getVersionParameters());
 			params.put("stats", stats);
 			String postRequest = Util.toGetUrl(null, params);
 			byte[] postRequestData = postRequest.getBytes();

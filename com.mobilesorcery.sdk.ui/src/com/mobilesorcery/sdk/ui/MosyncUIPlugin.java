@@ -703,6 +703,18 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		request.put("hhash", getUserHalfHash()); //$NON-NLS-1$
 	}
 
+	// REFACTOR AFTER 3.0.
+	public Map<String, String> getVersionParameters() {
+		HashMap<String, String> params = new HashMap<String, String>();
+		String versionStr = MoSyncTool.getDefault()
+				.getCurrentBinaryVersion();
+		// For now we send the same version for all components.
+		params.put("db", versionStr); //$NON-NLS-1$
+		params.put("sdk", versionStr); //$NON-NLS-1$
+		params.put("ide", versionStr); //$NON-NLS-1$
+		return params;
+	}
+
 	/**
 	 * Returns a set of version parameters that may be used by updaters, help
 	 * urls, etc, to inform the server about the user's registration status.
@@ -713,12 +725,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	public Map<String, String> getVersionParameters(boolean hashOnly) {
 		HashMap<String, String> params = new HashMap<String, String>();
 		if (!hashOnly) {
-			String versionStr = MoSyncTool.getDefault()
-					.getCurrentBinaryVersion();
-			// For now we send the same version for all components.
-			params.put("db", versionStr); //$NON-NLS-1$
-			params.put("sdk", versionStr); //$NON-NLS-1$
-			params.put("ide", versionStr); //$NON-NLS-1$
+			params.putAll(getVersionParameters());
 		}
 		addHalfHash(params);
 		params.put("hhash", getUserHalfHash()); //$NON-NLS-1$
