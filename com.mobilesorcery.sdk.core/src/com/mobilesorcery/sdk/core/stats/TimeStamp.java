@@ -8,7 +8,7 @@ import org.json.simple.JSONObject;
 
 public class TimeStamp extends SimpleVariable {
 
-	private final static DateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ssZ");
+	private final static DateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
 
 	private long utc;
 
