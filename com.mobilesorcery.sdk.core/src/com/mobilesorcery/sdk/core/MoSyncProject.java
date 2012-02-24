@@ -920,7 +920,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	public IPath getStabsPath(IBuildConfiguration buildConfiguration) {
 		IPath outputPath = MoSyncBuilder.getOutputPath(
 				project,
-				new BuildVariant(target, buildConfiguration == null ? null
+				new BuildVariant(getTargetProfile(), buildConfiguration == null ? null
 						: buildConfiguration.getId())).append("stabs.tab");
 		return outputPath;
 	}
@@ -936,7 +936,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	public synchronized SLD getSLD(IBuildConfiguration buildConfiguration) {
 		IPath outputPath = MoSyncBuilder.getOutputPath(
 				project,
-				new BuildVariant(target, buildConfiguration == null ? null
+				new BuildVariant(getTargetProfile(), buildConfiguration == null ? null
 						: buildConfiguration.getId())).append("Sld.tab");
 		SLD sld = slds.get(outputPath.toPortableString());
 		if (sld == null) {
