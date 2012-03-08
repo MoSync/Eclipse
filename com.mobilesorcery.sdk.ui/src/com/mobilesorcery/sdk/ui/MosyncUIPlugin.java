@@ -706,8 +706,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	// REFACTOR AFTER 3.0.
 	public Map<String, String> getVersionParameters() {
 		HashMap<String, String> params = new HashMap<String, String>();
-		String versionStr = MoSyncTool.getDefault()
-				.getCurrentBinaryVersion();
+		String versionStr = MoSyncTool.getDefault().getVersionInfo(MoSyncTool.BINARY_VERSION);
 		// For now we send the same version for all components.
 		params.put("db", versionStr); //$NON-NLS-1$
 		params.put("sdk", versionStr); //$NON-NLS-1$
@@ -838,6 +837,9 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 
 	@Override
 	public void resourceChanged(final IResourceChangeEvent event) {
+		if (!PlatformUI.isWorkbenchRunning()) {
+			return;
+		}
 		UIUtils.onUiThread(PlatformUI.getWorkbench().getDisplay(),
 				new Runnable() {
 					@Override

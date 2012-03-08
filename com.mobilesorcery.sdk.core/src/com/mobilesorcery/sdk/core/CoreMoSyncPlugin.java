@@ -174,6 +174,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         super.start(context);
         plugin = this;
         isHeadless = Boolean.TRUE.toString().equals(System.getProperty("com.mobilesorcery.headless"));
+        aboutBoxHack();
         initReIndexerListener();
         initRebuildListener();
         initNativeLibs(context);
@@ -193,7 +194,19 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		initializeOnSeparateThread();
     }
 
-    private void initStats() {
+    private void aboutBoxHack() {
+    	// The about box makes use of system properties; let's set a few.
+    	String mosyncVersion = MoSyncTool.getDefault().getVersionInfo(MoSyncTool.BINARY_VERSION);
+    	String buildDate = MoSyncTool.getDefault().getVersionInfo(MoSyncTool.BUILD_DATE);
+    	String mainGitHash = MoSyncTool.getDefault().getVersionInfo(MoSyncTool.MOSYNC_GIT_HASH);
+    	String eclipseGitHash = MoSyncTool.getDefault().getVersionInfo(MoSyncTool.ECLIPSE_GIT_HASH);
+    	System.setProperty("MOSYNC_VERSION", mosyncVersion);
+    	System.setProperty("MOSYNC_BUILD_DATE", "Build date: " + buildDate);
+    	System.setProperty("MOSYNC_MAIN_GIT_HASH", mainGitHash);
+    	System.setProperty("MOSYNC_ECLIPSE_GIT_HASH", eclipseGitHash);
+	}
+
+	private void initStats() {
 		Stats.getStats().start();
 	}
 
