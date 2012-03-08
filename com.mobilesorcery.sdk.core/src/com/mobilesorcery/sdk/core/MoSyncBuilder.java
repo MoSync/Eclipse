@@ -662,8 +662,7 @@ public class MoSyncBuilder extends ACBuilder {
 			console.addMessage("Build finished at "
 					+ dateFormater.format(Calendar.getInstance().getTime()));
 
-			project.refreshLocal(IProject.DEPTH_INFINITE,
-					new SubProgressMonitor(monitor, 1));
+			refresh(project);
 
 			buildResult.setSuccess(true);
 
@@ -699,6 +698,12 @@ public class MoSyncBuilder extends ACBuilder {
 			}
 		}
 		return buildResult;
+	}
+
+	public static void refresh(IResource resource) throws CoreException {
+		if (!CoreMoSyncPlugin.isHeadless()) {
+			resource.refreshLocal(IProject.DEPTH_INFINITE, new NullProgressMonitor());
+		}
 	}
 
 	public static boolean requiresPrivilegedAccess(MoSyncProject mosyncProject) {

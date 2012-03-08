@@ -141,7 +141,7 @@ public class CopyBuildResultBuildStep extends AbstractBuildStep {
 					IFolder toRefresh = project.getWrappedProject().getFolder(
 							prototype.getFolderName());
 					MoSyncBuilder.ensureFolderIsMarkedDerived(toRefresh);
-					toRefresh.refreshLocal(IResource.DEPTH_INFINITE, monitor);
+					MoSyncBuilder.refresh(toRefresh);
 				} else {
 					getConsole()
 							.addMessage(

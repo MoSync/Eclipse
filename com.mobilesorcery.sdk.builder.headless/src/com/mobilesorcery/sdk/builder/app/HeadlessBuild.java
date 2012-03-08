@@ -17,12 +17,15 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Date;
 
+import org.eclipse.core.internal.jobs.JobManager;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.swt.widgets.Display;
@@ -182,6 +185,7 @@ public class HeadlessBuild implements IApplication {
 
 		FinalizeJob job = new FinalizeJob(mosyncProject, script, cfgId);
 		job.setUser(true);
+		job.setRule(mosyncProject.getWrappedProject().getWorkspace().getRuleFactory().buildRule());
 		job.schedule();
 		job.join();
 
