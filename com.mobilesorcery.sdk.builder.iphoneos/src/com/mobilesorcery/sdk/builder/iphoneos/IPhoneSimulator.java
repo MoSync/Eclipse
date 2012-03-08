@@ -32,9 +32,11 @@ public class IPhoneSimulator extends AbstractTool {
 		cmd.add("launch");
 		cmd.add(pathToApp.toOSString());
 		if (!Util.isEmpty(sdk)) {
+			cmd.add("--sdk");
 			cmd.add(sdk);
 		}
 		if (!Util.isEmpty(family)) {
+			cmd.add("--family");
 			cmd.add(family);
 		}
 		execute(cmd.toArray(new String[0]), null, null, false);
