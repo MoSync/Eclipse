@@ -55,8 +55,6 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.actions.BuildAction;
-import org.eclipse.ui.ide.IDE;
 
 import com.mobilesorcery.sdk.core.LineReader.LineAdapter;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
@@ -1138,6 +1136,9 @@ public class MoSyncBuilder extends ACBuilder {
 			throws CoreException {
 		String projectName = launchConfig.getAttribute(
 				ILaunchConstants.PROJECT, "");
+		if (Util.isEmpty(projectName)) {
+			return null;
+		}
 		IProject project = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(projectName);
 		if (!project.exists()) {
@@ -1217,7 +1218,7 @@ public class MoSyncBuilder extends ACBuilder {
 			return true;
 		}
 
-		final boolean doSaveAll = force || BuildAction.isSaveAllSet();
+		final boolean doSaveAll = force || CoreMoSyncPlugin.getSavePolicy().isSaveAllSet();
 		final boolean[] result = new boolean[1];
 		result[0] = true;
 
@@ -1227,7 +1228,7 @@ public class MoSyncBuilder extends ACBuilder {
 				display.syncExec(new Runnable() {
 					@Override
 					public void run() {
-						if (!IDE.saveAllEditors(
+						if (!CoreMoSyncPlugin.getSavePolicy().saveAllEditors(
 								resources.toArray(new IResource[0]), confirm)) {
 							result[0] = false;
 						}

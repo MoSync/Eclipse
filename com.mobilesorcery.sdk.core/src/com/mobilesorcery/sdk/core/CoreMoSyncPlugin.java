@@ -119,6 +119,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	private static LowMemoryManager lowMemoryManager;
 
+	private static ISavePolicy savePolicy;
+
     private final ArrayList<Pattern> runtimePatterns = new ArrayList<Pattern>();
 
     private final ArrayList<Pattern> platformPatterns = new ArrayList<Pattern>();
@@ -173,7 +175,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	public void start(BundleContext context) throws Exception {
         super.start(context);
         plugin = this;
-        isHeadless = Boolean.TRUE.toString().equals(System.getProperty("com.mobilesorcery.headless"));
         aboutBoxHack();
         initReIndexerListener();
         initRebuildListener();
@@ -251,7 +252,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     	Thread initializerThread = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				checkAutoUpdate();
 				initStats();
 			}
     	}, "Initializer");
@@ -701,6 +701,9 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	public IUpdater getUpdater() {
 		if (isHeadless) {
+			if (isDebugging()) {
+				trace("Headless build: update checks suppressed");
+			}
 			return HeadlessUpdater.getInstance();
 		} else if (!updaterInitialized) {
 			IExtensionRegistry registry = Platform.getExtensionRegistry();
@@ -727,7 +730,18 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	    }
 	}
 
-	private void checkAutoUpdate() {
+	public void checkAutoUpdate() {
+		Thread t = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				internalCheckAutoUpdate();
+			}
+		});
+		t.setName("Auto update");
+		t.start();
+	}
+
+	private synchronized void internalCheckAutoUpdate() {
 		if (isHeadless) {
 			return;
 		}
@@ -966,6 +980,21 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 			lowMemoryManager = new LowMemoryManager(0.85);
 		}
 		return lowMemoryManager;
+	}
+
+	public static ISavePolicy getSavePolicy() {
+		if (savePolicy == null) {
+			IConfigurationElement[] elements = Platform.getExtensionRegistry().getConfigurationElementsFor(ISavePolicy.EXTENSION_POINT);
+	        try {
+	        	savePolicy = ISavePolicy.NULL;
+	        	if (!isHeadless() && elements.length == 1) {
+	        		savePolicy = (ISavePolicy) elements[0].createExecutableExtension("implementation");
+	        	}
+	        } catch (Exception e) {
+	        	// Ignore
+	        }
+		}
+		return savePolicy;
 	}
 
 }
