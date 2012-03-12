@@ -23,6 +23,10 @@ import com.mobilesorcery.sdk.ui.UpdateListener;
 
 public class WindowsPhoneGUIDPropertyPage extends MoSyncPropertyPage {
 
+	public WindowsPhoneGUIDPropertyPage() {
+		super(false);
+	}
+
 	public class GenerateRandomUIDListener implements Listener {
 
 		@Override

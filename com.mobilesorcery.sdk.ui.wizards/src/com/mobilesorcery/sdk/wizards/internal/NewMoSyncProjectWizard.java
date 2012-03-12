@@ -38,7 +38,9 @@ import com.mobilesorcery.sdk.core.MoSyncNature;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.stats.CounterVariable;
 import com.mobilesorcery.sdk.core.stats.Stats;
+import com.mobilesorcery.sdk.core.templates.IProjectTemplateExtension;
 import com.mobilesorcery.sdk.core.templates.ProjectTemplate;
+import com.mobilesorcery.sdk.core.templates.TemplateManager;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.wizards.Activator;
@@ -116,7 +118,7 @@ public class NewMoSyncProjectWizard extends Wizard implements INewWizard {
 
         if (mainTemplate != null) {
         	IFile mainFile = mainTemplate.initializeProject(monitor, mosyncProject);
-        	IProjectTemplateExtension ext = Activator.getDefault().getExtensionForType(mainTemplate.getType());
+        	IProjectTemplateExtension ext = TemplateManager.getDefault().getExtensionForType(mainTemplate.getType());
         	if (ext != null) {
         		ext.configureProject(mosyncProject);
         	}

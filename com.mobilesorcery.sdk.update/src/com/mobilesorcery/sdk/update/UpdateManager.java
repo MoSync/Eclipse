@@ -120,7 +120,7 @@ public class UpdateManager extends UpdateManagerBase {
     }
 
     private void addVersionInfo(Map<String, String> request) {
-        request.put("revision", MoSyncTool.getDefault().getCurrentBinaryVersion());
+        request.put("revision", MoSyncTool.getDefault().getVersionInfo(MoSyncTool.BINARY_VERSION));
         request.put("baseversion", Integer.toString(HARDCODED_BASE_VERSION_CODE));
     }
 

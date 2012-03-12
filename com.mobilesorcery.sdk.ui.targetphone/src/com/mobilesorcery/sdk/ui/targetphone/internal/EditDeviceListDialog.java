@@ -96,9 +96,6 @@ public class EditDeviceListDialog extends Dialog {
         Composite contents = new Composite(main, SWT.NONE);
         contents.setLayout(new GridLayout(1, false));
 
-        Label deviceLabel = new Label(main, SWT.NONE | SWT.WRAP);
-        deviceLabel.setText("Target &Device:");
-
         if (!fixedDevice) {
             deviceList = new ComboViewer(contents, SWT.BORDER | SWT.READ_ONLY);
             deviceList.setContentProvider(new ArrayContentProvider());

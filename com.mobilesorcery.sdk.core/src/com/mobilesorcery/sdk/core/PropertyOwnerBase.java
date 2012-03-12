@@ -9,6 +9,7 @@ import java.util.Map;
  */
 public abstract class PropertyOwnerBase implements IPropertyOwner {
 
+	@Override
 	public boolean applyProperties(Map<String, String> properties) {
 		boolean result = false;
 		for (String key : properties.keySet()) {
@@ -19,7 +20,16 @@ public abstract class PropertyOwnerBase implements IPropertyOwner {
 		return result;
 	}
 
+
+	@Override
 	public IWorkingCopy createWorkingCopy() {
 		return new PropertyOwnerWorkingCopy(this);
 	}
+
+	@Override
+	public void setToDefault(String key) {
+		String defaultValue = getDefaultProperty(key);
+		setProperty(key, defaultValue);
+	}
+
 }

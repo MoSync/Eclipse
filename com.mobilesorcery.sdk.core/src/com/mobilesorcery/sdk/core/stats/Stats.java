@@ -198,6 +198,9 @@ public class Stats {
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 			CoreMoSyncPlugin.trace("Sending stats at " + new Date());
 		}
+		// If failed, log and retain these variables until next try...
+		// And we'll try at next startup regardless.
+		addToUnsent(variables);
 		final Variables variablesToSend = variables;
 		variablesToSend.get(TimeStamp.class, "send.time").set();
 		initVariables(false);
@@ -212,9 +215,6 @@ public class Stats {
 			unsentVariables.clear();
 			saveState();
 		} catch (Exception e) {
-			// If failed, log and retain these variables until next try...
-			// And we'll try at next startup regardless.
-			addToUnsent(variablesToSend);
 			e.printStackTrace();
 		}
 	}

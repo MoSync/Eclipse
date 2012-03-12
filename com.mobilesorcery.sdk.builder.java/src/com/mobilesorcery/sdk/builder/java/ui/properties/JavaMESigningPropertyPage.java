@@ -39,6 +39,10 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 	private boolean projectDoSign;
 	private boolean currentDoSign;
 
+	public JavaMESigningPropertyPage() {
+		super(true);
+	}
+
 	@Override
 	protected Control createContents(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
@@ -161,8 +165,15 @@ public class JavaMESigningPropertyPage extends MoSyncPropertyPage implements IUp
 			handleSecurePropertyException(e);
 			return false;
 		}
-System.err.println("SIGN? " + projectDoSign + " PROJECT SPEC? " + useProjectSpecific.getSelection() + " INFOS: " + infos);
+
 		return super.performOk();
 	}
 
+    @Override
+	public void performDefaults() {
+    	keyCertUI.setToDefault();
+    	doSign.setSelection(Activator.getDefault().getPreferenceStore().getDefaultBoolean(PropertyInitializer.JAVAME_DO_SIGN));
+    	useProjectSpecific.setSelection(Activator.getDefault().getPreferenceStore().getDefaultBoolean(PropertyInitializer.JAVAME_PROJECT_SPECIFIC_KEYS));
+    	updateUI();
+    }
 }

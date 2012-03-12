@@ -63,12 +63,22 @@ import org.osgi.framework.BundleContext;
 
 import sun.security.action.GetLongAction;
 
+import com.mobilesorcery.sdk.core.build.BundleBuildStep;
+import com.mobilesorcery.sdk.core.build.CommandLineBuildStep;
+import com.mobilesorcery.sdk.core.build.CompileBuildStep;
+import com.mobilesorcery.sdk.core.build.CopyBuildResultBuildStep;
+import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
+import com.mobilesorcery.sdk.core.build.IBuildStepFactoryExtension;
+import com.mobilesorcery.sdk.core.build.LinkBuildStep;
+import com.mobilesorcery.sdk.core.build.PackBuildStep;
+import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.core.memory.LowMemoryManager;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.core.stats.Stats;
+import com.mobilesorcery.sdk.core.templates.TemplateManager;
 import com.mobilesorcery.sdk.internal.ErrorPackager;
 import com.mobilesorcery.sdk.internal.HeadlessUpdater;
 import com.mobilesorcery.sdk.internal.PID;
@@ -118,6 +128,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	private static LowMemoryManager lowMemoryManager;
 
+	private static ISavePolicy savePolicy;
+
     private final ArrayList<Pattern> runtimePatterns = new ArrayList<Pattern>();
 
     private final ArrayList<Pattern> platformPatterns = new ArrayList<Pattern>();
@@ -162,6 +174,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	private SecureRandom secureRnd;
 
+	private HashMap<String, IBuildStepFactoryExtension> buildStepExtensions = null;
+
     /**
      * The constructor
      */
@@ -172,7 +186,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	public void start(BundleContext context) throws Exception {
         super.start(context);
         plugin = this;
-        isHeadless = Boolean.TRUE.toString().equals(System.getProperty("com.mobilesorcery.headless"));
+        aboutBoxHack();
         initReIndexerListener();
         initRebuildListener();
         initNativeLibs(context);
@@ -192,7 +206,19 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		initializeOnSeparateThread();
     }
 
-    private void initStats() {
+    private void aboutBoxHack() {
+    	// The about box makes use of system properties; let's set a few.
+    	String mosyncVersion = MoSyncTool.getDefault().getVersionInfo(MoSyncTool.BINARY_VERSION);
+    	String buildDate = MoSyncTool.getDefault().getVersionInfo(MoSyncTool.BUILD_DATE);
+    	String mainGitHash = MoSyncTool.getDefault().getVersionInfo(MoSyncTool.MOSYNC_GIT_HASH);
+    	String eclipseGitHash = MoSyncTool.getDefault().getVersionInfo(MoSyncTool.ECLIPSE_GIT_HASH);
+    	System.setProperty("MOSYNC_VERSION", mosyncVersion);
+    	System.setProperty("MOSYNC_BUILD_DATE", "Build date: " + buildDate);
+    	System.setProperty("MOSYNC_MAIN_GIT_HASH", mainGitHash);
+    	System.setProperty("MOSYNC_ECLIPSE_GIT_HASH", eclipseGitHash);
+	}
+
+	private void initStats() {
 		Stats.getStats().start();
 	}
 
@@ -237,7 +263,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
     	Thread initializerThread = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				checkAutoUpdate();
 				initStats();
 			}
     	}, "Initializer");
@@ -685,8 +710,51 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		return Collections.unmodifiableSet(launchers.keySet());
 	}
 
+	public IBuildStepFactory createBuildStepFactory(String id) {
+		// The default ones.
+		if (CompileBuildStep.ID.equals(id)) {
+			return new CompileBuildStep.Factory();
+		} else if (ResourceBuildStep.ID.equals(id)) {
+			return new ResourceBuildStep.Factory();
+		} else if (LinkBuildStep.ID.equals(id)) {
+			return new LinkBuildStep.Factory();
+		} else if (PackBuildStep.ID.equals(id)) {
+			return new PackBuildStep.Factory();
+		} else if (CommandLineBuildStep.ID.equals(id)) {
+			return new CommandLineBuildStep.Factory();
+		} else if (BundleBuildStep.ID.equals(id)) {
+			return new BundleBuildStep.Factory();
+		} else if (CopyBuildResultBuildStep.ID.equals(id)) {
+			return new CopyBuildResultBuildStep.Factory();
+		}
+
+		if (buildStepExtensions == null) {
+			buildStepExtensions = new HashMap<String, IBuildStepFactoryExtension>();
+			IExtensionRegistry registry = Platform.getExtensionRegistry();
+			IConfigurationElement[] elements = registry
+					.getConfigurationElementsFor(IBuildStepFactoryExtension.EXTENSION_ID);
+			for (IConfigurationElement element : elements) {
+				try {
+					String extId = element.getAttribute("id");
+					IBuildStepFactoryExtension ext = (IBuildStepFactoryExtension) element.createExecutableExtension("implementation");
+					buildStepExtensions.put(extId,  ext);
+				} catch (CoreException e) {
+					CoreMoSyncPlugin.getDefault().log(e);
+				}
+			}
+		}
+		IBuildStepFactoryExtension extension = buildStepExtensions.get(id);
+		if (extension != null) {
+			return extension.createFactory();
+		}
+		return null;
+	}
+
 	public IUpdater getUpdater() {
 		if (isHeadless) {
+			if (isDebugging()) {
+				trace("Headless build: update checks suppressed");
+			}
 			return HeadlessUpdater.getInstance();
 		} else if (!updaterInitialized) {
 			IExtensionRegistry registry = Platform.getExtensionRegistry();
@@ -713,7 +781,18 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	    }
 	}
 
-	private void checkAutoUpdate() {
+	public void checkAutoUpdate() {
+		Thread t = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				internalCheckAutoUpdate();
+			}
+		});
+		t.setName("Auto update");
+		t.start();
+	}
+
+	private synchronized void internalCheckAutoUpdate() {
 		if (isHeadless) {
 			return;
 		}
@@ -952,6 +1031,21 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 			lowMemoryManager = new LowMemoryManager(0.85);
 		}
 		return lowMemoryManager;
+	}
+
+	public static ISavePolicy getSavePolicy() {
+		if (savePolicy == null) {
+			IConfigurationElement[] elements = Platform.getExtensionRegistry().getConfigurationElementsFor(ISavePolicy.EXTENSION_POINT);
+	        try {
+	        	savePolicy = ISavePolicy.NULL;
+	        	if (!isHeadless() && elements.length == 1) {
+	        		savePolicy = (ISavePolicy) elements[0].createExecutableExtension("implementation");
+	        	}
+	        } catch (Exception e) {
+	        	// Ignore
+	        }
+		}
+		return savePolicy;
 	}
 
 }
