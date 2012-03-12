@@ -14,6 +14,15 @@
             id="com.mobilesorcery.wizard.mosync.project"
             name="MoSync Project"
             project="true"/>
+      <!-- We also need it in the CDT C/++ category -->
+      <wizard
+            category="org.eclipse.cdt.ui.newCWizards"
+            class="com.mobilesorcery.sdk.wizards.internal.NewMoSyncProjectWizard"
+            finalPerspective="com.mobilesorcery.ui.perspective"
+            icon="icons/mosyncproject.png"
+            id="com.mobilesorcery.wizard.mosync.project"
+            name="MoSync Project"
+            project="true"/>
       <wizard
             category="com.mobilesorcery.wizard.category"
             class="com.mobilesorcery.sdk.wizards.internal.NewMoSyncResourceFileWizard"
