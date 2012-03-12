@@ -18,7 +18,11 @@ import com.mobilesorcery.sdk.ui.UpdateListener;
 
 public class AndroidPropertyPage extends MoSyncPropertyPage {
 
-    private Text packageText;
+    public AndroidPropertyPage() {
+		super(true);
+	}
+
+	private Text packageText;
     private Text versionNumberText;
 
     @Override
@@ -55,6 +59,12 @@ public class AndroidPropertyPage extends MoSyncPropertyPage {
         getProject().setProperty(PropertyInitializer.ANDROID_PACKAGE_NAME, packageText.getText());
         PropertyUtil.setInteger(getProject(), PropertyInitializer.ANDROID_VERSION_CODE, Integer.parseInt(versionNumberText.getText()));
         return true;
+    }
+
+    @Override
+	public void performDefaults() {
+    	setText(packageText, getProject().getDefaultProperty(PropertyInitializer.ANDROID_PACKAGE_NAME));
+    	// We do not set the version #
     }
 
     @Override

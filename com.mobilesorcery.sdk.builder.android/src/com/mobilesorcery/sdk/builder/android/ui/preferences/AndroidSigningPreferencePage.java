@@ -45,6 +45,11 @@ public class AndroidSigningPreferencePage extends PreferencePage implements IWor
     }
 
     @Override
+	public void performDefaults() {
+    	editor.setToDefault();
+    }
+
+    @Override
 	public void init(IWorkbench workbench) {
     }
 

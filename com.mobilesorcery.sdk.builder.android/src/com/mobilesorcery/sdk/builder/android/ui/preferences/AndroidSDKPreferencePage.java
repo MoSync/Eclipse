@@ -21,6 +21,7 @@ public class AndroidSDKPreferencePage extends FieldEditorPreferencePage implemen
 
 		@Override
 		protected boolean checkState() {
+			boolean isEmpty = getStringValue().isEmpty();
 			ADB adb = ADB.findADB(new Path(getStringValue()));
 			clearErrorMessage();
 			if (!adb.isValid()) {
@@ -28,12 +29,13 @@ public class AndroidSDKPreferencePage extends FieldEditorPreferencePage implemen
 			} else {
 				setMessage(null, IMessageProvider.NONE);
 			}
-			return adb.isValid() && super.checkState();
+			return isEmpty || (adb.isValid() && super.checkState());
 		}
 	}
 
 	public AndroidSDKPreferencePage() {
         super();
+        noDefaultAndApplyButton();
         setPreferenceStore(Activator.getDefault().getPreferenceStore());
     }
 

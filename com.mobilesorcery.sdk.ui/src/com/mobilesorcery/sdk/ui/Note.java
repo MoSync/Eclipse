@@ -31,6 +31,9 @@ public class Note extends Composite {
 		text = new Label(this, SWT.WRAP);
 		text.setLayoutData(new GridData(SWT.DEFAULT, SWT.DEFAULT, true, true));
 
+		text.setForeground(fg);
+		text.setBackground(bkg);
+		icon.setBackground(bkg);
 		setForeground(fg);
 		setBackground(bkg);
 	}

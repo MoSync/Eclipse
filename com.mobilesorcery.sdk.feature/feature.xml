@@ -158,13 +158,6 @@ info-zip-license.txt covers Info-Zip.
          unpack="false"/>
 
    <plugin
-         id="com.mobilesorcery.sdk.core.templates"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
          id="com.mobilesorcery.sdk.help"
          download-size="0"
          install-size="0"

@@ -27,6 +27,7 @@ public class KeystoreCertificateInfoEditor extends Composite implements IUpdatab
 	private boolean dirty = false;
 	private IUpdatableControl updatable;
 	private final UpdateListener listener;
+	private KeystoreCertificateInfo defaultInfo;
 
     public KeystoreCertificateInfoEditor(Composite parent, int style) {
         super(parent, style);
@@ -120,5 +121,9 @@ public class KeystoreCertificateInfoEditor extends Composite implements IUpdatab
 
 	public void setUpdatable(IUpdatableControl updatable) {
 		this.updatable = updatable;
+	}
+
+	public void setToDefault() {
+		setKeystoreCertInfo(KeystoreCertificateInfo.createDefault());
 	}
 }

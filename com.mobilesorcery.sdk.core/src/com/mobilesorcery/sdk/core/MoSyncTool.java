@@ -98,6 +98,14 @@ public class MoSyncTool {
 
 	public static final int DEFAULT_PROFILE_TYPE = 0;
 
+	public static final int BINARY_VERSION = 0;
+
+	public static final int BUILD_DATE = 1;
+
+	public static final int MOSYNC_GIT_HASH = 2;
+
+	public static final int ECLIPSE_GIT_HASH = 3;
+
 	private static MoSyncTool instance = new MoSyncTool(true);
 
 	private boolean inited = false;
@@ -123,6 +131,8 @@ public class MoSyncTool {
 	private ProfileDBManager defaultProfileManager;
 
 	private int profileManagerType;
+
+	private String[] versionInfo;
 
 	private MoSyncTool(boolean initListeners) {
 		if (initListeners) {
@@ -602,11 +612,30 @@ public class MoSyncTool {
 	 *
 	 * @return
 	 */
-	public String getCurrentBinaryVersion() {
-		return getCurrentVersionFromFile(MoSyncTool.getDefault().getMoSyncBin()
-				.append("version.dat").toFile()); //$NON-NLS-1$
+	public String getVersionInfo(int versionInfoType) {
+		initVersionInfo();
+		if (versionInfoType < versionInfo.length && versionInfoType >= 0) {
+			return versionInfo[versionInfoType];
+		}
+		return "";
 	}
 
+	private void initVersionInfo() {
+		if (versionInfo == null) {
+			versionInfo = new String[0];
+			File versionFile = MoSyncTool.getDefault().getMoSyncBin()
+			.append("version.dat").toFile();
+			if (versionFile.exists()) {
+				try {
+					String fullVersionInfo = Util.readFile(versionFile.getAbsolutePath());
+					versionInfo = fullVersionInfo.split("\\s*\\r*\\n");
+				} catch (IOException e) {
+					// Fallback
+				}
+			}
+		}
+
+	}
 	private String getCurrentVersionFromFile(File versionFile) {
 		if (versionFile.exists()) {
 			try {

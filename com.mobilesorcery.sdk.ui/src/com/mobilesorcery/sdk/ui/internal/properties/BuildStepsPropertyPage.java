@@ -24,6 +24,10 @@ import com.mobilesorcery.sdk.ui.SimpleListEditor;
 
 public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 
+	public BuildStepsPropertyPage() {
+		super(true);
+	}
+
 	private BuildStepListEditor steps;
 
 	@Override

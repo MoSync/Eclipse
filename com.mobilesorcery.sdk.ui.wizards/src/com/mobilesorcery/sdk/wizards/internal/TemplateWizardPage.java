@@ -15,7 +15,6 @@ package com.mobilesorcery.sdk.wizards.internal;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.ArrayContentProvider;
@@ -36,12 +35,13 @@ import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
 
+import com.mobilesorcery.sdk.core.templates.IProjectTemplateExtension;
 import com.mobilesorcery.sdk.core.templates.ProjectTemplate;
+import com.mobilesorcery.sdk.core.templates.TemplateManager;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.wizards.Activator;
@@ -236,13 +236,13 @@ public class TemplateWizardPage extends WizardPage {
 	}
 
 	private ProjectTemplate[] getTemplates(String type) {
-		return Activator.getDefault().getProjectTemplates(type).toArray(new ProjectTemplate[0]);
+		return TemplateManager.getDefault().getProjectTemplates(type).toArray(new ProjectTemplate[0]);
 	}
 
 	private IProjectTemplateExtension[] getTemplateExtensions() {
 		ArrayList<IProjectTemplateExtension> result = new ArrayList<IProjectTemplateExtension>();
-		for (String type : Activator.getDefault().getTemplateTypes()) {
-	    	IProjectTemplateExtension ext = Activator.getDefault().getExtensionForType(type);
+		for (String type : TemplateManager.getDefault().getTemplateTypes()) {
+	    	IProjectTemplateExtension ext = TemplateManager.getDefault().getExtensionForType(type);
 	    	if (ext != null) {
 	    		result.add(ext);
 	    	}
