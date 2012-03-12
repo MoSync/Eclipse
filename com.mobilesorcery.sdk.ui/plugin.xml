@@ -629,5 +629,11 @@ icon="icons/launchshortcut.png">
             </includes>
          </viewerContentBinding>
       </extension>
+      <extension
+            point="com.mobilesorcery.core.buildsupport">
+         <savePolicy
+               implementation="com.mobilesorcery.sdk.ui.internal.SavePolicy">
+         </savePolicy>
+      </extension>
       
 </plugin>

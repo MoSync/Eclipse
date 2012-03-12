@@ -16,7 +16,7 @@ public class ProfileDBPropertyPage extends MoSyncPropertyPage {
 	private Button profileTypeButton;
 
 	public ProfileDBPropertyPage() {
-		// TODO Auto-generated constructor stub
+		super(true);
 	}
 
 	@Override
@@ -38,6 +38,11 @@ public class ProfileDBPropertyPage extends MoSyncPropertyPage {
 				.getSelection() ? MoSyncTool.DEFAULT_PROFILE_TYPE
 				: MoSyncTool.LEGACY_PROFILE_TYPE);
 		return super.performOk();
+	}
+
+	@Override
+	public void performDefaults() {
+		profileTypeButton.setSelection(true);
 	}
 
 }

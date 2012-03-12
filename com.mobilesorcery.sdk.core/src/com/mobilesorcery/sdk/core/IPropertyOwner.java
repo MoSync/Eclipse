@@ -16,7 +16,7 @@ package com.mobilesorcery.sdk.core;
 import java.util.Map;
 
 public interface IPropertyOwner {
-    
+
 	public interface IWorkingCopy extends IPropertyOwner {
 		/**
 		 * Applies all changes to the original property owner.
@@ -24,11 +24,17 @@ public interface IPropertyOwner {
 		 * made.
 		 */
 		public boolean apply();
-		
+
 		/**
 		 * Cancels any pending changes from this working copy
 		 */
 		public void cancel();
+
+		/**
+		 * Returns the original {@link IPropertyOwner}.
+		 * @return
+		 */
+		public abstract IPropertyOwner getOriginal();
 	}
 
 	/**
@@ -41,18 +47,18 @@ public interface IPropertyOwner {
 	 * is returned.
 	 */
     public boolean setProperty(String key, String value);
-    
+
     /**
      * Applies a set of properties
      * @return <code>true</code> if at least one of the properties was
      * different from a previous value
      */
     public boolean applyProperties(Map<String, String> properties);
-    
+
     public String getProperty(String key);
-    
+
     public String getDefaultProperty(String key);
-    
+
     /**
      * Returns <code>true</code> if the default value
      * will be returned for this key.
@@ -60,22 +66,22 @@ public interface IPropertyOwner {
      * @return
      */
     public boolean isDefault(String key);
-    
+
     /**
      * See IPropertyInitializer.
      * @return
      */
 	public String getContext();
-	
+
 	/**
 	 * This method forces a property to be set,
 	 * without notifying any listeners or
-	 * checking for value changes. 
+	 * checking for value changes.
 	 * @param key
 	 * @param value
 	 */
 	public void initProperty(String key, String value);
-	
+
 	/**
 	 * Returns a working copy of this <code>IPropertyOwner</code>.
 	 * Changes can then be applied using the apply() method.
@@ -88,4 +94,11 @@ public interface IPropertyOwner {
 	 * @return
 	 */
 	public Map<String, String> getProperties();
+
+	/**
+	 * Resets this property owner to reflect the original's
+	 * DEFAULT value (however, calling {@link #isDefault(String)}
+	 * on the key may not return {@code true}).
+	 */
+	public void setToDefault(String key);
 }

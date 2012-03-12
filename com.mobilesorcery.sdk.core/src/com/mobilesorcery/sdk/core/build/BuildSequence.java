@@ -84,29 +84,8 @@ public class BuildSequence implements IBuildSequence {
 	}
 
 	private void addStandardFactory(String id) {
-		IBuildStepFactory factory = createFactory(id);
+		IBuildStepFactory factory = CoreMoSyncPlugin.getDefault().createBuildStepFactory(id);
 		buildStepFactories.add(factory);
-	}
-
-	private IBuildStepFactory createFactory(String id) {
-		// TODO: We may want to allow for extension points
-		if (CompileBuildStep.ID.equals(id)) {
-			return new CompileBuildStep.Factory();
-		} else if (ResourceBuildStep.ID.equals(id)) {
-			return new ResourceBuildStep.Factory();
-		} else if (LinkBuildStep.ID.equals(id)) {
-			return new LinkBuildStep.Factory();
-		} else if (PackBuildStep.ID.equals(id)) {
-			return new PackBuildStep.Factory();
-		} else if (CommandLineBuildStep.ID.equals(id)) {
-			return new CommandLineBuildStep.Factory();
-		} else if (BundleBuildStep.ID.equals(id)) {
-			return new BundleBuildStep.Factory();
-		} else if (CopyBuildResultBuildStep.ID.equals(id)) {
-			return new CopyBuildResultBuildStep.Factory();
-		}
-
-		return null;
 	}
 
 	private void load() {
@@ -117,12 +96,11 @@ public class BuildSequence implements IBuildSequence {
             	buildStepFactories.clear();
             	input = new FileReader(buildFilePath.toFile());
                 XMLMemento memento = XMLMemento.createReadRoot(input);
-                //IMemento buildSequence = memento.getChild("buildSequence");
                 IMemento[] buildSteps = memento.getChildren("buildStep");
                 for (int i = 0; i < buildSteps.length; i++) {
                 	IMemento buildStep = buildSteps[i];
                 	String buildStepId = buildStep.getString("type");
-                	IBuildStepFactory factory = createFactory(buildStepId);
+                	IBuildStepFactory factory = CoreMoSyncPlugin.getDefault().createBuildStepFactory(buildStepId);
                 	if (factory != null) {
                 		factory.load(buildStep);
                 		this.buildStepFactories.add(factory);

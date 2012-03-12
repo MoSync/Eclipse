@@ -71,7 +71,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
     public static final String[] CPP_HEADER_FILE_EXTS = new String[] { "hpp", "h++" };
 
-    public static final String[] RESOURCE_FILE_EXTS = new String[] { "lst" };
+    public static final String[] RESOURCE_FILE_EXTS = new String[] { "lst", "lstx" };
 
     public MoSyncBuilderVisitor() {
     }

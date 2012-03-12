@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URI;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,25 +36,17 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.FileInfoMatcherDescription;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResourceFilterDescription;
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.XMLMemento;
-import org.eclipse.ui.ide.undo.CreateProjectOperation;
 
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.BuildState;
@@ -629,59 +620,14 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		project.setFormatVersion(CURRENT_VERSION);
 	}
 
-	/**
-	 * Convenience method for creating a <code>MoSyncProject</code> at the
-	 * requested location, or in the workspace if location is <code>null</code>.
-	 *
-	 * @param project
-	 * @param location
-	 * @param monitor
-	 * @return
-	 * @throws CoreException
-	 */
-	public static MoSyncProject createNewProject(IProject project,
-			URI location, IProgressMonitor monitor) throws CoreException {
-		IWorkspace workspace = ResourcesPlugin.getWorkspace();
-		IProjectDescription description = workspace
-				.newProjectDescription(project.getName());
-		description.setLocationURI(location);
-
-		CreateProjectOperation op = new CreateProjectOperation(description,
-				"Create Project");
-		try {
-			op.execute(monitor, null);
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof CoreException) {
-				throw (CoreException) e.getCause();
-			} else {
-				throw new CoreException(new Status(IStatus.ERROR,
-						CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
-			}
-		}
-
-		MoSyncNature.addNatureToProject(project, false);
-		addDefaultResourceFilter(project, new NullProgressMonitor());
-		MoSyncProject result = create(project);
-		result.activateBuildConfigurations();
-		int pt = ProfileDBManager.isAvailable() ? MoSyncTool.DEFAULT_PROFILE_TYPE :
-			MoSyncTool.LEGACY_PROFILE_TYPE;
-		result.setProperty(PROFILE_MANAGER_TYPE_KEY,
-				PropertyUtil.fromInteger(pt));
-		addCapabilityFilters(result, new String[0]);
-		MoSyncNature.modifyIncludePaths(project);
-		// MOSYNC-1735: Set to UTF-8 by default
-		project.setDefaultCharset("UTF-8", new SubProgressMonitor(monitor, 1));
-		return result;
-	}
-
-	private static void addCapabilityFilters(MoSyncProject result, String[] requiredCapabilities) {
+	public static void addCapabilityFilters(MoSyncProject result, String[] requiredCapabilities) {
 		if (result.getProfileManagerType() == MoSyncTool.DEFAULT_PROFILE_TYPE) {
 			result.getDeviceFilter().addFilter(
 				DeviceCapabilitiesFilter.create(requiredCapabilities, new String[0]));
 		}
 	}
 
-	private static void addDefaultResourceFilter(IProject project,
+	public static void addDefaultResourceFilter(IProject project,
 			IProgressMonitor monitor) throws CoreException {
 		// TODO: Hmmm.... maybe we should consider filtering out output folders?
 		// FileInfoMatcherDescription filter = new
@@ -920,7 +866,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	public IPath getStabsPath(IBuildConfiguration buildConfiguration) {
 		IPath outputPath = MoSyncBuilder.getOutputPath(
 				project,
-				new BuildVariant(target, buildConfiguration == null ? null
+				new BuildVariant(getTargetProfile(), buildConfiguration == null ? null
 						: buildConfiguration.getId())).append("stabs.tab");
 		return outputPath;
 	}
@@ -936,7 +882,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	public synchronized SLD getSLD(IBuildConfiguration buildConfiguration) {
 		IPath outputPath = MoSyncBuilder.getOutputPath(
 				project,
-				new BuildVariant(target, buildConfiguration == null ? null
+				new BuildVariant(getTargetProfile(), buildConfiguration == null ? null
 						: buildConfiguration.getId())).append("Sld.tab");
 		SLD sld = slds.get(outputPath.toPortableString());
 		if (sld == null) {

@@ -26,8 +26,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
@@ -42,10 +44,12 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.ISafeRunnable;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.resource.FontRegistry;
@@ -79,6 +83,7 @@ import org.eclipse.ui.activities.ICategory;
 import org.eclipse.ui.activities.ICategoryActivityBinding;
 import org.eclipse.ui.activities.IWorkbenchActivitySupport;
 import org.eclipse.ui.ide.ResourceUtil;
+import org.eclipse.ui.ide.undo.CreateProjectOperation;
 import org.eclipse.ui.intro.IIntroManager;
 import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -90,14 +95,17 @@ import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IProvider;
 import com.mobilesorcery.sdk.core.IsExperimentalTester;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
+import com.mobilesorcery.sdk.core.MoSyncNature;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
+import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.core.memory.MemoryLowListener;
 import com.mobilesorcery.sdk.core.stats.Stats;
 import com.mobilesorcery.sdk.profiles.IVendor;
+import com.mobilesorcery.sdk.profiles.ProfileDBManager;
 import com.mobilesorcery.sdk.ui.internal.LegacyProfileViewOpener;
 import com.mobilesorcery.sdk.ui.internal.MemoryLowDialog;
 import com.mobilesorcery.sdk.ui.internal.console.IDEProcessConsole;
@@ -165,7 +173,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 
 	private PropertyChangeListener globalListener;
 
-	private final HashMap<String, IEmulatorLaunchConfigurationPart> launcherParts = new HashMap<String, IEmulatorLaunchConfigurationPart>();
+	private HashMap<String, IEmulatorLaunchConfigurationPart> launcherParts = null;
 
 	private final HashMap<Display, FontRegistry> fontRegistries = new HashMap<Display, FontRegistry>();
 
@@ -209,38 +217,45 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		CoreMoSyncPlugin.getDefault().setIDEProcessConsoleProvider(this);
 		registerGlobalProjectListener();
 		CoreMoSyncPlugin.getLowMemoryManager().addMemoryLowListener(this, 1);
-		UIUtils.awaitWorkbenchStartup(new IWorkbenchStartupListener() {
-			@Override
-			public void started(IWorkbench wb) {
-				initializeCustomActivities();
-				initializeLauncherParts();
-				askForUsageStatistics(wb);
+		if (!CoreMoSyncPlugin.isHeadless()) {
+			UIUtils.awaitWorkbenchStartup(new IWorkbenchStartupListener() {
+				@Override
+				public void started(IWorkbench wb) {
+					initializeCustomActivities();
+					askForUsageStatistics(wb);
+				}
+			});
+			legacyProfileViewOpener = new LegacyProfileViewOpener();
+			// Do not use addListener here, since it will trigger a deadlock-type
+			// error
+			if (legacyProfileViewOpener.isActive()) {
+				listeners.addPropertyChangeListener(legacyProfileViewOpener);
+				MoSyncProject.addGlobalPropertyChangeListener(legacyProfileViewOpener);
 			}
-		});
-		legacyProfileViewOpener = new LegacyProfileViewOpener();
-		// Do not use addListener here, since it will trigger a deadlock-type
-		// error
-		if (legacyProfileViewOpener.isActive()) {
-			listeners.addPropertyChangeListener(legacyProfileViewOpener);
-			MoSyncProject.addGlobalPropertyChangeListener(legacyProfileViewOpener);
 		}
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.POST_CHANGE);
+
+		// Explicitly invoke updates
+		CoreMoSyncPlugin.getDefault().checkAutoUpdate();
 	}
 
 	private void initializeLauncherParts() {
-		IConfigurationElement[] launcherParts = Platform.getExtensionRegistry()
-				.getConfigurationElementsFor(
-						IEmulatorLaunchConfigurationPart.EXTENSION_POINT_ID);
-		for (int i = 0; i < launcherParts.length; i++) {
-			IConfigurationElement launcherPart = launcherParts[i];
-			String id = launcherPart.getAttribute("launcher"); //$NON-NLS-1$
-			this.launcherParts.put(id,
-					new EmulatorLaunchConfigurationPartProxy(launcherPart));
+		if (launcherParts == null) {
+			launcherParts = new HashMap<String, IEmulatorLaunchConfigurationPart>();
+			IConfigurationElement[] launcherParts = Platform.getExtensionRegistry()
+					.getConfigurationElementsFor(
+							IEmulatorLaunchConfigurationPart.EXTENSION_POINT_ID);
+			for (int i = 0; i < launcherParts.length; i++) {
+				IConfigurationElement launcherPart = launcherParts[i];
+				String id = launcherPart.getAttribute("launcher"); //$NON-NLS-1$
+				this.launcherParts.put(id,
+						new EmulatorLaunchConfigurationPartProxy(launcherPart));
+			}
+			// Default + auto always present
+			this.launcherParts.put(AutomaticEmulatorLauncher.ID,
+					new AutomaticEmulatorLauncherPart());
+			this.launcherParts.put(MoReLauncher.ID, new MoreLauncherPart());
 		}
-		// Default + auto always present
-		this.launcherParts.put(AutomaticEmulatorLauncher.ID,
-				new AutomaticEmulatorLauncherPart());
-		this.launcherParts.put(MoReLauncher.ID, new MoreLauncherPart());
 	}
 
 	private void askForUsageStatistics(final IWorkbench wb) {
@@ -319,13 +334,58 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	 * @return
 	 * @throws CoreException
 	 * @deprecated Use
-	 *             {@link MoSyncProject#createNewProject(IProject, URI, IProgressMonitor)}
+	 *             {@link MoSyncUIPlugin#createNewProject(IProject, URI, IProgressMonitor)}
 	 *             instead.
 	 */
 	@Deprecated
 	public static MoSyncProject createProject(IProject project, URI location,
 			IProgressMonitor monitor) throws CoreException {
-		return MoSyncProject.createNewProject(project, location, monitor);
+		return createNewProject(project, location, monitor);
+	}
+
+	/**
+	 * Convenience method for creating a <code>MoSyncProject</code> at the
+	 * requested location, or in the workspace if location is <code>null</code>.
+	 *
+	 * @param project
+	 * @param location
+	 * @param monitor
+	 * @return
+	 * @throws CoreException
+	 */
+	public static MoSyncProject createNewProject(IProject project,
+			URI location, IProgressMonitor monitor) throws CoreException {
+		IWorkspace workspace = ResourcesPlugin.getWorkspace();
+		IProjectDescription description = workspace
+				.newProjectDescription(project.getName());
+		description.setLocationURI(location);
+
+		CreateProjectOperation op = new CreateProjectOperation(description,
+				"Create Project");
+		try {
+			op.execute(monitor, null);
+		} catch (ExecutionException e) {
+			if (e.getCause() instanceof CoreException) {
+				throw (CoreException) e.getCause();
+			} else {
+				throw new CoreException(new Status(IStatus.ERROR,
+						CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
+			}
+		}
+
+		MoSyncNature.addNatureToProject(project, false);
+		MoSyncProject.addDefaultResourceFilter(project, new NullProgressMonitor());
+		MoSyncProject result = MoSyncProject.create(project);
+		result.activateBuildConfigurations();
+		int pt = ProfileDBManager.isAvailable() ? MoSyncTool.DEFAULT_PROFILE_TYPE :
+			MoSyncTool.LEGACY_PROFILE_TYPE;
+		result.setProperty(MoSyncProject.PROFILE_MANAGER_TYPE_KEY,
+				PropertyUtil.fromInteger(pt));
+		MoSyncProject.addCapabilityFilters(result, new String[0]);
+		MoSyncNature.modifyIncludePaths(project);
+		// MOSYNC-1735: Set to UTF-8 by default
+		project.setDefaultCharset("UTF-8", new SubProgressMonitor(monitor, 1));
+		return result;
 	}
 
 	private void initProjectChangeListener() {
@@ -706,8 +766,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	// REFACTOR AFTER 3.0.
 	public Map<String, String> getVersionParameters() {
 		HashMap<String, String> params = new HashMap<String, String>();
-		String versionStr = MoSyncTool.getDefault()
-				.getCurrentBinaryVersion();
+		String versionStr = MoSyncTool.getDefault().getVersionInfo(MoSyncTool.BINARY_VERSION);
 		// For now we send the same version for all components.
 		params.put("db", versionStr); //$NON-NLS-1$
 		params.put("sdk", versionStr); //$NON-NLS-1$
@@ -761,12 +820,13 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	}
 
 	public IEmulatorLaunchConfigurationPart getEmulatorLauncherPart(String id) {
+		initializeLauncherParts();
 		return launcherParts.get(id);
 	}
 
 	/**
 	 * <p>
-	 * Returns a standard font used throughtout the MoSync IDE. Clients should
+	 * Returns a standard font used throughout the MoSync IDE. Clients should
 	 * <b>not</b> dispose these fonts.
 	 * </p>
 	 *
@@ -838,6 +898,9 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 
 	@Override
 	public void resourceChanged(final IResourceChangeEvent event) {
+		if (!PlatformUI.isWorkbenchRunning()) {
+			return;
+		}
 		UIUtils.onUiThread(PlatformUI.getWorkbench().getDisplay(),
 				new Runnable() {
 					@Override

@@ -10,19 +10,27 @@
 
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
-*/
+ */
 package com.mobilesorcery.sdk.builder.app;
 
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.Date;
 
+import org.eclipse.core.internal.jobs.JobManager;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.PlatformUI;
+import org.osgi.framework.Bundle;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -34,11 +42,9 @@ import com.mobilesorcery.sdk.finalizer.ui.FinalizeJob;
  */
 public class HeadlessBuild implements IApplication {
 
-
 	public class BuildRunnable implements Runnable {
 
-		
-		private String[] args;
+		private final String[] args;
 		private Integer result;
 		private Exception exception;
 
@@ -52,6 +58,7 @@ public class HeadlessBuild implements IApplication {
 			return buildThread;
 		}
 
+		@Override
 		public void run() {
 			try {
 				result = startBuild(args);
@@ -69,28 +76,56 @@ public class HeadlessBuild implements IApplication {
 		}
 	}
 
+	@Override
 	public Object start(IApplicationContext context) throws Exception {
-		// OK, kill the splash
-		context.applicationRunning();
-		
+		String osName = System.getProperty("os.name");
+		boolean isMac = osName.startsWith("Mac") || osName.startsWith("Darwin");
+
+		Display dummy = null;
+		if (isMac) {
+			// I know, it's quite ridiculus.
+			dummy = PlatformUI.createDisplay();
+			Bundle ideBundle = Platform.getBundle("org.eclipse.ui.ide");
+			if (ideBundle != null) {
+				ideBundle.start();
+			}
+		}
+
 		// Make sure it's headless from the start.
-		System.setProperty("com.mobilesorcery.headless", "true");
 		CoreMoSyncPlugin.setHeadless(true);
-		
-		String[] args = (String[]) context.getArguments().get(
-				IApplicationContext.APPLICATION_ARGS);
 
-		BuildRunnable buildRunnable = new BuildRunnable(args);
-		buildRunnable.start().join();
+		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+			CoreMoSyncPlugin.trace(
+					"*** Started headless build at {0,time}, {0,date}",
+					new Date());
+		}
+		try {
+			// OK, kill the splash
+			context.applicationRunning();
 
-		if (buildRunnable.getException() != null) {
-			System.err.println(buildRunnable.getException());
-			throw buildRunnable.getException();
+			String[] args = (String[]) context.getArguments().get(
+					IApplicationContext.APPLICATION_ARGS);
+
+			BuildRunnable buildRunnable = new BuildRunnable(args);
+			buildRunnable.start().join();
+			if (buildRunnable.getException() != null) {
+				System.err.println(buildRunnable.getException());
+				throw buildRunnable.getException();
+			}
+		} finally {
+			if (dummy != null) {
+				dummy.dispose();
+			}
+			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+				CoreMoSyncPlugin.trace(
+						"*** Stopped headless build at {0,time}, {0,date}",
+						new Date());
+			}
 		}
 
 		return EXIT_OK;
 	}
-	
+
 	Integer startBuild(String[] args) throws Exception {
 		IWorkspace ws = ResourcesPlugin.getWorkspace();
 
@@ -128,12 +163,16 @@ public class HeadlessBuild implements IApplication {
 		}
 
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
-		
+
 		if (cfgId != null && mosyncProject.getBuildConfiguration(cfgId) == null) {
-			String availableCfgs = Util.join(mosyncProject.getBuildConfigurations().toArray(), ", ");
-			throw new IOException(MessageFormat.format("Unknown build configuration: {0}. Available configurations for this project are: {1}", cfgId, availableCfgs));
+			String availableCfgs = Util.join(mosyncProject
+					.getBuildConfigurations().toArray(), ", ");
+			throw new IOException(
+					MessageFormat
+							.format("Unknown build configuration: {0}. Available configurations for this project are: {1}",
+									cfgId, availableCfgs));
 		}
-		
+
 		String script = null;
 		if (finalizerScript != null) {
 			script = Util.readFile(finalizerScript);
@@ -146,15 +185,16 @@ public class HeadlessBuild implements IApplication {
 
 		FinalizeJob job = new FinalizeJob(mosyncProject, script, cfgId);
 		job.setUser(true);
-		job.schedule();		
+		job.setRule(mosyncProject.getWrappedProject().getWorkspace().getRuleFactory().buildRule());
+		job.schedule();
 		job.join();
-		
+
 		IStatus result = job.getResult();
-		
+
 		if (result.getSeverity() != IStatus.OK) {
 			throw new CoreException(result);
 		}
-		
+
 		return EXIT_OK;
 	}
 
@@ -162,6 +202,7 @@ public class HeadlessBuild implements IApplication {
 		System.err.println(Messages.HeadlessBuild_Usage);
 	}
 
+	@Override
 	public void stop() {
 	}
 

@@ -32,12 +32,12 @@ import org.osgi.framework.BundleContext;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
+import com.mobilesorcery.sdk.core.templates.IProjectTemplateExtension;
 import com.mobilesorcery.sdk.core.templates.ITemplate;
 import com.mobilesorcery.sdk.core.templates.ProjectTemplate;
 import com.mobilesorcery.sdk.core.templates.ProjectTemplateDescription;
+import com.mobilesorcery.sdk.core.templates.ProjectTemplateExtension;
 import com.mobilesorcery.sdk.core.templates.Template;
-import com.mobilesorcery.sdk.wizards.internal.IProjectTemplateExtension;
-import com.mobilesorcery.sdk.wizards.internal.ProjectTemplateExtension;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -56,7 +56,7 @@ public class Activator extends AbstractUIPlugin {
 
     private final TreeMap<String, ProjectTemplate> projectTemplates = new TreeMap<String, ProjectTemplate>();
 
-	private TreeMap<String, IProjectTemplateExtension> extensions = null;
+	private final TreeMap<String, IProjectTemplateExtension> extensions = null;
 
 	/**
 	 * The constructor
@@ -72,7 +72,6 @@ public class Activator extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
-		initTemplates();
 	}
 
 	/*
@@ -92,79 +91,6 @@ public class Activator extends AbstractUIPlugin {
 	 */
 	public static Activator getDefault() {
 		return plugin;
-	}
-
-	private void initTemplates() {
-		IPath templateDir = MoSyncTool.getDefault().getTemplatesPath();
-		File[] subdirs = templateDir.toFile().listFiles();
-		for (int i = 0; i < subdirs.length; i++) {
-			File subdir = subdirs[i];
-			if (subdir.isDirectory()) {
-				File descFile = new File(subdir, "project.desc");
-				if (descFile.exists()) {
-					try {
-						ProjectTemplateDescription desc = ProjectTemplateDescription.parse(descFile);
-						ProjectTemplate template = new ProjectTemplate(subdir, desc);
-						String validationResult = template.validate();
-						if (validationResult == null) {
-							addProjectTemplate(template);
-						} else {
-							// Just to end up in the catch clause.
-							throw new IOException("Invalid template: " + validationResult);
-						}
-					} catch (IOException e) {
-						getLog().log(new Status(IStatus.ERROR, PLUGIN_ID, e.getMessage(), e));
-					}
-				}
-			}
-		}
-
-        addTemplate(new Template(RESOURCE_TEMPLATE_ID, "Resource File",  "New Resource File", getClass().getResource("/templates/resources.lstx.template"), "Resources/resource.lstx", null));
-	}
-
-    private void addProjectTemplate(ProjectTemplate template) {
-        projectTemplates.put(template.getId(), template);
-    }
-
-    private void addTemplate(ITemplate template) {
-    	// We'll keep these for a while - but we should really really try to incorporate it
-    	// in the CDT code templates list.
-        templates.put(template.getId(), template);
-    }
-
-	public List<ProjectTemplate> getProjectTemplates(String type) {
-		ArrayList<ProjectTemplate> result = new ArrayList<ProjectTemplate>();
-		for (ProjectTemplate projectTemplate : projectTemplates.values()) {
-			if (Util.equals(type, projectTemplate.getType())) {
-				result.add(projectTemplate);
-			}
-		}
-	    return result;
-	}
-
-	public IProjectTemplateExtension getExtensionForType(String type) {
-		if (extensions == null) {
-			extensions = new TreeMap<String, IProjectTemplateExtension>();
-	    	IConfigurationElement[] extensionCfgs = Platform.getExtensionRegistry().getConfigurationElementsFor(ProjectTemplateExtension.EXTENSION_POINT_ID);
-	    	for (IConfigurationElement extensionCfg : extensionCfgs) {
-	    		ProjectTemplateExtension extensionImpl = new ProjectTemplateExtension(extensionCfg);
-	    		String extensionType = type = extensionImpl.getType();
-	    		extensions.put(extensionType, extensionImpl);
-	    	}
-		}
-		return extensions.get(type);
-	}
-
-	public Collection<String> getTemplateTypes() {
-		HashSet<String> result = new HashSet<String>();
-		for (ProjectTemplate projectTemplate : projectTemplates.values()) {
-			result.add(projectTemplate.getType());
-		}
-		return result;
-	}
-
-	public ITemplate getTemplate(String id) {
-	    return templates.get(id);
 	}
 
 

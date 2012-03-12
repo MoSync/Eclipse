@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.2"?>
 <plugin>
-   <extension-point id="com.mobilesorcery.sdk.templates.type.extension" name="MoSync Project Template Extension" schema="schema/com.mobilesorcery.sdk.templates.type.extension.exsd"/>
      <extension
          point="org.eclipse.ui.newWizards">
       <category
@@ -9,6 +8,15 @@
             name="MoSync"/>
       <wizard
             category="com.mobilesorcery.wizard.category"
+            class="com.mobilesorcery.sdk.wizards.internal.NewMoSyncProjectWizard"
+            finalPerspective="com.mobilesorcery.ui.perspective"
+            icon="icons/mosyncproject.png"
+            id="com.mobilesorcery.wizard.mosync.project"
+            name="MoSync Project"
+            project="true"/>
+      <!-- We also need it in the CDT C/++ category -->
+      <wizard
+            category="org.eclipse.cdt.ui.newCWizards"
             class="com.mobilesorcery.sdk.wizards.internal.NewMoSyncProjectWizard"
             finalPerspective="com.mobilesorcery.ui.perspective"
             icon="icons/mosyncproject.png"
