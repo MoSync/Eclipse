@@ -63,6 +63,15 @@ import org.osgi.framework.BundleContext;
 
 import sun.security.action.GetLongAction;
 
+import com.mobilesorcery.sdk.core.build.BundleBuildStep;
+import com.mobilesorcery.sdk.core.build.CommandLineBuildStep;
+import com.mobilesorcery.sdk.core.build.CompileBuildStep;
+import com.mobilesorcery.sdk.core.build.CopyBuildResultBuildStep;
+import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
+import com.mobilesorcery.sdk.core.build.IBuildStepFactoryExtension;
+import com.mobilesorcery.sdk.core.build.LinkBuildStep;
+import com.mobilesorcery.sdk.core.build.PackBuildStep;
+import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
@@ -164,6 +173,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	private String workspaceToken;
 
 	private SecureRandom secureRnd;
+
+	private HashMap<String, IBuildStepFactoryExtension> buildStepExtensions = null;
 
     /**
      * The constructor
@@ -697,6 +708,46 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	public Set<String> getEmulatorLauncherIds() {
 		return Collections.unmodifiableSet(launchers.keySet());
+	}
+
+	public IBuildStepFactory createBuildStepFactory(String id) {
+		// The default ones.
+		if (CompileBuildStep.ID.equals(id)) {
+			return new CompileBuildStep.Factory();
+		} else if (ResourceBuildStep.ID.equals(id)) {
+			return new ResourceBuildStep.Factory();
+		} else if (LinkBuildStep.ID.equals(id)) {
+			return new LinkBuildStep.Factory();
+		} else if (PackBuildStep.ID.equals(id)) {
+			return new PackBuildStep.Factory();
+		} else if (CommandLineBuildStep.ID.equals(id)) {
+			return new CommandLineBuildStep.Factory();
+		} else if (BundleBuildStep.ID.equals(id)) {
+			return new BundleBuildStep.Factory();
+		} else if (CopyBuildResultBuildStep.ID.equals(id)) {
+			return new CopyBuildResultBuildStep.Factory();
+		}
+
+		if (buildStepExtensions == null) {
+			buildStepExtensions = new HashMap<String, IBuildStepFactoryExtension>();
+			IExtensionRegistry registry = Platform.getExtensionRegistry();
+			IConfigurationElement[] elements = registry
+					.getConfigurationElementsFor(IBuildStepFactoryExtension.EXTENSION_ID);
+			for (IConfigurationElement element : elements) {
+				try {
+					String extId = element.getAttribute("id");
+					IBuildStepFactoryExtension ext = (IBuildStepFactoryExtension) element.createExecutableExtension("implementation");
+					buildStepExtensions.put(extId,  ext);
+				} catch (CoreException e) {
+					CoreMoSyncPlugin.getDefault().log(e);
+				}
+			}
+		}
+		IBuildStepFactoryExtension extension = buildStepExtensions.get(id);
+		if (extension != null) {
+			return extension.createFactory();
+		}
+		return null;
 	}
 
 	public IUpdater getUpdater() {

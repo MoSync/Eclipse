@@ -9,6 +9,7 @@
    <extension-point id="com.mobilesorcery.core.launcher" name="Launcher" schema="schema/com.mobilesorcery.core.launcher.exsd"/>
    <extension-point id="com.mobilesorcery.sdk.templates.type.extension" name="MoSync Project Template Extension" schema="schema/com.mobilesorcery.sdk.templates.type.extension.exsd"/>
    <extension-point id="com.mobilesorcery.core.buildsupport" name="MoSync Core Build Support" schema="schema/com.mobilesorcery.core.buildsupport.exsd"/>
+   <extension-point id="com.mobilesorcery.sdk.build.steps" name="Build Steps Extensions" schema="schema/com.mobilesorcery.sdk.build.steps.exsd"/>
 
    <extension
          id="builder"
