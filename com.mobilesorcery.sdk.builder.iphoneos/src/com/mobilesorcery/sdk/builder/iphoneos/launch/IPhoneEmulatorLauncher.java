@@ -66,6 +66,7 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
+		IPhoneSimulator.getDefault().assertValid();
 		// TODO: Incremental building if we change the SDK!?
 		IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
@@ -124,6 +125,6 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 	}
 
 	protected boolean isCorrectlyInstalled() {
-		return IPhoneSimulator.getDefault().isValid() && XCodeBuild.getDefault().isValid() && XCodeBuild.getDefault().listSDKs(XCodeBuild.IOS_SIMULATOR_SDKS).size() > 0;
+		return XCodeBuild.getDefault().isValid() && XCodeBuild.getDefault().listSDKs(XCodeBuild.IOS_SIMULATOR_SDKS).size() > 0;
 	}
 }

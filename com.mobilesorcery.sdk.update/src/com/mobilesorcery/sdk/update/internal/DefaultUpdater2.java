@@ -40,6 +40,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.WorkbenchException;
+import org.eclipse.ui.intro.IIntroManager;
 import org.eclipse.ui.intro.IIntroPart;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -58,7 +59,7 @@ import com.mobilesorcery.sdk.update.UpdateManagerBase;
  * certain period of time, so if you're reading this javadoc it's probably older
  * than the flashy new-and-fresh-car feeling conveyed by the 'new' word.
  *
- * @author Mattias Bybro, mattias.bybro@purplescout.s
+ * @author Mattias Bybro, mattias.bybro@mosync.com
  *
  */
 public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
@@ -205,6 +206,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 		@Override
 		public void run() {
 			UIUtils.awaitWorkbenchStartup(null);
+
 			String userKey = MoSyncTool.getDefault().getProperty(
 					MoSyncTool.USER_HASH_PROP_2);
 
