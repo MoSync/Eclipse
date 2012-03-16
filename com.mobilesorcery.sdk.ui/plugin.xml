@@ -636,4 +636,8 @@ icon="icons/launchshortcut.png">
          </savePolicy>
       </extension>
       
+      <extension point="org.eclipse.ui.startup">
+  <startup/>
+  </extension>
+      
 </plugin>
