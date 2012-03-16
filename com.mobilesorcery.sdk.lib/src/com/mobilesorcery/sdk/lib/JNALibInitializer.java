@@ -28,20 +28,20 @@ import com.sun.jna.Platform;
  * Utility class for allowing JNA to be run on dll's within a plugin. The
  * <code>init</code> method of this class must be run before calling the JNA
  * <code>Native.loadLibrary</code> method.
- * 
+ *
  * @author Mattias, fmattias (modified by)
  */
 public class JNALibInitializer
 {
 	/**
-	 * Adds the given library to the path of JNA, so that it can 
+	 * Adds the given library to the path of JNA, so that it can
 	 * be found when calling Native.loadLibrary(). The library
 	 * will only be searched for within the plugin.
-	 * 
+	 *
 	 * @param bundle The bundle corresponding to this plugin.
 	 * @param libname The name of the library to find. It is important
 	 *                that this name contains the full name of the library without
-	 *                the extension. E.g. if you want to load libsdl.so then 
+	 *                the extension. E.g. if you want to load libsdl.so then
 	 *                'libsdl' should be passed to this function.
 	 * @throws IOException will be thrown if the library could not be found.
 	 */
@@ -49,22 +49,22 @@ public class JNALibInitializer
     {
     	/* Get relative path to library */
         IPath pluginRelativePathToLib = new Path(libname + getLibExtension());
-        
+
         /* Find library in plugin path */
         URL libInPluginLocation = FileLocator.find(bundle, pluginRelativePathToLib, null);
         URL libAsFileLocation = FileLocator.toFileURL(libInPluginLocation);
-        
+
         /* Find absolute path of library */
         String libFilename = libAsFileLocation.getPath();
         String directoryOfLib = new File(libFilename).getParent();
-        
+
         /* Ensure that JNA does not contain the library path already */
         String curLibPath = System.getProperty("jna.library.path", "");
         if(curLibPath.contains(directoryOfLib))
         {
         	return;
         }
-        
+
         /* Add path to JNA library path so that JNA can find the library */
         if(!curLibPath.equals(""))
         {
@@ -74,36 +74,31 @@ public class JNALibInitializer
         {
         	curLibPath = directoryOfLib;
         }
-        
+
         System.setProperty("jna.library.path", curLibPath);
     }
 
     /**
      * Returns the default extension of libraries on
-     * the given platform. 
-     * 
+     * the given platform.
+     *
      * @return the default extension of libraries on
-     * the given platform. Null is returned if the 
+     * the given platform. Null is returned if the
      * current platform is not known.
      */
     private static String getLibExtension()
     {
-    	if(Platform.isWindows() || Platform.isWindowsCE())
-    	{
+    	// Weird AWT on Mac problem forces us to do skip
+    	// JNAs Platform API
+        String osName = System.getProperty("os.name");
+        boolean isMac = osName.startsWith("Mac") || osName.startsWith("Darwin");
+        boolean isWin = osName.startsWith("Windows");
+        if (isMac) {
+        	return ".dylib";
+        } else if (isWin) {
     		return ".dll";
-    	}
-    	else if(Platform.isLinux() || Platform.isOpenBSD() ||
-    			Platform.isSolaris() || Platform.isFreeBSD())
-    	{
+    	} else { // Assume *nix
     		return ".so";
     	}
-    	else if(Platform.isMac())
-    	{
-    		return ".dylib";
-    	}
-    	else
-    	{
-    		return null;
-    	}
-    }    
+    }
 }

@@ -9,4 +9,39 @@
       </JsGlobalScopeContainerInitializer>
    </extension>
 -->
+<!-- This is to make sure Reload works properly -->
+<extension point="org.eclipse.ui.startup">
+  <startup/>
+</extension>
+     <extension
+         point="org.eclipse.debug.core.launchConfigurationTypes">
+      <launchConfigurationType
+            delegate="com.mobilesorcery.sdk.html5.debug.ReloadLaunchConfigurationDelegate"
+            id="com.mobilesorcery.html5.reload.launchconfigurationtype"
+            modes="run,debug"
+            name="Reload App"/>
+   </extension>
+
+     <extension
+         point="org.eclipse.debug.ui.launchConfigurationTabGroups">
+      <launchConfigurationTabGroup
+            class="com.mobilesorcery.sdk.html5.debug.ReloadLaunchConfigurationTabGroup"
+            id="com.mobilesorcery.reload.launchconfigurationtabgroup"
+            type="com.mobilesorcery.html5.reload.launchconfigurationtype"/>
+     </extension>
+
+      <extension
+         point="org.eclipse.wst.jsdt.debug.core.launchingConnectors">
+      <connector
+            class="com.mobilesorcery.sdk.html5.debug.jsdt.ReloadListeningConnector"
+            id="reload.listening.connector">
+      </connector>
+   </extension>
+      <extension
+            point="com.mobilesorcery.sdk.build.steps">
+         <factory
+               id="com.mobilesorcery.sdk.html5.debugsupport"
+               implementation="com.mobilesorcery.sdk.html5.HTML5DebugSupportBuildStepExtension">
+         </factory>
+      </extension>
 </plugin>
