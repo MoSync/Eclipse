@@ -11,7 +11,8 @@
 -->
 <!-- This is to make sure Reload works properly -->
 <extension point="org.eclipse.ui.startup">
-  <startup/>
+  <startup
+        class="com.mobilesorcery.sdk.html5.EarlyStartup"/>
 </extension>
      <extension
          point="org.eclipse.debug.core.launchConfigurationTypes">
