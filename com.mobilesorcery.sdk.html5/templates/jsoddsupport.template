@@ -14,6 +14,8 @@ window.MoSyncDebugProtocol = new (function() {
     
     var sessionId = null;
     
+    var disconnected = false;
+    
     var currentOID = 0;
     
     this.assignOID = function(obj) {
@@ -24,6 +26,10 @@ window.MoSyncDebugProtocol = new (function() {
     function listenToServer() {
         try {
             dropCommandConnection();
+            
+            if (disconnected) {
+            	return;
+            }
             
             asyncXHR = new XMLHttpRequest();
             asyncXHR.open('GET', serverUrl + '/mobile/incoming', true);
@@ -45,9 +51,14 @@ window.MoSyncDebugProtocol = new (function() {
             };
             asyncXHR.send(null);
         } catch (ex) {
-            alert('Error while waiting for debug server: ' + ex.toString());
+        	disconnect(ex);
             listenToServer();
         }
+    }
+    
+    function disconnect(ex) {
+    	disconnected = true;
+        alert('Disconnected from debug session. To debug, you need to restart.\nReason:' + ex.toString());
     }
     
     function dropCommandConnection() {
@@ -69,7 +80,7 @@ window.MoSyncDebugProtocol = new (function() {
             req.send(json);
             return safeJSONParse(req.responseText);
         } catch (ex) {
-            alert('Error while sending data: ' + ex.toString());
+            disconnect(ex);
             listenToServer();
         }
     }

@@ -11,6 +11,7 @@ import java.util.NavigableMap;
 import java.util.Stack;
 import java.util.TreeMap;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
@@ -195,7 +196,9 @@ public class JSODDSupport {
 				result.append('\n');
 				lineNo++;
 			}
-			output.write(result.toString());
+			if (output != null) {
+				output.write(result.toString());
+			}
 		}
 	}
 
@@ -222,7 +225,7 @@ public class JSODDSupport {
 					@Override
 					public boolean visit(IResource resource)
 							throws CoreException {
-						IPath location = resource.getLocation();
+						IPath location = resource.getFullPath();
 						result[0] |= (fileIds == null || fileIds.get(location) == null);
 						assignFileId(location);
 						return true;
@@ -293,14 +296,24 @@ public class JSODDSupport {
 		return reverseFileIds.get(fileId);
 	}
 
-	public LocalVariableScope getScope(IPath file, int lineNo) {
-		Long fileId = fileIds.get(file);
+	public LocalVariableScope getScope(IFile file, int lineNo) {
+		Long fileId = fileIds.get(file.getFullPath());
 		if (fileId == null) {
 			return null;
 		}
 
 		NavigableMap<Integer, LocalVariableScope> scopeMap = scopeMaps
 				.get(fileId);
+		if (scopeMap == null) {
+			try {
+				// TODO: Force build instead!!!
+				rewrite(file.getFullPath(), null);
+				scopeMap = scopeMaps.get(fileId);
+			} catch (CoreException e) {
+				// Gah.
+			}
+		}
+		
 		if (scopeMap != null) {
 			Entry<Integer, LocalVariableScope> scope = scopeMap
 					.floorEntry(lineNo);

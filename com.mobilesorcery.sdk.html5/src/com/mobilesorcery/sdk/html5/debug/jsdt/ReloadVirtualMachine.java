@@ -63,7 +63,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		nullValue = new ReloadNullValue(this);
 		undefValue = new ReloadUndefinedValue(this);
 
-		server.setListener(this);
+		server.addListener(this);
 		server.startServer(this);
 		server.registerVM(this);
 	}
@@ -85,6 +85,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	@Override
 	public void terminate() {
 		try {
+			server.removeListener(this);
 			server.stopServer(this);
 		} catch (Exception e) {
 			CoreMoSyncPlugin.getDefault().log(e);
@@ -178,6 +179,8 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	@Override
 	public void received(String command, JSONObject json) {
+		// TODO!!! Session id - now all will suspend.
+		
 		// MAIN THREAD
 		ReloadThreadReference thread = (ReloadThreadReference) threads.get(0);
 		thread.suspend(true);
@@ -202,7 +205,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		if (ref instanceof SimpleScriptReference) {
 			IFile file = ((SimpleScriptReference) ref).getFile();
 			JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(file.getProject());
-			LocalVariableScope scope = jsoddSupport.getScope(file.getLocation(), location.lineNumber());
+			LocalVariableScope scope = jsoddSupport.getScope(file, location.lineNumber());
 			if (scope != null) {
 				return scope;
 			}
