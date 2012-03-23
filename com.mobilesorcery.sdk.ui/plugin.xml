@@ -637,7 +637,8 @@ icon="icons/launchshortcut.png">
       </extension>
       
       <extension point="org.eclipse.ui.startup">
-  <startup/>
+  <startup
+        class="com.mobilesorcery.sdk.ui.EarlyStartup"/>
   </extension>
       
 </plugin>
