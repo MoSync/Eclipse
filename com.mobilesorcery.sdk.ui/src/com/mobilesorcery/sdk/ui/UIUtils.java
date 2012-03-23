@@ -13,14 +13,9 @@
 */
 package com.mobilesorcery.sdk.ui;
 
-import org.eclipse.cdt.internal.core.model.CreateWorkingCopyOperation;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
@@ -35,67 +30,20 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.IWorkbenchListener;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
-import org.eclipse.ui.progress.WorkbenchJob;
 
-import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.ui.internal.console.PathLink;
 
 public class UIUtils {
-
-	private static final class WorkbenchStartupJob extends WorkbenchJob {
-		private IWorkbench workbench;
-
-		private WorkbenchStartupJob(String name) {
-			super(name);
-		}
-
-		@Override
-		public IStatus runInUIThread(IProgressMonitor monitor) {
-			this.workbench = PlatformUI.getWorkbench();
-		    // Do nothing; actually we'll never get here.
-		    return Status.OK_STATUS;
-		}
-
-		public IWorkbench getWorkbench() {
-			return workbench;
-		}
-	}
-
-	private static final class AwaitWorkbenchJobRunnable implements Runnable {
-		private final WorkbenchStartupJob workbenchStartupJob;
-		private final IWorkbenchStartupListener listener;
-
-		private AwaitWorkbenchJobRunnable(WorkbenchStartupJob workbenchStartupJob,
-				IWorkbenchStartupListener listener) {
-			this.workbenchStartupJob = workbenchStartupJob;
-			this.listener = listener;
-		}
-
-		@Override
-		public void run() {
-			try {
-				workbenchStartupJob.join();
-				if (listener != null) {
-					listener.started(workbenchStartupJob.getWorkbench());
-				}
-			} catch (InterruptedException e) {
-		        // Ignore.
-		    	Thread.currentThread().interrupt();
-		    }
-		}
-	}
 
 	public static void setDefaultShellBounds(Shell shell) {
         Rectangle displayBounds = shell.getDisplay().getBounds();
@@ -294,27 +242,6 @@ public class UIUtils {
         }
 
         return fd;
-    }
-
-    /**
-     * <p>Waits for the workbench to startup (if <code>null</code> is passed
-     * as the listener) or asynchronously sends a message to the listener
-     * once it's started.</p>
-     * @param listener The listener to receive events, or <code>null</code> if this
-     * method should block until the workbench has started.
-     */
-    public synchronized static void awaitWorkbenchStartup(IWorkbenchStartupListener listener) {
-    	final WorkbenchStartupJob workbenchStartupJob = new WorkbenchStartupJob("Awaiting workbench");
-        workbenchStartupJob.setSystem(true);
-        workbenchStartupJob.schedule();
-
-        Runnable awaitWorkbenchRunnable = new AwaitWorkbenchJobRunnable(workbenchStartupJob, listener);
-    	if (listener == null) {
-    		awaitWorkbenchRunnable.run();
-    	} else {
-    		Thread t = new Thread(awaitWorkbenchRunnable);
-    		t.start();
-    	}
     }
 
     public static void main(String[] args) {

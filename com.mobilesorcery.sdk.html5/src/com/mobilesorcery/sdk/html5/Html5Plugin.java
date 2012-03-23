@@ -7,38 +7,40 @@ import java.util.List;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.ui.IStartup;
+import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
-import org.eclipse.wst.jsdt.core.IIncludePathEntry;
 import org.eclipse.wst.jsdt.core.IJavaScriptProject;
 import org.eclipse.wst.jsdt.core.JavaScriptCore;
 import org.eclipse.wst.jsdt.core.LibrarySuperType;
-import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
 import org.eclipse.wst.jsdt.internal.core.JavaProject;
-import org.eclipse.wst.jsdt.web.core.internal.project.JsWebNature;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PrivilegedAccess;
 import com.mobilesorcery.sdk.core.PropertyUtil;
-import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
-import com.mobilesorcery.sdk.core.build.BundleBuildStep.Factory;
+import com.mobilesorcery.sdk.core.build.BundleBuildStep;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
-import com.mobilesorcery.sdk.core.build.PackBuildStep;
 import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
+import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
+import com.mobilesorcery.sdk.html5.live.LiveServer;
+import com.mobilesorcery.sdk.html5.live.ReloadManager;
 import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
+import com.mobilesorcery.sdk.ui.IWorkbenchStartupListener;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
+import com.mobilesorcery.sdk.ui.UIUtils;
 
 /**
  * The activator class controls the plug-in life cycle
  */
-public class Html5Plugin extends AbstractUIPlugin {
+public class Html5Plugin extends AbstractUIPlugin implements IStartup {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.html5"; //$NON-NLS-1$
@@ -48,8 +50,16 @@ public class Html5Plugin extends AbstractUIPlugin {
 
 	public static final String HTML5_TEMPLATE_TYPE = "html5";
 
+	public static final String ODD_SUPPORT_PROP = PLUGIN_ID + ".odd";
+
 	// The shared instance
 	private static Html5Plugin plugin;
+
+	private ReloadManager reloadManager;
+
+	private LiveServer server;
+
+	private JSODDSupport jsOddSupport;
 
 	/**
 	 * The constructor
@@ -67,7 +77,15 @@ public class Html5Plugin extends AbstractUIPlugin {
 	@Override
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
+		// We do not yet have the eclipse fix #54993
+		MosyncUIPlugin.getDefault().awaitWorkbenchStartup(new IWorkbenchStartupListener() {
+			@Override
+			public void started(IWorkbench workbench) {
+				DebugPlugin.getDefault().getBreakpointManager().getBreakpoints();
+			}
+		});
 		plugin = this;
+		initReloadManager();
 	}
 
 	/*
@@ -81,8 +99,54 @@ public class Html5Plugin extends AbstractUIPlugin {
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
+		disposeReloadManager();
 	}
 
+	public LiveServer getReloadServer() {
+		if (server == null) {
+			server = new LiveServer();
+		}
+		return server;
+	}
+
+	public void startReloadServer() throws CoreException {
+		server = getReloadServer();
+		try {
+			server.startServer();
+		} catch (Exception e) {
+			throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, e.getMessage(), e));
+		}
+	}
+
+	public void stopReloadServer() throws CoreException {
+		if (server != null) {
+			try {
+				server.stopServer();
+			} catch (Exception e) {
+				throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, e.getMessage(), e));
+			}
+		}
+	}
+
+	private void initReloadManager() {
+		this.reloadManager = new ReloadManager();
+	}
+
+	private void disposeReloadManager() {
+		if (reloadManager != null) {
+			reloadManager.dispose();
+		}
+		this.reloadManager = null;
+	}
+
+	/**
+	 * @deprecated Only to get hold of file id , refactor!!!
+	 * @return
+	 */
+	@Deprecated
+	public ReloadManager getReloadManager() {
+		return reloadManager;
+	}
 	/**
 	 * Returns the shared instance
 	 *
@@ -94,10 +158,11 @@ public class Html5Plugin extends AbstractUIPlugin {
 
 	/**
 	 * Adds HTML5 support to a {@link MoSyncProject}.
+	 * @param configureForODD
 	 *
 	 * @throws CoreException
 	 */
-	public void addHTML5Support(MoSyncProject project) throws CoreException {
+	public void addHTML5Support(MoSyncProject project, boolean configureForODD) throws CoreException {
 		try {
 			BuildSequence sequence = new BuildSequence(project);
 			List<IBuildStepFactory> factories = sequence
@@ -165,11 +230,26 @@ public class Html5Plugin extends AbstractUIPlugin {
 	}
 
 	private IBuildStepFactory createHTML5PackagerBuildStep() {
-		Factory factory = new Factory();
+		/*BundleBuildStep.Factory factory = new BundleBuildStep.Factory();
 		factory.setFailOnError(true);
 		factory.setName("HTML5/JavaScript bundling");
 		factory.setInFile("%current-project%/LocalFiles");
 		factory.setOutFile("%current-project%/Resources/LocalFiles.bin");
+		return factory;*/
+		// BAH -- We do NOT always want to copy LocalFiles to package etc
+		HTML5DebugSupportBuildStep.Factory factory = new HTML5DebugSupportBuildStep.Factory();
 		return factory;
+	}
+
+	public synchronized JSODDSupport getJSODDSupport() {
+		if (jsOddSupport == null) {
+			jsOddSupport = new JSODDSupport();
+		}
+		return jsOddSupport;
+	}
+
+	@Override
+	public void earlyStartup() {
+		// Just to activate the bundle.
 	}
 }

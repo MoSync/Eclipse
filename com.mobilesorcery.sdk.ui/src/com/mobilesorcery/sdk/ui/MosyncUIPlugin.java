@@ -19,12 +19,16 @@ import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
@@ -71,6 +75,7 @@ import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.ISelectionListener;
+import org.eclipse.ui.IStartup;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWindowListener;
 import org.eclipse.ui.IWorkbench;
@@ -121,7 +126,7 @@ import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
 public class MosyncUIPlugin extends AbstractUIPlugin implements
 		IWindowListener, ISelectionListener,
 		IProvider<IProcessConsole, String>, MemoryLowListener,
-		IResourceChangeListener {
+		IResourceChangeListener, IStartup {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.ui"; //$NON-NLS-1$
@@ -160,6 +165,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 
 	private final static Object NULL = new Object();
 
+	protected static final long WB_WAIT_TIMEOUT = 45;
+
 	// The shared instance
 	private static MosyncUIPlugin plugin;
 
@@ -176,6 +183,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	private HashMap<String, IEmulatorLaunchConfigurationPart> launcherParts = null;
 
 	private final HashMap<Display, FontRegistry> fontRegistries = new HashMap<Display, FontRegistry>();
+
+	private final CountDownLatch workbenchStarted = new CountDownLatch(1);
 
 	@SuppressWarnings("serial")
 	private final Cache<String, Object> platformImages = new Cache<String, Object>(
@@ -218,7 +227,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 		registerGlobalProjectListener();
 		CoreMoSyncPlugin.getLowMemoryManager().addMemoryLowListener(this, 1);
 		if (!CoreMoSyncPlugin.isHeadless()) {
-			UIUtils.awaitWorkbenchStartup(new IWorkbenchStartupListener() {
+			awaitWorkbenchStartup(new IWorkbenchStartupListener() {
 				@Override
 				public void started(IWorkbench wb) {
 					initializeCustomActivities();
@@ -915,4 +924,46 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 					}
 				}, true);
 	}
+
+    /**
+     * <p>Waits for the workbench to startup (if <code>null</code> is passed
+     * as the listener) or asynchronously sends a message to the listener
+     * once it's started.</p>
+     * @param listener The listener to receive events, or <code>null</code> if this
+     * method should block until the workbench has started.
+     */
+    public void awaitWorkbenchStartup(final IWorkbenchStartupListener listener) {
+    	TimerTask awaitRunnable = new TimerTask() {
+			@Override
+			public void run() {
+				try {
+					if (!isWorkbenchStarted()) {
+						workbenchStarted.await(WB_WAIT_TIMEOUT, TimeUnit.SECONDS);
+					}
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+				if (listener != null) {
+					listener.started(PlatformUI.getWorkbench());
+				}
+			}
+		};
+    	if (listener == null) {
+    		awaitRunnable.run();
+    	} else {
+    		Thread t = new Thread(awaitRunnable);
+    		t.setDaemon(true);
+    		t.start();
+    	}
+    }
+
+	@Override
+	public void earlyStartup() {
+		workbenchStarted.countDown();
+	}
+
+	public boolean isWorkbenchStarted() {
+		return PlatformUI.isWorkbenchRunning() && !PlatformUI.getWorkbench().isStarting() && !PlatformUI.getWorkbench().isClosing();
+	}
+
 }
