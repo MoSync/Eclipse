@@ -19,15 +19,11 @@ import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 
 public class ReloadManager implements IResourceChangeListener {
 
-	private JSODDSupport op;
-
 	public ReloadManager() {
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.POST_CHANGE);
-		op = new JSODDSupport();
 	}
 
 	public void dispose() {
-		op = null;
 	}
 
 	@Override
@@ -79,9 +75,4 @@ public class ReloadManager implements IResourceChangeListener {
 		connection.connect();
 		connection.getInputStream().close();*/
 	}
-
-	public IPath getFile(long fileId) {
-		return op.getFile(fileId);
-	}
-
 }

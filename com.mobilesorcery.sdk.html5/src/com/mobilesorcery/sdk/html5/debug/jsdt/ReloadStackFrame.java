@@ -1,13 +1,12 @@
 package com.mobilesorcery.sdk.html5.debug.jsdt;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
-import org.eclipse.wst.jsdt.debug.core.jsdi.Property;
 import org.eclipse.wst.jsdt.debug.core.jsdi.StackFrame;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Value;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Variable;
@@ -15,9 +14,8 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
-import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.LocalVariableScope;
 
 public class ReloadStackFrame implements StackFrame {
 
@@ -31,6 +29,8 @@ public class ReloadStackFrame implements StackFrame {
 
 	private ReloadVariable argsVar;
 
+	private ArrayList<ReloadVariable> localVars;
+
 	public ReloadStackFrame(ReloadVirtualMachine vm, JSONObject suspendCommand,
 			int ix) {
 		this.vm = vm;
@@ -38,11 +38,10 @@ public class ReloadStackFrame implements StackFrame {
 	}
 
 	private void init(JSONObject suspended, int ix) {
-		Long fileId = (Long) suspended.get("file");
+		String file = (String) suspended.get("file");
 		int line = ((Long) suspended.get("line")).intValue();
-		IPath file = Html5Plugin.getDefault().getReloadManager()
-				.getFile(fileId);
-		location = new SimpleLocation(vm, file, line);
+		IFile resource = ResourcesPlugin.getWorkspace().getRoot().getFile(new Path(file));
+		location = new SimpleLocation(vm, resource, line);
 	}
 
 	@Override
@@ -61,13 +60,23 @@ public class ReloadStackFrame implements StackFrame {
 			inited = true;
 			thisVar = new ReloadVariable(vm, this, "this", "this");
 			argsVar = new ReloadVariable(vm, this, "arguments", "arguments");
+			localVars = new ArrayList<ReloadVariable>();
+			LocalVariableScope scope = vm.getLocalVariableScope(location);
+			if (scope != null) {
+				for (String localVar : scope.getLocalVariables()) {
+					localVars.add(new ReloadVariable(vm, this, localVar, localVar));
+				}
+			}
 		}
 	}
 
 	@Override
 	public List variables() {
 		initVars();
-		return Collections.EMPTY_LIST;//Arrays.asList(thisVar);
+		ArrayList result = new ArrayList();
+		result.add(argsVar);
+		result.addAll(localVars);
+		return result;
 	}
 
 	@Override

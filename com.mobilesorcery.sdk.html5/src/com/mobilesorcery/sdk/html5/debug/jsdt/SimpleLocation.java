@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.html5.debug.jsdt;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ScriptReference;
@@ -9,7 +10,7 @@ public class SimpleLocation implements Location {
 	private final SimpleScriptReference ref;
 	private final int line;
 
-	public SimpleLocation(ReloadVirtualMachine vm, IPath file, int line) {
+	public SimpleLocation(ReloadVirtualMachine vm, IFile file, int line) {
 		this.ref = new SimpleScriptReference(vm, file);
 		this.line = line;
 	}

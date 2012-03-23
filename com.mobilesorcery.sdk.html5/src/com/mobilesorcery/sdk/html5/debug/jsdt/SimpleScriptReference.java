@@ -5,6 +5,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ScriptReference;
@@ -13,9 +14,9 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 public class SimpleScriptReference implements ScriptReference {
 
 	private final ReloadVirtualMachine vm;
-	private final IPath file;
+	private final IFile file;
 
-	public SimpleScriptReference(ReloadVirtualMachine vm, IPath file) {
+	public SimpleScriptReference(ReloadVirtualMachine vm, IFile file) {
 		this.vm = vm;
 		this.file = file;
 	}
@@ -52,8 +53,23 @@ public class SimpleScriptReference implements ScriptReference {
 
 	@Override
 	public URI sourceURI() {
-		// YUK
-		return new File(file.toOSString()).toURI();
+		return file.getLocationURI();
+	}
+	
+	public IPath sourcePath() {
+		return file.getLocation();
+	}
+	
+	public IFile getFile() {
+		return file;
+	}
+
+	public static IPath getFile(Location location) {
+		ScriptReference ref = location.scriptReference();
+		if (ref instanceof SimpleScriptReference) {
+			return ((SimpleScriptReference) ref).sourcePath();
+		}
+		return null;
 	}
 
 }

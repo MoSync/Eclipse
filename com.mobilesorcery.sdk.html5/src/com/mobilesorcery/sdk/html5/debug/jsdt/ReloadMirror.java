@@ -5,7 +5,7 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 
 public class ReloadMirror implements Mirror {
 
-	private final ReloadVirtualMachine vm;
+	protected final ReloadVirtualMachine vm;
 
 	ReloadMirror(ReloadVirtualMachine vm) {
 		this.vm = vm;

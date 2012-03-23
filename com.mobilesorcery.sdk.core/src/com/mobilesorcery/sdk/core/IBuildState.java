@@ -18,6 +18,7 @@ import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
@@ -130,5 +131,11 @@ public interface IBuildState {
 
     public IBuildResult getBuildResult();
 
+    /**
+     * Returns the location of the build result meta data directory.
+     * Clients may add files to this directory.
+     * @return
+     */
+    public IPath getLocation();
 
 }

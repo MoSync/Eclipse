@@ -1,6 +1,9 @@
 package com.mobilesorcery.sdk.html5;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
@@ -26,7 +29,6 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PrivilegedAccess;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
-import com.mobilesorcery.sdk.core.build.BundleBuildStep;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
@@ -35,7 +37,6 @@ import com.mobilesorcery.sdk.html5.live.ReloadManager;
 import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 import com.mobilesorcery.sdk.ui.IWorkbenchStartupListener;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
-import com.mobilesorcery.sdk.ui.UIUtils;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -59,7 +60,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup {
 
 	private LiveServer server;
 
-	private JSODDSupport jsOddSupport;
+	private HashMap<IProject, JSODDSupport> jsOddSupport = new HashMap<IProject, JSODDSupport>();
 
 	/**
 	 * The constructor
@@ -107,25 +108,6 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup {
 			server = new LiveServer();
 		}
 		return server;
-	}
-
-	public void startReloadServer() throws CoreException {
-		server = getReloadServer();
-		try {
-			server.startServer();
-		} catch (Exception e) {
-			throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, e.getMessage(), e));
-		}
-	}
-
-	public void stopReloadServer() throws CoreException {
-		if (server != null) {
-			try {
-				server.stopServer();
-			} catch (Exception e) {
-				throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, e.getMessage(), e));
-			}
-		}
 	}
 
 	private void initReloadManager() {
@@ -241,15 +223,24 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup {
 		return factory;
 	}
 
-	public synchronized JSODDSupport getJSODDSupport() {
-		if (jsOddSupport == null) {
-			jsOddSupport = new JSODDSupport();
+	public synchronized JSODDSupport getJSODDSupport(IProject project) {
+		if (MoSyncProject.create(project) == null) {
+			return null;
 		}
-		return jsOddSupport;
+		JSODDSupport result = jsOddSupport.get(project);
+		if (result == null) {
+			result = new JSODDSupport(project);
+			jsOddSupport.put(project, result);
+		}
+		return result;
 	}
 
 	@Override
 	public void earlyStartup() {
 		// Just to activate the bundle.
+	}
+
+	public Collection<IProject> getProjectsWithJSODDSupport() {
+		return Collections.unmodifiableCollection(jsOddSupport.keySet());
 	}
 }

@@ -1,42 +1,43 @@
 package com.mobilesorcery.sdk.html5.debug;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
-import java.util.SortedMap;
 import java.util.Stack;
 import java.util.TreeMap;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.wst.jsdt.core.IJavaScriptUnit;
-import org.eclipse.wst.jsdt.core.ILocalVariable;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.wst.jsdt.core.dom.AST;
 import org.eclipse.wst.jsdt.core.dom.ASTNode;
 import org.eclipse.wst.jsdt.core.dom.ASTParser;
 import org.eclipse.wst.jsdt.core.dom.ASTVisitor;
 import org.eclipse.wst.jsdt.core.dom.Block;
+import org.eclipse.wst.jsdt.core.dom.ForInStatement;
 import org.eclipse.wst.jsdt.core.dom.FunctionDeclaration;
 import org.eclipse.wst.jsdt.core.dom.JavaScriptUnit;
-import org.eclipse.wst.jsdt.core.dom.SimpleName;
 import org.eclipse.wst.jsdt.core.dom.Statement;
 import org.eclipse.wst.jsdt.core.dom.SwitchCase;
 import org.eclipse.wst.jsdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.wst.jsdt.internal.core.LocalVariable;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
-import com.mobilesorcery.sdk.core.MoSyncBuilder;
-import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.templates.Template;
+import com.mobilesorcery.sdk.html5.Html5Plugin;
 
 public class JSODDSupport {
 
@@ -44,12 +45,13 @@ public class JSODDSupport {
 		private final HashMap<Integer, Integer> linesToRewrite = new HashMap<Integer, Integer>();
 		private JavaScriptUnit unit;
 		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
-		private boolean allowInstrumentation = false;
-		private LocalVariableScope currentScope = new LocalVariableScope().nestScope();
+		private LocalVariableScope currentScope = new LocalVariableScope()
+				.nestScope();
 		private final TreeMap<Integer, LocalVariableScope> localVariables = new TreeMap<Integer, LocalVariableScope>();
 
 		@Override
 		public void preVisit(ASTNode node) {
+			System.err.println(Util.fill(' ', statementStack.size() * 2) + node.getClass() + ": " + node.toString().replace('\n', ' '));
 			int start = node.getStartPosition();
 			int line = unit == null ? -1 : unit.getLineNumber(start);
 			int col = unit == null ? -1 : unit.getColumnNumber(start);
@@ -70,7 +72,6 @@ public class JSODDSupport {
 			}
 
 			if (node instanceof Block) {
-				allowInstrumentation = true;
 				nest = true;
 			}
 
@@ -83,7 +84,8 @@ public class JSODDSupport {
 			}
 
 			if (currentScope != startScope) {
-				// It's ok to overwrite the previous localvariables if on the same line.
+				// It's ok to overwrite the previous localvariables if on the
+				// same line.
 				localVariables.put(line, currentScope);
 			}
 		}
@@ -95,8 +97,21 @@ public class JSODDSupport {
 		}
 
 		private boolean isInstrumentableStatement(ASTNode node) {
-			return allowInstrumentation && node instanceof Statement
-					&& !(node instanceof Block) && !(node instanceof SwitchCase);
+			boolean isStatement = node instanceof Statement;
+			boolean isBlock = node instanceof Block;
+			ASTNode parent = node.getParent();
+			boolean allowInstrumentation = isStatement && !isBlock;
+			
+			// Special case: switch.
+			allowInstrumentation &= !(node instanceof SwitchCase);
+			
+			// Special case: for
+			if (parent instanceof ForInStatement) {
+				ForInStatement forInStatement = (ForInStatement) parent;
+				allowInstrumentation &= node == forInStatement.getBodyChild();
+			}
+			
+			return allowInstrumentation;
 		}
 
 		@Override
@@ -116,7 +131,7 @@ public class JSODDSupport {
 			if (node instanceof JavaScriptUnit) {
 				unit = null;
 			}
-
+			
 			if (node instanceof FunctionDeclaration) {
 				unnest = true;
 			}
@@ -125,7 +140,6 @@ public class JSODDSupport {
 				statementStack.pop();
 			}
 			if (node instanceof Block) {
-				//allowInstrumentation = false;
 				unnest = true;
 			}
 
@@ -134,14 +148,18 @@ public class JSODDSupport {
 			}
 
 			if (currentScope != startScope) {
-				// It's ok to overwrite the previous localvariables if on the same line.
+				// It's ok to overwrite the previous localvariables if on the
+				// same line.
 				localVariables.put(line, currentScope);
 			}
 		}
 
-		public void rewrite(long fileId, String source, Writer output, NavigableMap<Integer, LocalVariableScope> scopeMap) throws IOException {
+		public void rewrite(long fileId, String source, Writer output,
+				NavigableMap<Integer, LocalVariableScope> scopeMap)
+				throws IOException {
 			// TODO: I guess there is some better AST rewrite methods around.
-			// TODO: Blockless statements that now should be blocks, such as single line 'if's
+			// TODO: Blockless statements that now should be blocks, such as
+			// single line 'if's
 			String[] lineByLineSource = source.split("\\n");
 			StringBuffer result = new StringBuffer();
 			int lineNo = 1;
@@ -152,16 +170,25 @@ public class JSODDSupport {
 					col = Math.min(col, line.length());
 					String prefix = line.substring(0, col);
 					String suffix = line.substring(col);
-					Entry<Integer, LocalVariableScope> scope = localVariables.floorEntry(lineNo);
+					Entry<Integer, LocalVariableScope> scope = localVariables
+							.floorEntry(lineNo);
 					String scopeDesc = "";
 					if (scope != null) {
-						scopeDesc = "/*" + scope.getValue().getLocalVariables() + "*/";
+						scopeDesc = "/*" + scope.getValue().getLocalVariables()
+								+ "*/";
 					}
 					// TODO: Faster check here!
-					String prefixAndNewLine = prefix.trim().length() == 0 ? "" : (prefix + "\n");
-					newLine = prefixAndNewLine +
-						scopeDesc + " MoSyncDebugProtocol.updatePosition(" + fileId + "," + lineNo + "," + "false,function(____eval) {return eval(____eval);});" +
-						"\n" + suffix;
+					String prefixAndNewLine = prefix.trim().length() == 0 ? ""
+							: (prefix + "\n");
+					newLine = prefixAndNewLine
+							+ scopeDesc
+							+ " MoSyncDebugProtocol.updatePosition("
+							+ fileId
+							+ ","
+							+ lineNo
+							+ ","
+							+ "false,function(____eval) {return eval(____eval);});"
+							+ "\n" + suffix;
 				}
 
 				result.append(newLine);
@@ -174,39 +201,83 @@ public class JSODDSupport {
 
 	private ASTParser parser;
 
-	private final HashMap<IPath, Long> fileIds = new HashMap<IPath, Long>();
-	private final HashMap<Long, IPath> reverseFileIds = new HashMap<Long, IPath>();
+	private HashMap<IPath, Long> fileIds = null;
+	private TreeMap<Long, IPath> reverseFileIds = new TreeMap<Long, IPath>();
 	private final HashMap<Long, NavigableMap<Integer, LocalVariableScope>> scopeMaps = new HashMap<Long, NavigableMap<Integer, LocalVariableScope>>();
 	private long currentFileId = 0;
 
-	public void init() {
+	private IProject project;
+
+	public JSODDSupport(IProject project) {
+		this.project = project;
+		applyDiff(null);
 		parser = ASTParser.newParser(AST.JLS3);
 	}
 
-	public void rewrite(IPath file, Writer output) throws IOException {
-		if (!isValidJavaScriptFile(file)) {
-			return;
+	public boolean applyDiff(IFileTreeDiff diff) {
+		final boolean[] result = new boolean[1];
+		if (diff == null) {
+			try {
+				project.accept(new IResourceVisitor() {
+					@Override
+					public boolean visit(IResource resource)
+							throws CoreException {
+						IPath location = resource.getLocation();
+						result[0] |= (fileIds == null || fileIds.get(location) == null);
+						assignFileId(location);
+						return true;
+					}
+				});
+			} catch (CoreException e) {
+				// Bah. Just ignore.
+				CoreMoSyncPlugin.getDefault().log(e);
+			}
+		} else {
+			List<IPath> added = diff.getAdded();
+			for (IPath path : added) {
+				result[0] |= (fileIds == null || fileIds.get(path) == null);
+				assignFileId(path);
+			}
 		}
-		init();
-		File absoluteFile = ResourcesPlugin.getWorkspace().getRoot().findMember(file).getLocation().toFile();
-		String source = Util.readFile(absoluteFile.getAbsolutePath());
-		parser.setSource(source.toCharArray());
-		ASTNode ast = parser.createAST(new NullProgressMonitor());
-		DebugRewriteOperationVisitor visitor = new DebugRewriteOperationVisitor();
-		ast.accept(visitor);
-		long fileId = getFileId(file);
-		TreeMap<Integer, LocalVariableScope> scopeMap = new TreeMap<Integer, LocalVariableScope>();
-		visitor.rewrite(fileId, source, output, scopeMap);
-		scopeMaps.put(fileId, scopeMap);
+		return result[0];
+	}
+
+	public void rewrite(IPath file, Writer output) throws CoreException {
+		try {
+			if (!isValidJavaScriptFile(file)) {
+				return;
+			}
+			File absoluteFile = ResourcesPlugin.getWorkspace().getRoot()
+					.findMember(file).getLocation().toFile();
+			String source = Util.readFile(absoluteFile.getAbsolutePath());
+			parser.setSource(source.toCharArray());
+			ASTNode ast = parser.createAST(new NullProgressMonitor());
+			DebugRewriteOperationVisitor visitor = new DebugRewriteOperationVisitor();
+			ast.accept(visitor);
+			long fileId = assignFileId(file);
+			TreeMap<Integer, LocalVariableScope> scopeMap = new TreeMap<Integer, LocalVariableScope>();
+			visitor.rewrite(fileId, source, output, scopeMap);
+			scopeMaps.put(fileId, scopeMap);
+		} catch (Exception e) {
+			throw new CoreException(new Status(IStatus.ERROR,
+					Html5Plugin.PLUGIN_ID, e.getMessage(), e));
+		}
 	}
 
 	public static boolean isValidJavaScriptFile(IPath file) {
 		// TODO: Use content descriptors!?
-		return file != null && ("js".equalsIgnoreCase(file.getFileExtension()) ||
-		 "html".equalsIgnoreCase(file.getFileExtension()));
+		return file != null
+				&& ("js".equalsIgnoreCase(file.getFileExtension()) || "html"
+						.equalsIgnoreCase(file.getFileExtension()));
 	}
 
-	public long getFileId(IPath file) {
+	private long assignFileId(IPath file) {
+		if (!isValidJavaScriptFile(file)) {
+			return -1;
+		}
+		if (fileIds == null) {
+			fileIds = new HashMap<IPath, Long>();
+		}
 		Long fileId = fileIds.get(file);
 		if (fileId == null) {
 			fileId = currentFileId;
@@ -218,14 +289,21 @@ public class JSODDSupport {
 		return fileId;
 	}
 
-	public IPath getFile(long fileId) {
+	private IPath getFile(long fileId) {
 		return reverseFileIds.get(fileId);
 	}
 
-	public LocalVariableScope getScope(long fileId, int lineNo) {
-		NavigableMap<Integer, LocalVariableScope> scopeMap = scopeMaps.get(fileId);
+	public LocalVariableScope getScope(IPath file, int lineNo) {
+		Long fileId = fileIds.get(file);
+		if (fileId == null) {
+			return null;
+		}
+
+		NavigableMap<Integer, LocalVariableScope> scopeMap = scopeMaps
+				.get(fileId);
 		if (scopeMap != null) {
-			Entry<Integer, LocalVariableScope> scope = scopeMap.floorEntry(lineNo);
+			Entry<Integer, LocalVariableScope> scope = scopeMap
+					.floorEntry(lineNo);
 			if (scope != null) {
 				return scope.getValue();
 			}
@@ -234,17 +312,37 @@ public class JSODDSupport {
 		return LocalVariableScope.EMPTY;
 	}
 
-	public void generateBoilerplate(IPropertyOwner projectProperties, Writer boilerplateOutput) throws IOException {
-		Template template = new Template(getClass().getResource("/templates/jsoddsupport.template"));
+	public void generateBoilerplate(IPropertyOwner projectProperties,
+			Writer boilerplateOutput) throws CoreException {
+		Template template = new Template(getClass().getResource(
+				"/templates/jsoddsupport.template"));
 		// TODO! Use Reload instead!
-		HashMap<String, String> properties = new HashMap<String, String>(projectProperties.getProperties());
+		HashMap<String, String> properties = new HashMap<String, String>(
+				projectProperties.getProperties());
 		if (!properties.containsKey("SERVER_HOST")) {
-			properties.put("SERVER_HOST", "192.168.1.64");
+			properties.put("SERVER_HOST", "192.168.1.68");
 		}
 		if (!properties.containsKey("SERVER_PORT")) {
 			properties.put("SERVER_PORT", "8511");
 		}
-		String contents = template.resolve(properties);
-		boilerplateOutput.write(contents);
+		properties.put("INIT_FILE_IDS", generateFileIdInitCode());
+		try {
+			String contents = template.resolve(properties);
+			boilerplateOutput.write(contents);
+		} catch (IOException e) {
+			throw new CoreException(new Status(IStatus.ERROR,
+					Html5Plugin.PLUGIN_ID, e.getMessage(), e));
+		}
+	}
+
+	private String generateFileIdInitCode() {
+		StringBuffer result = new StringBuffer();
+		for (Map.Entry<Long, IPath> entry : reverseFileIds.entrySet()) {
+			result.append("idToFile[" + entry.getKey() + "]=\""
+					+ entry.getValue().toPortableString() + "\";\n");
+			result.append("fileToId[\"" + entry.getValue().toPortableString() + "\"]="
+					+ entry.getKey() + ";\n");
+		}
+		return result.toString();
 	}
 }

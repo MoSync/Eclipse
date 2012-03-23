@@ -115,7 +115,8 @@ public class JSODDDebugTarget extends DebugElement implements IDebugTarget, IDeb
 	public void resume() throws DebugException {
 		if (canResume()) {
 			suspended = false;
-			process.getReloadServer().resume();
+			throw new UnsupportedOperationException("TODO!");
+			//process.getReloadServer().resume();
 		}
 	}
 

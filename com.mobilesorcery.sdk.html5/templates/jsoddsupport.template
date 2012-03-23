@@ -6,8 +6,13 @@ window.MoSyncDebugProtocol = new (function() {
     var breakpoints = {};
     var shouldBreak = function() { return false; };
     var asyncXHR = null;
-    var lastFile = '';
+    var lastFileId = -1;
     var lastLine = '';
+    
+    var idToFile = [];
+    var fileToId = {};
+    
+    var sessionId = null;
     
     var currentOID = 0;
     
@@ -57,6 +62,9 @@ window.MoSyncDebugProtocol = new (function() {
             var req = new XMLHttpRequest();
             req.open('POST', serverUrl + '/mobile' + path, false);
             req.setRequestHeader('Content-Type', 'application/json');
+            if (sessionId != null) {
+            	payload.sessionId = sessionId;
+            }
             var json = JSON.stringify(payload)
             req.send(json);
             return safeJSONParse(req.responseText);
@@ -96,10 +104,11 @@ window.MoSyncDebugProtocol = new (function() {
                 cmd.data.forEach(function(bp) {
                     var file = bp[0];
                     var line = bp[1];
-                    if (!breakpoints[file]) {
-                        breakpoints[file] = {};
+                    var fileId = fileToId[file];
+                    if (!breakpoints[fileId]) {
+                        breakpoints[fileId] = {};
                     }
-                    breakpoints[file][line] = (cmd.command == 'set-breakpoints');
+                    breakpoints[fileId][line] = (cmd.command == 'set-breakpoints');
                 });
                 return true;
             
@@ -165,24 +174,26 @@ window.MoSyncDebugProtocol = new (function() {
     }
     
     this.init = function() {
+    	%INIT_FILE_IDS%
         replaceConsole();
         var cmd = sendToServer('/init', {
             command: 'mobile-connected'
         });
         if (cmd) {
-            processCommand(cmd)
+        	sessionId = cmd.sessionId;
+            processCommand(cmd);
         }
         listenToServer();
     };
     
-    this.updatePosition = function(file, line, isDebuggerStatement, evalScopeFunc) {
+    this.updatePosition = function(fileId, line, isDebuggerStatement, evalScopeFunc) {
         /* Webkit's exceptions don't contain any useful file and line data,
            so we keep track of this manually for exception reporting purposes. */
-        lastFile = file;
+        lastFileId = fileId;
         lastLine = line;
         
         while (true) {
-            var isBreakpoint = (breakpoints[file] && breakpoints[file][line]) || /* explicit breakpoint? */
+            var isBreakpoint = (breakpoints[fileId] && breakpoints[fileId][line]) || /* explicit breakpoint? */
                                isDebuggerStatement ||                            /* debugger; statement? */
                                shouldBreak(stackDepth);                          /* step (in|over|out) or break-on-next? */
             
@@ -191,6 +202,7 @@ window.MoSyncDebugProtocol = new (function() {
             }
             
             dropCommandConnection();
+            var file = idToFile[fileId];
             var cmd = sendToServer('/breakpoint', {
                 command: 'report-breakpoint',
                 file: file,
@@ -215,6 +227,7 @@ window.MoSyncDebugProtocol = new (function() {
     };
     
     this.reportException = function(e) {
+    	var lastFile = idToFile[lastFileId];
         sendToServer('/console', {
             command: 'report-exception',
             message: e.toString(),

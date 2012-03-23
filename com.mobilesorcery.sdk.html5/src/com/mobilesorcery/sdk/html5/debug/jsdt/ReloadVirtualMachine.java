@@ -1,20 +1,27 @@
 package com.mobilesorcery.sdk.html5.debug.jsdt;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.jsdi.BooleanValue;
+import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.NullValue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.NumberValue;
+import org.eclipse.wst.jsdt.debug.core.jsdi.ScriptReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.StringValue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.UndefinedValue;
@@ -29,6 +36,8 @@ import org.json.simple.JSONObject;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
+import com.mobilesorcery.sdk.html5.debug.LocalVariableScope;
 import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
 import com.mobilesorcery.sdk.html5.live.LiveServer;
 
@@ -40,6 +49,8 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	private final ReloadEventQueue eventQueue;
 	private final NullValue nullValue;
 	private final ReloadUndefinedValue undefValue;
+	private int currentSessionId = LiveServer.NO_SESSION;
+	private IProject project;
 
 	public ReloadVirtualMachine(int port) throws Exception {
 		// TODO: PORT
@@ -53,16 +64,17 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		undefValue = new ReloadUndefinedValue(this);
 
 		server.setListener(this);
-		server.startServer();
+		server.startServer(this);
+		server.registerVM(this);
 	}
-
-	public void start() throws Exception {
-		server.startServer();
+	
+	public void setCurrentSessionId(int sessionId) {
+		this.currentSessionId = sessionId;
 	}
 
 	@Override
 	public void resume() {
-		server.resume();
+		server.resume(currentSessionId);
 	}
 
 	@Override
@@ -73,7 +85,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	@Override
 	public void terminate() {
 		try {
-			server.stopServer();
+			server.stopServer(this);
 		} catch (Exception e) {
 			CoreMoSyncPlugin.getDefault().log(e);
 		}
@@ -102,21 +114,19 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	@Override
 	public List allScripts() {
 		IBreakpoint[] bps = DebugPlugin.getDefault().getBreakpointManager().getBreakpoints(JavaScriptDebugModel.MODEL_ID);
-		HashSet<String> scriptPaths = new HashSet<String>();
+		HashSet<IFile> scriptPaths = new HashSet<IFile>();
 		for (IBreakpoint bp : bps) {
 			if (bp instanceof IJavaScriptLineBreakpoint) {
 				IJavaScriptLineBreakpoint lineBp = (IJavaScriptLineBreakpoint) bp;
-				try {
-					scriptPaths.add(lineBp.getScriptPath());
-				} catch (CoreException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				IResource resource = lineBp.getMarker().getResource();
+				if (resource.getType() == IResource.FILE) {
+					scriptPaths.add((IFile) resource);
 				}
 			}
 		}
 		List<SimpleScriptReference> refs = new ArrayList<SimpleScriptReference>();
-		for (String scriptPath : scriptPaths) {
-			SimpleScriptReference ref = new SimpleScriptReference(this, new Path(scriptPath));
+		for (IFile scriptPath : scriptPaths) {
+			SimpleScriptReference ref = new SimpleScriptReference(this, scriptPath);
 			refs.add(ref);
 		}
 		return refs;
@@ -163,12 +173,11 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	}
 
 	public String evaluate(String expression) throws InterruptedException, TimeoutException {
-		return server.evaluate(expression);
+		return server.evaluate(currentSessionId, expression);
 	}
 
 	@Override
 	public void received(String command, JSONObject json) {
-		System.err.println("VM RECV " + command + ", " + json);
 		// MAIN THREAD
 		ReloadThreadReference thread = (ReloadThreadReference) threads.get(0);
 		thread.suspend(true);
@@ -178,9 +187,31 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 			ReloadStackFrame frame = new ReloadStackFrame(this, json, i);
 			frames[i] = frame;
 		}
+		if (frames.length == 0) {
+			frames = new ReloadStackFrame[1];
+			frames[0] = new ReloadStackFrame(this, json, -1);
+		}
 		thread.setFrames(frames);
 		suspend();
 		eventQueue.received(command, json);
+	}
+
+	public LocalVariableScope getLocalVariableScope(Location location) {
+		// TODO: Faster?
+		ScriptReference ref = location.scriptReference();
+		if (ref instanceof SimpleScriptReference) {
+			IFile file = ((SimpleScriptReference) ref).getFile();
+			JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(file.getProject());
+			LocalVariableScope scope = jsoddSupport.getScope(file.getLocation(), location.lineNumber());
+			if (scope != null) {
+				return scope;
+			}
+		}
+		return null;
+	}
+
+	public int getCurrentSessionId() {
+		return currentSessionId;
 	}
 
 }

@@ -171,7 +171,7 @@ public class BuildState implements IBuildState {
     public BuildState(MoSyncProject project, IBuildVariant variant) {
         this.project = project;
         this.variant = variant;
-        IPath metaDataPath = MoSyncBuilder.getMetaDataPath(project, variant);
+        IPath metaDataPath = getLocation();
         IPath buildStatePath = metaDataPath.append(".buildstate");
         buildStateFile = buildStatePath.toFile();
         clear();
@@ -515,5 +515,10 @@ public class BuildState implements IBuildState {
     public void updateBuildVariant(IBuildVariant variant) {
         this.variant = variant;
     }
+
+	@Override
+	public IPath getLocation() {
+		return MoSyncBuilder.getMetaDataPath(project, variant);
+	}
 
 }

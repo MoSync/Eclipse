@@ -1,13 +1,12 @@
 package com.mobilesorcery.sdk.html5.debug.jsdt;
 
-import java.net.URI;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.EventQueue;
@@ -55,10 +54,10 @@ public class ReloadEventQueue implements EventQueue {
 		if ("report-breakpoint".equals(commandName)) {
 			// Breakpoint!
 			ReloadThreadReference thread = (ReloadThreadReference) vm.allThreads().get(0);
-			Long fileId = (Long) command.get("file");
+			String file = (String) command.get("file");
 			Long line = (Long) command.get("line");
-			if (fileId != null && line != null) {
-				IJavaScriptLineBreakpoint bp = LiveServer.findBreakPoint(fileId, line);
+			if (file != null && line != null) {
+				IJavaScriptLineBreakpoint bp = LiveServer.findBreakPoint(new Path(file), line);
 				for (Object bpRequestObj : bpRequests) {
 					ReloadBreakpointRequest bpRequest = (ReloadBreakpointRequest) bpRequestObj;
 					Location location = bpRequest.location();
@@ -76,14 +75,14 @@ public class ReloadEventQueue implements EventQueue {
 	}
 
 	private boolean sameLocation(Location location, IJavaScriptLineBreakpoint bp) {
-		if (bp == null) {
+		if (bp == null || !(location instanceof SimpleLocation)) {
 			return false;
 		}
 		try {
 			if (bp.getLineNumber() == location.lineNumber()) {
-				URI uri1 = location.scriptReference().sourceURI();
-				URI uri2 = new Path(bp.getScriptPath()).toFile().toURI();
-				return Util.equals(uri1, uri2);
+				IPath path1 = ((SimpleScriptReference) location.scriptReference()).getFile().getFullPath();
+				IPath path2 = new Path(bp.getScriptPath());
+				return Util.equals(path1, path2);
 			}
 		} catch (CoreException e) {
 			// TODO Auto-generated catch block

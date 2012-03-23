@@ -23,6 +23,15 @@ public class ReloadProcess extends PlatformObject implements IProcess {
 		this.name = name;
 	}
 
+	public void start() throws DebugException {
+		try {
+			Html5Plugin.getDefault().getReloadServer().startServer(this);
+		} catch (CoreException e) {
+			terminated = true;
+			throw new DebugException(e.getStatus());
+		}
+	}
+
 	@Override
 	public boolean canTerminate() {
 		return !isTerminated();
@@ -36,7 +45,7 @@ public class ReloadProcess extends PlatformObject implements IProcess {
 	@Override
 	public void terminate() throws DebugException {
 		try {
-			Html5Plugin.getDefault().stopReloadServer();
+			Html5Plugin.getDefault().getReloadServer().stopServer(this);
 		} catch (CoreException e) {
 			throw new DebugException(e.getStatus());
 		} finally {

@@ -1,19 +1,21 @@
 package com.mobilesorcery.sdk.html5.debug.jsdt;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
-import org.eclipse.wst.jsdt.debug.core.jsdi.connect.Connector;
 import org.eclipse.wst.jsdt.debug.core.jsdi.connect.ListeningConnector;
-
-import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 
 public class ReloadListeningConnector implements ListeningConnector {
 
+	private static ReloadListeningConnector DEFAULT = null;
+
 	public ReloadListeningConnector() {
-		// TODO Auto-generated constructor stub
+		if (DEFAULT == null) {
+			DEFAULT = this;
+		}
 	}
 
 	@Override
@@ -41,15 +43,26 @@ public class ReloadListeningConnector implements ListeningConnector {
 	@Override
 	public VirtualMachine accept(Map arguments) throws IOException {
 		int port = 8511;
-		try {
-			port = Integer.parseInt((String) arguments.get("port"));
-		} catch (Exception e) {
-			//
+		Object portStr = arguments.get("port");
+		if (portStr != null) {
+			try {
+				port = Integer.parseInt((String) arguments.get("port"));
+			} catch (Exception e) {
+				throw new IOException(MessageFormat.format("Invalid port number: {0}", port));
+			}
 		}
+
 		try {
 			return new ReloadVirtualMachine(port);
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
+	}
+
+	public static ReloadListeningConnector getDefault() {
+		if (DEFAULT == null) {
+			new ReloadListeningConnector();
+		}
+		return DEFAULT;
 	}
 }

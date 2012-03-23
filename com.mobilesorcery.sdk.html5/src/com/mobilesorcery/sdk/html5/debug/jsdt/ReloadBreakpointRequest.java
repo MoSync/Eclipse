@@ -1,11 +1,15 @@
 package com.mobilesorcery.sdk.html5.debug.jsdt;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
+import org.eclipse.wst.jsdt.debug.core.jsdi.ScriptReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.BreakpointRequest;
 
+import com.mobilesorcery.sdk.html5.Html5Plugin;
 
-public class ReloadBreakpointRequest extends ReloadEventRequest implements BreakpointRequest {
+public class ReloadBreakpointRequest extends ReloadEventRequest implements
+		BreakpointRequest {
 
 	private final Location location;
 	private ThreadReference thread;
@@ -37,4 +41,15 @@ public class ReloadBreakpointRequest extends ReloadEventRequest implements Break
 		this.hitcount = hitcount;
 	}
 
+	public synchronized void setEnabled(boolean enabled) {
+		if (enabled != isEnabled()) {
+			super.setEnabled(enabled);
+			
+			ScriptReference scriptRef = location.scriptReference();
+			if (scriptRef instanceof SimpleScriptReference) {
+				IFile file = ((SimpleScriptReference) scriptRef).getFile();
+				Html5Plugin.getDefault().getReloadServer().setLineBreakpoint(enabled, file, location.lineNumber());	
+			}
+		}
+	}
 }

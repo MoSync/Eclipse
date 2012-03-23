@@ -20,6 +20,13 @@
             id="com.mobilesorcery.html5.reload.launchconfigurationtype"
             modes="run,debug"
             name="Reload App"/>
+            <launchConfigurationType
+            delegate="com.mobilesorcery.sdk.html5.debug.JSODDLaunchConfigurationDelegate"
+            id="com.mobilesorcery.html5.jsodd.launchconfigurationtype"
+            modes="run,debug"
+            name="JavaScript On-Device Debug"
+            sourceLocatorId="org.eclipse.wst.jsdt.debug.core.sourceLocator"
+            sourcePathComputerId="org.eclipse.wst.jsdt.debug.core.source.path.computer"/>
    </extension>
 
      <extension
@@ -28,6 +35,10 @@
             class="com.mobilesorcery.sdk.html5.debug.ReloadLaunchConfigurationTabGroup"
             id="com.mobilesorcery.reload.launchconfigurationtabgroup"
             type="com.mobilesorcery.html5.reload.launchconfigurationtype"/>
+            <launchConfigurationTabGroup
+            class="com.mobilesorcery.sdk.html5.debug.JSODDLaunchConfigurationTabGroup"
+            id="com.mobilesorcery.jsodd.launchconfigurationtabgroup"
+            type="com.mobilesorcery.html5.jsodd.launchconfigurationtype"/>
      </extension>
 
       <extension
