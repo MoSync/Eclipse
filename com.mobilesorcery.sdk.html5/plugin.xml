@@ -9,4 +9,8 @@
       </JsGlobalScopeContainerInitializer>
    </extension>
 -->
+<extension point="org.eclipse.ui.startup">
+  <startup
+        class="com.mobilesorcery.sdk.html5.EarlyStartup"/>
+</extension>
 </plugin>

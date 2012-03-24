@@ -205,7 +205,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 
 		@Override
 		public void run() {
-			UIUtils.awaitWorkbenchStartup(null);
+			MosyncUIPlugin.getDefault().awaitWorkbenchStartup(null);
 
 			String userKey = MoSyncTool.getDefault().getProperty(
 					MoSyncTool.USER_HASH_PROP_2);
