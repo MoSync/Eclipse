@@ -8,11 +8,15 @@ import org.eclipse.core.runtime.IPath;
 import com.mobilesorcery.sdk.core.AbstractTool;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.Version;
 
 public class IPhoneSimulator extends AbstractTool {
 
-	public static IPhoneSimulator getDefault() {
-		return new IPhoneSimulator(MoSyncTool.getDefault().getBinary("iphonesim"));
+	public synchronized static IPhoneSimulator createDefault() {
+		XCodeBuild.refreshDefault();
+		Version xcodeVersion = XCodeBuild.getDefault().getVersion();
+		String binary = new Version("4.3").isNewer(xcodeVersion) ? "iphonesim42" : "iphonesim";
+		return new IPhoneSimulator(MoSyncTool.getDefault().getBinary(binary));
 	}
 
 	protected IPhoneSimulator(IPath toolPath) {

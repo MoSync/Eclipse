@@ -1,8 +1,8 @@
 package com.mobilesorcery.sdk.builder.iphoneos;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.CoreException;
@@ -13,26 +13,48 @@ import org.eclipse.core.runtime.Status;
 import com.mobilesorcery.sdk.core.AbstractTool;
 import com.mobilesorcery.sdk.core.CollectingLineHandler;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
-import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.LineReader.LineAdapter;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
 
 public class XCodeBuild extends AbstractTool {
 
-	private final static Pattern XCODE_VERSION_PATTERN = Pattern.compile(".*(\\d.*)");
+	private static class XCodeBuildHandler extends LineAdapter {
+		private final static Pattern XCODE_VERSION_PATTERN = Pattern
+				.compile(".*?(\\d.*)");
+
+		Version version = null;
+
+		@Override
+		public void newLine(String line) {
+			if (version == null || !version.isValid()) {
+				Matcher matcher = XCODE_VERSION_PATTERN.matcher(line);
+				if (matcher.matches()) {
+					String versionStr = matcher.group(1);
+					version = new Version(versionStr);
+				}
+			}
+		}
+
+		public Version getVersion() {
+			return version;
+		}
+
+	}
 
 	public static final int IOS_SDKS = 1 << 0;
 	public static final int IOS_SIMULATOR_SDKS = 1 << 1;
 	public static final int ALL_SDKS = IOS_SDKS | IOS_SIMULATOR_SDKS;
 
-
 	private static XCodeBuild instance = null;
 
 	private final String pathToCommand;
 
-	private final boolean canExecute;
+	private boolean canExecute = false;
 
 	private ArrayList<SDK> cachedSDKs;
+
+	private Version version;
 
 	/**
 	 * Returns the xcodebuild tool with the default path (ie it is expected to
@@ -43,24 +65,39 @@ public class XCodeBuild extends AbstractTool {
 	public static synchronized XCodeBuild getDefault() {
 		if (instance == null) {
 			String xcodeBuildCommand = System.getProperty("XCODEBUILD_COMMAND");
-			instance = new XCodeBuild(xcodeBuildCommand == null ? "xcodebuild" : xcodeBuildCommand);
+			instance = new XCodeBuild(xcodeBuildCommand == null ? "xcodebuild"
+					: xcodeBuildCommand);
 		}
 		return instance;
+	}
+
+	public static void refreshDefault() {
+		instance = null;
+		getDefault();
 	}
 
 	private XCodeBuild(String pathToCommand) {
 		super(null);
 		this.pathToCommand = pathToCommand;
-		this.canExecute = isMac() && canExecute();
+		init();
+	}
+
+	private void init() {
+		if (isMac()) {
+			try {
+				XCodeBuildHandler handler = new XCodeBuildHandler();
+				execute(new String[] { pathToCommand, "-version" }, handler,
+						handler, false);
+				this.version = handler.getVersion();
+				this.canExecute = true;
+			} catch (CoreException e) {
+				// Cannot execute.
+			}
+		}
 	}
 
 	public boolean canExecute() {
-		try {
-			execute(new String[] { pathToCommand, "-version" }, null, null, false);
-			return true;
-		} catch (CoreException e) {
-			return false;
-		}
+		return canExecute;
 	}
 
 	/**
@@ -106,8 +143,10 @@ public class XCodeBuild extends AbstractTool {
 	/**
 	 * Returns the list of available SDKs, or <code>null</code> if unable to
 	 * extract them.
-	 * @param sdkTypes A list of OR'ed sdk types.
-	 * An sdk type is either {@link #IOS_SDKS} or {@link #IOS_SIMULATOR_SDKS}.
+	 *
+	 * @param sdkTypes
+	 *            A list of OR'ed sdk types. An sdk type is either
+	 *            {@link #IOS_SDKS} or {@link #IOS_SIMULATOR_SDKS}.
 	 * @return The list of matching SDKs
 	 */
 	public synchronized List<SDK> listSDKs(int sdkTypes) {
@@ -115,7 +154,8 @@ public class XCodeBuild extends AbstractTool {
 			cachedSDKs = new ArrayList<SDK>();
 			CollectingLineHandler lh = new CollectingLineHandler();
 			try {
-				execute(new String[] { pathToCommand, "-showsdks" }, lh, lh, false);
+				execute(new String[] { pathToCommand, "-showsdks" }, lh, lh,
+						false);
 				List<String> sdksOutput = lh.getLines();
 				cachedSDKs.addAll(extractSDKs(sdksOutput));
 			} catch (CoreException e) {
@@ -158,7 +198,8 @@ public class XCodeBuild extends AbstractTool {
 	/**
 	 * Returns a default SDK for the given SDK type.
 	 *
-	 * @param sdkType Either {@link #IOS_SDKS} or {@link #IOS_SIMULATOR_SDKS}.
+	 * @param sdkType
+	 *            Either {@link #IOS_SDKS} or {@link #IOS_SIMULATOR_SDKS}.
 	 * @return
 	 */
 	public SDK getDefaultSDK(int sdkType) {
@@ -177,7 +218,9 @@ public class XCodeBuild extends AbstractTool {
 
 	/**
 	 * Returns the SDK with a specific id
-	 * @param sdkId Returns the first matching SDK with id <code>sdkId</code>.
+	 *
+	 * @param sdkId
+	 *            Returns the first matching SDK with id <code>sdkId</code>.
 	 * @return <code>null</code> if no match was found
 	 */
 	public SDK getSDK(String sdkId) {
@@ -196,6 +239,10 @@ public class XCodeBuild extends AbstractTool {
 
 	public void refresh() {
 		cachedSDKs = null;
+	}
+
+	public Version getVersion() {
+		return version;
 	}
 
 }
