@@ -147,9 +147,6 @@ public class ReloadStackFrame implements StackFrame {
 						}
 					}
 					boolean isArray = hasArrayProperty; // && hasLengthProperty;
-					if (isArray) {
-						System.err.println("ARRAY " + name);
-					}
 					ReloadObjectReference ref = isArray ? new ReloadArrayReference(vm, repr, oid) : new ReloadObjectReference(vm, repr, className, oid);
 					for (ReloadProperty generatedProperty : generatedProperties) {
 						ref.addProperty(generatedProperty);

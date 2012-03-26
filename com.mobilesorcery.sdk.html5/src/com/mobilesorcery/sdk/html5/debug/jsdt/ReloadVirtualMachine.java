@@ -67,7 +67,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		server.startServer(this);
 		server.registerVM(this);
 	}
-	
+
 	public void setCurrentSessionId(int sessionId) {
 		this.currentSessionId = sessionId;
 	}
@@ -180,9 +180,12 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	@Override
 	public void received(String command, JSONObject json) {
 		// TODO!!! Session id - now all will suspend.
-		
+
 		// MAIN THREAD
 		ReloadThreadReference thread = (ReloadThreadReference) threads.get(0);
+		if (thread.isSuspended()) {
+			return;
+		}
 		thread.suspend(true);
 		JSONArray array = (JSONArray) json.get("stack");
 		ReloadStackFrame[] frames = new ReloadStackFrame[array.size()];

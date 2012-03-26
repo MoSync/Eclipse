@@ -94,7 +94,6 @@ public class ReloadThreadReference implements ThreadReference {
 	}
 
 	public void setFrames(StackFrame[] frames) {
-		System.err.println("GOT STACK FRAMES!" + Arrays.asList(frames));
 		this.frames = Arrays.asList(frames);
 	}
 

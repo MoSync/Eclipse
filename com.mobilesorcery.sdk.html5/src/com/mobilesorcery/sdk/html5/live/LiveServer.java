@@ -145,6 +145,16 @@ public class LiveServer {
 			return result;
 		}
 
+
+		private void interruptWaitingThread(int queueType, int sessionId) {
+			interrupt(queueType, sessionId);
+		}
+
+		public void interrupt(int queueType, int sessionId) {
+			getQueue(queueType, sessionId).offer(new DebuggerMessage(POISON));
+			//safeTake(queueType, sessionId);
+		}
+
 		// Offers to all queues -- first come, first serve.
 		public void offer(int sessionId, DebuggerMessage queuedExpression) {
 			offer(DEBUG_QUEUE, sessionId, queuedExpression);
@@ -183,8 +193,7 @@ public class LiveServer {
 
 		public void killSession(int sessionId) {
 			synchronized (queueLock) {
-				LinkedBlockingQueue<DebuggerMessage> debugQueue = debugQueues
-						.remove(sessionId);
+				LinkedBlockingQueue<DebuggerMessage> debugQueue = debugQueues.remove(sessionId);
 				LinkedBlockingQueue<DebuggerMessage> incomingQueue = incomingQueues
 						.remove(sessionId);
 				debugQueue.offer(new DebuggerMessage(POISON));
@@ -196,7 +205,7 @@ public class LiveServer {
 
 		private void safeTake(int queueType, int sessionId) {
 			try {
-				take(DEBUG_QUEUE, sessionId);
+				take(queueType, sessionId);
 			} catch (Exception e) {
 				// Ignore.
 			}
@@ -262,7 +271,6 @@ public class LiveServer {
 						"{3}: STARTED {0} REQUEST {1} ON THREAD {2}", req
 								.getMethod(), target, Thread.currentThread()
 								.getName(), new Date().toString());
-				CoreMoSyncPlugin.trace(queues);
 			}
 
 			boolean preflight = "OPTIONS".equals(req.getMethod());
@@ -297,7 +305,6 @@ public class LiveServer {
 						"{3}: FINISHED {0} REQUEST {1} ON THREAD {2}", req
 								.getMethod(), target, Thread.currentThread()
 								.getName(), new Date().toString());
-				CoreMoSyncPlugin.trace(queues);
 			}
 		}
 
@@ -307,16 +314,20 @@ public class LiveServer {
 			if (target.startsWith("/mobile/incoming")) {
 				ReloadVirtualMachine vm = vmsByHost.get(req.getRemoteAddr());
 				int sessionId = vm == null ? NO_SESSION : vm.getCurrentSessionId();
+				queues.interruptWaitingThread(InternalQueues.INCOMING_QUEUE, sessionId);
 				result = pushCommandsToClient(InternalQueues.INCOMING_QUEUE,
-						Integer.toString(sessionId), preflight);
+						sessionId, preflight);
 			} else if ("/mobile/breakpoint".equals(target)) {
 				// RACE CONDITION WILL OCCUR HERE!
 				if (!preflight) {
 					JSONObject command = parseCommand(req);
+					Object sessionIdObj = command.get(SESSION_ID_ATTR);
+					Integer sessionId = sessionIdObj == null ? null : Integer.parseInt(sessionIdObj.toString());
 					notifyListeners(getCommand(command), command);
-					String sessionId =  "" + command.get(SESSION_ID_ATTR);
 					result = pushCommandsToClient(InternalQueues.DEBUG_QUEUE,
 							sessionId, preflight);
+				} else {
+					return new JSONObject();
 				}
 			}
 			return result;
@@ -329,18 +340,16 @@ public class LiveServer {
 		}
 
 		private JSONObject pushCommandsToClient(int queueType,
-				String sessionId, boolean preflight) {
+				Integer session, boolean preflight) {
 			if (preflight) {
-				return null;
+				return new JSONObject();
 			}
 
-			if (sessionId == null) {
+			if (session == null) {
 				return error("Session not initialized");
 			}
 
-			int session = Integer.parseInt(sessionId);
-
-			JSONObject result = null;
+			JSONObject result = newCommand("ping");
 
 			try {
 				ArrayList bps = new ArrayList();
@@ -572,13 +581,10 @@ public class LiveServer {
 	}
 
 	public void newEvalResult(int id, String result) {
-		System.err.println("EVAL " + id + ";" + result);
 		synchronized (messageListeners) {
 			IMessageListener listener = messageListeners.get(id);
 			if (listener != null) {
 				listener.received(id, result);
-			} else {
-				System.err.println("NO LISTENER!!!!");
 			}
 		}
 	}
@@ -590,7 +596,6 @@ public class LiveServer {
 		IMessageListener listener = new IMessageListener() {
 			@Override
 			public void received(int id, Object data) {
-				clearMessageListener(id);
 				result[0] = (String) data;
 				cd.countDown();
 			}
@@ -606,6 +611,7 @@ public class LiveServer {
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 			CoreMoSyncPlugin.trace("EVALUATED {0} AND GOT {1}", id, result[0]);
 		}
+		clearMessageListener(id);
 		return result[0];
 	}
 
@@ -713,9 +719,8 @@ public class LiveServer {
 	public String evaluate(int sessionId, String expression)
 			throws InterruptedException, TimeoutException {
 		DebuggerMessage queuedExpression = new DebuggerMessage(expression);
-		CoreMoSyncPlugin.trace("EVAL (" + sessionId + ")" + queuedExpression);
 		queues.offer(sessionId, queuedExpression);
-		String result = awaitEvalResult(queuedExpression.getMessageId(), 15,
+		String result = awaitEvalResult(queuedExpression.getMessageId(), 5,
 				TimeUnit.SECONDS);
 		return result;
 	}
