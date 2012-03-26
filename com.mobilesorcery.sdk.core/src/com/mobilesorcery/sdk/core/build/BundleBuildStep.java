@@ -1,7 +1,6 @@
 package com.mobilesorcery.sdk.core.build;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,8 +14,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.ui.IMemento;
 
 import com.mobilesorcery.sdk.core.BuildResult;
-import com.mobilesorcery.sdk.core.CommandLineExecutor;
-import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
@@ -24,7 +21,6 @@ import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
@@ -152,12 +148,5 @@ public class BundleBuildStep extends CommandLineBuildStep {
 			super.incrementalBuild(project, session, variant, diff, buildResult, monitor);
 		}
 		return CONTINUE;
-	}
-
-	public static void bundle(File inFile, File outFile) throws IOException {
-		CommandLineExecutor executor = new CommandLineExecutor(MoSyncBuilder.CONSOLE_ID);
-		executor.runCommandLine(new String[] { MoSyncTool.getDefault().getBinary("Bundle").toOSString(),
-				"-in", inFile.getAbsolutePath(),
-				"-out", outFile.getAbsolutePath() });
 	}
 }
