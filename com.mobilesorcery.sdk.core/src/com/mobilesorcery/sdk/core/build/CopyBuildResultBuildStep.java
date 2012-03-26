@@ -104,6 +104,7 @@ public class CopyBuildResultBuildStep extends AbstractBuildStep {
 
 	public CopyBuildResultBuildStep(Factory prototype) {
 		this.prototype = prototype;
+		setName(prototype.getName());
 	}
 
 	@Override
