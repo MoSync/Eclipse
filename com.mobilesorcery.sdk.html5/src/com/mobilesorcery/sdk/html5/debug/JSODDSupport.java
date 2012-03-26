@@ -3,6 +3,11 @@ package com.mobilesorcery.sdk.html5.debug;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,16 +107,16 @@ public class JSODDSupport {
 			boolean isBlock = node instanceof Block;
 			ASTNode parent = node.getParent();
 			boolean allowInstrumentation = isStatement && !isBlock;
-			
+
 			// Special case: switch.
 			allowInstrumentation &= !(node instanceof SwitchCase);
-			
+
 			// Special case: for
 			if (parent instanceof ForInStatement) {
 				ForInStatement forInStatement = (ForInStatement) parent;
 				allowInstrumentation &= node == forInStatement.getBodyChild();
 			}
-			
+
 			return allowInstrumentation;
 		}
 
@@ -132,7 +137,7 @@ public class JSODDSupport {
 			if (node instanceof JavaScriptUnit) {
 				unit = null;
 			}
-			
+
 			if (node instanceof FunctionDeclaration) {
 				unnest = true;
 			}
@@ -202,14 +207,14 @@ public class JSODDSupport {
 		}
 	}
 
-	private ASTParser parser;
+	private final ASTParser parser;
 
 	private HashMap<IPath, Long> fileIds = null;
-	private TreeMap<Long, IPath> reverseFileIds = new TreeMap<Long, IPath>();
+	private final TreeMap<Long, IPath> reverseFileIds = new TreeMap<Long, IPath>();
 	private final HashMap<Long, NavigableMap<Integer, LocalVariableScope>> scopeMaps = new HashMap<Long, NavigableMap<Integer, LocalVariableScope>>();
 	private long currentFileId = 0;
 
-	private IProject project;
+	private final IProject project;
 
 	public JSODDSupport(IProject project) {
 		this.project = project;
@@ -313,7 +318,7 @@ public class JSODDSupport {
 				// Gah.
 			}
 		}
-		
+
 		if (scopeMap != null) {
 			Entry<Integer, LocalVariableScope> scope = scopeMap
 					.floorEntry(lineNo);
@@ -333,7 +338,12 @@ public class JSODDSupport {
 		HashMap<String, String> properties = new HashMap<String, String>(
 				projectProperties.getProperties());
 		if (!properties.containsKey("SERVER_HOST")) {
-			properties.put("SERVER_HOST", "192.168.1.68");
+			try {
+				InetAddress localHost = InetAddress.getLocalHost();
+				properties.put("SERVER_HOST", localHost.getHostAddress());
+			} catch (IOException e) {
+				throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, "Could not determine localhost address"));
+			}
 		}
 		if (!properties.containsKey("SERVER_PORT")) {
 			properties.put("SERVER_PORT", "8511");

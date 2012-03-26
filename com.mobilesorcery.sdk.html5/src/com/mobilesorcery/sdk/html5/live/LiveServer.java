@@ -112,7 +112,7 @@ public class LiveServer {
 		private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> incomingQueues = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
 		private final HashMap<Integer, Thread> incomingWaitingThreads = new HashMap<Integer, Thread>();
 
-		private Object queueLock = new Object();
+		private final Object queueLock = new Object();
 
 		public LinkedBlockingQueue<DebuggerMessage> getQueue(int queueType,
 				int sessionId) {
@@ -150,7 +150,7 @@ public class LiveServer {
 			offer(DEBUG_QUEUE, sessionId, queuedExpression);
 			offer(INCOMING_QUEUE, sessionId, queuedExpression);
 		}
-		
+
 		public void offer(int queueType, int sessionId, DebuggerMessage msg) {
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 				CoreMoSyncPlugin.trace("OFFER: Session id {0}, queue {1}: {2}", sessionId, queueType, msg);
@@ -189,7 +189,42 @@ public class LiveServer {
 						.remove(sessionId);
 				debugQueue.offer(new DebuggerMessage(POISON));
 				incomingQueue.offer(new DebuggerMessage(POISON));
+				safeTake(DEBUG_QUEUE, sessionId);
+				safeTake(INCOMING_QUEUE, sessionId);
 			}
+		}
+
+		private void safeTake(int queueType, int sessionId) {
+			try {
+				take(DEBUG_QUEUE, sessionId);
+			} catch (Exception e) {
+				// Ignore.
+			}
+		}
+
+		public void killAllSessions() {
+			synchronized (queueLock) {
+				for (Integer sessionId : debugQueues.keySet()) {
+					killSession(sessionId);
+				}
+			}
+		}
+
+		@Override
+		public String toString() {
+			StringBuffer result = new StringBuffer();
+			synchronized (queueLock) {
+				for (Integer sessionId : debugQueues.keySet()) {
+					result.append(toString(DEBUG_QUEUE, sessionId));
+					result.append("\n");
+					result.append(toString(INCOMING_QUEUE, sessionId));
+				}
+			}
+			return result.toString();
+		}
+
+		private String toString(int queueType, int sessionId) {
+			return getQueue(queueType, sessionId).toString();
 		}
 	}
 
@@ -227,6 +262,7 @@ public class LiveServer {
 						"{3}: STARTED {0} REQUEST {1} ON THREAD {2}", req
 								.getMethod(), target, Thread.currentThread()
 								.getName(), new Date().toString());
+				CoreMoSyncPlugin.trace(queues);
 			}
 
 			boolean preflight = "OPTIONS".equals(req.getMethod());
@@ -261,6 +297,7 @@ public class LiveServer {
 						"{3}: FINISHED {0} REQUEST {1} ON THREAD {2}", req
 								.getMethod(), target, Thread.currentThread()
 								.getName(), new Date().toString());
+				CoreMoSyncPlugin.trace(queues);
 			}
 		}
 
@@ -402,7 +439,6 @@ public class LiveServer {
 							consoleListener.newLine(msg);
 						}
 					} else if ("print-eval-result".equals(getCommand(command))) {
-						String input = "" + command.get("input");
 						String result = "" + command.get("result");
 						int id = ((Long) command.get("id")).intValue();
 						newEvalResult(id, result);
@@ -468,12 +504,12 @@ public class LiveServer {
 
 	private final Object mutex = new Object();
 	private Server server;
-	private CopyOnWriteArrayList<ILiveServerListener> listeners = new CopyOnWriteArrayList<ILiveServerListener>();
-	private CopyOnWriteArrayList<ILineHandler> consoleListeners = new CopyOnWriteArrayList<ILineHandler>();
-	private AtomicInteger sessionId = new AtomicInteger(1);
-	private IdentityHashMap<Object, Object> refs = new IdentityHashMap<Object, Object>();
-	private ArrayList<ReloadVirtualMachine> unassignedVMs = new ArrayList<ReloadVirtualMachine>();
-	private HashMap<String, ReloadVirtualMachine> vmsByHost = new HashMap<String, ReloadVirtualMachine>();
+	private final CopyOnWriteArrayList<ILiveServerListener> listeners = new CopyOnWriteArrayList<ILiveServerListener>();
+	private final CopyOnWriteArrayList<ILineHandler> consoleListeners = new CopyOnWriteArrayList<ILineHandler>();
+	private final AtomicInteger sessionId = new AtomicInteger(1);
+	private final IdentityHashMap<Object, Object> refs = new IdentityHashMap<Object, Object>();
+	private final ArrayList<ReloadVirtualMachine> unassignedVMs = new ArrayList<ReloadVirtualMachine>();
+	private final HashMap<String, ReloadVirtualMachine> vmsByHost = new HashMap<String, ReloadVirtualMachine>();
 
 	public synchronized void startServer(Object ref) throws CoreException {
 		refs.put(ref, true);
@@ -536,10 +572,13 @@ public class LiveServer {
 	}
 
 	public void newEvalResult(int id, String result) {
+		System.err.println("EVAL " + id + ";" + result);
 		synchronized (messageListeners) {
 			IMessageListener listener = messageListeners.get(id);
 			if (listener != null) {
 				listener.received(id, result);
+			} else {
+				System.err.println("NO LISTENER!!!!");
 			}
 		}
 	}
@@ -565,7 +604,7 @@ public class LiveServer {
 			throw new TimeoutException();
 		}
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-			CoreMoSyncPlugin.trace("EVALUATED %d AND GOT %s", id, result[0]);
+			CoreMoSyncPlugin.trace("EVALUATED {0} AND GOT {1}", id, result[0]);
 		}
 		return result[0];
 	}
@@ -573,11 +612,11 @@ public class LiveServer {
 	public void addListener(ILiveServerListener listener) {
 		this.listeners.add(listener);
 	}
-	
+
 	public void removeListener(ILiveServerListener listener) {
 		this.listeners.remove(listener);
 	}
-	
+
 	private void notifyListeners(String commandName, JSONObject command) {
 		for (ILiveServerListener listener : listeners) {
 			listener.received(commandName, command);
@@ -628,6 +667,7 @@ public class LiveServer {
 		if (refs.isEmpty()) {
 			unassignedVMs.clear();
 			vmsByHost.clear();
+			queues.killAllSessions();
 			if (server != null) {
 				try {
 					server.stop();
@@ -675,7 +715,7 @@ public class LiveServer {
 		DebuggerMessage queuedExpression = new DebuggerMessage(expression);
 		CoreMoSyncPlugin.trace("EVAL (" + sessionId + ")" + queuedExpression);
 		queues.offer(sessionId, queuedExpression);
-		String result = awaitEvalResult(queuedExpression.getMessageId(), 3,
+		String result = awaitEvalResult(queuedExpression.getMessageId(), 15,
 				TimeUnit.SECONDS);
 		return result;
 	}

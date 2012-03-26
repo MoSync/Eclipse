@@ -160,7 +160,6 @@ window.MoSyncDebugProtocol = new (function() {
         }  
         sendToServer('/console', {
             command: 'print-eval-result',
-            input: cmd.data,
             result: evalResult,
             id: cmd.id
         });
