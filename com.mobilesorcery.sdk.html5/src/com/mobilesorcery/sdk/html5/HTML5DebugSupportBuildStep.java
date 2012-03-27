@@ -119,7 +119,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 		IFolder inputRoot = wrappedProject.getFolder(inputRootPath);
 		if (inputRoot.exists()) {
 			IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
-			if (PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
+			/*if (PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
 				monitor.beginTask("Instrumenting JavaScript source files", 10);
 				File outputRoot = MoSyncBuilder.getOutputPath(wrappedProject, variant).append(inputRootPath).toFile();
 				// TODO: Efficiency, perhaps?
@@ -131,9 +131,9 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 				// TODO -- would prefer it not to always output there... Since we'll get build problems for sure!
 				BundleBuildStep.bundle(outputRoot, wrappedProject.getLocation().append("Resources/LocalFiles.bin").toFile());
-			} else {
+			} else {*/
 				BundleBuildStep.bundle(inputRoot.getLocation().toFile(), wrappedProject.getLocation().append("Resources/LocalFiles.bin").toFile());
-			}
+			//}
 		}
 		monitor.done();
 		return CONTINUE;
