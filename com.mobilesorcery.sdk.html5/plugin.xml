@@ -13,4 +13,12 @@
   <startup
         class="com.mobilesorcery.sdk.html5.EarlyStartup"/>
 </extension>
+
+      <extension
+            point="com.mobilesorcery.sdk.build.steps">
+         <factory
+               id="com.mobilesorcery.sdk.html5.debugsupport"
+               implementation="com.mobilesorcery.sdk.html5.HTML5DebugSupportBuildStepExtension">
+         </factory>
+      </extension>
 </plugin>
