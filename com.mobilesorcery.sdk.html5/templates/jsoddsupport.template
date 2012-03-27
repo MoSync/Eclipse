@@ -157,8 +157,7 @@ window.MoSyncDebugProtocol = new (function() {
             evalResult = evalScopeFunc(cmd.data);
         } catch (ex) {
             evalResult = 'ERROR: ' + ex.toString();
-        }
-        
+        }  
         sendToServer('/console', {
             command: 'print-eval-result',
             result: evalResult,
@@ -202,17 +201,17 @@ window.MoSyncDebugProtocol = new (function() {
            so we keep track of this manually for exception reporting purposes. */
         lastFileId = fileId;
         lastLine = line;
-        dropCommandConnection();
         
-        while (!done) {
+        while (true) {
             var isBreakpoint = (breakpoints[fileId] && breakpoints[fileId][line]) || /* explicit breakpoint? */
                                isDebuggerStatement ||                            /* debugger; statement? */
                                shouldBreak(stackDepth);                          /* step (in|over|out) or break-on-next? */
             
             if (!isBreakpoint) {
-                break;
+                return;
             }
             
+            dropCommandConnection();
             var file = idToFile[fileId];
             var cmd = sendToServer('/breakpoint', {
                 command: 'report-breakpoint',
@@ -220,9 +219,9 @@ window.MoSyncDebugProtocol = new (function() {
                 line: line,
                 stack: getStack().slice(1)
             });
-
+            listenToServer();
             if (!cmd) {
-                break;
+                return;
             }                
                 
             if (cmd.command == 'eval') {
@@ -231,11 +230,10 @@ window.MoSyncDebugProtocol = new (function() {
             else {
                 var isInternalCommand = processCommand(cmd);
                 if (!isInternalCommand) {
-                    break;
+                    return;
                 }
             }
         }
-        listenToServer();
     };
     
     this.reportException = function(e) {

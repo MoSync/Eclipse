@@ -201,6 +201,7 @@ public class JSODDSupport {
 				result.append('\n');
 				lineNo++;
 			}
+			scopeMap.putAll(localVariables);
 			if (output != null) {
 				output.write(result.toString());
 			}

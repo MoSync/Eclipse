@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.html5.debug.jsdt;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -108,7 +109,7 @@ public class ReloadStackFrame implements StackFrame {
 				"var ____info = {};" +
 				"var ____keys = [];" +
 				"var ____typeOf = typeof(%s);" +
-				"if (____typeOf == \"object\") {" +
+				"if (____typeOf == \"object\" && %s != null) {" +
 				"  if (!%s.____oid) {" +
 				"    MoSyncDebugProtocol.assignOID(%s);" +
 				"  }" +
@@ -117,16 +118,21 @@ public class ReloadStackFrame implements StackFrame {
 				"    ____keys.push(____key);" +
 				"  }" +
 				"  ____info.properties = ____keys;" +
-				"  ____info.class = ____info.constructor ? ____info.constructor.toString() : Null;" +
+				"  ____info.class = ____info.constructor ? ____info.constructor.toString() : null;" +
+				"  ____info.repr = %s.toString();" +
+				"} else if (____typeOf == \"function\") {" +
+				"  ____info.repr = ____typeOf;" +
+				"} else {" +
+				"  ____info.repr = %s;" +
 				"}" +
-				"____info.repr = %s ? %s.toString() : Null; ____info.type = ____typeOf; ____info;"
-				, name, name, name, name, name, name, name);
+				"____info.type = ____typeOf; ____info;"
+				, name, name, name, name, name, name, name, name, name);
 		String metaEvaluation = internalEvaluate(metaExpr);
 		try {
 			if (metaEvaluation != null) {
 				JSONObject metaObject = (JSONObject) PARSER.parse(metaEvaluation);
 				String type = (String) metaObject.get("type");
-				String repr = (String) metaObject.get("repr");
+				String repr = "" + metaObject.get("repr");
 				if ("object".equals(type) || "function".equals(type)) {
 					Number oid = (Number) metaObject.get("oid");
 					String className = (String) metaObject.get("class");

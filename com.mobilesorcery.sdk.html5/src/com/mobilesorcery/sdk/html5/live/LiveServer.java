@@ -46,6 +46,7 @@ import org.mortbay.thread.QueuedThreadPool;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.JSODDDebugTarget;
@@ -108,9 +109,8 @@ public class LiveServer {
 		// TODO: Slow refactoring to make this class useful
 
 		private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> debugQueues = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
-		private final HashMap<Integer, Thread> debugWaitingThreads = new HashMap<Integer, Thread>();
 		private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> incomingQueues = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
-		private final HashMap<Integer, Thread> incomingWaitingThreads = new HashMap<Integer, Thread>();
+		private final HashMap<Pair<Integer, Integer>, AtomicInteger> waitingCounts = new HashMap<Pair<Integer,Integer>, AtomicInteger>();
 
 		private final Object queueLock = new Object();
 
@@ -128,31 +128,60 @@ public class LiveServer {
 
 		public DebuggerMessage take(int queueType, int sessionId)
 				throws InterruptedException {
-			LinkedBlockingQueue<DebuggerMessage> queue = getQueue(queueType,
-					sessionId);
-			DebuggerMessage result = queue == null ? null : queue.take();
-			if (result != null) {
-				while (!result.setProcessed()) {
-					result = queue.take();
+			setWaiting(queueType, sessionId, true);
+			try {
+				LinkedBlockingQueue<DebuggerMessage> queue = getQueue(queueType,
+						sessionId);
+				DebuggerMessage result = queue == null ? null : queue.take();
+				if (result != null) {
+					while (!result.setProcessed()) {
+						result = queue.take();
+					}
 				}
+				if (result != null && result.data == POISON) {
+					throw new InterruptedException();
+				}
+				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+					CoreMoSyncPlugin.trace("TAKE: Session id {0}, queue {1}: {2}", sessionId, queueType, result);
+				}
+				return result;
+			} finally {
+				setWaiting(queueType, sessionId, false);
 			}
-			if (result != null && result.data == POISON) {
-				throw new InterruptedException();
-			}
-			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-				CoreMoSyncPlugin.trace("TAKE: Session id {0}, queue {1}: {2}", sessionId, queueType, result);
-			}
-			return result;
 		}
 
 
-		private void interruptWaitingThread(int queueType, int sessionId) {
-			interrupt(queueType, sessionId);
+		private synchronized void setWaiting(int queueType, int sessionId, boolean isWaiting) {
+			int delta = isWaiting ? +1 : -1;
+			Pair<Integer, Integer> key = new Pair<Integer, Integer>(queueType, sessionId);
+			AtomicInteger waitCount = waitingCounts.get(key);
+			if (waitCount == null) {
+				waitCount = new AtomicInteger(0);
+				waitingCounts.put(key, waitCount);
+			}
+			waitCount.addAndGet(delta);
+			if (waitCount.intValue() == 0) {
+				waitingCounts.remove(key);
+			}
 		}
 
-		public void interrupt(int queueType, int sessionId) {
-			getQueue(queueType, sessionId).offer(new DebuggerMessage(POISON));
-			//safeTake(queueType, sessionId);
+		private int getWaitCount(int queueType, int sessionId) {
+			AtomicInteger result = waitingCounts.get(new Pair<Integer, Integer>(queueType, sessionId));
+			return result == null ? 0 : result.intValue();
+		}
+
+		/**
+		 * Sends interrupt to all waiting threads.
+		 * @param queueType
+		 * @param sessionId
+		 */
+		public void sendInterruptSignal(int queueType, int sessionId) {
+			// All kind of deadlocks can happen here -- but this is NOT a general class...
+			int waitCount = getWaitCount(queueType, sessionId);
+			CoreMoSyncPlugin.trace("Send interrupt to {0}", waitCount);
+			for (int i = 0; i < waitCount; i++) {
+				getQueue(queueType, sessionId).offer(new DebuggerMessage(POISON));
+			}
 		}
 
 		// Offers to all queues -- first come, first serve.
@@ -193,6 +222,8 @@ public class LiveServer {
 
 		public void killSession(int sessionId) {
 			synchronized (queueLock) {
+				setWaiting(INCOMING_QUEUE, sessionId, false);
+				setWaiting(DEBUG_QUEUE, sessionId, false);
 				LinkedBlockingQueue<DebuggerMessage> debugQueue = debugQueues.remove(sessionId);
 				LinkedBlockingQueue<DebuggerMessage> incomingQueue = incomingQueues
 						.remove(sessionId);
@@ -314,7 +345,7 @@ public class LiveServer {
 			if (target.startsWith("/mobile/incoming")) {
 				ReloadVirtualMachine vm = vmsByHost.get(req.getRemoteAddr());
 				int sessionId = vm == null ? NO_SESSION : vm.getCurrentSessionId();
-				queues.interruptWaitingThread(InternalQueues.INCOMING_QUEUE, sessionId);
+				queues.sendInterruptSignal(InternalQueues.INCOMING_QUEUE, sessionId);
 				result = pushCommandsToClient(InternalQueues.INCOMING_QUEUE,
 						sessionId, preflight);
 			} else if ("/mobile/breakpoint".equals(target)) {
@@ -323,6 +354,7 @@ public class LiveServer {
 					JSONObject command = parseCommand(req);
 					Object sessionIdObj = command.get(SESSION_ID_ATTR);
 					Integer sessionId = sessionIdObj == null ? null : Integer.parseInt(sessionIdObj.toString());
+					queues.sendInterruptSignal(InternalQueues.INCOMING_QUEUE, sessionId);
 					notifyListeners(getCommand(command), command);
 					result = pushCommandsToClient(InternalQueues.DEBUG_QUEUE,
 							sessionId, preflight);
@@ -536,10 +568,10 @@ public class LiveServer {
 			server.start();
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 				InetAddress host = InetAddress.getLocalHost();
-				byte[] ipAddr = host.getAddress();
 				String hostName = host.getHostName();
+				String hostAddr = host.getHostAddress();
 				CoreMoSyncPlugin.trace("Started live server at {0}:{1} ({2})",
-						Util.toBase16(ipAddr), Integer.toString(getPort()),
+						hostAddr, Integer.toString(getPort()),
 						hostName);
 			}
 		} catch (Exception e) {
