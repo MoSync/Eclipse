@@ -102,7 +102,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 		@Override
 		public String getName() {
-			return "JavaScript Debug Support";
+			return "HTML5/JavaScript bundling";
 		}
 
 	}
