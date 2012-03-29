@@ -60,7 +60,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup {
 
 	private LiveServer server;
 
-	private HashMap<IProject, JSODDSupport> jsOddSupport = new HashMap<IProject, JSODDSupport>();
+	private final HashMap<IProject, JSODDSupport> jsOddSupport = new HashMap<IProject, JSODDSupport>();
 
 	/**
 	 * The constructor

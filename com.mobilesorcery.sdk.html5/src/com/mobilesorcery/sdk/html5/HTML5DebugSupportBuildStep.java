@@ -119,6 +119,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			return shouldVisitChildren;
 		}
 
+		@Override
 		public void setDiff(IFileTreeDiff diff) throws CoreException {
 			super.setDiff(diff);
 			this.diff = diff;
