@@ -8,10 +8,15 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.Launch;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate2;
+import org.eclipse.debug.core.model.IPersistableSourceLocator;
 import org.eclipse.debug.core.model.IStreamsProxy;
+import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupDirector;
+import org.eclipse.debug.core.sourcelookup.ISourcePathComputer;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.eclipse.wst.jsdt.debug.internal.core.launching.JavaScriptProcess;
 import org.eclipse.wst.jsdt.debug.internal.core.model.JavaScriptDebugTarget;
@@ -36,8 +41,25 @@ public class JSODDLaunchConfigurationDelegate implements
 	@Override
 	public ILaunch getLaunch(ILaunchConfiguration configuration, String mode)
 			throws CoreException {
-		return null;
+		Launch launch = new Launch(configuration, mode, null);
+		setDefaultSourceLocator(launch, configuration);
+		return launch;
 	}
+
+    protected void setDefaultSourceLocator(ILaunch launch, ILaunchConfiguration configuration) throws CoreException {
+    	IPersistableSourceLocator sourceLocator = null;
+        if (launch.getSourceLocator() == null) {
+        	String id = configuration.getAttribute(ILaunchConfiguration.ATTR_SOURCE_LOCATOR_ID, (String)null);
+            if (id == null) {
+            	id = "org.eclipse.wst.jsdt.debug.core.sourceLocator";
+            }
+        	sourceLocator = DebugPlugin.getDefault().getLaunchManager().newSourceLocator(id);
+            if (sourceLocator != null) {
+            	sourceLocator.initializeDefaults(configuration);
+            	launch.setSourceLocator(sourceLocator);
+            }
+        }
+    }
 
 	public void runJSDTRemoteConnector(ILaunch launch) throws IOException {
 		// This is more or less extracted from JSDTs remote java script launcher
@@ -50,16 +72,17 @@ public class JSODDLaunchConfigurationDelegate implements
 		JavaScriptProcess process = new JavaScriptProcess(launch, "Reload") {
 			private IStreamsProxy streams = null;
 
+			@Override
 			public IStreamsProxy getStreamsProxy() {
 				if (streams == null) {
 					streams = new JSODDStreamsProxy();
 				}
-				
+
 				return streams;
 			}
 		};
 		launch.addProcess(process);
-		
+
 		JavaScriptDebugTarget target = new JavaScriptDebugTarget(vm, process, launch, true, true);
 		launch.addDebugTarget(target);
 	}

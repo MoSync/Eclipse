@@ -5,7 +5,7 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequest;
 
 public class ReloadEventRequest extends ReloadMirror implements EventRequest {
 
-	private boolean enabled;
+	protected boolean enabled;
 
 	ReloadEventRequest(ReloadVirtualMachine vm) {
 		super(vm);

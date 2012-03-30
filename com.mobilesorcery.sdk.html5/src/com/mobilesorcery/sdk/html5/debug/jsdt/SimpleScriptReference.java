@@ -2,6 +2,7 @@ package com.mobilesorcery.sdk.html5.debug.jsdt;
 
 import java.io.File;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 
@@ -53,13 +54,17 @@ public class SimpleScriptReference implements ScriptReference {
 
 	@Override
 	public URI sourceURI() {
-		return file.getLocationURI();
+		try {
+			return new URI("file://" + file.getFullPath().toOSString());
+		} catch (URISyntaxException e) {
+			return null;
+		}
 	}
-	
+
 	public IPath sourcePath() {
 		return file.getLocation();
 	}
-	
+
 	public IFile getFile() {
 		return file;
 	}

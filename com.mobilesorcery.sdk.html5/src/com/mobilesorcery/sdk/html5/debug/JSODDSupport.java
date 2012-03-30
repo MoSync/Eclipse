@@ -92,7 +92,7 @@ public class JSODDSupport {
 			if (currentScope != startScope) {
 				// It's ok to overwrite the previous localvariables if on the
 				// same line.
-				localVariables.put(line, currentScope);
+				localVariables.put(line + 1, currentScope);
 			}
 		}
 
@@ -156,7 +156,7 @@ public class JSODDSupport {
 			if (currentScope != startScope) {
 				// It's ok to overwrite the previous localvariables if on the
 				// same line.
-				localVariables.put(line, currentScope);
+				localVariables.put(line + 1, currentScope);
 			}
 		}
 

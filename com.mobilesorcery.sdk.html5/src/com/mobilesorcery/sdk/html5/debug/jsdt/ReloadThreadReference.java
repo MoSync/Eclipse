@@ -9,6 +9,7 @@ import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.wst.jsdt.debug.core.jsdi.StackFrame;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
+import org.eclipse.wst.jsdt.debug.core.jsdi.request.StepRequest;
 
 public class ReloadThreadReference implements ThreadReference {
 
@@ -58,9 +59,14 @@ public class ReloadThreadReference implements ThreadReference {
 
 	@Override
 	public void resume() {
-		// SEND CONTINUE!
-		vm.resume();
 		this.suspended = false;
+		switch (stepType) {
+		case ReloadStepRequest.NO_STEPPING:
+			vm.resume();
+			break;
+		default:
+			vm.step(stepType);
+		}
 	}
 
 	@Override

@@ -6,11 +6,14 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.request.StepRequest;
 
 public class ReloadStepRequest extends ReloadEventRequest implements StepRequest {
 
-	private ReloadThreadReference thread;
+	public static final int NO_STEPPING = -1;
+
+	private final ReloadThreadReference thread;
 	private final int step;
 
 	ReloadStepRequest(ReloadVirtualMachine vm, ThreadReference thread, int step) {
 		super(vm);
+		this.thread = (ReloadThreadReference) thread;
 		this.step = step;
 	}
 
@@ -24,4 +27,16 @@ public class ReloadStepRequest extends ReloadEventRequest implements StepRequest
 		return thread;
 	}
 
+	@Override
+	public void setEnabled(boolean enabled) {
+		if (this.enabled == enabled) {
+			return;
+		}
+		if (enabled) {
+			thread.setStepType(step);
+		} else {
+			thread.setStepType(NO_STEPPING);
+		}
+		this.enabled = enabled;
+	}
 }

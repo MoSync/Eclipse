@@ -77,6 +77,10 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		server.resume(currentSessionId);
 	}
 
+	public void step(int stepType) {
+		server.step(currentSessionId, stepType);
+	}
+
 	@Override
 	public void suspend() {
 		// NOT IMPL

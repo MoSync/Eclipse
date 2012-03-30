@@ -18,6 +18,8 @@ window.MoSyncDebugProtocol = new (function() {
     
     var currentOID = 0;
     
+    var inUpdatePosition = false;
+    
     this.assignOID = function(obj) {
     	currentOID++;
     	obj.____oid = currentOID;
@@ -52,13 +54,14 @@ window.MoSyncDebugProtocol = new (function() {
             asyncXHR.send(null);
         } catch (ex) {
         	disconnect(ex);
-            listenToServer();
         }
     }
     
     function disconnect(ex) {
-    	disconnected = true;
-        alert('Disconnected from debug session. To debug, you need to restart.\nReason:' + ex.toString());
+    	if (!disconnected) {
+	    	disconnected = true;
+	        alert('Disconnected from debug session. To debug, you need to restart.\nReason:' + ex.toString());
+        }
     }
     
     function dropCommandConnection() {
@@ -81,7 +84,6 @@ window.MoSyncDebugProtocol = new (function() {
             return safeJSONParse(req.responseText);
         } catch (ex) {
             disconnect(ex);
-            listenToServer();
         }
     }
     
@@ -197,21 +199,28 @@ window.MoSyncDebugProtocol = new (function() {
     };
     
     this.updatePosition = function(fileId, line, isDebuggerStatement, evalScopeFunc) {
+        if (inUpdatePosition) {
+        	return;
+        }
+        inUpdatePosition = true;
+        
         /* Webkit's exceptions don't contain any useful file and line data,
            so we keep track of this manually for exception reporting purposes. */
         lastFileId = fileId;
         lastLine = line;
-        
+                
         while (true) {
             var isBreakpoint = (breakpoints[fileId] && breakpoints[fileId][line]) || /* explicit breakpoint? */
                                isDebuggerStatement ||                            /* debugger; statement? */
                                shouldBreak(stackDepth);                          /* step (in|over|out) or break-on-next? */
             
             if (!isBreakpoint) {
+         	    inUpdatePosition = false;
                 return;
             }
+        
+        	dropCommandConnection();
             
-            dropCommandConnection();
             var file = idToFile[fileId];
             var cmd = sendToServer('/breakpoint', {
                 command: 'report-breakpoint',
@@ -219,8 +228,10 @@ window.MoSyncDebugProtocol = new (function() {
                 line: line,
                 stack: getStack().slice(1)
             });
-            listenToServer();
+                        
             if (!cmd) {
+                listenToServer();
+                inUpdatePosition = false;       
                 return;
             }                
                 
@@ -230,10 +241,13 @@ window.MoSyncDebugProtocol = new (function() {
             else {
                 var isInternalCommand = processCommand(cmd);
                 if (!isInternalCommand) {
+                    listenToServer();
+                    inUpdatePosition = false;       
                     return;
                 }
             }
         }
+        
     };
     
     this.reportException = function(e) {

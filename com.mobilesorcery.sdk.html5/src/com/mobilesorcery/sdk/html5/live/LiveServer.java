@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -34,6 +35,7 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
+import org.eclipse.wst.jsdt.debug.core.jsdi.request.StepRequest;
 import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -52,6 +54,7 @@ import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.JSODDDebugTarget;
 import com.mobilesorcery.sdk.html5.debug.JSThread;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.live.LiveServer.DebuggerMessage;
 
 public class LiveServer {
 
@@ -74,9 +77,15 @@ public class LiveServer {
 		static AtomicInteger idCounter = new AtomicInteger(0);
 		int messageId = idCounter.incrementAndGet();
 		AtomicBoolean processed = new AtomicBoolean(false);
+		int type;
 		Object data;
 
-		public DebuggerMessage(Object data) {
+		public DebuggerMessage(int type) {
+			this(type, null);
+		}
+
+		public DebuggerMessage(int type, Object data) {
+			this.type = type;
 			this.data = data;
 		}
 
@@ -92,7 +101,7 @@ public class LiveServer {
 		public String toString() {
 			String id = String.format((processed.get() ? "(#%d)" : "#%d"),
 					messageId);
-			return id + ": " + data;
+			return id + ": " + type + ", " + data;
 		}
 	}
 
@@ -102,56 +111,63 @@ public class LiveServer {
 
 	static class InternalQueues {
 
-		private static final int INCOMING_QUEUE = 0;
-		private static final int DEBUG_QUEUE = 1;
-		private static final Object POISON = new Object();
+		//private static final int INCOMING_QUEUE = 0;
+		//private static final int DEBUG_QUEUE = 1;
+		private static final int POISON = -1;
 
 		// TODO: Slow refactoring to make this class useful
 
-		private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> debugQueues = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
-		private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> incomingQueues = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
-		private final HashMap<Pair<Integer, Integer>, AtomicInteger> waitingCounts = new HashMap<Pair<Integer,Integer>, AtomicInteger>();
+		//private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> debugQueues = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
+		//private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> incomingQueues = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
+		//private final HashMap<Pair<Integer, Integer>, AtomicInteger> waitingCounts = new HashMap<Pair<Integer,Integer>, AtomicInteger>();
+
+		//private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> sessionQueues = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
+		private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> consumers = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
 
 		private final Object queueLock = new Object();
 
-		public LinkedBlockingQueue<DebuggerMessage> getQueue(int queueType,
-				int sessionId) {
-			return getQueues(queueType).get(sessionId);
-		}
-
-		public Map<Integer, LinkedBlockingQueue<DebuggerMessage>> getQueues(
+		/*public Map<Integer, LinkedBlockingQueue<DebuggerMessage>> getQueues(
 				int queueType) {
 			HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> queues = queueType == INCOMING_QUEUE ? incomingQueues
 					: debugQueues;
 			return queues;
+		}*/
+
+		private DebuggerMessage poison() {
+			return new DebuggerMessage(POISON);
 		}
 
-		public DebuggerMessage take(int queueType, int sessionId)
+		public DebuggerMessage take(int sessionId)
 				throws InterruptedException {
-			setWaiting(queueType, sessionId, true);
-			try {
-				LinkedBlockingQueue<DebuggerMessage> queue = getQueue(queueType,
-						sessionId);
-				DebuggerMessage result = queue == null ? null : queue.take();
-				if (result != null) {
-					while (!result.setProcessed()) {
-						result = queue.take();
-					}
+			CoreMoSyncPlugin.trace("ENTERING TAKE");
+			new Exception().printStackTrace(System.out);
+			CoreMoSyncPlugin.trace("TAKE 1 CONSUMERS: {0}", consumers);
+			LinkedBlockingQueue<DebuggerMessage> consumer = null;
+			synchronized (queueLock) {
+				consumer = consumers.get(sessionId);
+				LinkedBlockingQueue<DebuggerMessage> newConsumer = new LinkedBlockingQueue<DebuggerMessage>(1);
+				if (consumer != null) {
+					consumer.drainTo(newConsumer);
+					consumer.offer(poison());
 				}
-				if (result != null && result.data == POISON) {
-					throw new InterruptedException();
-				}
-				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-					CoreMoSyncPlugin.trace("TAKE: Session id {0}, queue {1}: {2}", sessionId, queueType, result);
-				}
-				return result;
-			} finally {
-				setWaiting(queueType, sessionId, false);
+				consumer = newConsumer;
+				consumers.put(sessionId, consumer);
 			}
+
+			DebuggerMessage result = consumer.take();
+			CoreMoSyncPlugin.trace("TAKE 2 CONSUMERS: {0}", consumers);
+
+			if (result != null && result.type == POISON) {
+				throw new InterruptedException();
+			}
+			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+				CoreMoSyncPlugin.trace("TAKE: Session id {0}: {2}", sessionId, result);
+			}
+			return result;
 		}
 
 
-		private synchronized void setWaiting(int queueType, int sessionId, boolean isWaiting) {
+/*		private synchronized void setWaiting(int queueType, int sessionId, boolean isWaiting) {
 			int delta = isWaiting ? +1 : -1;
 			Pair<Integer, Integer> key = new Pair<Integer, Integer>(queueType, sessionId);
 			AtomicInteger waitCount = waitingCounts.get(key);
@@ -168,83 +184,70 @@ public class LiveServer {
 		private int getWaitCount(int queueType, int sessionId) {
 			AtomicInteger result = waitingCounts.get(new Pair<Integer, Integer>(queueType, sessionId));
 			return result == null ? 0 : result.intValue();
-		}
+		}*/
 
 		/**
 		 * Sends interrupt to all waiting threads.
 		 * @param queueType
 		 * @param sessionId
 		 */
-		public void sendInterruptSignal(int queueType, int sessionId) {
+		/*public void sendInterruptSignal(int queueType, int sessionId) {
 			// All kind of deadlocks can happen here -- but this is NOT a general class...
 			int waitCount = getWaitCount(queueType, sessionId);
-			CoreMoSyncPlugin.trace("Send interrupt to {0}", waitCount);
+			CoreMoSyncPlugin.trace("Send interrupt to {0} (session id {2}, queue type {1})", waitCount, queueType, sessionId);
 			for (int i = 0; i < waitCount; i++) {
 				getQueue(queueType, sessionId).offer(new DebuggerMessage(POISON));
 			}
-		}
+		}*/
 
-		// Offers to all queues -- first come, first serve.
-		public void offer(int sessionId, DebuggerMessage queuedExpression) {
-			offer(DEBUG_QUEUE, sessionId, queuedExpression);
-			offer(INCOMING_QUEUE, sessionId, queuedExpression);
-		}
-
-		public void offer(int queueType, int sessionId, DebuggerMessage msg) {
+		public void offer(int sessionId, DebuggerMessage msg) {
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-				CoreMoSyncPlugin.trace("OFFER: Session id {0}, queue {1}: {2}", sessionId, queueType, msg);
+				CoreMoSyncPlugin.trace("OFFER: Session id {0}: {1}", sessionId, msg);
+				CoreMoSyncPlugin.trace("CONSUMERS: {0}", consumers);
 			}
-			getQueue(queueType, sessionId).offer(msg);
-		}
-
-		public void broadcast(DebuggerMessage msg) {
 			synchronized (queueLock) {
-				broadcast(INCOMING_QUEUE, msg);
-				broadcast(DEBUG_QUEUE, msg);
+				LinkedBlockingQueue<DebuggerMessage> consumer = consumers.get(sessionId);
+				if (consumer != null) {
+					consumer.offer(msg);
+				}
 			}
 		}
 
-		private void broadcast(int queueType, DebuggerMessage msg) {
-			Map<Integer, LinkedBlockingQueue<DebuggerMessage>> queues = getQueues(queueType);
-			for (Integer sessionId : queues.keySet()) {
-				offer(queueType, sessionId, msg);
-			}
-		}
-
-		public void newSession(int sessionId) {
+		/*public void broadcast(DebuggerMessage msg) {
 			synchronized (queueLock) {
-				debugQueues.put(sessionId,
-						new LinkedBlockingQueue<DebuggerMessage>());
-				incomingQueues.put(sessionId,
-						new LinkedBlockingQueue<DebuggerMessage>());
+				broadcast(msg);
+				broadcast(msg);
+			}
+		}*/
+
+		private void broadcast(DebuggerMessage msg) {
+			synchronized (queueLock) {
+				for (Integer sessionId : consumers.keySet()) {
+					offer(sessionId, msg);
+				}
 			}
 		}
 
 		public void killSession(int sessionId) {
 			synchronized (queueLock) {
-				setWaiting(INCOMING_QUEUE, sessionId, false);
-				setWaiting(DEBUG_QUEUE, sessionId, false);
-				LinkedBlockingQueue<DebuggerMessage> debugQueue = debugQueues.remove(sessionId);
+				//setWaiting(INCOMING_QUEUE, sessionId, false);
+				//setWaiting(DEBUG_QUEUE, sessionId, false);
+
+				LinkedBlockingQueue<DebuggerMessage> sessionQueue = consumers.remove(sessionId);
+				sessionQueue.offer(poison());
+				/*LinkedBlockingQueue<DebuggerMessage> debugQueue = debugQueues.remove(sessionId);
 				LinkedBlockingQueue<DebuggerMessage> incomingQueue = incomingQueues
 						.remove(sessionId);
 				debugQueue.offer(new DebuggerMessage(POISON));
-				incomingQueue.offer(new DebuggerMessage(POISON));
-				safeTake(DEBUG_QUEUE, sessionId);
-				safeTake(INCOMING_QUEUE, sessionId);
-			}
-		}
-
-		private void safeTake(int queueType, int sessionId) {
-			try {
-				take(queueType, sessionId);
-			} catch (Exception e) {
-				// Ignore.
+				incomingQueue.offer(new DebuggerMessage(POISON));*/
+				//safeTake(DEBUG_QUEUE, sessionId);
+				//safeTake(INCOMING_QUEUE, sessionId);
 			}
 		}
 
 		public void killAllSessions() {
 			synchronized (queueLock) {
-				for (Integer sessionId : debugQueues.keySet()) {
+				for (Integer sessionId : consumers.keySet()) {
 					killSession(sessionId);
 				}
 			}
@@ -254,18 +257,14 @@ public class LiveServer {
 		public String toString() {
 			StringBuffer result = new StringBuffer();
 			synchronized (queueLock) {
-				for (Integer sessionId : debugQueues.keySet()) {
-					result.append(toString(DEBUG_QUEUE, sessionId));
+				for (Integer sessionId : consumers.keySet()) {
+					result.append(consumers.get(sessionId));
 					result.append("\n");
-					result.append(toString(INCOMING_QUEUE, sessionId));
 				}
 			}
 			return result.toString();
 		}
 
-		private String toString(int queueType, int sessionId) {
-			return getQueue(queueType, sessionId).toString();
-		}
 	}
 
 	// TODO: Too many queues. JETTY Continuations?
@@ -283,15 +282,26 @@ public class LiveServer {
 
 	private static final Charset UTF8 = Charset.forName("UTF8");
 
-	private static final Object RESUME = new Object();
-
 	private static final long TIMEOUT_IN_SECONDS = 5;
 
 	public static final int NO_SESSION = -1;
 
+	private static final int BREAKPOINT = 1;
+
+	private static final int RESUME = 2;
+
+	private static final int STEP = 3;
+
+	private static final int EVAL = 1000;
+
+	public static final String TIMEOUT_ATTR = "live.timeout";
+
+	public static final int DEFAULT_TIMEOUT = 5;
+
 	private class LiveServerHandler extends AbstractHandler {
 
 		private static final String SESSION_ID_ATTR = "sessionId";
+
 		private final HashMap<Object, Thread> waitThreads = new HashMap<Object, Thread>();
 
 		@Override
@@ -320,7 +330,7 @@ public class LiveServer {
 
 			if (result != null) {
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-					CoreMoSyncPlugin.trace("SEND: {0}", result);
+					CoreMoSyncPlugin.trace("SEND ({0}): {1}", target, result);
 				}
 				String output = result.toJSONString();
 				res.setStatus(HttpServletResponse.SC_OK);
@@ -345,19 +355,15 @@ public class LiveServer {
 			if (target.startsWith("/mobile/incoming")) {
 				ReloadVirtualMachine vm = vmsByHost.get(req.getRemoteAddr());
 				int sessionId = vm == null ? NO_SESSION : vm.getCurrentSessionId();
-				queues.sendInterruptSignal(InternalQueues.INCOMING_QUEUE, sessionId);
-				result = pushCommandsToClient(InternalQueues.INCOMING_QUEUE,
-						sessionId, preflight);
+				result = pushCommandsToClient(sessionId, preflight);
 			} else if ("/mobile/breakpoint".equals(target)) {
 				// RACE CONDITION WILL OCCUR HERE!
 				if (!preflight) {
 					JSONObject command = parseCommand(req);
 					Object sessionIdObj = command.get(SESSION_ID_ATTR);
 					Integer sessionId = sessionIdObj == null ? null : Integer.parseInt(sessionIdObj.toString());
-					queues.sendInterruptSignal(InternalQueues.INCOMING_QUEUE, sessionId);
 					notifyListeners(getCommand(command), command);
-					result = pushCommandsToClient(InternalQueues.DEBUG_QUEUE,
-							sessionId, preflight);
+					result = pushCommandsToClient(sessionId, preflight);
 				} else {
 					return new JSONObject();
 				}
@@ -371,8 +377,7 @@ public class LiveServer {
 			return result;
 		}
 
-		private JSONObject pushCommandsToClient(int queueType,
-				Integer session, boolean preflight) {
+		private JSONObject pushCommandsToClient(Integer session, boolean preflight) {
 			if (preflight) {
 				return new JSONObject();
 			}
@@ -385,17 +390,19 @@ public class LiveServer {
 
 			try {
 				ArrayList bps = new ArrayList();
-				DebuggerMessage queuedElement = queues.take(queueType, session);
+				DebuggerMessage queuedElement = queues.take(session);
 
 				Object queuedObject = queuedElement == null ? null : queuedElement.data;
-				if (queuedObject instanceof InternalLineBreakpoint) {
+				int queuedType = queuedElement == null ? -1 : queuedElement.type;
+				if (queuedType == BREAKPOINT) {
 					InternalLineBreakpoint bp = (InternalLineBreakpoint) queuedObject;
 					result = createBreakpointJSON(new Object[] { bp },
 							bp.enabled);
-				} else if (queuedObject == RESUME) {
+				} else if (queuedType == RESUME) {
 					result = newCommand("breakpoint-continue");
-				}
-				if (queuedObject instanceof String) {
+				} else if (queuedType == STEP) {
+					result = newCommand(getStepCommand((Integer) queuedElement.data));
+				} else if (queuedType == EVAL) {
 					result = newCommand("eval");
 					result.put("data", queuedObject);
 					result.put("id", queuedElement.getMessageId());
@@ -407,6 +414,19 @@ public class LiveServer {
 				}
 			}
 			return result;
+		}
+
+		private String getStepCommand(int stepType) {
+			switch (stepType) {
+			case StepRequest.STEP_INTO:
+	        	return "break-on-next";
+			case StepRequest.STEP_OUT:
+				return "breakpoint-step-out";
+			case StepRequest.STEP_OVER:
+				return "breakpoint-step-over";
+			default:
+				return "breakpoint-continue";
+			}
 		}
 
 		private void assignNewWaitThread() {
@@ -592,7 +612,6 @@ public class LiveServer {
 			queues.killSession(oldSessionId);
 		}
 		vm.setCurrentSessionId(newSessionId);
-		queues.newSession(newSessionId);
 		vmsByHost.put(remoteIp, vm);
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 			CoreMoSyncPlugin.trace("Assigned session {0} to address {1}", newSessionId, remoteIp);
@@ -719,12 +738,12 @@ public class LiveServer {
 	}
 
 	public void setLineBreakpoint(boolean enabled, IFile file, int line) {
-		queues.broadcast(new DebuggerMessage(new InternalLineBreakpoint(
+		queues.broadcast(new DebuggerMessage(BREAKPOINT, new InternalLineBreakpoint(
 				enabled, file, line)));
 	}
 
 	public void setBreakpoint(IJavaScriptLineBreakpoint bp) {
-		queues.broadcast(new DebuggerMessage(bp));
+		queues.broadcast(new DebuggerMessage(BREAKPOINT, bp));
 	}
 
 	public void removeBreakpoint(IJavaScriptLineBreakpoint breakpoint) {
@@ -744,13 +763,18 @@ public class LiveServer {
 	}
 
 	public void resume(int sessionId) {
-		queues.offer(InternalQueues.DEBUG_QUEUE, sessionId,
+		queues.offer(sessionId,
 				new DebuggerMessage(RESUME));
+	}
+
+	public void step(int sessionId, int stepType) {
+		queues.offer(sessionId,
+				new DebuggerMessage(STEP, stepType));
 	}
 
 	public String evaluate(int sessionId, String expression)
 			throws InterruptedException, TimeoutException {
-		DebuggerMessage queuedExpression = new DebuggerMessage(expression);
+		DebuggerMessage queuedExpression = new DebuggerMessage(EVAL, expression);
 		queues.offer(sessionId, queuedExpression);
 		String result = awaitEvalResult(queuedExpression.getMessageId(), 5,
 				TimeUnit.SECONDS);

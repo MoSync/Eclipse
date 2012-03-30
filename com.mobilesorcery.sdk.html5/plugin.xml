@@ -27,7 +27,7 @@
             modes="run,debug"
             name="JavaScript On-Device Debug"
             sourceLocatorId="org.eclipse.wst.jsdt.debug.core.sourceLocator"
-            sourcePathComputerId="org.eclipse.wst.jsdt.debug.core.source.path.computer"/>
+            sourcePathComputerId="com.mobilesorcery.sdk.html5.debug.source.path.computer"/>
    </extension>
 
      <extension
@@ -41,7 +41,13 @@
             id="com.mobilesorcery.jsodd.launchconfigurationtabgroup"
             type="com.mobilesorcery.html5.jsodd.launchconfigurationtype"/>
      </extension>
-
+   <extension
+         point="org.eclipse.debug.core.sourcePathComputers">
+      <sourcePathComputer
+            class="com.mobilesorcery.sdk.html5.debug.JSODDSourcePathComputer"
+            id="com.mobilesorcery.sdk.html5.debug.source.path.computer">
+      </sourcePathComputer>
+   </extension>
       <extension
          point="org.eclipse.wst.jsdt.debug.core.launchingConnectors">
       <connector
