@@ -86,7 +86,7 @@ public class ReloadEventRequestManager implements EventRequestManager {
 
 	@Override
 	public StepRequest createStepRequest(ThreadReference thread, int step) {
-		return new ReloadStepRequest(vm, thread, step);
+		return addRequest(new ReloadStepRequest(vm, thread, step));
 	}
 
 	@Override

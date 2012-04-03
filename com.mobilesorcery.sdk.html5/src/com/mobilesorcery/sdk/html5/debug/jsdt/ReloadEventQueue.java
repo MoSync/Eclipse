@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
@@ -39,7 +41,8 @@ public class ReloadEventQueue implements EventQueue {
 	public EventSet remove(int timeout) {
 		try {
 			// TODO: EVENTS SHOULD BE PURE JSON!?
-			Pair<String, Object> event = timeout > 0 ? internalQueue.poll(timeout, TimeUnit.MILLISECONDS) : internalQueue.take();
+			Pair<String, Object> event = timeout > 0 ? internalQueue.poll(
+					timeout, TimeUnit.MILLISECONDS) : internalQueue.take();
 			return handleEvent(event.first, (JSONObject) event.second);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -50,25 +53,41 @@ public class ReloadEventQueue implements EventQueue {
 	private EventSet handleEvent(String commandName, JSONObject command) {
 		ReloadEventSet eventSet = new ReloadEventSet(vm);
 		List bpRequests = requests.breakpointRequests();
+		List stepRequests = requests.stepRequests();
+
+		boolean isStepping = false;
 
 		if ("report-breakpoint".equals(commandName)) {
 			// Breakpoint!
-			ReloadThreadReference thread = (ReloadThreadReference) vm.allThreads().get(0);
-			String file = (String) command.get("file");
+			ReloadThreadReference thread = (ReloadThreadReference) vm
+					.allThreads().get(0);
+			String fileName = (String) command.get("file");
 			Long line = (Long) command.get("line");
-			if (file != null && line != null) {
-				IJavaScriptLineBreakpoint bp = LiveServer.findBreakPoint(new Path(file), line);
+			isStepping = command.containsKey("step")
+					&& (Boolean) command.get("step");
+			if (fileName != null && line != null) {
+				IJavaScriptLineBreakpoint bp = LiveServer.findBreakPoint(
+						new Path(fileName), line);
 				for (Object bpRequestObj : bpRequests) {
 					ReloadBreakpointRequest bpRequest = (ReloadBreakpointRequest) bpRequestObj;
 					Location location = bpRequest.location();
-					if (sameLocation(location, bp)) {
+					if (!isStepping && sameLocation(location, bp)) {
 						eventSet.add(new ReloadBreakpointEvent(vm, thread,
 								location, bpRequest));
 					}
 				}
+				for (Object stepRequestObj : stepRequests) {
+					ReloadStepRequest stepRequest = (ReloadStepRequest) stepRequestObj;
+					IFile file = ResourcesPlugin.getWorkspace().getRoot()
+							.getFile(new Path(fileName));
+					Location location = new SimpleLocation(vm, file,
+							line.intValue());
+					eventSet.add(new ReloadStepEvent(vm, thread, location,
+							stepRequest));
+				}
 			}
 			if (!eventSet.isEmpty()) {
-				thread.suspend(true);
+				thread.suspend(!isStepping);
 			}
 		}
 		return eventSet;
@@ -80,7 +99,8 @@ public class ReloadEventQueue implements EventQueue {
 		}
 		try {
 			if (bp.getLineNumber() == location.lineNumber()) {
-				IPath path1 = ((SimpleScriptReference) location.scriptReference()).getFile().getFullPath();
+				IPath path1 = ((SimpleScriptReference) location
+						.scriptReference()).getFile().getFullPath();
 				IPath path2 = new Path(bp.getScriptPath());
 				return Util.equals(path1, path2);
 			}

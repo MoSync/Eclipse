@@ -20,6 +20,8 @@ window.MoSyncDebugProtocol = new (function() {
     
     var inUpdatePosition = false;
     
+    var step = false;
+    
     this.assignOID = function(obj) {
     	currentOID++;
     	obj.____oid = currentOID;
@@ -132,10 +134,12 @@ window.MoSyncDebugProtocol = new (function() {
             case 'break-on-next':
             case 'breakpoint-step':
             case 'breakpoint-step-in':
+            	step = true;
                 shouldBreak = function() { return true; };
                 return false;
                 
             case 'breakpoint-step-out':
+            	step = true;
                 shouldBreak = (function(oldDepth) {
                     return function(depth) {
                         return depth < oldDepth;
@@ -144,6 +148,7 @@ window.MoSyncDebugProtocol = new (function() {
                 return false;
                 
             case 'breakpoint-step-over':
+            	step = true;
                 shouldBreak = (function(oldDepth) {
                     return function(depth) {
                         return depth <= oldDepth;
@@ -226,8 +231,11 @@ window.MoSyncDebugProtocol = new (function() {
                 command: 'report-breakpoint',
                 file: file,
                 line: line,
-                stack: getStack().slice(1)
+                stack: getStack().slice(1),
+                step: step
             });
+            
+            step = false;
                         
             if (!cmd) {
                 listenToServer();

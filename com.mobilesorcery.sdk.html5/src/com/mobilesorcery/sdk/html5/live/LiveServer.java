@@ -161,7 +161,7 @@ public class LiveServer {
 				throw new InterruptedException();
 			}
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-				CoreMoSyncPlugin.trace("TAKE: Session id {0}: {2}", sessionId, result);
+				CoreMoSyncPlugin.trace("TAKE: Session id {0}: {1}", sessionId, result);
 			}
 			return result;
 		}
