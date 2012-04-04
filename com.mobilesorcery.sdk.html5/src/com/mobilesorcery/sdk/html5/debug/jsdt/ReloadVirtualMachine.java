@@ -28,6 +28,8 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.UndefinedValue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Value;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.EventQueue;
+import org.eclipse.wst.jsdt.debug.core.jsdi.event.ThreadExitEvent;
+import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequest;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequestManager;
 import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
 import org.json.simple.JSONArray;
@@ -51,12 +53,13 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	private final ReloadUndefinedValue undefValue;
 	private int currentSessionId = LiveServer.NO_SESSION;
 	private IProject project;
+	private final ReloadThreadReference mainThread;
 
 	public ReloadVirtualMachine(int port) throws Exception {
 		// TODO: PORT
 		server = Html5Plugin.getDefault().getReloadServer();
 		// JUST ONE MAIN THREAD
-		ReloadThreadReference mainThread = new ReloadThreadReference(this);
+		mainThread = new ReloadThreadReference(this);
 		threads.add(mainThread);
 		requestMgr = new ReloadEventRequestManager(this);
 		eventQueue = new ReloadEventQueue(this, requestMgr);
@@ -84,6 +87,17 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	@Override
 	public void suspend() {
 		// NOT IMPL
+	}
+
+	public void reset(int newSessionId) {
+		if (currentSessionId != LiveServer.NO_SESSION) {
+			server.reset(currentSessionId);
+			List exitRequests = requestMgr.threadExitRequests();
+			for (Object exitRequest : exitRequests) {
+				eventQueue.received(ReloadEventQueue.CUSTOM_EVENT, new ReloadThreadExitEvent(this, mainThread, null, (EventRequest) exitRequest));
+			}
+		}
+		setCurrentSessionId(newSessionId);
 	}
 
 	@Override
@@ -222,6 +236,15 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	public int getCurrentSessionId() {
 		return currentSessionId;
+	}
+
+	@Override
+	public String toString() {
+		return "JavaScript On-Device Debug VM, session id #" + getCurrentSessionId();
+	}
+
+	public void setCurrentLocation(String location) {
+		mainThread.setCurrentLocation(location);
 	}
 
 }

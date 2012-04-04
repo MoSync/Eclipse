@@ -112,6 +112,11 @@ window.MoSyncDebugProtocol = new (function() {
         });
     }
     
+    function suspendOnNext() {
+	    step = true;
+	    shouldBreak = function() { return true; };            
+    }
+    
     function processCommand(cmd) {
         switch (cmd.command) {
             case 'set-breakpoints':
@@ -125,6 +130,9 @@ window.MoSyncDebugProtocol = new (function() {
                     }
                     breakpoints[fileId][line] = (cmd.command == 'set-breakpoints');
                 });
+                if (cmd.suspend) {
+                	suspendOnNext();
+                }
                 return true;
             
             case 'breakpoint-continue':
@@ -134,9 +142,8 @@ window.MoSyncDebugProtocol = new (function() {
             case 'break-on-next':
             case 'breakpoint-step':
             case 'breakpoint-step-in':
-            	step = true;
-                shouldBreak = function() { return true; };
-                return false;
+            	suspendOnNext();
+            	return false;
                 
             case 'breakpoint-step-out':
             	step = true;
@@ -193,8 +200,10 @@ window.MoSyncDebugProtocol = new (function() {
     this.init = function() {
     	%INIT_FILE_IDS%
         replaceConsole();
+        var location = window ? window.document.location.href : "<unknown>";
         var cmd = sendToServer('/init', {
-            command: 'mobile-connected'
+            command: 'mobile-connected',
+            location: location
         });
         if (cmd) {
         	sessionId = cmd.sessionId;

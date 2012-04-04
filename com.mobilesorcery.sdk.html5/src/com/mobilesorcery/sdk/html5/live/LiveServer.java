@@ -35,6 +35,7 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
+import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.StepRequest;
 import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
 import org.json.simple.JSONArray;
@@ -302,6 +303,8 @@ public class LiveServer {
 
 		private static final String SESSION_ID_ATTR = "sessionId";
 
+		private static final String SUSPEND_ATTR = "suspend";
+
 		private final HashMap<Object, Thread> waitThreads = new HashMap<Object, Thread>();
 
 		@Override
@@ -482,9 +485,17 @@ public class LiveServer {
 						.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
 				JSONObject jsonBps = createBreakpointJSON(bps, true);
 				if (!preflight) {
+					JSONObject command = parseCommand(req);
 					int newSessionId = newSessionId();
 					jsonBps.put(SESSION_ID_ATTR, newSessionId);
-					resetVM(req, newSessionId);
+					ReloadVirtualMachine vm = resetVM(req, newSessionId);
+					vm.setCurrentLocation((String) command.get("location"));
+					// TODO: JSDI does not really allow this - bah. Do complicated solution instead then.
+					//jsonBps.put(SUSPEND_ATTR, true);
+					//List threads = vm.allThreads();
+					//for (Object thread : threads) {
+					//	vm.eventRequestManager().createStepRequest((ThreadReference) thread, StepRequest.STEP_INTO);
+					//}
 				}
 				return jsonBps;
 			} else if ("/mobile/console".equals(target)) {
@@ -600,7 +611,7 @@ public class LiveServer {
 		}
 	}
 
-	public synchronized void resetVM(HttpServletRequest req, int newSessionId) {
+	public synchronized ReloadVirtualMachine resetVM(HttpServletRequest req, int newSessionId) {
 		String remoteIp = req.getRemoteAddr();
 		ReloadVirtualMachine vm = vmsByHost.get(remoteIp);
 		if (vm == null) {
@@ -609,13 +620,14 @@ public class LiveServer {
 			}
 		} else {
 			int oldSessionId = vm.getCurrentSessionId();
-			queues.killSession(oldSessionId);
 		}
-		vm.setCurrentSessionId(newSessionId);
+		vm.reset(newSessionId);
+
 		vmsByHost.put(remoteIp, vm);
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 			CoreMoSyncPlugin.trace("Assigned session {0} to address {1}", newSessionId, remoteIp);
 		}
+		return vm;
 	}
 
 	public int newSessionId() {
@@ -770,6 +782,10 @@ public class LiveServer {
 	public void step(int sessionId, int stepType) {
 		queues.offer(sessionId,
 				new DebuggerMessage(STEP, stepType));
+	}
+
+	public void reset(int sessionId) {
+		queues.killSession(sessionId);
 	}
 
 	public String evaluate(int sessionId, String expression)

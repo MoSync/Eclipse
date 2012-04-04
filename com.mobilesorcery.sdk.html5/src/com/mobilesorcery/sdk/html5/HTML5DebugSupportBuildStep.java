@@ -4,11 +4,11 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Set;
 
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -32,65 +32,56 @@ import com.mobilesorcery.sdk.core.build.BundleBuildStep;
 import com.mobilesorcery.sdk.core.build.IBuildStep;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.internal.builder.IncrementalBuilderVisitor;
+import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
 public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 	private final class InstrumentationBuilderVisitor extends
 			IncrementalBuilderVisitor {
-		private final class InstrumentationProjectVisitor implements
-				IResourceVisitor {
+		private final class Rewriter {
 			private final JSODDSupport op;
 			private final boolean shouldAddBoilerPlate;
 
-			private InstrumentationProjectVisitor(JSODDSupport op,
+			private Rewriter(JSODDSupport op,
 					boolean shouldAddBoilerPlate) {
 				this.op = op;
 				this.shouldAddBoilerPlate = shouldAddBoilerPlate;
 			}
 
-			@Override
-			public boolean visit(IResource resourceToInstrument)
+			public boolean rewrite(IResource resourceToInstrument)
 					throws CoreException {
-				boolean isFramework = resourceToInstrument
-						.getFullPath().lastSegment()
-						.equalsIgnoreCase("wormhole.js");
-				boolean doInstrument = resourcesToInstrument
-						.contains(resourceToInstrument)
-						|| (shouldAddBoilerPlate && isFramework);
-				if (doInstrument) {
-					IPath resourcePath = resourceToInstrument
-							.getFullPath();
-					resourcePath = resourcePath
-							.removeFirstSegments(inputRoot
-									.getFullPath().segmentCount());
-					File outputFile = new File(outputRoot, resourcePath
-							.toOSString());
-					outputFile.getParentFile().mkdirs();
-					FileWriter output = null;
-					try {
-						output = new FileWriter(outputFile);
-						// TODO! Not only wormhole!
-						boolean addBoilerPlate = resourcePath
-								.lastSegment().equalsIgnoreCase(
-										"wormhole.js");
-						if (addBoilerPlate) {
-							op.generateBoilerplate(
-									MoSyncProject.create(getProject()),
-									output);
-						}
-						op.rewrite(resourceToInstrument.getFullPath(),
+				IPath resourcePath = resourceToInstrument
+						.getFullPath();
+				resourcePath = resourcePath
+						.removeFirstSegments(inputRoot
+								.getFullPath().segmentCount());
+				File outputFile = new File(outputRoot, resourcePath
+						.toOSString());
+				outputFile.getParentFile().mkdirs();
+				FileWriter output = null;
+				try {
+					output = new FileWriter(outputFile);
+					// TODO! Not only wormhole!
+					boolean addBoilerPlate = resourcePath
+							.lastSegment().equalsIgnoreCase(
+									"wormhole.js");
+					if (addBoilerPlate) {
+						op.generateBoilerplate(
+								MoSyncProject.create(getProject()),
 								output);
-					} catch (IOException e) {
-						throw new CoreException(
-								new Status(
-										IStatus.ERROR,
-										Html5Plugin.PLUGIN_ID,
-										"Cannot instrument JavaScript for debugging",
-										e));
-					} finally {
-						Util.safeClose(output);
 					}
-				}
+					op.rewrite(resourceToInstrument.getFullPath(),
+							output);
+				} catch (IOException e) {
+					throw new CoreException(
+							new Status(
+									IStatus.ERROR,
+									Html5Plugin.PLUGIN_ID,
+									"Cannot instrument JavaScript for debugging",
+									e));
+				} finally {
+					Util.safeClose(output);
+					}
 				return !MoSyncBuilder.isInOutput(project, resourceToInstrument);
 			}
 		}
@@ -125,7 +116,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			this.diff = diff;
 		}
 
-		public void instrument(IProgressMonitor monitor) throws CoreException {
+		public void instrument(IProgressMonitor monitor, DependencyManager<IResource> dependencies) throws CoreException {
 			/*
 			 * TODO: Put boilerplate code in a separate file: boolean
 			 * addBoilerplate = !resourcesToInstrument.isEmpty(); if
@@ -139,9 +130,10 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			final JSODDSupport op = Html5Plugin.getDefault().getJSODDSupport(
 					project);
 			final boolean shouldAddBoilerPlate = op.applyDiff(diff);
-
-			if (diff == null || !diff.isEmpty()) {
-				project.accept(new InstrumentationProjectVisitor(op, shouldAddBoilerPlate));
+			Set<IResource> instrumentThese = computeResourcesToRebuild(dependencies);
+			Rewriter rewriter = new Rewriter(op, shouldAddBoilerPlate);
+			for (IResource instrumentThis : instrumentThese) {
+				rewriter.rewrite(instrumentThis);
 			}
 		}
 	}
@@ -192,8 +184,8 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 						inputRoot, outputRoot);
 				visitor.setProject(wrappedProject);
 				visitor.setDiff(diff);
-				inputRoot.accept(visitor);
-				visitor.instrument(new SubProgressMonitor(monitor, 7));
+				DependencyManager<IResource> deps = getBuildState().getDependencyManager();
+				visitor.instrument(new SubProgressMonitor(monitor, 7), deps);
 
 				// TODO -- would prefer it not to always output there... Since
 				// we'll get build problems for sure!

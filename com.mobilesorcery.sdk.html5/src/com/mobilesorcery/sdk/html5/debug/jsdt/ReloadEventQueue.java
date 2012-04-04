@@ -21,6 +21,8 @@ import com.mobilesorcery.sdk.html5.live.LiveServer;
 
 public class ReloadEventQueue implements EventQueue {
 
+	public final static String CUSTOM_EVENT = "custom-event";
+
 	private final ReloadVirtualMachine vm;
 	private final ReloadEventRequestManager requests;
 
@@ -43,14 +45,14 @@ public class ReloadEventQueue implements EventQueue {
 			// TODO: EVENTS SHOULD BE PURE JSON!?
 			Pair<String, Object> event = timeout > 0 ? internalQueue.poll(
 					timeout, TimeUnit.MILLISECONDS) : internalQueue.take();
-			return handleEvent(event.first, (JSONObject) event.second);
+			return handleEvent(event.first, event.second);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
 		}
 	}
 
-	private EventSet handleEvent(String commandName, JSONObject command) {
+	private EventSet handleEvent(String commandName, Object commandObj) {
 		ReloadEventSet eventSet = new ReloadEventSet(vm);
 		List bpRequests = requests.breakpointRequests();
 		List stepRequests = requests.stepRequests();
@@ -59,6 +61,7 @@ public class ReloadEventQueue implements EventQueue {
 
 		if ("report-breakpoint".equals(commandName)) {
 			// Breakpoint!
+			JSONObject command = (JSONObject) commandObj;
 			ReloadThreadReference thread = (ReloadThreadReference) vm
 					.allThreads().get(0);
 			String fileName = (String) command.get("file");
@@ -89,6 +92,9 @@ public class ReloadEventQueue implements EventQueue {
 			if (!eventSet.isEmpty()) {
 				thread.suspend(!isStepping);
 			}
+		} else if (CUSTOM_EVENT.equals(commandName)) {
+			ReloadEvent event = (ReloadEvent) commandObj;
+			eventSet.add(event);
 		}
 		return eventSet;
 	}
@@ -109,10 +115,6 @@ public class ReloadEventQueue implements EventQueue {
 			e.printStackTrace();
 		}
 		return false;
-	}
-
-	public void received(String command) {
-
 	}
 
 	public void received(String command, Object data) {

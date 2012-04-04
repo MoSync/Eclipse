@@ -1,10 +1,12 @@
 package com.mobilesorcery.sdk.html5.debug.jsdt;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.core.runtime.Path;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.wst.jsdt.debug.core.jsdi.StackFrame;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
@@ -19,6 +21,7 @@ public class ReloadThreadReference implements ThreadReference {
 	private boolean suspended;
 	private List frames = null;
 	private int stepType;
+	private String location;
 
 	public ReloadThreadReference(ReloadVirtualMachine vm) {
 		this.vm = vm;
@@ -91,7 +94,8 @@ public class ReloadThreadReference implements ThreadReference {
 
 	@Override
 	public String name() {
-		return "main";
+		String formattedLocation = location == null ? "" : " - " + new Path(location).lastSegment();
+		return MessageFormat.format("main", formattedLocation);
 	}
 
 	public void suspend(boolean isAtBreakpoint) {
@@ -105,5 +109,9 @@ public class ReloadThreadReference implements ThreadReference {
 
 	public void setStepType(int stepType) {
 		this.stepType = stepType;
+	}
+
+	public void setCurrentLocation(String location) {
+		this.location = location;
 	}
 }

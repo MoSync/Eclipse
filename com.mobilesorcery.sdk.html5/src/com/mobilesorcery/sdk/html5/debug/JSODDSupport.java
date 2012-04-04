@@ -32,6 +32,7 @@ import org.eclipse.wst.jsdt.core.dom.ASTParser;
 import org.eclipse.wst.jsdt.core.dom.ASTVisitor;
 import org.eclipse.wst.jsdt.core.dom.Block;
 import org.eclipse.wst.jsdt.core.dom.ForInStatement;
+import org.eclipse.wst.jsdt.core.dom.ForStatement;
 import org.eclipse.wst.jsdt.core.dom.FunctionDeclaration;
 import org.eclipse.wst.jsdt.core.dom.JavaScriptUnit;
 import org.eclipse.wst.jsdt.core.dom.Statement;
@@ -51,9 +52,11 @@ public class JSODDSupport {
 		private final HashMap<Integer, Integer> linesToRewrite = new HashMap<Integer, Integer>();
 		private JavaScriptUnit unit;
 		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
+		private final Stack<Boolean> instrumentState = new Stack<Boolean>();
 		private LocalVariableScope currentScope = new LocalVariableScope()
 				.nestScope();
 		private final TreeMap<Integer, LocalVariableScope> localVariables = new TreeMap<Integer, LocalVariableScope>();
+		private boolean inForStatement;
 
 		@Override
 		public void preVisit(ASTNode node) {
@@ -69,6 +72,10 @@ public class JSODDSupport {
 				nest = true;
 			}
 
+			if (node instanceof ForInStatement || node instanceof ForStatement) {
+				instrumentState.push(false);
+			}
+
 			if (node instanceof JavaScriptUnit) {
 				unit = (JavaScriptUnit) node;
 			}
@@ -78,10 +85,12 @@ public class JSODDSupport {
 			}
 
 			if (node instanceof Block) {
+				// TODO: For statements etc should be able to handle one-liners!
+				instrumentState.push(true);
 				nest = true;
 			}
 
-			if (isInstrumentableStatement(node) && unit != null) {
+			if (isInstrumentableStatement(node)) {
 				addInstrumentationLocation(line, col);
 			}
 
@@ -111,11 +120,7 @@ public class JSODDSupport {
 			// Special case: switch.
 			allowInstrumentation &= !(node instanceof SwitchCase);
 
-			// Special case: for
-			if (parent instanceof ForInStatement) {
-				ForInStatement forInStatement = (ForInStatement) parent;
-				allowInstrumentation &= node == forInStatement.getBodyChild();
-			}
+			allowInstrumentation &= instrumentState.isEmpty() || instrumentState.peek();
 
 			return allowInstrumentation;
 		}
@@ -142,10 +147,16 @@ public class JSODDSupport {
 				unnest = true;
 			}
 
+			if (node instanceof ForInStatement || node instanceof ForStatement) {
+				instrumentState.pop();
+			}
+
 			if (node instanceof Statement) {
 				statementStack.pop();
 			}
+
 			if (node instanceof Block) {
+				instrumentState.pop();
 				unnest = true;
 			}
 
@@ -275,9 +286,9 @@ public class JSODDSupport {
 
 	public static boolean isValidJavaScriptFile(IPath file) {
 		// TODO: Use content descriptors!?
+		// TODO: JS embedded in HTML
 		return file != null
-				&& ("js".equalsIgnoreCase(file.getFileExtension()) || "html"
-						.equalsIgnoreCase(file.getFileExtension()));
+				&& "js".equalsIgnoreCase(file.getFileExtension());
 	}
 
 	private long assignFileId(IPath file) {
