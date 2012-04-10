@@ -42,6 +42,7 @@ import org.eclipse.wst.jsdt.core.dom.VariableDeclarationFragment;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.templates.Template;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
@@ -60,7 +61,7 @@ public class JSODDSupport {
 
 		@Override
 		public void preVisit(ASTNode node) {
-			System.err.println(Util.fill(' ', statementStack.size() * 2) + node.getClass() + ": " + node.toString().replace('\n', ' '));
+			//System.err.println(Util.fill(' ', statementStack.size() * 2) + node.getClass() + ": " + node.toString().replace('\n', ' '));
 			int start = node.getStartPosition();
 			int line = unit == null ? -1 : unit.getLineNumber(start);
 			int col = unit == null ? -1 : unit.getColumnNumber(start);
@@ -242,6 +243,9 @@ public class JSODDSupport {
 					@Override
 					public boolean visit(IResource resource)
 							throws CoreException {
+						if (MoSyncBuilder.isInOutput(resource.getProject(), resource)) {
+							return false;
+						}
 						IPath location = resource.getFullPath();
 						result[0] |= (fileIds == null || fileIds.get(location) == null);
 						assignFileId(location);

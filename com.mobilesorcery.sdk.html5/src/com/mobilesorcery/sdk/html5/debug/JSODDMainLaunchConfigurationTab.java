@@ -5,6 +5,8 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.ui.AbstractLaunchConfigurationTab;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
@@ -19,10 +21,12 @@ public class JSODDMainLaunchConfigurationTab extends AbstractLaunchConfiguration
 	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
-		main.setLayout(UIUtils.newPrefsLayout(2));
+		main.setLayout(new GridLayout(2, false));
 		Label timeoutLabel = new Label(main, SWT.NONE);
 		timeoutLabel.setText("Debug Protocol Timeout (seconds):");
 		timeout = new Text(main, SWT.BORDER | SWT.SINGLE);
+		timeout.setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT));
+		setControl(main);
 	}
 
 	@Override

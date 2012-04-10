@@ -443,6 +443,27 @@ public class Util {
 		return DATASIZE_FORMAT.format(new Object[] { value, unit },
 				new StringBuffer(30), new FieldPosition(0)).toString();
 	}
+	
+	public static String elapsedTime(int ms) {
+		String unit = "ms";
+		int value = ms;
+		int rem = 0;
+		if (ms >= 3600000) {
+			unit = "h";
+			value = ms / 3600000;
+			rem = ms % 3600000;
+		} else if (ms >= 60000) {
+			unit = "m";
+			value = ms / 60000;
+			rem = ms % 60000;
+		} else if (ms >= 1000) {
+			unit = "s";
+			value = ms / 1000;
+			rem = ms % 1000;
+		}
+		String minor = rem == 0 ? "" : " " + elapsedTime(rem);
+		return value + unit + minor;
+	}
 
 	public static String getExtension(File file) {
 		int index = file.getName().lastIndexOf('.');
@@ -816,4 +837,5 @@ public class Util {
 		}
 		return buf.toString();
 	}
+
 }

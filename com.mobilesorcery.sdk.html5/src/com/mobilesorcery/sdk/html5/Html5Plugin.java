@@ -15,6 +15,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.jface.util.Policy;
 import org.eclipse.ui.IStartup;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -25,23 +26,31 @@ import org.eclipse.wst.jsdt.internal.core.JavaProject;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IPropertyOwner;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PrivilegedAccess;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
+import com.mobilesorcery.sdk.html5.debug.JSODDLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.live.LiveServer;
 import com.mobilesorcery.sdk.html5.live.ReloadManager;
+import com.mobilesorcery.sdk.profiles.ITargetProfileProvider;
 import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 import com.mobilesorcery.sdk.ui.IWorkbenchStartupListener;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
+import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransportListener;
+import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
+import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
 
 /**
  * The activator class controls the plug-in life cycle
  */
-public class Html5Plugin extends AbstractUIPlugin implements IStartup {
+public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPhoneTransportListener {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.html5"; //$NON-NLS-1$
@@ -86,6 +95,10 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup {
 			}
 		});
 		plugin = this;
+
+		// Since we are an IStartup, this will work.
+		TargetPhonePlugin.getDefault().addTargetPhoneTransportListener(this);
+
 		initReloadManager();
 	}
 
@@ -100,6 +113,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup {
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
+		TargetPhonePlugin.getDefault().removeTargetPhoneTransportListener(this);
 		disposeReloadManager();
 	}
 
@@ -242,5 +256,22 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup {
 
 	public Collection<IProject> getProjectsWithJSODDSupport() {
 		return Collections.unmodifiableCollection(jsOddSupport.keySet());
+	}
+
+	@Override
+	public void handleEvent(TargetPhoneTransportEvent event) {
+		// Launch the debug server if sending package in debug mode
+		if (TargetPhoneTransportEvent.isType(TargetPhoneTransportEvent.PRE_SEND, event)) {
+			MoSyncProject project = event.project;
+			IBuildVariant variant = event.variant;
+			IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
+			if (hasHTML5Support(project) && PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
+				try {
+					JSODDLaunchConfigurationDelegate.launchDefault();
+				} catch (CoreException e) {
+					Policy.getStatusHandler().show(e.getStatus(), "Could not launch JavaScript On-Device Debug Server");
+				}
+			}
+		}
 	}
 }

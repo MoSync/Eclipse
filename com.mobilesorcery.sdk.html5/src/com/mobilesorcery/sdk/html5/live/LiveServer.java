@@ -11,6 +11,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -112,41 +114,33 @@ public class LiveServer {
 
 	static class InternalQueues {
 
-		//private static final int INCOMING_QUEUE = 0;
-		//private static final int DEBUG_QUEUE = 1;
+		private static final int PING_INTERVAL = 15000;
+
 		private static final int POISON = -1;
 
 		// TODO: Slow refactoring to make this class useful
-
-		//private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> debugQueues = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
-		//private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> incomingQueues = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
-		//private final HashMap<Pair<Integer, Integer>, AtomicInteger> waitingCounts = new HashMap<Pair<Integer,Integer>, AtomicInteger>();
-
-		//private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> sessionQueues = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
 		private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> consumers = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
+
+		private final HashMap<Integer, Long> takeTimestamps = new HashMap<Integer, Long>();
 
 		private final Object queueLock = new Object();
 
-		/*public Map<Integer, LinkedBlockingQueue<DebuggerMessage>> getQueues(
-				int queueType) {
-			HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> queues = queueType == INCOMING_QUEUE ? incomingQueues
-					: debugQueues;
-			return queues;
-		}*/
+		private Timer pinger;
 
 		private DebuggerMessage poison() {
 			return new DebuggerMessage(POISON);
 		}
 
+		private DebuggerMessage ping() {
+			return new DebuggerMessage(PING);
+		}
+
 		public DebuggerMessage take(int sessionId)
 				throws InterruptedException {
-			CoreMoSyncPlugin.trace("ENTERING TAKE");
-			new Exception().printStackTrace(System.out);
-			CoreMoSyncPlugin.trace("TAKE 1 CONSUMERS: {0}", consumers);
 			LinkedBlockingQueue<DebuggerMessage> consumer = null;
 			synchronized (queueLock) {
 				consumer = consumers.get(sessionId);
-				LinkedBlockingQueue<DebuggerMessage> newConsumer = new LinkedBlockingQueue<DebuggerMessage>(1);
+				LinkedBlockingQueue<DebuggerMessage> newConsumer = new LinkedBlockingQueue<DebuggerMessage>(1024);
 				if (consumer != null) {
 					consumer.drainTo(newConsumer);
 					consumer.offer(poison());
@@ -156,7 +150,6 @@ public class LiveServer {
 			}
 
 			DebuggerMessage result = consumer.take();
-			CoreMoSyncPlugin.trace("TAKE 2 CONSUMERS: {0}", consumers);
 
 			if (result != null && result.type == POISON) {
 				throw new InterruptedException();
@@ -203,12 +196,13 @@ public class LiveServer {
 
 		public void offer(int sessionId, DebuggerMessage msg) {
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-				CoreMoSyncPlugin.trace("OFFER: Session id {0}: {1}", sessionId, msg);
+				CoreMoSyncPlugin.trace("{2}Ê- OFFER: Session id {0}: {1}", sessionId, msg, new Date().toString());
 				CoreMoSyncPlugin.trace("CONSUMERS: {0}", consumers);
 			}
 			synchronized (queueLock) {
 				LinkedBlockingQueue<DebuggerMessage> consumer = consumers.get(sessionId);
 				if (consumer != null) {
+					takeTimestamps.put(sessionId, System.currentTimeMillis());
 					consumer.offer(msg);
 				}
 			}
@@ -235,7 +229,9 @@ public class LiveServer {
 				//setWaiting(DEBUG_QUEUE, sessionId, false);
 
 				LinkedBlockingQueue<DebuggerMessage> sessionQueue = consumers.remove(sessionId);
-				sessionQueue.offer(poison());
+				if (sessionQueue != null) {
+					sessionQueue.offer(poison());
+				}
 				/*LinkedBlockingQueue<DebuggerMessage> debugQueue = debugQueues.remove(sessionId);
 				LinkedBlockingQueue<DebuggerMessage> incomingQueue = incomingQueues
 						.remove(sessionId);
@@ -266,6 +262,33 @@ public class LiveServer {
 			return result.toString();
 		}
 
+		public void startPingDeamon() {
+			pinger = new Timer();
+			pinger.scheduleAtFixedRate(new TimerTask() {
+				@Override
+				public void run() {
+					pingAll();
+				} }, PING_INTERVAL, 2000);
+		}
+
+		public void stopPingDeamon() {
+			if (pinger != null) {
+				pinger.cancel();
+			}
+			pinger = null;
+		}
+
+		protected void pingAll() {
+			synchronized (queueLock) {
+				for (Integer sessionId : consumers.keySet()) {
+					Long timeOfLastPing = takeTimestamps.get(sessionId);
+					boolean needsPing = timeOfLastPing == null || System.currentTimeMillis() - timeOfLastPing > PING_INTERVAL;
+					if (needsPing) {
+						offer(sessionId, ping());
+					}
+				}
+			}
+		}
 	}
 
 	// TODO: Too many queues. JETTY Continuations?
@@ -294,6 +317,8 @@ public class LiveServer {
 	private static final int STEP = 3;
 
 	private static final int EVAL = 1000;
+
+	private static final int PING = 2000;
 
 	public static final String TIMEOUT_ATTR = "live.timeout";
 
@@ -389,7 +414,8 @@ public class LiveServer {
 				return error("Session not initialized");
 			}
 
-			JSONObject result = newCommand("ping");
+			// We use a zero-length breakpoint list as 'ping'
+			JSONObject result = createBreakpointJSON(new Object[0], true);
 
 			try {
 				ArrayList bps = new ArrayList();
@@ -409,6 +435,8 @@ public class LiveServer {
 					result = newCommand("eval");
 					result.put("data", queuedObject);
 					result.put("id", queuedElement.getMessageId());
+				} else if (queuedType == PING) {
+					// Just return the ping created above!
 				}
 			} catch (InterruptedException e) {
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
@@ -490,12 +518,6 @@ public class LiveServer {
 					jsonBps.put(SESSION_ID_ATTR, newSessionId);
 					ReloadVirtualMachine vm = resetVM(req, newSessionId);
 					vm.setCurrentLocation((String) command.get("location"));
-					// TODO: JSDI does not really allow this - bah. Do complicated solution instead then.
-					//jsonBps.put(SUSPEND_ATTR, true);
-					//List threads = vm.allThreads();
-					//for (Object thread : threads) {
-					//	vm.eventRequestManager().createStepRequest((ThreadReference) thread, StepRequest.STEP_INTO);
-					//}
 				}
 				return jsonBps;
 			} else if ("/mobile/console".equals(target)) {
@@ -597,6 +619,7 @@ public class LiveServer {
 			connector.setMaxIdleTime(120000);
 			server.setConnectors(new Connector[] { connector });
 			server.start();
+			queues.startPingDeamon();
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 				InetAddress host = InetAddress.getLocalHost();
 				String hostName = host.getHostName();
@@ -736,6 +759,7 @@ public class LiveServer {
 		if (refs.isEmpty()) {
 			unassignedVMs.clear();
 			vmsByHost.clear();
+			queues.stopPingDeamon();
 			queues.killAllSessions();
 			if (server != null) {
 				try {

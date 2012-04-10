@@ -137,6 +137,9 @@ public class ReloadEventRequestManager implements EventRequestManager {
 	@Override
 	public void deleteEventRequest(EventRequest eventRequest) {
 		this.requests.remove(eventRequest);
+		if (eventRequest instanceof ReloadEventRequest) {
+			((ReloadEventRequest) eventRequest).delete();
+		}
 	}
 
 	@Override

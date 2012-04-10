@@ -163,7 +163,7 @@ public class ReloadStackFrame implements StackFrame {
 				} else if ("string".equals(type)) {
 					return vm.mirrorOf(repr);
 				} else if ("number".equals(type)) {
-					Number reprNum = Long.parseLong(repr);
+					Number reprNum = Double.parseDouble(repr);
 					return vm.mirrorOf(reprNum);
 				} else if ("boolean".equals(type)) {
 					Boolean reprBool = Boolean.parseBoolean(repr);

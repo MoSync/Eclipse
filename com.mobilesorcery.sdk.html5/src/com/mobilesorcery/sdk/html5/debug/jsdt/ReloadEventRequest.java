@@ -5,7 +5,8 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequest;
 
 public class ReloadEventRequest extends ReloadMirror implements EventRequest {
 
-	protected boolean enabled;
+	protected boolean enabled = false;
+	private boolean deleted = false;
 
 	ReloadEventRequest(ReloadVirtualMachine vm) {
 		super(vm);
@@ -21,4 +22,12 @@ public class ReloadEventRequest extends ReloadMirror implements EventRequest {
 		this.enabled = enabled;
 	}
 
+	public void delete() {
+		this.deleted = true;
+		setEnabled(false);
+	}
+
+	public boolean isDeleted() {
+		return deleted;
+	}
 }

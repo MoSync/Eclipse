@@ -1,8 +1,10 @@
 package com.mobilesorcery.sdk.html5;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,6 +23,7 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
+import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -33,6 +36,7 @@ import com.mobilesorcery.sdk.core.build.IBuildStep;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.internal.builder.IncrementalBuilderVisitor;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
+import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
@@ -61,7 +65,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				FileWriter output = null;
 				try {
 					output = new FileWriter(outputFile);
-					// TODO! Not only wormhole!
+					// TODO! Not require wormhole!
 					boolean addBoilerPlate = resourcePath
 							.lastSegment().equalsIgnoreCase(
 									"wormhole.js");
@@ -69,9 +73,11 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 						op.generateBoilerplate(
 								MoSyncProject.create(getProject()),
 								output);
+						output.write(Util.readFile(resourceToInstrument.getLocation().toOSString()));
+					} else {
+						op.rewrite(resourceToInstrument.getFullPath(),
+								output);
 					}
-					op.rewrite(resourceToInstrument.getFullPath(),
-							output);
 				} catch (IOException e) {
 					throw new CoreException(
 							new Status(
@@ -116,7 +122,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			this.diff = diff;
 		}
 
-		public void instrument(IProgressMonitor monitor, DependencyManager<IResource> dependencies) throws CoreException {
+		public void instrument(IProgressMonitor monitor, DependencyManager<IResource> dependencies, IProcessConsole console) throws CoreException {
 			/*
 			 * TODO: Put boilerplate code in a separate file: boolean
 			 * addBoilerplate = !resourcesToInstrument.isEmpty(); if
@@ -133,7 +139,10 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			Set<IResource> instrumentThese = computeResourcesToRebuild(dependencies);
 			Rewriter rewriter = new Rewriter(op, shouldAddBoilerPlate);
 			for (IResource instrumentThis : instrumentThese) {
+				long start = System.currentTimeMillis();
 				rewriter.rewrite(instrumentThis);
+				long elapsed = System.currentTimeMillis() - start;
+				console.addMessage(MessageFormat.format("Instrumented {0} [{1}].", instrumentThis.getFullPath(), Util.elapsedTime((int) elapsed)));
 			}
 		}
 	}
@@ -177,15 +186,15 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				File outputRoot = MoSyncBuilder
 						.getOutputPath(wrappedProject, variant)
 						.append(inputRootPath).toFile();
-				// TODO: Efficiency, perhaps?
-				Util.copyDir(new SubProgressMonitor(monitor, 3), inputRoot
-						.getLocation().toFile(), outputRoot, null);
+				// Ok, do NOT copy files that we may want to instrument
+				copyUninstrumentedFiles(monitor, inputRoot.getLocation().toFile(), outputRoot);
+
 				InstrumentationBuilderVisitor visitor = new InstrumentationBuilderVisitor(
 						inputRoot, outputRoot);
 				visitor.setProject(wrappedProject);
 				visitor.setDiff(diff);
 				DependencyManager<IResource> deps = getBuildState().getDependencyManager();
-				visitor.instrument(new SubProgressMonitor(monitor, 7), deps);
+				visitor.instrument(new SubProgressMonitor(monitor, 7), deps, getConsole());
 
 				// TODO -- would prefer it not to always output there... Since
 				// we'll get build problems for sure!
@@ -200,6 +209,15 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 		}
 		monitor.done();
 		return CONTINUE;
+	}
+
+	private void copyUninstrumentedFiles(IProgressMonitor monitor, File inputRoot, File outputRoot) throws IOException {
+		Util.copyDir(new SubProgressMonitor(monitor, 3), inputRoot, outputRoot, new FileFilter() {
+					@Override
+					public boolean accept(File file) {
+						return !JSODDSupport.isValidJavaScriptFile(new Path(file.getAbsolutePath()));
+					}
+				});
 	}
 
 }
