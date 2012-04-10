@@ -60,7 +60,6 @@ public class ReloadStackFrame implements StackFrame {
 		if (!inited) {
 			inited = true;
 			thisVar = new ReloadVariable(vm, this, "this", "this");
-			argsVar = new ReloadVariable(vm, this, "arguments", "arguments");
 			localVars = new ArrayList<ReloadVariable>();
 			LocalVariableScope scope = vm.getLocalVariableScope(location);
 			if (scope != null) {
@@ -75,7 +74,6 @@ public class ReloadStackFrame implements StackFrame {
 	public List variables() {
 		initVars();
 		ArrayList result = new ArrayList();
-		result.add(argsVar);
 		result.addAll(localVars);
 		return result;
 	}

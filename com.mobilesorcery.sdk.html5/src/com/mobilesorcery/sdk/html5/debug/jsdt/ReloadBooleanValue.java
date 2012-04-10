@@ -35,14 +35,12 @@ public class ReloadBooleanValue extends ReloadValue implements BooleanValue {
 
 	@Override
 	public String valueString() {
-		// TODO Auto-generated method stub
-		return null;
+		return stringValue();
 	}
 
 	@Override
 	public VirtualMachine virtualMachine() {
-		// TODO Auto-generated method stub
-		return null;
+		return super.virtualMachine();
 	}
 
 }

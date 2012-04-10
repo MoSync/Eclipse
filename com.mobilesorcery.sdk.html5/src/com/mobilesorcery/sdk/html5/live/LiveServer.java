@@ -195,11 +195,11 @@ public class LiveServer {
 		}*/
 
 		public void offer(int sessionId, DebuggerMessage msg) {
-			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-				CoreMoSyncPlugin.trace("{2}Ê- OFFER: Session id {0}: {1}", sessionId, msg, new Date().toString());
-				CoreMoSyncPlugin.trace("CONSUMERS: {0}", consumers);
-			}
 			synchronized (queueLock) {
+				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+					CoreMoSyncPlugin.trace("{2}Ê- OFFER: Session id {0}: {1}", sessionId, msg, new Date().toString());
+					CoreMoSyncPlugin.trace("CONSUMERS: {0}", consumers);
+				}
 				LinkedBlockingQueue<DebuggerMessage> consumer = consumers.get(sessionId);
 				if (consumer != null) {
 					takeTimestamps.put(sessionId, System.currentTimeMillis());
@@ -225,20 +225,10 @@ public class LiveServer {
 
 		public void killSession(int sessionId) {
 			synchronized (queueLock) {
-				//setWaiting(INCOMING_QUEUE, sessionId, false);
-				//setWaiting(DEBUG_QUEUE, sessionId, false);
-
 				LinkedBlockingQueue<DebuggerMessage> sessionQueue = consumers.remove(sessionId);
 				if (sessionQueue != null) {
 					sessionQueue.offer(poison());
 				}
-				/*LinkedBlockingQueue<DebuggerMessage> debugQueue = debugQueues.remove(sessionId);
-				LinkedBlockingQueue<DebuggerMessage> incomingQueue = incomingQueues
-						.remove(sessionId);
-				debugQueue.offer(new DebuggerMessage(POISON));
-				incomingQueue.offer(new DebuggerMessage(POISON));*/
-				//safeTake(DEBUG_QUEUE, sessionId);
-				//safeTake(INCOMING_QUEUE, sessionId);
 			}
 		}
 
