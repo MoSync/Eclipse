@@ -6,16 +6,21 @@ import java.io.Writer;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Stack;
 import java.util.TreeMap;
+import java.util.Vector;
 
+import org.eclipse.cdt.core.settings.model.util.Comparator;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -31,18 +36,26 @@ import org.eclipse.wst.jsdt.core.dom.ASTNode;
 import org.eclipse.wst.jsdt.core.dom.ASTParser;
 import org.eclipse.wst.jsdt.core.dom.ASTVisitor;
 import org.eclipse.wst.jsdt.core.dom.Block;
+import org.eclipse.wst.jsdt.core.dom.DoStatement;
 import org.eclipse.wst.jsdt.core.dom.ForInStatement;
 import org.eclipse.wst.jsdt.core.dom.ForStatement;
 import org.eclipse.wst.jsdt.core.dom.FunctionDeclaration;
+import org.eclipse.wst.jsdt.core.dom.IfStatement;
 import org.eclipse.wst.jsdt.core.dom.JavaScriptUnit;
+import org.eclipse.wst.jsdt.core.dom.LabeledStatement;
+import org.eclipse.wst.jsdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.wst.jsdt.core.dom.Statement;
 import org.eclipse.wst.jsdt.core.dom.SwitchCase;
+import org.eclipse.wst.jsdt.core.dom.SwitchStatement;
 import org.eclipse.wst.jsdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.wst.jsdt.core.dom.WhileStatement;
+import org.eclipse.wst.jsdt.core.dom.WithStatement;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
+import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.templates.Template;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
@@ -50,31 +63,57 @@ import com.mobilesorcery.sdk.html5.Html5Plugin;
 public class JSODDSupport {
 
 	public class DebugRewriteOperationVisitor extends ASTVisitor {
-		private final HashMap<Integer, Integer> linesToRewrite = new HashMap<Integer, Integer>();
+		private final HashMap<Integer, ASTNode> nodesToRewrite = new HashMap<Integer, ASTNode>();
 		private JavaScriptUnit unit;
 		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
 		private final Stack<Boolean> instrumentState = new Stack<Boolean>();
-		private LocalVariableScope currentScope = new LocalVariableScope()
-				.nestScope();
+		private LocalVariableScope currentScope = new LocalVariableScope().nestScope();
 		private final TreeMap<Integer, LocalVariableScope> localVariables = new TreeMap<Integer, LocalVariableScope>();
-		private boolean inForStatement;
+		private final HashSet<ASTNode> exclusions = new HashSet<ASTNode>();
+		private final HashSet<Statement> blockifiables = new HashSet<Statement>();
+		private final HashMap<Integer, NavigableMap<Integer, List<String>>> insertions = new HashMap<Integer, NavigableMap<Integer,List<String>>>();
+		private final HashMap<ASTNode, JavaScriptUnit> nodeToUnitMap = new HashMap<ASTNode, JavaScriptUnit>();
 
 		@Override
 		public void preVisit(ASTNode node) {
 			//System.err.println(Util.fill(' ', statementStack.size() * 2) + node.getClass() + ": " + node.toString().replace('\n', ' '));
 			int start = node.getStartPosition();
-			int line = unit == null ? -1 : unit.getLineNumber(start);
-			int col = unit == null ? -1 : unit.getColumnNumber(start);
+			int startLine = unit == null ? -1 : unit.getLineNumber(start);
 
 			LocalVariableScope startScope = currentScope;
 			boolean nest = false;
 
+			blockify(node);
+
 			if (node instanceof FunctionDeclaration) {
-				nest = true;
+				FunctionDeclaration fd = (FunctionDeclaration) node;
+				currentScope = currentScope.nestScope();
+				for (Object paramObj : fd.parameters()) {
+					SingleVariableDeclaration param = (SingleVariableDeclaration) paramObj;
+					String name = param.getName().getIdentifier();
+					currentScope = currentScope.addLocalVariableDeclaration(name);
+				}
+				// Already nested!
+				nest = false;
 			}
 
-			if (node instanceof ForInStatement || node instanceof ForStatement) {
-				instrumentState.push(false);
+			if (node instanceof SwitchStatement) {
+				// The first statement in a switch statement
+				// should always be a case-switch statement.
+				SwitchStatement switchStatement = (SwitchStatement) node;
+				List statements = switchStatement.statements();
+				for (Object statementObj : statements) {
+					if (statementObj instanceof SwitchCase) {
+						addToExclusionList((SwitchCase) statementObj);
+						continue;
+					}
+				}
+			}
+
+			if (node instanceof LabeledStatement) {
+				// Labels aren't really executable, but their statements are.
+				LabeledStatement labeledStatement = (LabeledStatement) node;
+				addToExclusionList(labeledStatement.getBody());
 			}
 
 			if (node instanceof JavaScriptUnit) {
@@ -92,7 +131,7 @@ public class JSODDSupport {
 			}
 
 			if (isInstrumentableStatement(node)) {
-				addInstrumentationLocation(line, col);
+				addInstrumentationLocation(unit, node);
 			}
 
 			if (nest) {
@@ -102,24 +141,77 @@ public class JSODDSupport {
 			if (currentScope != startScope) {
 				// It's ok to overwrite the previous localvariables if on the
 				// same line.
-				localVariables.put(line + 1, currentScope);
+				localVariables.put(startLine + 1, currentScope);
 			}
 		}
 
-		private void addInstrumentationLocation(int line, int col) {
-			if (line > 0 && col >= 0 && !linesToRewrite.containsKey(line)) {
-				linesToRewrite.put(line, col);
+		private boolean shouldBlockify(ASTNode node) {
+			return blockifiables.contains(node);
+		}
+
+		private void blockify(ASTNode node) {
+			if (node instanceof IfStatement) {
+				IfStatement ifStatement = (IfStatement) node;
+				addToBlockifyList(ifStatement.getThenStatement());
+				addToBlockifyList(ifStatement.getElseStatement());
+			} else if (node instanceof ForStatement) {
+				ForStatement forStatement = (ForStatement) node;
+				addToBlockifyList(forStatement.getBody());
+			} else if (node instanceof ForInStatement) {
+				ForInStatement forInStatement = (ForInStatement) node;
+				addToBlockifyList(forInStatement.getBody());
+			} else if (node instanceof WithStatement) {
+				WithStatement withStatement = (WithStatement) node;
+				addToBlockifyList(withStatement.getBody());
+			} else if (node instanceof WhileStatement) {
+				WhileStatement whileStatement = (WhileStatement) node;
+				addToBlockifyList(whileStatement.getBody());
+			} else if (node instanceof DoStatement) {
+				DoStatement doStatement = (DoStatement) node;
+				addToBlockifyList(doStatement.getBody());
+			}
+		}
+
+		private void addToBlockifyList(Statement statement) {
+			if (statement == null || statement instanceof Block) {
+				// Already blockified!
+				return;
+			}
+
+			blockifiables.add(statement);
+		}
+
+		private void addToExclusionList(ASTNode node) {
+			if (node != null) {
+				exclusions.add(node);
+			}
+		}
+
+		private void addInstrumentationLocation(JavaScriptUnit unit, ASTNode node) {
+			if (unit == null) {
+				return;
+			}
+			int startLine = unit.getLineNumber(node.getStartPosition());
+			int startCol = unit.getColumnNumber(node.getStartPosition());
+			ASTNode previousNode = nodesToRewrite.get(startLine);
+			int previousStartCol = previousNode == null ? Integer.MAX_VALUE : unit.getColumnNumber(previousNode.getStartPosition());
+			// Max one point of instrumentation per line.
+			if (startLine > 0 && startCol >= 0 && previousStartCol > startCol) {
+				nodesToRewrite.put(startLine, node);
+				nodeToUnitMap.put(node, unit);
 			}
 		}
 
 		private boolean isInstrumentableStatement(ASTNode node) {
+			if (exclusions.contains(node)) {
+				return false;
+			}
 			boolean isStatement = node instanceof Statement;
 			boolean isBlock = node instanceof Block;
-			ASTNode parent = node.getParent();
 			boolean allowInstrumentation = isStatement && !isBlock;
 
 			// Special case: switch.
-			allowInstrumentation &= !(node instanceof SwitchCase);
+			//allowInstrumentation &= !(node instanceof SwitchCase);
 
 			allowInstrumentation &= instrumentState.isEmpty() || instrumentState.peek();
 
@@ -149,7 +241,7 @@ public class JSODDSupport {
 			}
 
 			if (node instanceof ForInStatement || node instanceof ForStatement) {
-				instrumentState.pop();
+				//instrumentState.pop();
 			}
 
 			if (node instanceof Statement) {
@@ -170,55 +262,113 @@ public class JSODDSupport {
 				// same line.
 				localVariables.put(line + 1, currentScope);
 			}
+
+			exclusions.remove(node);
+		}
+
+		private void insert(int line, int col, String text) {
+			NavigableMap<Integer, List<String>> insertionsForLine = insertions.get(line);
+			if (insertionsForLine == null) {
+				insertionsForLine = new TreeMap<Integer, List<String>>();
+				insertions.put(line, insertionsForLine);
+			}
+			List<String> insertionsForCol = insertionsForLine.get(col);
+			if (insertionsForCol == null) {
+				insertionsForCol = new ArrayList<String>();
+				insertionsForLine.put(col, insertionsForCol);
+			}
+			insertionsForCol.add(text);
 		}
 
 		public void rewrite(long fileId, String source, Writer output,
 				NavigableMap<Integer, LocalVariableScope> scopeMap)
 				throws IOException {
 			// TODO: I guess there is some better AST rewrite methods around.
-			// TODO: Blockless statements that now should be blocks, such as
-			// single line 'if's
 			String[] lineByLineSource = source.split("\\n");
 			StringBuffer result = new StringBuffer();
+
 			int lineNo = 1;
 			for (String line : lineByLineSource) {
-				Integer col = linesToRewrite.get(lineNo);
-				String newLine = line;
-				if (col != null && col >= 0) {
+				ASTNode node = nodesToRewrite.get(lineNo);
+				JavaScriptUnit unit = nodeToUnitMap.get(node);
+				Integer col = (unit != null && node != null) ? unit.getColumnNumber(node.getStartPosition()) : null;
+				if (node != null && col != null) {
 					col = Math.min(col, line.length());
-					String prefix = line.substring(0, col);
-					String suffix = line.substring(col);
-					Entry<Integer, LocalVariableScope> scope = localVariables
-							.floorEntry(lineNo);
+
+					// Makes it more legible for debugging purposes
+					if (onlyWS(line.substring(0, col))) {
+						col = 0;
+					}
+
+					if (shouldBlockify(node)) {
+						insert(lineNo, col, "{");
+						int endPosition = node.getStartPosition() + node.getLength();
+						insert(unit.getLineNumber(endPosition), unit.getColumnNumber(endPosition), "}");
+					}
+
+					Entry<Integer, LocalVariableScope> scope = localVariables.floorEntry(lineNo);
 					String scopeDesc = "";
 					if (scope != null) {
 						scopeDesc = "/*" + scope.getValue().getLocalVariables()
 								+ "*/";
 					}
-					// TODO: Faster check here!
-					String prefixAndNewLine = prefix.trim().length() == 0 ? ""
-							: (prefix + "\n");
-					newLine = prefixAndNewLine
-							+ scopeDesc
+
+					String addThis = scopeDesc
 							+ " MoSyncDebugProtocol.updatePosition("
 							+ fileId
 							+ ","
 							+ lineNo
 							+ ","
 							+ "false,function(____eval) {return eval(____eval);});"
-							+ "\n" + suffix;
+							+ "\n";
+					insert(lineNo, col, addThis);
 				}
+				lineNo++;
+			}
 
+			scopeMap.putAll(localVariables);
+
+			lineNo = 1;
+			for (String originalLine : lineByLineSource) {
+				NavigableMap<Integer, List<String>> insertionList = insertions.get(lineNo);
+				String newLine = originalLine;
+				if (insertionList != null) {
+					ArrayList<String> segments = new ArrayList<String>();
+					int originalCol = 0;
+					for (Integer col : insertionList.keySet()) {
+						List<String> snippets = insertionList.get(col);
+						segments.add(originalLine.substring(originalCol, col));
+						for (String snippet : snippets) {
+							segments.add(snippet);
+						}
+						originalCol = col;
+					}
+					segments.add(originalLine.substring(originalCol));
+					newLine = Util.join(segments.toArray(), "");
+				}
 				result.append(newLine);
 				result.append('\n');
 				lineNo++;
 			}
-			scopeMap.putAll(localVariables);
+
 			if (output != null) {
 				output.write(result.toString());
 			}
 		}
+
+		private boolean onlyWS(String str) {
+			for (int i = 0; i < str.length(); i++) {
+				char ch = str.charAt(i);
+				if (!Character.isWhitespace(ch)) {
+					return false;
+				}
+			}
+			return true;
+		}
 	}
+
+	public static final String SERVER_HOST_PROP = "SERVER_HOST";
+	public static final String SERVER_PORT_PROP = "SERVER_PORT";
 
 	private final ASTParser parser;
 
@@ -351,20 +501,11 @@ public class JSODDSupport {
 		Template template = new Template(getClass().getResource(
 				"/templates/jsoddsupport.template"));
 		// TODO! Use Reload instead!
-		HashMap<String, String> properties = new HashMap<String, String>(
-				projectProperties.getProperties());
-		if (!properties.containsKey("SERVER_HOST")) {
-			try {
-				InetAddress localHost = InetAddress.getLocalHost();
-				properties.put("SERVER_HOST", localHost.getHostAddress());
-			} catch (IOException e) {
-				throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, "Could not determine localhost address"));
-			}
-		}
-		if (!properties.containsKey("SERVER_PORT")) {
-			properties.put("SERVER_PORT", "8511");
-		}
+		Map<String, String> properties = getDefaultProperties();
+		properties.putAll(projectProperties.getProperties());
+
 		properties.put("INIT_FILE_IDS", generateFileIdInitCode());
+
 		try {
 			String contents = template.resolve(properties);
 			boilerplateOutput.write(contents);
@@ -372,6 +513,18 @@ public class JSODDSupport {
 			throw new CoreException(new Status(IStatus.ERROR,
 					Html5Plugin.PLUGIN_ID, e.getMessage(), e));
 		}
+	}
+
+	public Map<String, String> getDefaultProperties() throws CoreException {
+		HashMap<String, String> properties = new HashMap<String, String>();
+		try {
+			InetAddress localHost = InetAddress.getLocalHost();
+			properties.put(SERVER_HOST_PROP, localHost.getHostAddress());
+		} catch (IOException e) {
+			throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, "Could not determine localhost address"));
+		}
+		properties.put(SERVER_PORT_PROP, "8511");
+		return properties;
 	}
 
 	private String generateFileIdInitCode() {

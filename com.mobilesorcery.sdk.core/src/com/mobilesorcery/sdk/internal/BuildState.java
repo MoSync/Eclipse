@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -171,7 +172,7 @@ public class BuildState implements IBuildState {
     public BuildState(MoSyncProject project, IBuildVariant variant) {
         this.project = project;
         this.variant = variant;
-        IPath metaDataPath = getLocation();
+        IPath metaDataPath = MoSyncBuilder.getMetaDataPath(project, variant);
         IPath buildStatePath = metaDataPath.append(".buildstate");
         buildStateFile = buildStatePath.toFile();
         clear();
@@ -502,7 +503,7 @@ public class BuildState implements IBuildState {
         for (Map.Entry<String, String> entry : currentBuildProperties.entrySet()) {
             String key = entry.getKey();
             String currentValue = entry.getValue();
-            String oldValue = project.getProperty(key);
+            String oldValue = properties.get(key);
             boolean bothEmpty = Util.isEmpty(currentValue) && Util.isEmpty(oldValue);
             if (!bothEmpty && !currentValue.equals(oldValue)) {
                 changed.add(key);
@@ -512,13 +513,18 @@ public class BuildState implements IBuildState {
         return changed;
     }
 
+    @Override
+	public Map<String, String> getBuildProperties() {
+    	return Collections.unmodifiableMap(properties);
+    }
+
     public void updateBuildVariant(IBuildVariant variant) {
         this.variant = variant;
     }
 
 	@Override
 	public IPath getLocation() {
-		return MoSyncBuilder.getMetaDataPath(project, variant);
+		return new Path(buildStateFile.getParentFile().getAbsolutePath());
 	}
 
 }

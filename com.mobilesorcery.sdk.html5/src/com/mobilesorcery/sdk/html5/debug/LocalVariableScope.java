@@ -1,6 +1,7 @@
 package com.mobilesorcery.sdk.html5.debug;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import com.mobilesorcery.sdk.core.Util;
@@ -61,7 +62,16 @@ public class LocalVariableScope {
 		} else if (parent != null) {
 			result.addAll(parent.getLocalVariables());
 		}
-		return result;
+
+		ArrayList<String> removedDuplicates = new ArrayList<String>();
+		HashSet<String> alreadyAdded = new HashSet<String>();
+		for (String var : result) {
+			if (!alreadyAdded.contains(var)) {
+				removedDuplicates.add(var);
+				alreadyAdded.add(var);
+			}
+		}
+		return removedDuplicates;
 	}
 
 	@Override

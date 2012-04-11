@@ -5,7 +5,9 @@ import java.io.FileFilter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFolder;
@@ -19,6 +21,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
@@ -28,6 +31,8 @@ import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.core.SectionedPropertiesFile;
+import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.build.AbstractBuildStep;
 import com.mobilesorcery.sdk.core.build.AbstractBuildStepFactory;
@@ -46,48 +51,39 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			private final JSODDSupport op;
 			private final boolean shouldAddBoilerPlate;
 
-			private Rewriter(JSODDSupport op,
-					boolean shouldAddBoilerPlate) {
+			private Rewriter(JSODDSupport op, boolean shouldAddBoilerPlate) {
 				this.op = op;
 				this.shouldAddBoilerPlate = shouldAddBoilerPlate;
 			}
 
 			public boolean rewrite(IResource resourceToInstrument)
 					throws CoreException {
-				IPath resourcePath = resourceToInstrument
-						.getFullPath();
-				resourcePath = resourcePath
-						.removeFirstSegments(inputRoot
-								.getFullPath().segmentCount());
-				File outputFile = new File(outputRoot, resourcePath
-						.toOSString());
+				IPath resourcePath = resourceToInstrument.getFullPath();
+				resourcePath = resourcePath.removeFirstSegments(inputRoot
+						.getFullPath().segmentCount());
+				File outputFile = new File(outputRoot,
+						resourcePath.toOSString());
 				outputFile.getParentFile().mkdirs();
 				FileWriter output = null;
 				try {
 					output = new FileWriter(outputFile);
 					// TODO! Not require wormhole!
-					boolean addBoilerPlate = resourcePath
-							.lastSegment().equalsIgnoreCase(
-									"wormhole.js");
+					boolean addBoilerPlate = resourcePath.lastSegment()
+							.equalsIgnoreCase("wormhole.js");
 					if (addBoilerPlate) {
 						op.generateBoilerplate(
-								MoSyncProject.create(getProject()),
-								output);
-						output.write(Util.readFile(resourceToInstrument.getLocation().toOSString()));
-					} else {
-						op.rewrite(resourceToInstrument.getFullPath(),
-								output);
+								MoSyncProject.create(getProject()), output);
+						/*output.write(Util.readFile(resourceToInstrument
+								.getLocation().toOSString()));*/
 					}
+					op.rewrite(resourceToInstrument.getFullPath(), output);
 				} catch (IOException e) {
-					throw new CoreException(
-							new Status(
-									IStatus.ERROR,
-									Html5Plugin.PLUGIN_ID,
-									"Cannot instrument JavaScript for debugging",
-									e));
+					throw new CoreException(new Status(IStatus.ERROR,
+							Html5Plugin.PLUGIN_ID,
+							"Cannot instrument JavaScript for debugging", e));
 				} finally {
 					Util.safeClose(output);
-					}
+				}
 				return !MoSyncBuilder.isInOutput(project, resourceToInstrument);
 			}
 		}
@@ -122,7 +118,9 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			this.diff = diff;
 		}
 
-		public void instrument(IProgressMonitor monitor, DependencyManager<IResource> dependencies, IProcessConsole console) throws CoreException {
+		public void instrument(IProgressMonitor monitor,
+				DependencyManager<IResource> dependencies,
+				IProcessConsole console) throws CoreException {
 			/*
 			 * TODO: Put boilerplate code in a separate file: boolean
 			 * addBoilerplate = !resourcesToInstrument.isEmpty(); if
@@ -135,6 +133,12 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			 */
 			final JSODDSupport op = Html5Plugin.getDefault().getJSODDSupport(
 					project);
+
+			// If we've changed the IP addr, then rebuild it all...
+			if (updateServerProps(op)) {
+				setDiff(null);
+			}
+
 			final boolean shouldAddBoilerPlate = op.applyDiff(diff);
 			Set<IResource> instrumentThese = computeResourcesToRebuild(dependencies);
 			Rewriter rewriter = new Rewriter(op, shouldAddBoilerPlate);
@@ -142,8 +146,49 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				long start = System.currentTimeMillis();
 				rewriter.rewrite(instrumentThis);
 				long elapsed = System.currentTimeMillis() - start;
-				console.addMessage(MessageFormat.format("Instrumented {0} [{1}].", instrumentThis.getFullPath(), Util.elapsedTime((int) elapsed)));
+				console.addMessage(MessageFormat.format(
+						"Instrumented {0} [{1}].",
+						instrumentThis.getFullPath(),
+						Util.elapsedTime((int) elapsed)));
 			}
+		}
+
+		private boolean updateServerProps(JSODDSupport op) throws CoreException {
+			try {
+				IPath jsoddMetaData = getBuildState().getLocation().append(
+						".jsodd");
+				SectionedPropertiesFile jsoddPropsFile = SectionedPropertiesFile
+						.create();
+				if (jsoddMetaData.toFile().exists()) {
+					jsoddPropsFile = SectionedPropertiesFile
+							.parse(jsoddMetaData.toFile());
+				}
+
+				Map<String, String> jsoddProps = jsoddPropsFile
+						.getDefaultSection().getEntriesAsMap();
+
+				// TODO: Should NOT use default properties.
+				String host = op.getDefaultProperties().get(
+						JSODDSupport.SERVER_HOST_PROP);
+				String port = op.getDefaultProperties().get(
+						JSODDSupport.SERVER_PORT_PROP);
+
+				String oldHost = jsoddProps.get(JSODDSupport.SERVER_HOST_PROP);
+				String oldPort = jsoddProps.get(JSODDSupport.SERVER_PORT_PROP);
+
+				Section defaultSection = jsoddPropsFile.getDefaultSection();
+				defaultSection.getEntries().clear();
+				defaultSection.addEntry(JSODDSupport.SERVER_HOST_PROP, host);
+				defaultSection.addEntry(JSODDSupport.SERVER_PORT_PROP, port);
+
+				jsoddPropsFile.write(jsoddMetaData.toFile());
+
+				return !Util.equals(host, oldHost) || !Util.equals(port, oldPort);
+			} catch (IOException e) {
+				CoreMoSyncPlugin.getDefault().log(e);
+				return false;
+			}
+
 		}
 	}
 
@@ -187,14 +232,17 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 						.getOutputPath(wrappedProject, variant)
 						.append(inputRootPath).toFile();
 				// Ok, do NOT copy files that we may want to instrument
-				copyUninstrumentedFiles(monitor, inputRoot.getLocation().toFile(), outputRoot);
+				copyUninstrumentedFiles(monitor, inputRoot.getLocation()
+						.toFile(), outputRoot);
 
 				InstrumentationBuilderVisitor visitor = new InstrumentationBuilderVisitor(
 						inputRoot, outputRoot);
 				visitor.setProject(wrappedProject);
 				visitor.setDiff(diff);
-				DependencyManager<IResource> deps = getBuildState().getDependencyManager();
-				visitor.instrument(new SubProgressMonitor(monitor, 7), deps, getConsole());
+				DependencyManager<IResource> deps = getBuildState()
+						.getDependencyManager();
+				visitor.instrument(new SubProgressMonitor(monitor, 7), deps,
+						getConsole());
 
 				// TODO -- would prefer it not to always output there... Since
 				// we'll get build problems for sure!
@@ -211,11 +259,14 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 		return CONTINUE;
 	}
 
-	private void copyUninstrumentedFiles(IProgressMonitor monitor, File inputRoot, File outputRoot) throws IOException {
-		Util.copyDir(new SubProgressMonitor(monitor, 3), inputRoot, outputRoot, new FileFilter() {
+	private void copyUninstrumentedFiles(IProgressMonitor monitor,
+			File inputRoot, File outputRoot) throws IOException {
+		Util.copyDir(new SubProgressMonitor(monitor, 3), inputRoot, outputRoot,
+				new FileFilter() {
 					@Override
 					public boolean accept(File file) {
-						return !JSODDSupport.isValidJavaScriptFile(new Path(file.getAbsolutePath()));
+						return !JSODDSupport.isValidJavaScriptFile(new Path(
+								file.getAbsolutePath()));
 					}
 				});
 	}

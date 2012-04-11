@@ -147,9 +147,14 @@ public class LiveServer {
 				}
 				consumer = newConsumer;
 				consumers.put(sessionId, consumer);
+				takeTimestamps.put(sessionId, System.currentTimeMillis());
 			}
 
 			DebuggerMessage result = consumer.take();
+
+			synchronized (queueLock) {
+				takeTimestamps.remove(sessionId);
+			}
 
 			if (result != null && result.type == POISON) {
 				throw new InterruptedException();
@@ -160,40 +165,6 @@ public class LiveServer {
 			return result;
 		}
 
-
-/*		private synchronized void setWaiting(int queueType, int sessionId, boolean isWaiting) {
-			int delta = isWaiting ? +1 : -1;
-			Pair<Integer, Integer> key = new Pair<Integer, Integer>(queueType, sessionId);
-			AtomicInteger waitCount = waitingCounts.get(key);
-			if (waitCount == null) {
-				waitCount = new AtomicInteger(0);
-				waitingCounts.put(key, waitCount);
-			}
-			waitCount.addAndGet(delta);
-			if (waitCount.intValue() == 0) {
-				waitingCounts.remove(key);
-			}
-		}
-
-		private int getWaitCount(int queueType, int sessionId) {
-			AtomicInteger result = waitingCounts.get(new Pair<Integer, Integer>(queueType, sessionId));
-			return result == null ? 0 : result.intValue();
-		}*/
-
-		/**
-		 * Sends interrupt to all waiting threads.
-		 * @param queueType
-		 * @param sessionId
-		 */
-		/*public void sendInterruptSignal(int queueType, int sessionId) {
-			// All kind of deadlocks can happen here -- but this is NOT a general class...
-			int waitCount = getWaitCount(queueType, sessionId);
-			CoreMoSyncPlugin.trace("Send interrupt to {0} (session id {2}, queue type {1})", waitCount, queueType, sessionId);
-			for (int i = 0; i < waitCount; i++) {
-				getQueue(queueType, sessionId).offer(new DebuggerMessage(POISON));
-			}
-		}*/
-
 		public void offer(int sessionId, DebuggerMessage msg) {
 			synchronized (queueLock) {
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
@@ -202,18 +173,10 @@ public class LiveServer {
 				}
 				LinkedBlockingQueue<DebuggerMessage> consumer = consumers.get(sessionId);
 				if (consumer != null) {
-					takeTimestamps.put(sessionId, System.currentTimeMillis());
 					consumer.offer(msg);
 				}
 			}
 		}
-
-		/*public void broadcast(DebuggerMessage msg) {
-			synchronized (queueLock) {
-				broadcast(msg);
-				broadcast(msg);
-			}
-		}*/
 
 		private void broadcast(DebuggerMessage msg) {
 			synchronized (queueLock) {
@@ -271,8 +234,8 @@ public class LiveServer {
 		protected void pingAll() {
 			synchronized (queueLock) {
 				for (Integer sessionId : consumers.keySet()) {
-					Long timeOfLastPing = takeTimestamps.get(sessionId);
-					boolean needsPing = timeOfLastPing == null || System.currentTimeMillis() - timeOfLastPing > PING_INTERVAL;
+					Long timeOfLastTake = takeTimestamps.get(sessionId);
+					boolean needsPing = timeOfLastTake != null && System.currentTimeMillis() - timeOfLastTake > PING_INTERVAL;
 					if (needsPing) {
 						offer(sessionId, ping());
 					}

@@ -195,9 +195,19 @@ window.MoSyncDebugProtocol = new (function() {
         return callstack;
     }
     
+    function internalJSONParse(JSONDocument) {
+        // This function is here because wormhole.js
+        // overrides the default JSON.parse and we
+        // later instrument that method. So we'd
+        // get a quasi-infinite loop when debugging
+        // wormhole.js functions.
+	    var parsedObject = eval('(' + JSONDocument + ')');
+	    return parsedObject;
+    }
+    
     function safeJSONParse(str) {
         try {
-            return JSON.parse(str);
+            return internalJSONParse(str);
         } catch (ex) {
             return null;
         }
