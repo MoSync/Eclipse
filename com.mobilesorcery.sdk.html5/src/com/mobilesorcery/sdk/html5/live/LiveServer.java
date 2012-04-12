@@ -250,17 +250,19 @@ public class LiveServer {
 
 	public static final int NO_SESSION = -1;
 
-	private static final int BREAKPOINT = 1;
+	private static final int PING = 0;
 
-	private static final int RESUME = 2;
+	private static final int EVAL = 5;
 
-	private static final int STEP = 3;
+	private static final int BREAKPOINT = 10;
 
-	private static final int TERMINATE = 4;
+	private static final int RESUME = 20;
 
-	private static final int EVAL = 1000;
+	private static final int STEP = 30;
 
-	private static final int PING = 2000;
+	private static final int DISCONNECT = 500;
+
+	private static final int TERMINATE = 12000;
 
 	public static final String TIMEOUT_ATTR = "live.timeout";
 
@@ -322,11 +324,11 @@ public class LiveServer {
 		private JSONObject waitForClient(String target, HttpServletRequest req,
 				HttpServletResponse res, boolean preflight) {
 			JSONObject result = null;
-			if (target.startsWith("/mobile/incoming")) {
+			if (targetMatches(target, "/mobile/incoming")) {
 				ReloadVirtualMachine vm = vmsByHost.get(req.getRemoteAddr());
 				int sessionId = vm == null ? NO_SESSION : vm.getCurrentSessionId();
 				result = pushCommandsToClient(sessionId, preflight);
-			} else if ("/mobile/breakpoint".equals(target)) {
+			} else if (targetMatches(target, "/mobile/breakpoint")) {
 				// RACE CONDITION WILL OCCUR HERE!
 				if (!preflight) {
 					JSONObject command = parseCommand(req);
@@ -378,6 +380,8 @@ public class LiveServer {
 					result.put("id", queuedElement.getMessageId());
 				} else if (queuedType == TERMINATE) {
 					result = newCommand("terminate");
+				} else if (queuedType == DISCONNECT) {
+					result = newCommand("disconnect");
 				} else if (queuedType == PING) {
 					// Just return the ping created above!
 				}
@@ -449,7 +453,7 @@ public class LiveServer {
 
 		private JSONObject handleCommand(String target, HttpServletRequest req,
 				HttpServletResponse res, boolean preflight) {
-			if ("/mobile/init".equals(target)) {
+			if (targetMatches(target, "/mobile/init")) {
 				// Just push the breakpoints!
 				IBreakpoint[] bps = DebugPlugin.getDefault()
 						.getBreakpointManager()
@@ -463,7 +467,7 @@ public class LiveServer {
 					vm.setCurrentLocation((String) command.get("location"));
 				}
 				return jsonBps;
-			} else if ("/mobile/console".equals(target)) {
+			} else if (targetMatches(target, "/mobile/console")) {
 				if (!preflight) {
 					JSONObject command = parseCommand(req);
 					if ("print-message".equals(getCommand(command))) {
@@ -484,6 +488,10 @@ public class LiveServer {
 				return new JSONObject();
 			}
 			return null;
+		}
+
+		private boolean targetMatches(String target, String requestType) {
+			return target != null && target.startsWith(requestType);
 		}
 
 		private String getCommand(JSONObject command) {
@@ -782,7 +790,7 @@ public class LiveServer {
 
 	public String evaluate(int sessionId, String expression)
 			throws InterruptedException, TimeoutException {
-		String result = awaitEvalResult(sessionId, expression, 5,
+		String result = awaitEvalResult(sessionId, expression, getTimeout(sessionId),
 				TimeUnit.SECONDS);
 		return result;
 	}
@@ -790,10 +798,24 @@ public class LiveServer {
 	public void terminate(int sessionId) {
 		try {
 			DebuggerMessage msg = new DebuggerMessage(TERMINATE);
-			await(sessionId, msg, 5, TimeUnit.SECONDS);
+			await(sessionId, msg, getTimeout(sessionId), TimeUnit.SECONDS);
 		} catch (Exception e) {
 			CoreMoSyncPlugin.getDefault().log(e);
 		}
+	}
+
+	public void disconnect(int sessionId) {
+		try {
+			DebuggerMessage msg = new DebuggerMessage(TERMINATE);
+			await(sessionId, msg, getTimeout(sessionId), TimeUnit.SECONDS);
+		} catch (Exception e) {
+			CoreMoSyncPlugin.getDefault().log(e);
+		}
+	}
+
+	private int getTimeout(int sessionId) {
+		// TODO: Use launch config/prefs. Hm. Prefs easier. And user-friendlier :)
+		return 5;
 	}
 
 	public void addConsoleListener(ILineHandler handler) {

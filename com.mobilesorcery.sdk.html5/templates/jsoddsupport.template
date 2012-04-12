@@ -13,27 +13,31 @@ window.MoSyncDebugProtocol = new (function() {
     var fileToId = {};
     
     var sessionId = null;
-    var disconnected = false;
-    var terminating = true;
     var currentOID = 0;
-    var inUpdatePosition = false;
-    var step = false;
-
     
+    var disconnected = false;
+    var terminating = false;
+    var step = false;
+    
+    var inUpdatePosition = false;
+
     this.assignOID = function(obj) {
     	currentOID++;
     	obj.____oid = currentOID;
+    }
+    
+    function timestamp() {
+    	return new Date().getTime();
     }
     
     function listenToServer() {
         try {
             dropCommandConnection();
             
-            if (disconnected) {
+            if (disconnected || terminating) {
             	return;
             }
             asyncXHR = new XMLHttpRequest();
-            asyncXHR.open('GET', serverUrl + '/mobile/incoming', true);
             asyncXHR.onreadystatechange = function () {
                 if (asyncXHR.readyState == 4) {
                     if (asyncXHR.responseText) {
@@ -50,6 +54,7 @@ window.MoSyncDebugProtocol = new (function() {
                     }
                 }
             };
+            asyncXHR.open('GET', serverUrl + '/mobile/incoming/' + timestamp(), true);
             asyncXHR.send(null);
         } catch (ex) {
         	disconnect(ex);
@@ -73,7 +78,7 @@ window.MoSyncDebugProtocol = new (function() {
     function sendToServer(path, payload) {
         try {
             var req = new XMLHttpRequest();
-            req.open('POST', serverUrl + '/mobile' + path, false);
+            req.open('POST', serverUrl + '/mobile' + path + "/" + timestamp(), false);
             req.setRequestHeader('Content-Type', 'application/json');
             if (sessionId != null) {
             	payload.sessionId = sessionId;
@@ -166,6 +171,12 @@ window.MoSyncDebugProtocol = new (function() {
                 shouldBreak = function() { return false; };
                 // Try to kill it -- this obviously requires wormhole.
                 mosync.bridge.send(["close"]);
+                return false;
+                
+            case 'disconnect':
+                step = false;
+                shouldBreak = function() { return false; };
+                disconnect("Disconnected by debugger");
                 return false;
         }
     }

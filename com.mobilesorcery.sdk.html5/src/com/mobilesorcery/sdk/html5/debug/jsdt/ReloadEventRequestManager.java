@@ -159,14 +159,12 @@ public class ReloadEventRequestManager implements EventRequestManager {
 
 	@Override
 	public VMDisconnectRequest createVMDisconnectRequest() {
-		// TODO Auto-generated method stub
-		return null;
+		return addRequest(new ReloadVMDisconnectRequest(vm));
 	}
 
 	@Override
 	public List vmDisconnectRequests() {
-		// TODO Auto-generated method stub
-		return null;
+		return filterRequests(VMDisconnectRequest.class);
 	}
 
 }
