@@ -17,6 +17,7 @@ import org.json.simple.JSONObject;
 
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.live.LiveServer;
 
 public class ReloadEventQueue implements EventQueue {
@@ -59,44 +60,61 @@ public class ReloadEventQueue implements EventQueue {
 
 		boolean isStepping = false;
 
-		if ("report-breakpoint".equals(commandName)) {
-			// Breakpoint!
-			JSONObject command = (JSONObject) commandObj;
-			ReloadThreadReference thread = (ReloadThreadReference) vm
-					.allThreads().get(0);
-			String fileName = (String) command.get("file");
-			Long line = (Long) command.get("line");
-			isStepping = command.containsKey("step")
-					&& (Boolean) command.get("step");
-			if (fileName != null && line != null) {
-				IJavaScriptLineBreakpoint bp = LiveServer.findBreakPoint(
-						new Path(fileName), line);
-				for (Object bpRequestObj : bpRequests) {
-					ReloadBreakpointRequest bpRequest = (ReloadBreakpointRequest) bpRequestObj;
-					Location location = bpRequest.location();
-					if (!isStepping && sameLocation(location, bp)) {
-						eventSet.add(new ReloadBreakpointEvent(vm, thread,
-								location, bpRequest));
+		ReloadVirtualMachine targetVM = extractVM(commandObj);
+
+		if (targetVM == this.vm) {
+			if ("report-breakpoint".equals(commandName)) {
+				// Breakpoint!
+				JSONObject command = (JSONObject) commandObj;
+				ReloadThreadReference thread = (ReloadThreadReference) vm
+						.allThreads().get(0);
+				String fileName = (String) command.get("file");
+				Long line = (Long) command.get("line");
+				isStepping = command.containsKey("step")
+						&& (Boolean) command.get("step");
+				if (fileName != null && line != null) {
+					IJavaScriptLineBreakpoint bp = LiveServer.findBreakPoint(
+							new Path(fileName), line);
+					for (Object bpRequestObj : bpRequests) {
+						ReloadBreakpointRequest bpRequest = (ReloadBreakpointRequest) bpRequestObj;
+						Location location = bpRequest.location();
+						if (!isStepping && sameLocation(location, bp)) {
+							eventSet.add(new ReloadBreakpointEvent(vm, thread,
+									location, bpRequest));
+						}
+					}
+					for (Object stepRequestObj : stepRequests) {
+						ReloadStepRequest stepRequest = (ReloadStepRequest) stepRequestObj;
+						IFile file = ResourcesPlugin.getWorkspace().getRoot()
+								.getFile(new Path(fileName));
+						Location location = new SimpleLocation(vm, file,
+								line.intValue());
+						eventSet.add(new ReloadStepEvent(vm, thread, location,
+								stepRequest));
 					}
 				}
-				for (Object stepRequestObj : stepRequests) {
-					ReloadStepRequest stepRequest = (ReloadStepRequest) stepRequestObj;
-					IFile file = ResourcesPlugin.getWorkspace().getRoot()
-							.getFile(new Path(fileName));
-					Location location = new SimpleLocation(vm, file,
-							line.intValue());
-					eventSet.add(new ReloadStepEvent(vm, thread, location,
-							stepRequest));
+				if (!eventSet.isEmpty()) {
+					thread.suspend(!isStepping);
 				}
+			} else if (CUSTOM_EVENT.equals(commandName)) {
+				ReloadEvent event = (ReloadEvent) commandObj;
+				eventSet.add(event);
 			}
-			if (!eventSet.isEmpty()) {
-				thread.suspend(!isStepping);
-			}
-		} else if (CUSTOM_EVENT.equals(commandName)) {
-			ReloadEvent event = (ReloadEvent) commandObj;
-			eventSet.add(event);
 		}
 		return eventSet;
+	}
+
+	private ReloadVirtualMachine extractVM(Object commandObj) {
+		if (commandObj instanceof JSONObject) {
+			Integer sessionId = LiveServer.extractSessionId((JSONObject) commandObj);
+			if (sessionId != null) {
+				return Html5Plugin.getDefault().getReloadServer().getVM(sessionId);
+			}
+		} else if (commandObj instanceof ReloadEvent) {
+			return (ReloadVirtualMachine) ((ReloadEvent) commandObj)
+					.virtualMachine();
+		}
+		return null;
 	}
 
 	private boolean sameLocation(Location location, IJavaScriptLineBreakpoint bp) {

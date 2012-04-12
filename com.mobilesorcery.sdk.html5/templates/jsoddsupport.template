@@ -13,14 +13,12 @@ window.MoSyncDebugProtocol = new (function() {
     var fileToId = {};
     
     var sessionId = null;
-    
     var disconnected = false;
-    
+    var terminating = true;
     var currentOID = 0;
-    
     var inUpdatePosition = false;
-    
     var step = false;
+
     
     this.assignOID = function(obj) {
     	currentOID++;
@@ -163,8 +161,9 @@ window.MoSyncDebugProtocol = new (function() {
                 return false;
                 
             case 'terminate':
+            	terminating = true;
                 step = false;
-                shouldBreak = false;
+                shouldBreak = function() { return false; };
                 // Try to kill it -- this obviously requires wormhole.
                 mosync.bridge.send(["close"]);
                 return false;
@@ -231,7 +230,7 @@ window.MoSyncDebugProtocol = new (function() {
     };
     
     this.updatePosition = function(fileId, line, isDebuggerStatement, evalScopeFunc) {
-        if (inUpdatePosition) {
+        if (inUpdatePosition || terminating || disconnected) {
         	return;
         }
         inUpdatePosition = true;

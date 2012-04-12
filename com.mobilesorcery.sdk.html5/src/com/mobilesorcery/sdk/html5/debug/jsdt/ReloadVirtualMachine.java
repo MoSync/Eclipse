@@ -103,6 +103,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	@Override
 	public void terminate() {
 		try {
+			server.terminate(currentSessionId);
 			server.removeListener(this);
 			server.stopServer(this);
 		} catch (Exception e) {
