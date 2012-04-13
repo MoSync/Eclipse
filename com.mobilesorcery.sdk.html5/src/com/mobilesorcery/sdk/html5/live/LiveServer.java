@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -54,6 +55,7 @@ import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.JSODDDebugTarget;
 import com.mobilesorcery.sdk.html5.debug.JSThread;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.live.LiveServer.InternalQueues.IMessageListener;
 
 public class LiveServer {
 
@@ -63,8 +65,7 @@ public class LiveServer {
 		IFile file;
 		int line;
 
-		public InternalLineBreakpoint(boolean enabled,
-				IFile file, int line) {
+		public InternalLineBreakpoint(boolean enabled, IFile file, int line) {
 			this.enabled = enabled;
 			this.file = file;
 			this.line = line;
@@ -104,11 +105,12 @@ public class LiveServer {
 		}
 	}
 
-	interface IMessageListener {
-		public void received(int id, Object data);
-	}
-
 	static class InternalQueues {
+
+		interface IMessageListener {
+			public void received(int messageId, Object data);
+			public int getSessionId();
+		}
 
 		private static final int PING_INTERVAL = 15000;
 
@@ -117,11 +119,15 @@ public class LiveServer {
 		// TODO: Slow refactoring to make this class useful
 		private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> consumers = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
 
+		// TODO: Only one listener per message id? I guess so.
+		private final HashMap<Integer, IMessageListener> messageListeners = new HashMap<Integer, IMessageListener>();
+
 		private final HashMap<Integer, Long> takeTimestamps = new HashMap<Integer, Long>();
 
 		private final Object queueLock = new Object();
 
 		private Timer pinger;
+
 
 		private DebuggerMessage poison() {
 			return new DebuggerMessage(POISON);
@@ -131,12 +137,12 @@ public class LiveServer {
 			return new DebuggerMessage(PING);
 		}
 
-		public DebuggerMessage take(int sessionId)
-				throws InterruptedException {
+		public DebuggerMessage take(int sessionId) throws InterruptedException {
 			LinkedBlockingQueue<DebuggerMessage> consumer = null;
 			synchronized (queueLock) {
 				consumer = consumers.get(sessionId);
-				LinkedBlockingQueue<DebuggerMessage> newConsumer = new LinkedBlockingQueue<DebuggerMessage>(1024);
+				LinkedBlockingQueue<DebuggerMessage> newConsumer = new LinkedBlockingQueue<DebuggerMessage>(
+						1024);
 				if (consumer != null) {
 					consumer.drainTo(newConsumer);
 					consumer.offer(poison());
@@ -156,7 +162,8 @@ public class LiveServer {
 				throw new InterruptedException();
 			}
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-				CoreMoSyncPlugin.trace("TAKE: Session id {0}: {1}", sessionId, result);
+				CoreMoSyncPlugin.trace("TAKE: Session id {0}: {1}", sessionId,
+						result);
 			}
 			return result;
 		}
@@ -164,12 +171,72 @@ public class LiveServer {
 		public void offer(int sessionId, DebuggerMessage msg) {
 			synchronized (queueLock) {
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-					CoreMoSyncPlugin.trace("{2}Ê- OFFER: Session id {0}: {1}", sessionId, msg, new Date().toString());
+					CoreMoSyncPlugin.trace("{2}Ê- OFFER: Session id {0}: {1}",
+							sessionId, msg, new Date().toString());
 					CoreMoSyncPlugin.trace("CONSUMERS: {0}", consumers);
 				}
-				LinkedBlockingQueue<DebuggerMessage> consumer = consumers.get(sessionId);
+				LinkedBlockingQueue<DebuggerMessage> consumer = consumers
+						.get(sessionId);
 				if (consumer != null) {
 					consumer.offer(msg);
+				}
+			}
+		}
+
+		private Object await(final int sessionId, DebuggerMessage msg, int timeout) throws InterruptedException, TimeoutException {
+			final CountDownLatch cd = new CountDownLatch(1);
+			final Object[] result = new Object[1];
+			IMessageListener listener = new IMessageListener() {
+				@Override
+				public void received(int messageId, Object data) {
+					result[0] = data;
+					cd.countDown();
+				}
+
+				@Override
+				public int getSessionId() {
+					return sessionId;
+				}
+			};
+
+			setMessageListener(sessionId, msg.getMessageId(), listener);
+
+			offer(sessionId, msg);
+			try {
+				if (!cd.await(timeout, TimeUnit.SECONDS)) {
+					if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+						CoreMoSyncPlugin.trace("Message timeout (#{0})", sessionId);
+					}
+					throw new TimeoutException();
+				}
+				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+					CoreMoSyncPlugin.trace("WAITED FOR SESSION {0} AND GOT {1}",
+							sessionId, result[0]);
+				}
+			} finally {
+				clearMessageListener(sessionId);
+			}
+			return result[0];
+		}
+
+		private synchronized void setMessageListener(int sessionId,
+				int id, IMessageListener listener) {
+			synchronized (queueLock) {
+				this.messageListeners.put(id, listener);
+			}
+		}
+
+		private synchronized void clearMessageListener(int id) {
+			synchronized (queueLock) {
+				this.messageListeners.remove(id);
+			}
+		}
+
+		public void setResult(int id, Object result) {
+			synchronized (messageListeners) {
+				IMessageListener listener = messageListeners.get(id);
+				if (listener != null) {
+					listener.received(id, result);
 				}
 			}
 		}
@@ -184,16 +251,27 @@ public class LiveServer {
 
 		public void killSession(int sessionId) {
 			synchronized (queueLock) {
-				LinkedBlockingQueue<DebuggerMessage> sessionQueue = consumers.remove(sessionId);
+				LinkedBlockingQueue<DebuggerMessage> sessionQueue = consumers
+						.remove(sessionId);
 				if (sessionQueue != null) {
 					sessionQueue.offer(poison());
+				}
+
+				Set<Integer> messageListenerIds = new TreeSet<Integer>(messageListeners.keySet());
+				for (Integer messageListenerId : messageListenerIds) {
+					IMessageListener listener = messageListeners.get(messageListenerId);
+					if (listener.getSessionId() == sessionId) {
+						setResult(messageListenerId, null);
+						clearMessageListener(messageListenerId);
+					}
 				}
 			}
 		}
 
 		public void killAllSessions() {
 			synchronized (queueLock) {
-				Set<Integer> consumerIds = new TreeSet<Integer>(consumers.keySet());
+				Set<Integer> consumerIds = new TreeSet<Integer>(
+						consumers.keySet());
 				for (Integer sessionId : consumerIds) {
 					killSession(sessionId);
 				}
@@ -218,7 +296,8 @@ public class LiveServer {
 				@Override
 				public void run() {
 					pingAll();
-				} }, PING_INTERVAL, 2000);
+				}
+			}, PING_INTERVAL, 2000);
 		}
 
 		public void stopPingDeamon() {
@@ -232,7 +311,8 @@ public class LiveServer {
 			synchronized (queueLock) {
 				for (Integer sessionId : consumers.keySet()) {
 					Long timeOfLastTake = takeTimestamps.get(sessionId);
-					boolean needsPing = timeOfLastTake != null && System.currentTimeMillis() - timeOfLastTake > PING_INTERVAL;
+					boolean needsPing = timeOfLastTake != null
+							&& System.currentTimeMillis() - timeOfLastTake > PING_INTERVAL;
 					if (needsPing) {
 						offer(sessionId, ping());
 					}
@@ -242,9 +322,6 @@ public class LiveServer {
 	}
 
 	private final InternalQueues queues = new InternalQueues();
-
-	// TODO: Only one listener per message id? I guess so.
-	private final HashMap<Integer, IMessageListener> messageListeners = new HashMap<Integer, LiveServer.IMessageListener>();
 
 	private static final Charset UTF8 = Charset.forName("UTF8");
 
@@ -259,6 +336,8 @@ public class LiveServer {
 	private static final int RESUME = 20;
 
 	private static final int STEP = 30;
+
+	private static final int SUSPEND = 200;
 
 	private static final int DISCONNECT = 500;
 
@@ -326,7 +405,8 @@ public class LiveServer {
 			JSONObject result = null;
 			if (targetMatches(target, "/mobile/incoming")) {
 				ReloadVirtualMachine vm = vmsByHost.get(req.getRemoteAddr());
-				int sessionId = vm == null ? NO_SESSION : vm.getCurrentSessionId();
+				int sessionId = vm == null ? NO_SESSION : vm
+						.getCurrentSessionId();
 				result = pushCommandsToClient(sessionId, preflight);
 			} else if (targetMatches(target, "/mobile/breakpoint")) {
 				// RACE CONDITION WILL OCCUR HERE!
@@ -348,7 +428,8 @@ public class LiveServer {
 			return result;
 		}
 
-		private JSONObject pushCommandsToClient(Integer session, boolean preflight) {
+		private JSONObject pushCommandsToClient(Integer session,
+				boolean preflight) {
 			if (preflight) {
 				return new JSONObject();
 			}
@@ -364,8 +445,10 @@ public class LiveServer {
 				ArrayList bps = new ArrayList();
 				DebuggerMessage queuedElement = queues.take(session);
 
-				Object queuedObject = queuedElement == null ? null : queuedElement.data;
-				int queuedType = queuedElement == null ? -1 : queuedElement.type;
+				Object queuedObject = queuedElement == null ? null
+						: queuedElement.data;
+				int queuedType = queuedElement == null ? -1
+						: queuedElement.type;
 				if (queuedType == BREAKPOINT) {
 					InternalLineBreakpoint bp = (InternalLineBreakpoint) queuedObject;
 					result = createBreakpointJSON(new Object[] { bp },
@@ -374,10 +457,11 @@ public class LiveServer {
 					result = newCommand("breakpoint-continue");
 				} else if (queuedType == STEP) {
 					result = newCommand(getStepCommand((Integer) queuedElement.data));
+				} else if (queuedType == SUSPEND) {
+					result = newCommand("suspend");
 				} else if (queuedType == EVAL) {
 					result = newCommand("eval");
 					result.put("data", queuedObject);
-					result.put("id", queuedElement.getMessageId());
 				} else if (queuedType == TERMINATE) {
 					result = newCommand("terminate");
 				} else if (queuedType == DISCONNECT) {
@@ -385,7 +469,9 @@ public class LiveServer {
 				} else if (queuedType == PING) {
 					// Just return the ping created above!
 				}
+				result.put("id", queuedElement.getMessageId());
 			} catch (InterruptedException e) {
+				e.printStackTrace();
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 					CoreMoSyncPlugin
 							.trace("Dropped connection (often temporarily).");
@@ -397,7 +483,7 @@ public class LiveServer {
 		private String getStepCommand(int stepType) {
 			switch (stepType) {
 			case StepRequest.STEP_INTO:
-	        	return "break-on-next";
+				return "break-on-next";
 			case StepRequest.STEP_OUT:
 				return "breakpoint-step-out";
 			case StepRequest.STEP_OVER:
@@ -477,12 +563,12 @@ public class LiveServer {
 							CoreMoSyncPlugin.trace("{0}: {1}", level, msg);
 						}
 						for (ILineHandler consoleListener : consoleListeners) {
-							consoleListener.newLine(msg);
+							consoleListener.newLine(level + "|" + msg);
 						}
 					} else if ("print-eval-result".equals(getCommand(command))) {
-						String result = "" + command.get("result");
+						Object result = command.get("result");
 						int id = ((Long) command.get("id")).intValue();
-						newEvalResult(id, result);
+						queues.setResult(id, result);
 					}
 				}
 				return new JSONObject();
@@ -510,11 +596,12 @@ public class LiveServer {
 						if (lineBp.getMarker() != null
 								&& lineBp.getMarker().exists()) {
 							int lineNo = lineBp.getLineNumber();
-							IResource resource = lineBp.getMarker().getResource();
+							IResource resource = lineBp.getMarker()
+									.getResource();
 							String expr = lineBp.getCondition();
 							if (resource.getType() == IResource.FILE) {
 								bp = new InternalLineBreakpoint(enabled,
-									(IFile) resource, lineNo);
+										(IFile) resource, lineNo);
 							}
 						}
 					} catch (Exception e) {
@@ -576,8 +663,7 @@ public class LiveServer {
 				String hostName = host.getHostName();
 				String hostAddr = host.getHostAddress();
 				CoreMoSyncPlugin.trace("Started live server at {0}:{1} ({2})",
-						hostAddr, Integer.toString(getPort()),
-						hostName);
+						hostAddr, Integer.toString(getPort()), hostName);
 			}
 		} catch (Exception e) {
 			throw new CoreException(new Status(IStatus.ERROR,
@@ -587,7 +673,8 @@ public class LiveServer {
 
 	public static Integer extractSessionId(JSONObject command) {
 		Object sessionIdObj = command.get(SESSION_ID_ATTR);
-		Integer sessionId = sessionIdObj == null ? null : Integer.parseInt(sessionIdObj.toString());
+		Integer sessionId = sessionIdObj == null ? null : Integer
+				.parseInt(sessionIdObj.toString());
 		return sessionId;
 	}
 
@@ -601,7 +688,9 @@ public class LiveServer {
 		}
 		return null;
 	}
-	public synchronized ReloadVirtualMachine resetVM(HttpServletRequest req, int newSessionId) {
+
+	public synchronized ReloadVirtualMachine resetVM(HttpServletRequest req,
+			int newSessionId) {
 		String remoteIp = req.getRemoteAddr();
 		ReloadVirtualMachine vm = vmsByHost.get(remoteIp);
 		if (vm == null) {
@@ -615,7 +704,8 @@ public class LiveServer {
 
 		vmsByHost.put(remoteIp, vm);
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-			CoreMoSyncPlugin.trace("Assigned session {0} to address {1}", newSessionId, remoteIp);
+			CoreMoSyncPlugin.trace("Assigned session {0} to address {1}",
+					newSessionId, remoteIp);
 		}
 		return vm;
 	}
@@ -624,57 +714,11 @@ public class LiveServer {
 		return sessionId.incrementAndGet();
 	}
 
-	private synchronized void setMessageListener(int id,
-			IMessageListener listener) {
-		this.messageListeners.put(id, listener);
-	}
-
-	private synchronized void clearMessageListener(int id) {
-		this.messageListeners.remove(id);
-	}
-
-	public void newEvalResult(int id, String result) {
-		synchronized (messageListeners) {
-			IMessageListener listener = messageListeners.get(id);
-			if (listener != null) {
-				listener.received(id, result);
-			}
-		}
-	}
-
-	private String awaitEvalResult(int sessionId, String expression, int timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+	private Object awaitEvalResult(int sessionId, String expression,
+			int timeout) throws InterruptedException,
+			TimeoutException {
 		DebuggerMessage queuedExpression = new DebuggerMessage(EVAL, expression);
-		return (String) await(sessionId, queuedExpression, timeout, unit);
-	}
-
-	private Object await(int sessionId, DebuggerMessage msg, int timeout,
-			TimeUnit unit) throws InterruptedException, TimeoutException {
-		final CountDownLatch cd = new CountDownLatch(1);
-		final Object[] result = new Object[1];
-		IMessageListener listener = new IMessageListener() {
-			@Override
-			public void received(int id, Object data) {
-				result[0] = data;
-				cd.countDown();
-			}
-		};
-
-		setMessageListener(sessionId, listener);
-		queues.offer(sessionId, msg);
-		try {
-			if (!cd.await(timeout, unit)) {
-				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-					CoreMoSyncPlugin.trace("Message timeout (#{0})", sessionId);
-				}
-				throw new TimeoutException();
-			}
-			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-				CoreMoSyncPlugin.trace("WAITED FOR SESSION {0} AND GOT {1}", sessionId, result[0]);
-			}
-		} finally {
-			clearMessageListener(sessionId);
-		}
-		return result[0];
+		return queues.await(sessionId, queuedExpression, timeout);
 	}
 
 	public void addListener(ILiveServerListener listener) {
@@ -701,8 +745,7 @@ public class LiveServer {
 		return result;
 	}
 
-	public static IJavaScriptLineBreakpoint findBreakPoint(IPath file,
-			long line) {
+	public static IJavaScriptLineBreakpoint findBreakPoint(IPath file, long line) {
 		IBreakpoint[] bps = DebugPlugin.getDefault().getBreakpointManager()
 				.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
 		for (IBreakpoint bp : bps) {
@@ -750,8 +793,8 @@ public class LiveServer {
 	}
 
 	public void setLineBreakpoint(boolean enabled, IFile file, int line) {
-		queues.broadcast(new DebuggerMessage(BREAKPOINT, new InternalLineBreakpoint(
-				enabled, file, line)));
+		queues.broadcast(new DebuggerMessage(BREAKPOINT,
+				new InternalLineBreakpoint(enabled, file, line)));
 	}
 
 	public void setBreakpoint(IJavaScriptLineBreakpoint bp) {
@@ -775,30 +818,39 @@ public class LiveServer {
 	}
 
 	public void resume(int sessionId) {
-		queues.offer(sessionId,
-				new DebuggerMessage(RESUME));
+		queues.offer(sessionId, new DebuggerMessage(RESUME));
+	}
+
+	public void suspend(int sessionId) {
+		try {
+			queues.offer(sessionId, new DebuggerMessage(SUSPEND));
+		} catch (Exception e) {
+			CoreMoSyncPlugin.getDefault().log(e);
+		}
 	}
 
 	public void step(int sessionId, int stepType) {
-		queues.offer(sessionId,
-				new DebuggerMessage(STEP, stepType));
+		queues.offer(sessionId, new DebuggerMessage(STEP, stepType));
 	}
 
 	public void reset(int sessionId) {
 		queues.killSession(sessionId);
 	}
 
-	public String evaluate(int sessionId, String expression)
+	public Object evaluate(int sessionId, String expression)
 			throws InterruptedException, TimeoutException {
-		String result = awaitEvalResult(sessionId, expression, getTimeout(sessionId),
-				TimeUnit.SECONDS);
+		Object result = awaitEvalResult(sessionId, expression,
+				getTimeout(sessionId));
 		return result;
 	}
 
 	public void terminate(int sessionId) {
 		try {
-			DebuggerMessage msg = new DebuggerMessage(TERMINATE);
-			await(sessionId, msg, getTimeout(sessionId), TimeUnit.SECONDS);
+			ReloadVirtualMachine vm = getVM(sessionId);
+			if (vm != null && !vm.isTerminated()) {
+				DebuggerMessage msg = new DebuggerMessage(TERMINATE);
+				queues.offer(sessionId, msg);
+			}
 		} catch (Exception e) {
 			CoreMoSyncPlugin.getDefault().log(e);
 		}
@@ -806,15 +858,19 @@ public class LiveServer {
 
 	public void disconnect(int sessionId) {
 		try {
-			DebuggerMessage msg = new DebuggerMessage(TERMINATE);
-			await(sessionId, msg, getTimeout(sessionId), TimeUnit.SECONDS);
+			ReloadVirtualMachine vm = getVM(sessionId);
+			if (vm != null && !vm.isTerminated()) {
+				DebuggerMessage msg = new DebuggerMessage(DISCONNECT);
+				queues.offer(sessionId, msg);
+			}
 		} catch (Exception e) {
 			CoreMoSyncPlugin.getDefault().log(e);
 		}
 	}
 
 	private int getTimeout(int sessionId) {
-		// TODO: Use launch config/prefs. Hm. Prefs easier. And user-friendlier :)
+		// TODO: Use launch config/prefs. Hm. Prefs easier. And user-friendlier
+		// :)
 		return 5;
 	}
 

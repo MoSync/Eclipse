@@ -91,7 +91,7 @@ public class ReloadStackFrame implements StackFrame {
 	private String internalEvaluate(String expression) {
 		String valueStr;
 		try {
-			valueStr = vm.evaluate(expression);
+			valueStr = "" + vm.evaluate(expression);
 		} catch (Exception e) {
 			valueStr = null;
 		}

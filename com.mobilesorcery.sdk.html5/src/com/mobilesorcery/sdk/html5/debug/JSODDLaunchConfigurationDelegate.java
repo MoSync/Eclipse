@@ -27,9 +27,29 @@ import org.eclipse.wst.jsdt.debug.internal.core.model.JavaScriptDebugTarget;
 
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadListeningConnector;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
 
 public class JSODDLaunchConfigurationDelegate implements
 		ILaunchConfigurationDelegate2 {
+
+	private final class JSODDProcess extends JavaScriptProcess {
+		private IStreamsProxy streams = null;
+		private final ReloadVirtualMachine vm;
+
+		private JSODDProcess(ReloadVirtualMachine vm, ILaunch launch, String name) {
+			super(launch, name);
+			this.vm = vm;
+		}
+
+		@Override
+		public IStreamsProxy getStreamsProxy() {
+			if (streams == null) {
+				streams = new JSODDStreamsProxy(vm);
+			}
+
+			return streams;
+		}
+	}
 
 	private static final String DEFAULT_LAUNCH_CONFIG = "default.launch.config";
 	private static final String LAUNCH_CONFIG_TYPE = "com.mobilesorcery.html5.jsodd.launchconfigurationtype";
@@ -76,21 +96,10 @@ public class JSODDLaunchConfigurationDelegate implements
 		ReloadListeningConnector connector = ReloadListeningConnector
 				.getDefault();
 		Map arguments = new HashMap<String, String>();
-		VirtualMachine vm = connector.accept(arguments);
+		ReloadVirtualMachine vm = (ReloadVirtualMachine) connector.accept(arguments);
 
 		// TODO: refactor
-		JavaScriptProcess process = new JavaScriptProcess(launch, "Reload") {
-			private IStreamsProxy streams = null;
-
-			@Override
-			public IStreamsProxy getStreamsProxy() {
-				if (streams == null) {
-					streams = new JSODDStreamsProxy();
-				}
-
-				return streams;
-			}
-		};
+		JavaScriptProcess process = new JSODDProcess(vm, launch, "Reload");
 		launch.addProcess(process);
 
 		JavaScriptDebugTarget target = new JavaScriptDebugTarget(vm, process,

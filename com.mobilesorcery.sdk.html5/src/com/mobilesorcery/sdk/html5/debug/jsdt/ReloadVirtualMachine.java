@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.core.internal.localstore.IsSynchronizedVisitor;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -54,6 +55,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	private int currentSessionId = LiveServer.NO_SESSION;
 	private IProject project;
 	private final ReloadThreadReference mainThread;
+	private boolean isTerminated = false;
 
 	public ReloadVirtualMachine(int port) throws Exception {
 		// TODO: PORT
@@ -86,7 +88,11 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	@Override
 	public void suspend() {
-		// NOT IMPL
+		mainThread.suspend();
+	}
+
+	public void suspend(boolean isThread) {
+		server.suspend(currentSessionId);
 	}
 
 	public void reset(int newSessionId) {
@@ -101,13 +107,16 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	}
 
 	@Override
-	public void terminate() {
+	public synchronized void terminate() {
 		try {
 			server.terminate(currentSessionId);
 			server.removeListener(this);
 			server.stopServer(this);
 		} catch (Exception e) {
 			CoreMoSyncPlugin.getDefault().log(e);
+		} finally {
+			eventQueue.close();
+			isTerminated = true;
 		}
 	}
 
@@ -192,7 +201,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		return eventQueue;
 	}
 
-	public String evaluate(String expression) throws InterruptedException, TimeoutException {
+	public Object evaluate(String expression) throws InterruptedException, TimeoutException {
 		return server.evaluate(currentSessionId, expression);
 	}
 
@@ -246,6 +255,10 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	public void setCurrentLocation(String location) {
 		mainThread.setCurrentLocation(location);
+	}
+
+	public boolean isTerminated() {
+		return isTerminated;
 	}
 
 }

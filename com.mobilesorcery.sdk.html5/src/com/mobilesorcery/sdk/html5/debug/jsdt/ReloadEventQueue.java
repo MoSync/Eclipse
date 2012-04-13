@@ -15,6 +15,7 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.event.EventQueue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.EventSet;
 import org.json.simple.JSONObject;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
@@ -46,23 +47,24 @@ public class ReloadEventQueue implements EventQueue {
 			// TODO: EVENTS SHOULD BE PURE JSON!?
 			Pair<String, Object> event = timeout > 0 ? internalQueue.poll(
 					timeout, TimeUnit.MILLISECONDS) : internalQueue.take();
-			return handleEvent(event.first, event.second);
+			if (event != null) {
+				return handleEvent(event.first, event.second);
+			}
 		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
+			CoreMoSyncPlugin.getDefault().log(e);
 		}
+		return null;
 	}
 
 	private EventSet handleEvent(String commandName, Object commandObj) {
 		ReloadEventSet eventSet = new ReloadEventSet(vm);
-		List bpRequests = requests.breakpointRequests();
-		List stepRequests = requests.stepRequests();
-
-		boolean isStepping = false;
-
 		ReloadVirtualMachine targetVM = extractVM(commandObj);
 
 		if (targetVM == this.vm) {
+			List bpRequests = requests.breakpointRequests();
+			List stepRequests = requests.stepRequests();
+			List suspendRequests = requests.suspendRequests();
+
 			if ("report-breakpoint".equals(commandName)) {
 				// Breakpoint!
 				JSONObject command = (JSONObject) commandObj;
@@ -70,27 +72,37 @@ public class ReloadEventQueue implements EventQueue {
 						.allThreads().get(0);
 				String fileName = (String) command.get("file");
 				Long line = (Long) command.get("line");
-				isStepping = command.containsKey("step")
+				boolean isStepping = command.containsKey("step")
 						&& (Boolean) command.get("step");
+				boolean isSuspended = command.containsKey("suspended")
+						&& (Boolean) command.get("suspended");
+
 				if (fileName != null && line != null) {
+					IFile file = ResourcesPlugin.getWorkspace().getRoot()
+							.getFile(new Path(fileName));
+					Location location = new SimpleLocation(vm, file,
+							line.intValue());
 					IJavaScriptLineBreakpoint bp = LiveServer.findBreakPoint(
 							new Path(fileName), line);
 					for (Object bpRequestObj : bpRequests) {
 						ReloadBreakpointRequest bpRequest = (ReloadBreakpointRequest) bpRequestObj;
-						Location location = bpRequest.location();
-						if (!isStepping && sameLocation(location, bp)) {
+						Location bpLocation = bpRequest.location();
+						if (!isStepping && sameLocation(bpLocation, bp)) {
 							eventSet.add(new ReloadBreakpointEvent(vm, thread,
-									location, bpRequest));
+									bpLocation, bpRequest));
 						}
 					}
 					for (Object stepRequestObj : stepRequests) {
 						ReloadStepRequest stepRequest = (ReloadStepRequest) stepRequestObj;
-						IFile file = ResourcesPlugin.getWorkspace().getRoot()
-								.getFile(new Path(fileName));
-						Location location = new SimpleLocation(vm, file,
-								line.intValue());
 						eventSet.add(new ReloadStepEvent(vm, thread, location,
 								stepRequest));
+					}
+					if (isSuspended) {
+						for (Object suspendRequestObj : suspendRequests) {
+							ReloadSuspendRequest suspendRequest = (ReloadSuspendRequest) suspendRequestObj;
+							eventSet.add(new ReloadSuspendEvent(vm, thread,
+									location, suspendRequest));
+						}
 					}
 				}
 				if (!eventSet.isEmpty()) {
@@ -106,9 +118,11 @@ public class ReloadEventQueue implements EventQueue {
 
 	private ReloadVirtualMachine extractVM(Object commandObj) {
 		if (commandObj instanceof JSONObject) {
-			Integer sessionId = LiveServer.extractSessionId((JSONObject) commandObj);
+			Integer sessionId = LiveServer
+					.extractSessionId((JSONObject) commandObj);
 			if (sessionId != null) {
-				return Html5Plugin.getDefault().getReloadServer().getVM(sessionId);
+				return Html5Plugin.getDefault().getReloadServer()
+						.getVM(sessionId);
 			}
 		} else if (commandObj instanceof ReloadEvent) {
 			return (ReloadVirtualMachine) ((ReloadEvent) commandObj)
@@ -137,5 +151,9 @@ public class ReloadEventQueue implements EventQueue {
 
 	public void received(String command, Object data) {
 		internalQueue.offer(new Pair<String, Object>(command, data));
+	}
+
+	public void close() {
+		internalQueue.offer(null);
 	}
 }
