@@ -64,6 +64,7 @@ public class ReloadEventQueue implements EventQueue {
 			List bpRequests = requests.breakpointRequests();
 			List stepRequests = requests.stepRequests();
 			List suspendRequests = requests.suspendRequests();
+			List exceptionRequests = requests.exceptionRequests();
 
 			if ("report-breakpoint".equals(commandName)) {
 				// Breakpoint!
@@ -76,6 +77,7 @@ public class ReloadEventQueue implements EventQueue {
 						&& (Boolean) command.get("suspended");
 				boolean isStepping = isSuspendedByDebugger || command.containsKey("step")
 						&& (Boolean) command.get("step");
+				boolean isException = "exception".equals(command.get("type"));
 
 				if (fileName != null && line != null) {
 					IFile file = ResourcesPlugin.getWorkspace().getRoot()
@@ -87,7 +89,7 @@ public class ReloadEventQueue implements EventQueue {
 					for (Object bpRequestObj : bpRequests) {
 						ReloadBreakpointRequest bpRequest = (ReloadBreakpointRequest) bpRequestObj;
 						Location bpLocation = bpRequest.location();
-						if (!isStepping && sameLocation(bpLocation, bp)) {
+						if (!isStepping && !isException && sameLocation(bpLocation, bp)) {
 							eventSet.add(new ReloadBreakpointEvent(vm, thread,
 									bpLocation, bpRequest));
 						}
@@ -104,9 +106,16 @@ public class ReloadEventQueue implements EventQueue {
 									location, suspendRequest));
 						}
 					}
+					if (isException) {
+						for (Object exceptionRequestObj : exceptionRequests) {
+							ReloadExceptionRequest exceptionRequest = (ReloadExceptionRequest) exceptionRequestObj;
+							String message = (String) command.get("message");
+							eventSet.add(new ReloadExceptionEvent(vm, thread, location, message, exceptionRequest));
+						}
+					}
 				}
 				if (!eventSet.isEmpty()) {
-					thread.markSuspended(!isStepping);
+					thread.markSuspended(!isStepping && !isException);
 				}
 			} else if (CUSTOM_EVENT.equals(commandName)) {
 				ReloadEvent event = (ReloadEvent) commandObj;
