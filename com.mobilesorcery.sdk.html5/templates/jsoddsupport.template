@@ -8,6 +8,7 @@ window.MoSyncDebugProtocol = new (function() {
     var asyncXHR = null;
     var lastFileId = -1;
     var lastLine = '';
+    var lastEvalScopeFunc = null;
     
     var idToFile = [];
     var fileToId = {};
@@ -17,6 +18,7 @@ window.MoSyncDebugProtocol = new (function() {
     
     var disconnected = false;
     var terminating = false;
+    var clientSuspend = 0;
     var step = false;
     
     var inUpdatePosition = false;
@@ -120,7 +122,7 @@ window.MoSyncDebugProtocol = new (function() {
     }
     
     function processCommand(cmd) {
-        switch (cmd.command) {
+    	switch (cmd.command) {
             case 'set-breakpoints':
             case 'clear-breakpoints':
                 cmd.data.forEach(function(bp) {
@@ -141,6 +143,8 @@ window.MoSyncDebugProtocol = new (function() {
                 shouldBreak = function() { return false; };
                 return false;
             
+            case 'suspend':
+                clientSuspend = cmd.id;
             case 'break-on-next':
             case 'breakpoint-step':
             case 'breakpoint-step-in':
@@ -184,7 +188,12 @@ window.MoSyncDebugProtocol = new (function() {
     function doEval(evalScopeFunc, cmd) {
         var evalResult;
         try {
-            evalResult = evalScopeFunc(cmd.data);
+            if (cmd.stackDepth) {
+            	var fn = evalScopes[cmd.stackDepth];
+            	evalResult = fn(cmd.data);
+            } else {
+            	evalResult = evalScopeFunc(cmd.data);
+            }
         } catch (ex) {
             evalResult = 'ERROR: ' + ex.toString();
         }  
@@ -250,6 +259,7 @@ window.MoSyncDebugProtocol = new (function() {
            so we keep track of this manually for exception reporting purposes. */
         lastFileId = fileId;
         lastLine = line;
+        lastEvalScopeFunc = evalScopeFunc;
                 
         while (true) {
             var isBreakpoint = (breakpoints[fileId] && breakpoints[fileId][line]) || /* explicit breakpoint? */
@@ -268,9 +278,12 @@ window.MoSyncDebugProtocol = new (function() {
                 command: 'report-breakpoint',
                 file: file,
                 line: line,
-                stack: getStack().slice(1),
-                step: step
+                stack: stack,
+                step: step,
+                suspended: (clientSuspend > 0),
+                id: clientSuspend
             });
+            clientSuspend = 0;
             
             step = false;
                         
@@ -302,20 +315,23 @@ window.MoSyncDebugProtocol = new (function() {
             message: e.toString(),
             file: lastFile,
             line: lastLine,
-            stack: getStack().slice(1)
+            stack: stack
         });
     }
     
     var stack = [];
+    var evalScopes = [];
     var stackDepth = 0;
     
     this.pushStack = function(functionName, file, line) {
-        stack.push([functionName, file, line]);
+        stack.push([functionName, file, line, lastLine]);
+        evalScopes.push(lastEvalScopeFunc);
         ++stackDepth;
     };
     
     this.popStack = function() {
-        var f = stack.pop();
+        stack.pop();
+        evalScopes.pop();
         --stackDepth;
     };
     

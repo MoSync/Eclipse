@@ -72,10 +72,10 @@ public class ReloadEventQueue implements EventQueue {
 						.allThreads().get(0);
 				String fileName = (String) command.get("file");
 				Long line = (Long) command.get("line");
-				boolean isStepping = command.containsKey("step")
-						&& (Boolean) command.get("step");
-				boolean isSuspended = command.containsKey("suspended")
+				boolean isSuspendedByDebugger = command.containsKey("suspended")
 						&& (Boolean) command.get("suspended");
+				boolean isStepping = isSuspendedByDebugger || command.containsKey("step")
+						&& (Boolean) command.get("step");
 
 				if (fileName != null && line != null) {
 					IFile file = ResourcesPlugin.getWorkspace().getRoot()
@@ -97,7 +97,7 @@ public class ReloadEventQueue implements EventQueue {
 						eventSet.add(new ReloadStepEvent(vm, thread, location,
 								stepRequest));
 					}
-					if (isSuspended) {
+					if (isSuspendedByDebugger) {
 						for (Object suspendRequestObj : suspendRequests) {
 							ReloadSuspendRequest suspendRequest = (ReloadSuspendRequest) suspendRequestObj;
 							eventSet.add(new ReloadSuspendEvent(vm, thread,
@@ -106,7 +106,7 @@ public class ReloadEventQueue implements EventQueue {
 					}
 				}
 				if (!eventSet.isEmpty()) {
-					thread.suspend(!isStepping);
+					thread.markSuspended(!isStepping);
 				}
 			} else if (CUSTOM_EVENT.equals(commandName)) {
 				ReloadEvent event = (ReloadEvent) commandObj;

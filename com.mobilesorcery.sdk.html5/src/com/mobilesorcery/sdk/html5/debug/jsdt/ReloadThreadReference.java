@@ -74,7 +74,7 @@ public class ReloadThreadReference implements ThreadReference {
 
 	@Override
 	public void suspend() {
-		this.suspended = true;
+		markSuspended(false);
 		vm.suspend(true);
 	}
 
@@ -99,9 +99,9 @@ public class ReloadThreadReference implements ThreadReference {
 		return MessageFormat.format("main", formattedLocation);
 	}
 
-	public void suspend(boolean isAtBreakpoint) {
+	public void markSuspended(boolean isAtBreakpoint) {
 		this.isAtBreakpoint = isAtBreakpoint;
-		suspend();
+		this.suspended = true;
 	}
 
 	public void setFrames(StackFrame[] frames) {

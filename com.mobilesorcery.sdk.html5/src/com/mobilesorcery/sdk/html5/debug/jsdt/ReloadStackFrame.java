@@ -24,17 +24,21 @@ public class ReloadStackFrame implements StackFrame {
 
 	private final ReloadVirtualMachine vm;
 	private Variable thisVar;
-	private Location location;
+	private SimpleLocation location;
 
 	private boolean inited;
 
-	private ReloadVariable argsVar;
-
 	private ArrayList<ReloadVariable> localVars;
+
+	private final int stackDepth;
+
+	private boolean isTop;
 
 	public ReloadStackFrame(ReloadVirtualMachine vm, JSONObject suspendCommand,
 			int ix) {
 		this.vm = vm;
+		this.stackDepth = ix;
+
 		init(suspendCommand, ix);
 	}
 
@@ -42,7 +46,17 @@ public class ReloadStackFrame implements StackFrame {
 		String file = (String) suspended.get("file");
 		int line = ((Long) suspended.get("line")).intValue();
 		IFile resource = ResourcesPlugin.getWorkspace().getRoot().getFile(new Path(file));
+		JSONArray stack = (JSONArray) suspended.get("stack");
+		JSONArray frame = ix >= 0 ? (JSONArray) stack.get(ix) : null;
+		String functionName = frame == null ? "<unknown>" : (String) frame.get(0);
+		// For the non-top stack frame, the line has been stored elsewhere.
+		isTop = ix == stack.size() - 1;
+		if (!isTop) {
+			JSONArray nextFrame = (JSONArray) stack.get(ix + 1);
+			line = ((Long) nextFrame.get(3)).intValue();
+		}
 		location = new SimpleLocation(vm, resource, line);
+		location.setFunctionName(functionName);
 	}
 
 	@Override
@@ -85,13 +99,14 @@ public class ReloadStackFrame implements StackFrame {
 
 	@Override
 	public Value evaluate(String expression) {
-		return parse(internalEvaluate(expression));
+		return parse(internalEvaluate(expression, stackDepth));
 	}
 
-	private String internalEvaluate(String expression) {
+	private String internalEvaluate(String expression, int stackDepth) {
+		Integer stackDepthToSend = isTop ? null : stackDepth + 1;
 		String valueStr;
 		try {
-			valueStr = "" + vm.evaluate(expression);
+			valueStr = "" + vm.evaluate(expression, stackDepthToSend);
 		} catch (Exception e) {
 			valueStr = null;
 		}
@@ -125,7 +140,7 @@ public class ReloadStackFrame implements StackFrame {
 				"}" +
 				"____info.type = ____typeOf; ____info;"
 				, name, name, name, name, name, name, name, name, name);
-		String metaEvaluation = internalEvaluate(metaExpr);
+		String metaEvaluation = internalEvaluate(metaExpr, stackDepth);
 		try {
 			if (metaEvaluation != null) {
 				JSONObject metaObject = (JSONObject) PARSER.parse(metaEvaluation);

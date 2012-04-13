@@ -9,10 +9,15 @@ public class SimpleLocation implements Location {
 
 	private final SimpleScriptReference ref;
 	private final int line;
+	private String functionName;
 
 	public SimpleLocation(ReloadVirtualMachine vm, IFile file, int line) {
 		this.ref = new SimpleScriptReference(vm, file);
 		this.line = line;
+	}
+
+	public void setFunctionName(String functionName) {
+		this.functionName = functionName;
 	}
 
 	@Override
@@ -27,7 +32,7 @@ public class SimpleLocation implements Location {
 
 	@Override
 	public String functionName() {
-		return null;
+		return functionName;
 	}
 
 }

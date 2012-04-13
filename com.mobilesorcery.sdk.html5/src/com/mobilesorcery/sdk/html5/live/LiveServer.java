@@ -50,6 +50,7 @@ import org.mortbay.thread.QueuedThreadPool;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.JSODDDebugTarget;
@@ -461,7 +462,15 @@ public class LiveServer {
 					result = newCommand("suspend");
 				} else if (queuedType == EVAL) {
 					result = newCommand("eval");
-					result.put("data", queuedObject);
+					Pair<String, Integer> data = (Pair<String, Integer>) queuedObject;
+					String expression = data.first;
+					Integer stackDepth = data.second;
+					result.put("data", expression);
+					if (stackDepth != null) {
+						result.put("stackDepth", stackDepth);
+					} else {
+						result.put("noStack", true);
+					}
 				} else if (queuedType == TERMINATE) {
 					result = newCommand("terminate");
 				} else if (queuedType == DISCONNECT) {
@@ -715,9 +724,9 @@ public class LiveServer {
 	}
 
 	private Object awaitEvalResult(int sessionId, String expression,
-			int timeout) throws InterruptedException,
+			Integer stackDepth, int timeout) throws InterruptedException,
 			TimeoutException {
-		DebuggerMessage queuedExpression = new DebuggerMessage(EVAL, expression);
+		DebuggerMessage queuedExpression = new DebuggerMessage(EVAL, new Pair<String, Integer>(expression, stackDepth));
 		return queues.await(sessionId, queuedExpression, timeout);
 	}
 
@@ -837,9 +846,9 @@ public class LiveServer {
 		queues.killSession(sessionId);
 	}
 
-	public Object evaluate(int sessionId, String expression)
+	public Object evaluate(int sessionId, String expression, Integer stackDepth)
 			throws InterruptedException, TimeoutException {
-		Object result = awaitEvalResult(sessionId, expression,
+		Object result = awaitEvalResult(sessionId, expression, stackDepth,
 				getTimeout(sessionId));
 		return result;
 	}

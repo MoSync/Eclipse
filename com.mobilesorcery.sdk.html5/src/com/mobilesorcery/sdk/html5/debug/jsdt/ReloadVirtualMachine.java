@@ -202,31 +202,37 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	}
 
 	public Object evaluate(String expression) throws InterruptedException, TimeoutException {
-		return server.evaluate(currentSessionId, expression);
+		return evaluate(expression, null);
+	}
+
+	public Object evaluate(String expression, Integer stackDepth) throws InterruptedException, TimeoutException {
+		return server.evaluate(currentSessionId, expression, stackDepth);
 	}
 
 	@Override
 	public void received(String command, JSONObject json) {
 		// TODO!!! Session id - now all will suspend.
+		// TODID -- filtering is done in the eventqueue. For now.
 
 		// MAIN THREAD
 		ReloadThreadReference thread = (ReloadThreadReference) threads.get(0);
 		if (thread.isSuspended()) {
 			return;
 		}
-		thread.suspend(true);
+		thread.markSuspended(true);
 		JSONArray array = (JSONArray) json.get("stack");
 		ReloadStackFrame[] frames = new ReloadStackFrame[array.size()];
 		for (int i = 0; i < array.size(); i++) {
 			ReloadStackFrame frame = new ReloadStackFrame(this, json, i);
-			frames[i] = frame;
+			// Stack traces are reported in the reverse order.
+			frames[array.size() - 1 - i] = frame;
 		}
 		if (frames.length == 0) {
 			frames = new ReloadStackFrame[1];
 			frames[0] = new ReloadStackFrame(this, json, -1);
 		}
 		thread.setFrames(frames);
-		suspend();
+		//suspend();
 		eventQueue.received(command, json);
 	}
 

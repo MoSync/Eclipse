@@ -17,29 +17,30 @@ public class Pair<S, T> {
 
 	public final S first;
 	public final T second;
-	
+
 	public Pair(S first, T second) {
-		if (first == null || second == null) {
-			throw new IllegalArgumentException();
-		}
-		
 		this.first = first;
 		this.second = second;
 	}
-	
+
+	@Override
 	public boolean equals(Object o) {
 		if (o instanceof Pair) {
-			return ((Pair) o).first.equals(this.first) &&
-			((Pair) o).second.equals(this.second);
+			Pair other = (Pair) o;
+			return Util.equals(other.first, first) && Util.equals(other.second, second);
 		}
-		
+
 		return false;
 	}
-	
+
+	@Override
 	public int hashCode() {
-		return first.hashCode() ^ second.hashCode();
+		int firstHc = first == null ? 0 : first.hashCode();
+		int secondHc = second == null ? 0 : second.hashCode();
+		return firstHc ^ secondHc;
 	}
-	
+
+	@Override
 	public String toString() {
 		return "{" + first + "," + second + "}";
 	}

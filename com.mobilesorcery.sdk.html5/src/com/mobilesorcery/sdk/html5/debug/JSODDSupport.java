@@ -6,8 +6,10 @@ import java.io.Writer;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.UnknownHostException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -43,6 +45,7 @@ import org.eclipse.wst.jsdt.core.dom.FunctionDeclaration;
 import org.eclipse.wst.jsdt.core.dom.IfStatement;
 import org.eclipse.wst.jsdt.core.dom.JavaScriptUnit;
 import org.eclipse.wst.jsdt.core.dom.LabeledStatement;
+import org.eclipse.wst.jsdt.core.dom.SimpleName;
 import org.eclipse.wst.jsdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.wst.jsdt.core.dom.Statement;
 import org.eclipse.wst.jsdt.core.dom.SwitchCase;
@@ -63,20 +66,24 @@ import com.mobilesorcery.sdk.html5.Html5Plugin;
 public class JSODDSupport {
 
 	public class DebugRewriteOperationVisitor extends ASTVisitor {
-		private final HashMap<Integer, ASTNode> nodesToRewrite = new HashMap<Integer, ASTNode>();
+		private final HashMap<Integer, List<ASTNode>> statementsToRewrite = new HashMap<Integer, List<ASTNode>>();
+		private final HashMap<Integer, List<ASTNode>> functionPreambles = new HashMap<Integer, List<ASTNode>>();
+		private final HashMap<Integer, List<ASTNode>> functionPostambles = new HashMap<Integer, List<ASTNode>>();
+		private final HashMap<ASTNode, String> functionNames = new HashMap<ASTNode, String>();
+
 		private JavaScriptUnit unit;
 		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
 		private final Stack<Boolean> instrumentState = new Stack<Boolean>();
-		private LocalVariableScope currentScope = new LocalVariableScope().nestScope();
+		private LocalVariableScope currentScope = new LocalVariableScope()
+				.nestScope();
 		private final TreeMap<Integer, LocalVariableScope> localVariables = new TreeMap<Integer, LocalVariableScope>();
 		private final HashSet<ASTNode> exclusions = new HashSet<ASTNode>();
 		private final HashSet<Statement> blockifiables = new HashSet<Statement>();
-		private final HashMap<Integer, NavigableMap<Integer, List<String>>> insertions = new HashMap<Integer, NavigableMap<Integer,List<String>>>();
+		private final HashMap<Integer, NavigableMap<Integer, List<String>>> insertions = new HashMap<Integer, NavigableMap<Integer, List<String>>>();
 		private final HashMap<ASTNode, JavaScriptUnit> nodeToUnitMap = new HashMap<ASTNode, JavaScriptUnit>();
 
 		@Override
 		public void preVisit(ASTNode node) {
-			//System.err.println(Util.fill(' ', statementStack.size() * 2) + node.getClass() + ": " + node.toString().replace('\n', ' '));
 			int start = node.getStartPosition();
 			int startLine = unit == null ? -1 : unit.getLineNumber(start);
 
@@ -91,7 +98,24 @@ public class JSODDSupport {
 				for (Object paramObj : fd.parameters()) {
 					SingleVariableDeclaration param = (SingleVariableDeclaration) paramObj;
 					String name = param.getName().getIdentifier();
-					currentScope = currentScope.addLocalVariableDeclaration(name);
+					currentScope = currentScope
+							.addLocalVariableDeclaration(name);
+				}
+				SimpleName functionName = fd.getName();
+				String functionIdentifier = functionName == null ? "<anonymous>" : functionName.getIdentifier();
+				Block body = fd.getBody();
+				List statements = body.statements();
+				if (statements.isEmpty()) {
+					// TODO!
+				} else {
+					ASTNode firstStatement = (ASTNode) statements.get(0);
+					addStatementInstrumentationLocation(unit, firstStatement,
+							functionPreambles, true, false);
+					functionNames.put(firstStatement, functionIdentifier);
+					ASTNode lastStatement = (ASTNode) statements
+							.get(statements.size() - 1);
+					addStatementInstrumentationLocation(unit, lastStatement,
+							functionPostambles, false, false);
 				}
 				// Already nested!
 				nest = false;
@@ -131,7 +155,8 @@ public class JSODDSupport {
 			}
 
 			if (isInstrumentableStatement(node)) {
-				addInstrumentationLocation(unit, node);
+				addStatementInstrumentationLocation(unit, node,
+						statementsToRewrite, true, true);
 			}
 
 			if (nest) {
@@ -187,18 +212,40 @@ public class JSODDSupport {
 			}
 		}
 
-		private void addInstrumentationLocation(JavaScriptUnit unit, ASTNode node) {
+		private void addStatementInstrumentationLocation(JavaScriptUnit unit,
+				ASTNode node, HashMap<Integer, List<ASTNode>> lineMap,
+				boolean before, boolean maxOnePerLine) {
 			if (unit == null) {
 				return;
 			}
-			int startLine = unit.getLineNumber(node.getStartPosition());
-			int startCol = unit.getColumnNumber(node.getStartPosition());
-			ASTNode previousNode = nodesToRewrite.get(startLine);
-			int previousStartCol = previousNode == null ? Integer.MAX_VALUE : unit.getColumnNumber(previousNode.getStartPosition());
-			// Max one point of instrumentation per line.
-			if (startLine > 0 && startCol >= 0 && previousStartCol > startCol) {
-				nodesToRewrite.put(startLine, node);
-				nodeToUnitMap.put(node, unit);
+
+			nodeToUnitMap.put(node, unit);
+
+			Pair<Integer, Integer> pos = position(node, before);
+			int insertionLine = pos.first;
+			int insertionCol = pos.second;
+
+			List<ASTNode> nodeList = lineMap.get(insertionLine);
+			if (nodeList == null) {
+				nodeList = new ArrayList<ASTNode>();
+				lineMap.put(insertionLine, nodeList);
+			}
+
+			boolean shouldAdd = !maxOnePerLine;
+
+			if (maxOnePerLine) {
+				// If max one is allow, we try to insert the one with the lowest
+				// column #.
+				ASTNode previousNode = nodeList.isEmpty() ? null : nodeList.get(0);
+				int previousCol = previousNode == null ? Integer.MAX_VALUE : position(previousNode, before).second;
+				if (previousCol > insertionCol) {
+					nodeList.clear();
+					shouldAdd = true;
+				}
+			}
+			// Max one point of instrumentation per line/instrumentation type.
+			if (insertionLine > 0 && insertionCol >= 0 && shouldAdd) {
+				nodeList.add(node);
 			}
 		}
 
@@ -211,9 +258,10 @@ public class JSODDSupport {
 			boolean allowInstrumentation = isStatement && !isBlock;
 
 			// Special case: switch.
-			//allowInstrumentation &= !(node instanceof SwitchCase);
+			// allowInstrumentation &= !(node instanceof SwitchCase);
 
-			allowInstrumentation &= instrumentState.isEmpty() || instrumentState.peek();
+			allowInstrumentation &= instrumentState.isEmpty()
+					|| instrumentState.peek();
 
 			return allowInstrumentation;
 		}
@@ -241,7 +289,7 @@ public class JSODDSupport {
 			}
 
 			if (node instanceof ForInStatement || node instanceof ForStatement) {
-				//instrumentState.pop();
+				// instrumentState.pop();
 			}
 
 			if (node instanceof Statement) {
@@ -266,8 +314,16 @@ public class JSODDSupport {
 			exclusions.remove(node);
 		}
 
+		private void insert(Pair<Integer, Integer> position, String text) {
+			insert(position.first, position.second, text);
+		}
+
 		private void insert(int line, int col, String text) {
-			NavigableMap<Integer, List<String>> insertionsForLine = insertions.get(line);
+			if (line < 0 || col < 0) {
+				return;
+			}
+			NavigableMap<Integer, List<String>> insertionsForLine = insertions
+					.get(line);
 			if (insertionsForLine == null) {
 				insertionsForLine = new TreeMap<Integer, List<String>>();
 				insertions.put(line, insertionsForLine);
@@ -289,40 +345,9 @@ public class JSODDSupport {
 
 			int lineNo = 1;
 			for (String line : lineByLineSource) {
-				ASTNode node = nodesToRewrite.get(lineNo);
-				JavaScriptUnit unit = nodeToUnitMap.get(node);
-				Integer col = (unit != null && node != null) ? unit.getColumnNumber(node.getStartPosition()) : null;
-				if (node != null && col != null) {
-					col = Math.min(col, line.length());
-
-					// Makes it more legible for debugging purposes
-					if (onlyWS(line.substring(0, col))) {
-						col = 0;
-					}
-
-					if (shouldBlockify(node)) {
-						insert(lineNo, col, "{");
-						int endPosition = node.getStartPosition() + node.getLength();
-						insert(unit.getLineNumber(endPosition), unit.getColumnNumber(endPosition), "}");
-					}
-
-					Entry<Integer, LocalVariableScope> scope = localVariables.floorEntry(lineNo);
-					String scopeDesc = "";
-					if (scope != null) {
-						scopeDesc = "/*" + scope.getValue().getLocalVariables()
-								+ "*/";
-					}
-
-					String addThis = scopeDesc
-							+ " MoSyncDebugProtocol.updatePosition("
-							+ fileId
-							+ ","
-							+ lineNo
-							+ ","
-							+ "false,function(____eval) {return eval(____eval);});"
-							+ "\n";
-					insert(lineNo, col, addThis);
-				}
+				insertFunctionPreamble(fileId, lineNo, line);
+				insertInstrumentedStatement(fileId, lineNo, line);
+				insertFunctionPostamble(fileId, lineNo, line);
 				lineNo++;
 			}
 
@@ -330,14 +355,17 @@ public class JSODDSupport {
 
 			lineNo = 1;
 			for (String originalLine : lineByLineSource) {
-				NavigableMap<Integer, List<String>> insertionList = insertions.get(lineNo);
+				NavigableMap<Integer, List<String>> insertionList = insertions
+						.get(lineNo);
 				String newLine = originalLine;
 				if (insertionList != null) {
 					ArrayList<String> segments = new ArrayList<String>();
 					int originalCol = 0;
 					for (Integer col : insertionList.keySet()) {
 						List<String> snippets = insertionList.get(col);
-						segments.add(originalLine.substring(originalCol, col));
+						if (originalCol < originalLine.length()) {
+							segments.add(originalLine.substring(originalCol, col));
+						}
 						for (String snippet : snippets) {
 							segments.add(snippet);
 						}
@@ -353,6 +381,83 @@ public class JSODDSupport {
 
 			if (output != null) {
 				output.write(result.toString());
+			}
+		}
+
+		private void insertFunctionPreamble(long fileId, int lineNo, String line) {
+			Collection<ASTNode> nodeList = functionPreambles.get(lineNo);
+			if (nodeList == null) {
+				return;
+			}
+			for (ASTNode node : nodeList) {
+				String funcName = functionNames.get(node);
+				insert(position(node, true), MessageFormat.format(
+						"try '{' MoSyncDebugProtocol.pushStack(\"{0}\",{1},{2});",
+						funcName, Long.toString(fileId),
+						Integer.toString(lineNo)));
+			}
+		}
+
+		private void insertFunctionPostamble(long fileId, int lineNo,
+				String line) {
+			Collection<ASTNode> nodeList = functionPostambles.get(lineNo);
+			if (nodeList == null) {
+				return;
+			}
+			for (ASTNode node : nodeList) {
+				insert(position(node, false), "}" + "catch (anException) {"
+						+ "if (!anException.alreadyThrown) {"
+						+ "MoSyncDebugProtocol.reportException(anException);"
+						+ "} anException.alreadyThrown = true;"
+						+ "throw anException;} finally {"
+						+ "MoSyncDebugProtocol.popStack();}");
+			}
+		}
+
+		private Pair<Integer, Integer> position(ASTNode node, boolean start) {
+			JavaScriptUnit unit = nodeToUnitMap.get(node);
+			if (node == null) {
+				return new Pair(-1, -1);
+			}
+			if (unit == null) {
+				throw new IllegalStateException("Node has no matched unit");
+			}
+			int pos = start ? node.getStartPosition() : node.getStartPosition()
+					+ node.getLength();
+			int line = unit.getLineNumber(pos);
+			int col = unit.getColumnNumber(pos);
+			return new Pair(line, col);
+		}
+
+		private void insertInstrumentedStatement(long fileId, int lineNo,
+				String line) {
+			List<ASTNode> nodeList = statementsToRewrite.get(lineNo);
+			// Max 1 statement instrumentation per line
+			ASTNode node = (nodeList != null && !nodeList.isEmpty()) ? nodeList
+					.get(0) : null;
+			int col = position(node, true).second;
+			if (node != null && col >= 0) {
+				col = Math.min(col, line.length());
+
+				if (shouldBlockify(node)) {
+					insert(lineNo, col, "{");
+					insert(position(node, false), "}");
+				}
+
+				Entry<Integer, LocalVariableScope> scope = localVariables
+						.floorEntry(lineNo);
+				String scopeDesc = "";
+				if (scope != null) {
+					scopeDesc = "/*" + scope.getValue().getLocalVariables()
+							+ "*/";
+				}
+
+				String addThis = scopeDesc
+						+ " MoSyncDebugProtocol.updatePosition(" + fileId + ","
+						+ lineNo + ","
+						+ "false,function(____eval) {return eval(____eval);});"
+						+ "\n";
+				insert(lineNo, col, addThis);
 			}
 		}
 
@@ -393,7 +498,8 @@ public class JSODDSupport {
 					@Override
 					public boolean visit(IResource resource)
 							throws CoreException {
-						if (MoSyncBuilder.isInOutput(resource.getProject(), resource)) {
+						if (MoSyncBuilder.isInOutput(resource.getProject(),
+								resource)) {
 							return false;
 						}
 						IPath location = resource.getFullPath();
@@ -441,8 +547,7 @@ public class JSODDSupport {
 	public static boolean isValidJavaScriptFile(IPath file) {
 		// TODO: Use content descriptors!?
 		// TODO: JS embedded in HTML
-		return file != null
-				&& "js".equalsIgnoreCase(file.getFileExtension());
+		return file != null && "js".equalsIgnoreCase(file.getFileExtension());
 	}
 
 	private long assignFileId(IPath file) {
@@ -521,7 +626,9 @@ public class JSODDSupport {
 			InetAddress localHost = InetAddress.getLocalHost();
 			properties.put(SERVER_HOST_PROP, localHost.getHostAddress());
 		} catch (IOException e) {
-			throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, "Could not determine localhost address"));
+			throw new CoreException(new Status(IStatus.ERROR,
+					Html5Plugin.PLUGIN_ID,
+					"Could not determine localhost address"));
 		}
 		properties.put(SERVER_PORT_PROP, "8511");
 		return properties;
@@ -532,8 +639,8 @@ public class JSODDSupport {
 		for (Map.Entry<Long, IPath> entry : reverseFileIds.entrySet()) {
 			result.append("idToFile[" + entry.getKey() + "]=\""
 					+ entry.getValue().toPortableString() + "\";\n");
-			result.append("fileToId[\"" + entry.getValue().toPortableString() + "\"]="
-					+ entry.getKey() + ";\n");
+			result.append("fileToId[\"" + entry.getValue().toPortableString()
+					+ "\"]=" + entry.getKey() + ";\n");
 		}
 		return result.toString();
 	}
