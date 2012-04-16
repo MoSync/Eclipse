@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.core.internal.events.InternalBuilder;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -64,10 +65,10 @@ public class LiveServer {
 	private class InternalLineBreakpoint {
 
 		boolean enabled;
-		IFile file;
+		String file;
 		int line;
 
-		public InternalLineBreakpoint(boolean enabled, IFile file, int line) {
+		public InternalLineBreakpoint(boolean enabled, String file, int line) {
 			this.enabled = enabled;
 			this.file = file;
 			this.line = line;
@@ -606,7 +607,8 @@ public class LiveServer {
 			JSONArray jsonBps = new JSONArray();
 			for (Object bp : bps) {
 				try {
-					if (bp instanceof IJavaScriptLineBreakpoint || bp instanceof IJavaScriptLoadBreakpoint) {
+					boolean isLoadBp = bp instanceof IJavaScriptLoadBreakpoint;
+					if (bp instanceof IJavaScriptLineBreakpoint || isLoadBp) {
 						IJavaScriptLineBreakpoint lineBp = (IJavaScriptLineBreakpoint) bp;
 						if (lineBp.getMarker() != null
 								&& lineBp.getMarker().exists()) {
@@ -616,7 +618,9 @@ public class LiveServer {
 							String expr = lineBp.getCondition();
 							if (resource.getType() == IResource.FILE) {
 								bp = new InternalLineBreakpoint(enabled,
-										(IFile) resource, lineNo);
+										resource.getFullPath().toPortableString(), lineNo);
+							} else if (isLoadBp && resource.getType() == IResource.ROOT) {
+								bp = new InternalLineBreakpoint(enabled, "*", -1);
 							}
 						}
 					}
@@ -627,9 +631,9 @@ public class LiveServer {
 				if (bp instanceof InternalLineBreakpoint) {
 					InternalLineBreakpoint lineBp = (InternalLineBreakpoint) bp;
 					JSONArray jsonBp = new JSONArray();
-					IFile file = lineBp.file;
+					String file = lineBp.file;
 					int lineNo = lineBp.line;
-					jsonBp.add(file.getFullPath().toPortableString());
+					jsonBp.add(file);
 					jsonBp.add(lineNo);
 					jsonBps.add(jsonBp);
 				}
@@ -807,7 +811,7 @@ public class LiveServer {
 
 	public void setLineBreakpoint(boolean enabled, IFile file, int line) {
 		queues.broadcast(new DebuggerMessage(BREAKPOINT,
-				new InternalLineBreakpoint(enabled, file, line)));
+				new InternalLineBreakpoint(enabled, file.getFullPath().toPortableString(), line)));
 	}
 
 	public void setBreakpoint(IJavaScriptLineBreakpoint bp) {

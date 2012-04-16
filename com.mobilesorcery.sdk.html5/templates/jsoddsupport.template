@@ -138,7 +138,14 @@ window.MoSyncDebugProtocol = new (function() {
                         breakpoints[fileId][line] = set;
                     } else {
                         // Script load.
-                        loadBreakpoints[fileId] = set;
+                        if (fileId == '*') {
+                            // All files
+                            for (var fileId in idToFile) {
+                                loadBreakpoints[fileId] = set;
+                            }
+                        } else {
+                            loadBreakpoints[fileId] = set;
+                        }
                     }
                 });
                 if (cmd.suspend) {
