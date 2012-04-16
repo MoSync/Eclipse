@@ -1,12 +1,12 @@
 package com.mobilesorcery.sdk.html5.debug.jsdt;
 
-import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ScriptReference;
@@ -15,11 +15,15 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 public class SimpleScriptReference implements ScriptReference {
 
 	private final ReloadVirtualMachine vm;
-	private final IFile file;
+	private final IPath path;
 
 	public SimpleScriptReference(ReloadVirtualMachine vm, IFile file) {
+		this(vm, file.getFullPath());
+	}
+
+	public SimpleScriptReference(ReloadVirtualMachine vm, IPath path) {
 		this.vm = vm;
-		this.file = file;
+		this.path = path;
 	}
 
 	@Override
@@ -34,7 +38,7 @@ public class SimpleScriptReference implements ScriptReference {
 
 	@Override
 	public Location lineLocation(int lineNumber) {
-		return new SimpleLocation(vm, file, lineNumber);
+		return new SimpleLocation(vm, path, lineNumber);
 	}
 
 	@Override
@@ -55,18 +59,18 @@ public class SimpleScriptReference implements ScriptReference {
 	@Override
 	public URI sourceURI() {
 		try {
-			return new URI("file://" + file.getFullPath().toOSString());
+			return new URI("file://" + path.toOSString());
 		} catch (URISyntaxException e) {
 			return null;
 		}
 	}
 
 	public IPath sourcePath() {
-		return file.getLocation();
+		return getFile().getLocation();
 	}
 
 	public IFile getFile() {
-		return file;
+		return ResourcesPlugin.getWorkspace().getRoot().getFile(path);
 	}
 
 	public static IPath getFile(Location location) {

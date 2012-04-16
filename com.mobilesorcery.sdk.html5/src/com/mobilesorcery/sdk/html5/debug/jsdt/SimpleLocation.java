@@ -15,6 +15,10 @@ public class SimpleLocation implements Location {
 		this.ref = new SimpleScriptReference(vm, file);
 		this.line = line;
 	}
+	public SimpleLocation(ReloadVirtualMachine vm, IPath path, int line) {
+		this.ref = new SimpleScriptReference(vm, path);
+		this.line = line;
+	}
 
 	public void setFunctionName(String functionName) {
 		this.functionName = functionName;

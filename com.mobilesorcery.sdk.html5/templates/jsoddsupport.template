@@ -1,9 +1,10 @@
 // Based on the AARDWOLF project: https://github.com/lexandera/Aardwolf
 window.MoSyncDebugProtocol = new (function() {
     var serverHost = '%SERVER_HOST%';
-	var serverPort = '%SERVER_PORT%';
+    var serverPort = '%SERVER_PORT%';
     var serverUrl = 'http://' + serverHost + ':' + serverPort;
     var breakpoints = {};
+    var loadBreakpoints = {};
     var shouldBreak = function() { return false; };
     var asyncXHR = null;
     var lastFileId = -1;
@@ -24,12 +25,12 @@ window.MoSyncDebugProtocol = new (function() {
     var inUpdatePosition = false;
 
     this.assignOID = function(obj) {
-    	currentOID++;
-    	obj.____oid = currentOID;
+        currentOID++;
+        obj.____oid = currentOID;
     }
     
     function timestamp() {
-    	return new Date().getTime();
+        return new Date().getTime();
     }
     
     function listenToServer() {
@@ -37,7 +38,7 @@ window.MoSyncDebugProtocol = new (function() {
             dropCommandConnection();
             
             if (disconnected || terminating) {
-            	return;
+                return;
             }
             asyncXHR = new XMLHttpRequest();
             asyncXHR.onreadystatechange = function () {
@@ -59,14 +60,14 @@ window.MoSyncDebugProtocol = new (function() {
             asyncXHR.open('GET', serverUrl + '/mobile/incoming/' + timestamp(), true);
             asyncXHR.send(null);
         } catch (ex) {
-        	disconnect(ex);
+            disconnect(ex);
         }
     }
     
     function disconnect(ex) {
-    	if (!disconnected) {
-	    	disconnected = true;
-	        alert('Disconnected from debug session. To debug, you need to restart.\nReason:' + ex.toString());
+        if (!disconnected) {
+            disconnected = true;
+            alert('Disconnected from debug session. To debug, you need to restart.\nReason:' + ex.toString());
         }
     }
     
@@ -83,7 +84,7 @@ window.MoSyncDebugProtocol = new (function() {
             req.open('POST', serverUrl + '/mobile' + path + "/" + timestamp(), false);
             req.setRequestHeader('Content-Type', 'application/json');
             if (sessionId != null) {
-            	payload.sessionId = sessionId;
+                payload.sessionId = sessionId;
             }
             var json = JSON.stringify(payload)
             req.send(json);
@@ -117,25 +118,31 @@ window.MoSyncDebugProtocol = new (function() {
     }
     
     function suspendOnNext() {
-	    step = true;
-	    shouldBreak = function() { return true; };            
+        step = true;
+        shouldBreak = function() { return true; };            
     }
     
     function processCommand(cmd) {
-    	switch (cmd.command) {
+        switch (cmd.command) {
             case 'set-breakpoints':
             case 'clear-breakpoints':
                 cmd.data.forEach(function(bp) {
                     var file = bp[0];
                     var line = bp[1];
                     var fileId = fileToId[file];
-                    if (!breakpoints[fileId]) {
-                        breakpoints[fileId] = {};
+                    var set = (cmd.command == 'set-breakpoints');
+                    if (line >= 0) {
+                        if (!breakpoints[fileId]) {
+                            breakpoints[fileId] = {};
+                        }
+                        breakpoints[fileId][line] = set;
+                    } else {
+                        // Script load.
+                        loadBreakpoints[fileId] = set;
                     }
-                    breakpoints[fileId][line] = (cmd.command == 'set-breakpoints');
                 });
                 if (cmd.suspend) {
-                	suspendOnNext();
+                    suspendOnNext();
                 }
                 return true;
             
@@ -148,11 +155,11 @@ window.MoSyncDebugProtocol = new (function() {
             case 'break-on-next':
             case 'breakpoint-step':
             case 'breakpoint-step-in':
-            	suspendOnNext();
-            	return false;
+                suspendOnNext();
+                return false;
                 
             case 'breakpoint-step-out':
-            	step = true;
+                step = true;
                 shouldBreak = (function(oldDepth) {
                     return function(depth) {
                         return depth < oldDepth;
@@ -161,7 +168,7 @@ window.MoSyncDebugProtocol = new (function() {
                 return false;
                 
             case 'breakpoint-step-over':
-            	step = true;
+                step = true;
                 shouldBreak = (function(oldDepth) {
                     return function(depth) {
                         return depth <= oldDepth;
@@ -170,7 +177,7 @@ window.MoSyncDebugProtocol = new (function() {
                 return false;
                 
             case 'terminate':
-            	terminating = true;
+                terminating = true;
                 step = false;
                 shouldBreak = function() { return false; };
                 // Try to kill it -- this obviously requires wormhole.
@@ -189,10 +196,10 @@ window.MoSyncDebugProtocol = new (function() {
         var evalResult;
         try {
             if (cmd.stackDepth) {
-            	var fn = evalScopes[cmd.stackDepth];
-            	evalResult = fn(cmd.data);
+                var fn = evalScopes[cmd.stackDepth];
+                evalResult = fn(cmd.data);
             } else {
-            	evalResult = evalScopeFunc(cmd.data);
+                evalResult = evalScopeFunc(cmd.data);
             }
         } catch (ex) {
             evalResult = 'ERROR: ' + ex.toString();
@@ -220,8 +227,8 @@ window.MoSyncDebugProtocol = new (function() {
         // later instrument that method. So we'd
         // get a quasi-infinite loop when debugging
         // wormhole.js functions.
-	    var parsedObject = eval('(' + JSONDocument + ')');
-	    return parsedObject;
+        var parsedObject = eval('(' + JSONDocument + ')');
+        return parsedObject;
     }
     
     function safeJSONParse(str) {
@@ -233,7 +240,7 @@ window.MoSyncDebugProtocol = new (function() {
     }
     
     this.init = function() {
-    	%INIT_FILE_IDS%
+        %INIT_FILE_IDS%
         replaceConsole();
         var location = window ? window.document.location.href : "<unknown>";
         var cmd = sendToServer('/init', {
@@ -242,7 +249,7 @@ window.MoSyncDebugProtocol = new (function() {
         });
         
         if (cmd) {
-        	sessionId = cmd.sessionId;
+            sessionId = cmd.sessionId;
             processCommand(cmd);
         }
 
@@ -251,7 +258,7 @@ window.MoSyncDebugProtocol = new (function() {
     
     this.updatePosition = function(fileId, line, isDebuggerStatement, evalScopeFunc) {
         if (inUpdatePosition || terminating || disconnected) {
-        	return;
+            return;
         }
         inUpdatePosition = true;
         
@@ -263,20 +270,29 @@ window.MoSyncDebugProtocol = new (function() {
                 
         while (true) {
             var isBreakpoint = (breakpoints[fileId] && breakpoints[fileId][line]) || /* explicit breakpoint? */
+                               loadBreakpoints[fileId] ||
                                isDebuggerStatement ||                            /* debugger; statement? */
                                shouldBreak(stackDepth);                          /* step (in|over|out) or break-on-next? */
             
             if (!isBreakpoint) {
-         	    inUpdatePosition = false;
+                 inUpdatePosition = false;
                 return;
             }
         
-        	dropCommandConnection();
+            dropCommandConnection();
             
             var file = idToFile[fileId];
+            var type = 'line';
+            if (loadBreakpoints[fileId]) {
+                type = 'load';
+                loadBreakpoints[fileId] = false;
+            } else if (isDebuggerStatement) {
+                type = 'debugger';
+            }
+            
             var cmd = sendToServer('/breakpoint', {
                 command: 'report-breakpoint',
-                type: 'line',
+                type: type,
                 file: file,
                 line: line,
                 stack: stack,
@@ -285,6 +301,7 @@ window.MoSyncDebugProtocol = new (function() {
                 id: clientSuspend
             });
             clientSuspend = 0;
+            suspendOnLoad = false;
             
             step = false;
                         
@@ -310,7 +327,7 @@ window.MoSyncDebugProtocol = new (function() {
     };
     
     this.reportException = function(e) {
-    	var lastFile = idToFile[lastFileId];
+        var lastFile = idToFile[lastFileId];
         sendToServer('/breakpoint', {
             command: 'report-breakpoint',
             type: 'exception',

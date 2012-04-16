@@ -37,6 +37,7 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
+import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLoadBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.StepRequest;
 import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
 import org.json.simple.JSONArray;
@@ -110,6 +111,7 @@ public class LiveServer {
 
 		interface IMessageListener {
 			public void received(int messageId, Object data);
+
 			public int getSessionId();
 		}
 
@@ -128,7 +130,6 @@ public class LiveServer {
 		private final Object queueLock = new Object();
 
 		private Timer pinger;
-
 
 		private DebuggerMessage poison() {
 			return new DebuggerMessage(POISON);
@@ -184,7 +185,8 @@ public class LiveServer {
 			}
 		}
 
-		private Object await(final int sessionId, DebuggerMessage msg, int timeout) throws InterruptedException, TimeoutException {
+		private Object await(final int sessionId, DebuggerMessage msg,
+				int timeout) throws InterruptedException, TimeoutException {
 			final CountDownLatch cd = new CountDownLatch(1);
 			final Object[] result = new Object[1];
 			IMessageListener listener = new IMessageListener() {
@@ -206,13 +208,15 @@ public class LiveServer {
 			try {
 				if (!cd.await(timeout, TimeUnit.SECONDS)) {
 					if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-						CoreMoSyncPlugin.trace("Message timeout (#{0})", sessionId);
+						CoreMoSyncPlugin.trace("Message timeout (#{0})",
+								sessionId);
 					}
 					throw new TimeoutException();
 				}
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-					CoreMoSyncPlugin.trace("WAITED FOR SESSION {0} AND GOT {1}",
-							sessionId, result[0]);
+					CoreMoSyncPlugin.trace(
+							"WAITED FOR SESSION {0} AND GOT {1}", sessionId,
+							result[0]);
 				}
 			} finally {
 				clearMessageListener(sessionId);
@@ -220,8 +224,8 @@ public class LiveServer {
 			return result[0];
 		}
 
-		private synchronized void setMessageListener(int sessionId,
-				int id, IMessageListener listener) {
+		private synchronized void setMessageListener(int sessionId, int id,
+				IMessageListener listener) {
 			synchronized (queueLock) {
 				this.messageListeners.put(id, listener);
 			}
@@ -258,9 +262,11 @@ public class LiveServer {
 					sessionQueue.offer(poison());
 				}
 
-				Set<Integer> messageListenerIds = new TreeSet<Integer>(messageListeners.keySet());
+				Set<Integer> messageListenerIds = new TreeSet<Integer>(
+						messageListeners.keySet());
 				for (Integer messageListenerId : messageListenerIds) {
-					IMessageListener listener = messageListeners.get(messageListenerId);
+					IMessageListener listener = messageListeners
+							.get(messageListenerId);
 					if (listener.getSessionId() == sessionId) {
 						setResult(messageListenerId, null);
 						clearMessageListener(messageListenerId);
@@ -599,12 +605,12 @@ public class LiveServer {
 					: "clear-breakpoints");
 			JSONArray jsonBps = new JSONArray();
 			for (Object bp : bps) {
-				if (bp instanceof IJavaScriptLineBreakpoint) {
-					try {
+				try {
+					if (bp instanceof IJavaScriptLineBreakpoint || bp instanceof IJavaScriptLoadBreakpoint) {
 						IJavaScriptLineBreakpoint lineBp = (IJavaScriptLineBreakpoint) bp;
 						if (lineBp.getMarker() != null
 								&& lineBp.getMarker().exists()) {
-							int lineNo = lineBp.getLineNumber();
+							int lineNo = bp instanceof IJavaScriptLoadBreakpoint ? -1 : lineBp.getLineNumber();
 							IResource resource = lineBp.getMarker()
 									.getResource();
 							String expr = lineBp.getCondition();
@@ -613,11 +619,9 @@ public class LiveServer {
 										(IFile) resource, lineNo);
 							}
 						}
-					} catch (Exception e) {
-						// TODO!
-						e.printStackTrace();
 					}
-
+				} catch (Exception e) {
+					CoreMoSyncPlugin.getDefault().log(e);
 				}
 
 				if (bp instanceof InternalLineBreakpoint) {
@@ -631,7 +635,6 @@ public class LiveServer {
 				}
 			}
 			command.put("data", jsonBps);
-			System.err.println("CREATING BREAKPOINTS FOR CLIENT: " + command);
 			return command;
 		}
 
@@ -726,7 +729,8 @@ public class LiveServer {
 	private Object awaitEvalResult(int sessionId, String expression,
 			Integer stackDepth, int timeout) throws InterruptedException,
 			TimeoutException {
-		DebuggerMessage queuedExpression = new DebuggerMessage(EVAL, new Pair<String, Integer>(expression, stackDepth));
+		DebuggerMessage queuedExpression = new DebuggerMessage(EVAL,
+				new Pair<String, Integer>(expression, stackDepth));
 		return queues.await(sessionId, queuedExpression, timeout);
 	}
 

@@ -65,6 +65,7 @@ public class ReloadEventQueue implements EventQueue {
 			List stepRequests = requests.stepRequests();
 			List suspendRequests = requests.suspendRequests();
 			List exceptionRequests = requests.exceptionRequests();
+			List scriptLoadRequests = requests.scriptLoadRequests();
 
 			if ("report-breakpoint".equals(commandName)) {
 				// Breakpoint!
@@ -78,6 +79,7 @@ public class ReloadEventQueue implements EventQueue {
 				boolean isStepping = isSuspendedByDebugger || command.containsKey("step")
 						&& (Boolean) command.get("step");
 				boolean isException = "exception".equals(command.get("type"));
+				boolean isScriptLoad = "load".equals(command.get("type"));
 
 				if (fileName != null && line != null) {
 					IFile file = ResourcesPlugin.getWorkspace().getRoot()
@@ -105,12 +107,18 @@ public class ReloadEventQueue implements EventQueue {
 							eventSet.add(new ReloadSuspendEvent(vm, thread,
 									location, suspendRequest));
 						}
-					}
-					if (isException) {
+					} else if (isException) {
 						for (Object exceptionRequestObj : exceptionRequests) {
 							ReloadExceptionRequest exceptionRequest = (ReloadExceptionRequest) exceptionRequestObj;
 							String message = (String) command.get("message");
 							eventSet.add(new ReloadExceptionEvent(vm, thread, location, message, exceptionRequest));
+						}
+					} else if (isScriptLoad) {
+						for (Object scriptLoadRequestObj : scriptLoadRequests) {
+							// For some reason, the project should not be in this path!?
+							ReloadScriptLoadRequest scriptLoadRequest = (ReloadScriptLoadRequest) scriptLoadRequestObj;
+							SimpleScriptReference script = new SimpleScriptReference(vm, file.getProjectRelativePath());
+							eventSet.add(new ReloadScriptEvent(targetVM, thread, script, scriptLoadRequest));
 						}
 					}
 				}
