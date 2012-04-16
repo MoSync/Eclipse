@@ -39,6 +39,8 @@ import org.eclipse.wst.jsdt.core.dom.ASTParser;
 import org.eclipse.wst.jsdt.core.dom.ASTVisitor;
 import org.eclipse.wst.jsdt.core.dom.Block;
 import org.eclipse.wst.jsdt.core.dom.DoStatement;
+import org.eclipse.wst.jsdt.core.dom.Expression;
+import org.eclipse.wst.jsdt.core.dom.ExpressionStatement;
 import org.eclipse.wst.jsdt.core.dom.ForInStatement;
 import org.eclipse.wst.jsdt.core.dom.ForStatement;
 import org.eclipse.wst.jsdt.core.dom.FunctionDeclaration;
@@ -53,6 +55,7 @@ import org.eclipse.wst.jsdt.core.dom.SwitchStatement;
 import org.eclipse.wst.jsdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.wst.jsdt.core.dom.WhileStatement;
 import org.eclipse.wst.jsdt.core.dom.WithStatement;
+import org.eclipse.wst.jsdt.internal.compiler.ast.DebuggerStatement;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
@@ -77,6 +80,7 @@ public class JSODDSupport {
 		private LocalVariableScope currentScope = new LocalVariableScope()
 				.nestScope();
 		private final TreeMap<Integer, LocalVariableScope> localVariables = new TreeMap<Integer, LocalVariableScope>();
+		private final HashSet<Integer> debuggerStatements = new HashSet<Integer>();
 		private final HashSet<ASTNode> exclusions = new HashSet<ASTNode>();
 		private final HashSet<Statement> blockifiables = new HashSet<Statement>();
 		private final HashMap<Integer, NavigableMap<Integer, List<String>>> insertions = new HashMap<Integer, NavigableMap<Integer, List<String>>>();
@@ -146,6 +150,16 @@ public class JSODDSupport {
 
 			if (node instanceof Statement) {
 				statementStack.push(node);
+			}
+
+			if (node instanceof ExpressionStatement) {
+				Expression expression = ((ExpressionStatement) node).getExpression();
+				if (expression instanceof SimpleName) {
+					boolean isDebuggerStatement = "debugger".equals(((SimpleName) expression).getIdentifier());
+					if (isDebuggerStatement) {
+						debuggerStatements.add(startLine);
+					}
+				}
 			}
 
 			if (node instanceof Block) {
@@ -452,23 +466,16 @@ public class JSODDSupport {
 							+ "*/";
 				}
 
+				boolean isDebuggerStatement = debuggerStatements.contains(lineNo);
+
 				String addThis = scopeDesc
 						+ " MoSyncDebugProtocol.updatePosition(" + fileId + ","
 						+ lineNo + ","
-						+ "false,function(____eval) {return eval(____eval);});"
+						+ isDebuggerStatement + ","
+						+ "function(____eval) {return eval(____eval);});"
 						+ "\n";
 				insert(lineNo, col, addThis);
 			}
-		}
-
-		private boolean onlyWS(String str) {
-			for (int i = 0; i < str.length(); i++) {
-				char ch = str.charAt(i);
-				if (!Character.isWhitespace(ch)) {
-					return false;
-				}
-			}
-			return true;
 		}
 	}
 

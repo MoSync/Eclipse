@@ -66,6 +66,7 @@ public class ReloadEventQueue implements EventQueue {
 			List suspendRequests = requests.suspendRequests();
 			List exceptionRequests = requests.exceptionRequests();
 			List scriptLoadRequests = requests.scriptLoadRequests();
+			List debuggerStatementRequests = requests.debuggerStatementRequests();
 
 			if ("report-breakpoint".equals(commandName)) {
 				// Breakpoint!
@@ -80,6 +81,7 @@ public class ReloadEventQueue implements EventQueue {
 						&& (Boolean) command.get("step");
 				boolean isException = "exception".equals(command.get("type"));
 				boolean isScriptLoad = "load".equals(command.get("type"));
+				boolean isDebuggerStatement = "debugger".equals(command.get("type"));
 
 				if (fileName != null && line != null) {
 					IFile file = ResourcesPlugin.getWorkspace().getRoot()
@@ -120,6 +122,13 @@ public class ReloadEventQueue implements EventQueue {
 							SimpleScriptReference script = new SimpleScriptReference(vm, file.getProjectRelativePath());
 							eventSet.add(new ReloadScriptEvent(targetVM, thread, script, scriptLoadRequest));
 						}
+					} else if (isDebuggerStatement) {
+						for (Object debuggerStatementRequestObj : debuggerStatementRequests) {
+							// For some reason, the project should not be in this path!?
+							ReloadDebuggerStatementRequest debuggerStatementRequest = (ReloadDebuggerStatementRequest) debuggerStatementRequestObj;
+							eventSet.add(new ReloadDebuggerStatementEvent(targetVM, thread, location, debuggerStatementRequest));
+						}
+
 					}
 				}
 				if (!eventSet.isEmpty()) {
