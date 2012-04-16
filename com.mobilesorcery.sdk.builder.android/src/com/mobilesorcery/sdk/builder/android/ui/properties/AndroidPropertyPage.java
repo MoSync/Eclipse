@@ -14,6 +14,7 @@ import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
+import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.ui.UpdateListener;
 
 public class AndroidPropertyPage extends MoSyncPropertyPage {
@@ -44,6 +45,9 @@ public class AndroidPropertyPage extends MoSyncPropertyPage {
         UpdateListener listener = new UpdateListener(this);
         versionNumberText.addListener(SWT.Modify, listener);
         packageText.addListener(SWT.Modify, listener);
+
+        UIUtils.nameControl(packageText, "package-name");
+        UIUtils.nameControl(versionNumberText, "version-number");
 
         initUI();
         return main;
