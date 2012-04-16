@@ -38,6 +38,8 @@ import org.eclipse.wst.jsdt.core.dom.ASTNode;
 import org.eclipse.wst.jsdt.core.dom.ASTParser;
 import org.eclipse.wst.jsdt.core.dom.ASTVisitor;
 import org.eclipse.wst.jsdt.core.dom.Block;
+import org.eclipse.wst.jsdt.core.dom.BodyDeclaration;
+import org.eclipse.wst.jsdt.core.dom.Comment;
 import org.eclipse.wst.jsdt.core.dom.DoStatement;
 import org.eclipse.wst.jsdt.core.dom.Expression;
 import org.eclipse.wst.jsdt.core.dom.ExpressionStatement;
@@ -45,6 +47,7 @@ import org.eclipse.wst.jsdt.core.dom.ForInStatement;
 import org.eclipse.wst.jsdt.core.dom.ForStatement;
 import org.eclipse.wst.jsdt.core.dom.FunctionDeclaration;
 import org.eclipse.wst.jsdt.core.dom.IfStatement;
+import org.eclipse.wst.jsdt.core.dom.JSdoc;
 import org.eclipse.wst.jsdt.core.dom.JavaScriptUnit;
 import org.eclipse.wst.jsdt.core.dom.LabeledStatement;
 import org.eclipse.wst.jsdt.core.dom.SimpleName;
@@ -76,7 +79,6 @@ public class JSODDSupport {
 
 		private JavaScriptUnit unit;
 		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
-		private final Stack<Boolean> instrumentState = new Stack<Boolean>();
 		private LocalVariableScope currentScope = new LocalVariableScope()
 				.nestScope();
 		private final TreeMap<Integer, LocalVariableScope> localVariables = new TreeMap<Integer, LocalVariableScope>();
@@ -88,11 +90,11 @@ public class JSODDSupport {
 
 		@Override
 		public void preVisit(ASTNode node) {
-			int start = node.getStartPosition();
+			int start = getStartPosition(node);
 			int startLine = unit == null ? -1 : unit.getLineNumber(start);
 
 			LocalVariableScope startScope = currentScope;
-			boolean nest = false;
+			boolean nest = isNestStatement(node);
 
 			blockify(node);
 
@@ -162,12 +164,6 @@ public class JSODDSupport {
 				}
 			}
 
-			if (node instanceof Block) {
-				// TODO: For statements etc should be able to handle one-liners!
-				instrumentState.push(true);
-				nest = true;
-			}
-
 			if (isInstrumentableStatement(node)) {
 				addStatementInstrumentationLocation(unit, node,
 						statementsToRewrite, true, true);
@@ -180,9 +176,40 @@ public class JSODDSupport {
 			if (currentScope != startScope) {
 				// It's ok to overwrite the previous localvariables if on the
 				// same line.
-				localVariables.put(startLine + 1, currentScope);
+				int end = getStartPosition(node) + getLength(node);
+				int endLine = unit == null ? -1 : unit.getLineNumber(end);
+
+				localVariables.put(endLine + 1, currentScope);
 			}
 		}
+
+		private boolean isNestStatement(ASTNode node) {
+			return node instanceof FunctionDeclaration ||
+					node instanceof Block ||
+					node instanceof ForStatement ||
+					node instanceof ForInStatement;
+		}
+
+		private int getStartPosition(ASTNode node) {
+			int pos = node.getStartPosition();
+			// The JavaScriptDoc is always the first you get.
+			int docLength = node.getLength() - getLength(node);
+			return pos + docLength;
+		}
+
+		private int getLength(ASTNode node) {
+			int docLength = 0;
+			if (node instanceof BodyDeclaration) {
+				BodyDeclaration bodyDeclaration = (BodyDeclaration) node;
+				JSdoc doc = bodyDeclaration.getJavadoc();
+				if (doc != null) {
+					docLength = doc.getLength();
+				}
+			}
+
+			return node.getLength() - docLength;
+		}
+
 
 		private boolean shouldBlockify(ASTNode node) {
 			return blockifiables.contains(node);
@@ -257,7 +284,7 @@ public class JSODDSupport {
 					shouldAdd = true;
 				}
 			}
-			// Max one point of instrumentation per line/instrumentation type.
+
 			if (insertionLine > 0 && insertionCol >= 0 && shouldAdd) {
 				nodeList.add(node);
 			}
@@ -271,22 +298,13 @@ public class JSODDSupport {
 			boolean isBlock = node instanceof Block;
 			boolean allowInstrumentation = isStatement && !isBlock;
 
-			// Special case: switch.
-			// allowInstrumentation &= !(node instanceof SwitchCase);
-
-			allowInstrumentation &= instrumentState.isEmpty()
-					|| instrumentState.peek();
-
 			return allowInstrumentation;
 		}
 
 		@Override
 		public void postVisit(ASTNode node) {
-			int start = node.getStartPosition();
-			int line = unit == null ? -1 : unit.getLineNumber(start);
-
 			LocalVariableScope startScope = currentScope;
-			boolean unnest = false;
+			boolean unnest = isNestStatement(node);
 
 			if (node instanceof VariableDeclarationFragment) {
 				VariableDeclarationFragment localVar = (VariableDeclarationFragment) node;
@@ -298,21 +316,8 @@ public class JSODDSupport {
 				unit = null;
 			}
 
-			if (node instanceof FunctionDeclaration) {
-				unnest = true;
-			}
-
-			if (node instanceof ForInStatement || node instanceof ForStatement) {
-				// instrumentState.pop();
-			}
-
 			if (node instanceof Statement) {
 				statementStack.pop();
-			}
-
-			if (node instanceof Block) {
-				instrumentState.pop();
-				unnest = true;
 			}
 
 			if (unnest) {
@@ -322,7 +327,10 @@ public class JSODDSupport {
 			if (currentScope != startScope) {
 				// It's ok to overwrite the previous localvariables if on the
 				// same line.
-				localVariables.put(line + 1, currentScope);
+				int end = getStartPosition(node) + getLength(node);
+				int endLine = unit == null ? -1 : unit.getLineNumber(end);
+
+				localVariables.put(endLine + 1, currentScope);
 			}
 
 			exclusions.remove(node);
@@ -436,8 +444,8 @@ public class JSODDSupport {
 			if (unit == null) {
 				throw new IllegalStateException("Node has no matched unit");
 			}
-			int pos = start ? node.getStartPosition() : node.getStartPosition()
-					+ node.getLength();
+			int pos = start ? getStartPosition(node) : getStartPosition(node)
+					+ getLength(node);
 			int line = unit.getLineNumber(pos);
 			int col = unit.getColumnNumber(pos);
 			return new Pair(line, col);
@@ -450,6 +458,7 @@ public class JSODDSupport {
 			ASTNode node = (nodeList != null && !nodeList.isEmpty()) ? nodeList
 					.get(0) : null;
 			int col = position(node, true).second;
+
 			if (node != null && col >= 0) {
 				col = Math.min(col, line.length());
 
@@ -599,7 +608,7 @@ public class JSODDSupport {
 
 		if (scopeMap != null) {
 			Entry<Integer, LocalVariableScope> scope = scopeMap
-					.floorEntry(lineNo);
+					.floorEntry(lineNo - 1);
 			if (scope != null) {
 				return scope.getValue();
 			}
