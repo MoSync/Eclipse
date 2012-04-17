@@ -4,14 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.UnknownHostException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -20,9 +15,7 @@ import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Stack;
 import java.util.TreeMap;
-import java.util.Vector;
 
-import org.eclipse.cdt.core.settings.model.util.Comparator;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -39,7 +32,6 @@ import org.eclipse.wst.jsdt.core.dom.ASTParser;
 import org.eclipse.wst.jsdt.core.dom.ASTVisitor;
 import org.eclipse.wst.jsdt.core.dom.Block;
 import org.eclipse.wst.jsdt.core.dom.BodyDeclaration;
-import org.eclipse.wst.jsdt.core.dom.Comment;
 import org.eclipse.wst.jsdt.core.dom.DoStatement;
 import org.eclipse.wst.jsdt.core.dom.Expression;
 import org.eclipse.wst.jsdt.core.dom.ExpressionStatement;
@@ -58,7 +50,6 @@ import org.eclipse.wst.jsdt.core.dom.SwitchStatement;
 import org.eclipse.wst.jsdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.wst.jsdt.core.dom.WhileStatement;
 import org.eclipse.wst.jsdt.core.dom.WithStatement;
-import org.eclipse.wst.jsdt.internal.compiler.ast.DebuggerStatement;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
@@ -72,9 +63,9 @@ import com.mobilesorcery.sdk.html5.Html5Plugin;
 public class JSODDSupport {
 
 	public class DebugRewriteOperationVisitor extends ASTVisitor {
-		private final HashMap<Integer, List<ASTNode>> statementsToRewrite = new HashMap<Integer, List<ASTNode>>();
-		private final HashMap<Integer, List<ASTNode>> functionPreambles = new HashMap<Integer, List<ASTNode>>();
-		private final HashMap<Integer, List<ASTNode>> functionPostambles = new HashMap<Integer, List<ASTNode>>();
+		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> statementsToRewrite = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
+		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPreambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
+		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPostambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<ASTNode, String> functionNames = new HashMap<ASTNode, String>();
 
 		private JavaScriptUnit unit;
@@ -84,7 +75,7 @@ public class JSODDSupport {
 		private final TreeMap<Integer, LocalVariableScope> localVariables = new TreeMap<Integer, LocalVariableScope>();
 		private final HashSet<Integer> debuggerStatements = new HashSet<Integer>();
 		private final HashSet<ASTNode> exclusions = new HashSet<ASTNode>();
-		private final HashSet<Statement> blockifiables = new HashSet<Statement>();
+		private final HashSet<ASTNode> blockifiables = new HashSet<ASTNode>();
 		private final HashMap<Integer, NavigableMap<Integer, List<String>>> insertions = new HashMap<Integer, NavigableMap<Integer, List<String>>>();
 		private final HashMap<ASTNode, JavaScriptUnit> nodeToUnitMap = new HashMap<ASTNode, JavaScriptUnit>();
 
@@ -111,18 +102,23 @@ public class JSODDSupport {
 				String functionIdentifier = functionName == null ? "<anonymous>" : functionName.getIdentifier();
 				Block body = fd.getBody();
 				List statements = body.statements();
+				boolean emptyFunction = statements.isEmpty();
 				if (statements.isEmpty()) {
-					// TODO!
-				} else {
-					ASTNode firstStatement = (ASTNode) statements.get(0);
-					addStatementInstrumentationLocation(unit, firstStatement,
-							functionPreambles, true, false);
-					functionNames.put(firstStatement, functionIdentifier);
-					ASTNode lastStatement = (ASTNode) statements
-							.get(statements.size() - 1);
-					addStatementInstrumentationLocation(unit, lastStatement,
-							functionPostambles, false, false);
+					// Small hack here to work with nodes rather than file positions...
+					forceBlockify(body);
 				}
+
+				ASTNode firstStatement = emptyFunction ? body : (ASTNode) statements.get(0);
+				addStatementInstrumentationLocation(unit, firstStatement,
+						functionPreambles, true, false);
+				functionNames.put(firstStatement, functionIdentifier);
+				ASTNode lastStatement = emptyFunction ? body : (ASTNode) statements.get(statements.size() - 1);
+				addStatementInstrumentationLocation(unit, lastStatement,
+						functionPostambles, false, false);
+				// If the } is on a separate line, let's add an extra
+				// stop here -- will make stepping etc more useful.
+				addStatementInstrumentationLocation(unit, lastStatement, statementsToRewrite, false, true);
+
 				// Already nested!
 				nest = false;
 			}
@@ -215,6 +211,10 @@ public class JSODDSupport {
 			return blockifiables.contains(node);
 		}
 
+		private void forceBlockify(ASTNode node) {
+			blockifiables.add(node);
+		}
+
 		private void blockify(ASTNode node) {
 			if (node instanceof IfStatement) {
 				IfStatement ifStatement = (IfStatement) node;
@@ -238,7 +238,7 @@ public class JSODDSupport {
 			}
 		}
 
-		private void addToBlockifyList(Statement statement) {
+		private void addToBlockifyList(ASTNode statement) {
 			if (statement == null || statement instanceof Block) {
 				// Already blockified!
 				return;
@@ -254,7 +254,7 @@ public class JSODDSupport {
 		}
 
 		private void addStatementInstrumentationLocation(JavaScriptUnit unit,
-				ASTNode node, HashMap<Integer, List<ASTNode>> lineMap,
+				ASTNode node, HashMap<Integer, List<Pair<ASTNode, Boolean>>> lineMap,
 				boolean before, boolean maxOnePerLine) {
 			if (unit == null) {
 				return;
@@ -266,9 +266,9 @@ public class JSODDSupport {
 			int insertionLine = pos.first;
 			int insertionCol = pos.second;
 
-			List<ASTNode> nodeList = lineMap.get(insertionLine);
+			List<Pair<ASTNode, Boolean>> nodeList = lineMap.get(insertionLine);
 			if (nodeList == null) {
-				nodeList = new ArrayList<ASTNode>();
+				nodeList = new ArrayList<Pair<ASTNode,Boolean>>();
 				lineMap.put(insertionLine, nodeList);
 			}
 
@@ -277,8 +277,8 @@ public class JSODDSupport {
 			if (maxOnePerLine) {
 				// If max one is allow, we try to insert the one with the lowest
 				// column #.
-				ASTNode previousNode = nodeList.isEmpty() ? null : nodeList.get(0);
-				int previousCol = previousNode == null ? Integer.MAX_VALUE : position(previousNode, before).second;
+				Pair<ASTNode, Boolean> previousNode = nodeList.isEmpty() ? null : nodeList.get(0);
+				int previousCol = previousNode == null ? Integer.MAX_VALUE : position(previousNode.first, previousNode.second).second;
 				if (previousCol > insertionCol) {
 					nodeList.clear();
 					shouldAdd = true;
@@ -286,7 +286,7 @@ public class JSODDSupport {
 			}
 
 			if (insertionLine > 0 && insertionCol >= 0 && shouldAdd) {
-				nodeList.add(node);
+				nodeList.add(new Pair(node, before));
 			}
 		}
 
@@ -407,12 +407,16 @@ public class JSODDSupport {
 		}
 
 		private void insertFunctionPreamble(long fileId, int lineNo, String line) {
-			Collection<ASTNode> nodeList = functionPreambles.get(lineNo);
+			Collection<Pair<ASTNode, Boolean>> nodeList = functionPreambles.get(lineNo);
 			if (nodeList == null) {
 				return;
 			}
-			for (ASTNode node : nodeList) {
+			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
+				ASTNode node = nodePosition.first;
 				String funcName = functionNames.get(node);
+				if (shouldBlockify(node)) {
+					insert(position(node, true), "{");
+				}
 				insert(position(node, true), MessageFormat.format(
 						"try '{' MoSyncDebugProtocol.pushStack(\"{0}\",{1},{2});",
 						funcName, Long.toString(fileId),
@@ -422,17 +426,21 @@ public class JSODDSupport {
 
 		private void insertFunctionPostamble(long fileId, int lineNo,
 				String line) {
-			Collection<ASTNode> nodeList = functionPostambles.get(lineNo);
+			Collection<Pair<ASTNode, Boolean>> nodeList = functionPostambles.get(lineNo);
 			if (nodeList == null) {
 				return;
 			}
-			for (ASTNode node : nodeList) {
+			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
+				ASTNode node = nodePosition.first;
 				insert(position(node, false), "}" + "catch (anException) {"
 						+ "if (!anException.alreadyThrown) {"
 						+ "MoSyncDebugProtocol.reportException(anException);"
 						+ "} anException.alreadyThrown = true;"
 						+ "throw anException;} finally {"
 						+ "MoSyncDebugProtocol.popStack();}");
+				if (shouldBlockify(node)) {
+					insert(position(node, false), "}");
+				}
 			}
 		}
 
@@ -453,17 +461,17 @@ public class JSODDSupport {
 
 		private void insertInstrumentedStatement(long fileId, int lineNo,
 				String line) {
-			List<ASTNode> nodeList = statementsToRewrite.get(lineNo);
+			List<Pair<ASTNode, Boolean>> nodeList = statementsToRewrite.get(lineNo);
 			// Max 1 statement instrumentation per line
-			ASTNode node = (nodeList != null && !nodeList.isEmpty()) ? nodeList
+			Pair<ASTNode, Boolean> nodePosition = (nodeList != null && !nodeList.isEmpty()) ? nodeList
 					.get(0) : null;
-			int col = position(node, true).second;
 
-			if (node != null && col >= 0) {
-				col = Math.min(col, line.length());
+			if (nodePosition != null) {
+				ASTNode node = nodePosition.first;
+				boolean before = nodePosition.second;
 
 				if (shouldBlockify(node)) {
-					insert(lineNo, col, "{");
+					insert(position(node, true), "{");
 					insert(position(node, false), "}");
 				}
 
@@ -483,7 +491,7 @@ public class JSODDSupport {
 						+ isDebuggerStatement + ","
 						+ "function(____eval) {return eval(____eval);});"
 						+ "\n";
-				insert(lineNo, col, addThis);
+				insert(position(node, before), addThis);
 			}
 		}
 	}
