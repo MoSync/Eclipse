@@ -1,11 +1,17 @@
 package com.mobilesorcery.sdk.html5.debug.jsdt;
 
+import java.util.HashMap;
+
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ScriptReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.BreakpointRequest;
+import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 
 public class ReloadBreakpointRequest extends ReloadEventRequest implements
@@ -41,14 +47,16 @@ public class ReloadBreakpointRequest extends ReloadEventRequest implements
 		this.hitcount = hitcount;
 	}
 
+	@Override
 	public synchronized void setEnabled(boolean enabled) {
 		if (enabled != isEnabled()) {
 			super.setEnabled(enabled);
-			
+
 			ScriptReference scriptRef = location.scriptReference();
 			if (scriptRef instanceof SimpleScriptReference) {
 				IFile file = ((SimpleScriptReference) scriptRef).getFile();
-				Html5Plugin.getDefault().getReloadServer().setLineBreakpoint(enabled, file, location.lineNumber());	
+				JavaScriptBreakpointDesc bp = new JavaScriptBreakpointDesc(file, location.lineNumber(), condition, hitcount);
+				Html5Plugin.getDefault().getReloadServer().setLineBreakpoint(enabled, bp);
 			}
 		}
 	}

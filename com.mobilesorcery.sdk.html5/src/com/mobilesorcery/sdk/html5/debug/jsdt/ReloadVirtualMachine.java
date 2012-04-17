@@ -142,6 +142,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	@Override
 	public List allScripts() {
+		//Html5Plugin.getDefault().getJSODDSupport(project);
 		IBreakpoint[] bps = DebugPlugin.getDefault().getBreakpointManager().getBreakpoints(JavaScriptDebugModel.MODEL_ID);
 		HashSet<IFile> scriptPaths = new HashSet<IFile>();
 		for (IBreakpoint bp : bps) {

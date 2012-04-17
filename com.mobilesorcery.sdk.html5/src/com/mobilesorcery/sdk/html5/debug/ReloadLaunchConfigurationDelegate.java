@@ -17,10 +17,8 @@ public class ReloadLaunchConfigurationDelegate extends EmulatorLaunchConfigurati
 		ReloadProcess process = new ReloadProcess(launch, name);
 		process.start();
 		launch.addProcess(process);
-		JSODDDebugTarget target = new JSODDDebugTarget(launch, process);
-		launch.addDebugTarget(target);
 		super.launch(configuration, mode, launch, monitor);
 	}
-	
+
 
 }

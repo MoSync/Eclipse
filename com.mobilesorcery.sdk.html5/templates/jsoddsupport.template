@@ -4,6 +4,8 @@ window.MoSyncDebugProtocol = new (function() {
     var serverPort = '%SERVER_PORT%';
     var serverUrl = 'http://' + serverHost + ':' + serverPort;
     var breakpoints = {};
+    var breakpointConditions = {};
+    var breakpointHitcount = {};
     var loadBreakpoints = {};
     var shouldBreak = function() { return false; };
     var asyncXHR = null;
@@ -127,8 +129,10 @@ window.MoSyncDebugProtocol = new (function() {
             case 'set-breakpoints':
             case 'clear-breakpoints':
                 cmd.data.forEach(function(bp) {
-                    var file = bp[0];
-                    var line = bp[1];
+                    var file = bp.file;
+                    var line = bp.line;
+                    var condition = bp.condition;
+                    var hitcount = bp.hitcount;
                     var fileId = fileToId[file];
                     var set = (cmd.command == 'set-breakpoints');
                     if (line >= 0) {
@@ -136,6 +140,18 @@ window.MoSyncDebugProtocol = new (function() {
                             breakpoints[fileId] = {};
                         }
                         breakpoints[fileId][line] = set;
+                        if (condition) {
+	                        if (!breakpointConditions[fileId]) {
+	                            breakpointConditions[fileId] = {};
+	                        }
+	                        breakpointConditions[fileId][line] = condition;
+                        }
+                        if (hitcount) {
+	                        if (!breakpointHitcount[fileId]) {
+	                            breakpointHitcount[fileId] = {};
+	                        }
+	                        breakpointHitcount[fileId][line] = hitcount - 1;
+                        }
                     } else {
                         // Script load.
                         if (fileId == '*') {
@@ -281,8 +297,17 @@ window.MoSyncDebugProtocol = new (function() {
                                isDebuggerStatement ||                            /* debugger; statement? */
                                shouldBreak(stackDepth);                          /* step (in|over|out) or break-on-next? */
             
+            if (breakpointConditions[fileId] && breakpointConditions[fileId][line]) {
+                isBreakpoint = evalScopeFunc(breakpointConditions[fileId][line]);
+            }
+            
+            if (breakpointHitcount[fileId] && breakpointHitcount[fileId][line]) {
+                breakpointHitcount[fileId][line]--;
+                isBreakpoint = false;
+            }
+            
             if (!isBreakpoint) {
-                 inUpdatePosition = false;
+                inUpdatePosition = false;
                 return;
             }
         

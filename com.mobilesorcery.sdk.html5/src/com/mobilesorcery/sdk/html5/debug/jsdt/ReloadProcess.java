@@ -6,10 +6,8 @@ import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.IStreamsProxy;
-import org.eclipse.debug.core.model.IVariable;
 
 import com.mobilesorcery.sdk.html5.Html5Plugin;
-import com.mobilesorcery.sdk.html5.debug.JSThread;
 import com.mobilesorcery.sdk.html5.live.LiveServer;
 
 public class ReloadProcess extends PlatformObject implements IProcess {

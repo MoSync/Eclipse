@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -24,9 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.core.internal.events.InternalBuilder;
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
@@ -36,7 +32,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.model.IBreakpoint;
-import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLoadBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.StepRequest;
@@ -55,26 +50,10 @@ import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
-import com.mobilesorcery.sdk.html5.debug.JSODDDebugTarget;
-import com.mobilesorcery.sdk.html5.debug.JSThread;
+import com.mobilesorcery.sdk.html5.debug.jsdt.JavaScriptBreakpointDesc;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
-import com.mobilesorcery.sdk.html5.live.LiveServer.InternalQueues.IMessageListener;
 
 public class LiveServer {
-
-	private class InternalLineBreakpoint {
-
-		boolean enabled;
-		String file;
-		int line;
-
-		public InternalLineBreakpoint(boolean enabled, String file, int line) {
-			this.enabled = enabled;
-			this.file = file;
-			this.line = line;
-		}
-
-	}
 
 	static class DebuggerMessage {
 		static AtomicInteger idCounter = new AtomicInteger(0);
@@ -375,9 +354,6 @@ public class LiveServer {
 
 			boolean preflight = "OPTIONS".equals(req.getMethod());
 
-			// FIXME
-			JSODDDebugTarget debug = JSODDDebugTarget.getLast();
-
 			// Preflight.
 			configureForPreflight(req, res);
 
@@ -458,9 +434,9 @@ public class LiveServer {
 				int queuedType = queuedElement == null ? -1
 						: queuedElement.type;
 				if (queuedType == BREAKPOINT) {
-					InternalLineBreakpoint bp = (InternalLineBreakpoint) queuedObject;
-					result = createBreakpointJSON(new Object[] { bp },
-							bp.enabled);
+					Pair<Boolean, Object> bp = (Pair<Boolean, Object>) queuedObject;
+					result = createBreakpointJSON(new Object[] { bp.second },
+							bp.first);
 				} else if (queuedType == RESUME) {
 					result = newCommand("breakpoint-continue");
 				} else if (queuedType == STEP) {
@@ -607,39 +583,55 @@ public class LiveServer {
 			JSONArray jsonBps = new JSONArray();
 			for (Object bp : bps) {
 				try {
-					boolean isLoadBp = bp instanceof IJavaScriptLoadBreakpoint;
-					if (bp instanceof IJavaScriptLineBreakpoint || isLoadBp) {
-						IJavaScriptLineBreakpoint lineBp = (IJavaScriptLineBreakpoint) bp;
-						if (lineBp.getMarker() != null
-								&& lineBp.getMarker().exists()) {
-							int lineNo = bp instanceof IJavaScriptLoadBreakpoint ? -1 : lineBp.getLineNumber();
-							IResource resource = lineBp.getMarker()
-									.getResource();
-							String expr = lineBp.getCondition();
-							if (resource.getType() == IResource.FILE) {
-								bp = new InternalLineBreakpoint(enabled,
-										resource.getFullPath().toPortableString(), lineNo);
-							} else if (isLoadBp && resource.getType() == IResource.ROOT) {
-								bp = new InternalLineBreakpoint(enabled, "*", -1);
-							}
+					if (bp instanceof IJavaScriptLineBreakpoint) {
+						bp = toInternalFormat((IJavaScriptLineBreakpoint) bp);
+					}
+					if (bp instanceof JavaScriptBreakpointDesc) {
+						JavaScriptBreakpointDesc lineBp = (JavaScriptBreakpointDesc) bp;
+						int lineNo = bp instanceof IJavaScriptLoadBreakpoint ? -1
+								: lineBp.getLineNumber();
+						IResource resource = lineBp.getResource();
+						String file = resource.getFullPath().toPortableString();
+						String condition = lineBp.getCondition();
+						int hitCount = lineBp.getHitCount();
+
+						JSONObject jsonBp = new JSONObject();
+						jsonBp.put("file", file);
+						jsonBp.put("line", lineNo);
+						if (!Util.isEmpty(condition)) {
+							jsonBp.put("condition", condition);
 						}
+						if (hitCount > 0) {
+							jsonBp.put("hitcount", hitCount);
+						}
+						jsonBps.add(jsonBp);
 					}
 				} catch (Exception e) {
 					CoreMoSyncPlugin.getDefault().log(e);
 				}
-
-				if (bp instanceof InternalLineBreakpoint) {
-					InternalLineBreakpoint lineBp = (InternalLineBreakpoint) bp;
-					JSONArray jsonBp = new JSONArray();
-					String file = lineBp.file;
-					int lineNo = lineBp.line;
-					jsonBp.add(file);
-					jsonBp.add(lineNo);
-					jsonBps.add(jsonBp);
-				}
 			}
 			command.put("data", jsonBps);
 			return command;
+		}
+
+		private JavaScriptBreakpointDesc toInternalFormat(
+				IJavaScriptLineBreakpoint lineBp) throws CoreException {
+			boolean isLoadBp = lineBp instanceof IJavaScriptLoadBreakpoint;
+
+			if (lineBp.getMarker() != null && lineBp.getMarker().exists()) {
+				int lineNumber = lineBp instanceof IJavaScriptLoadBreakpoint ? -1
+						: lineBp.getLineNumber();
+				IResource resource = lineBp.getMarker().getResource();
+				String file = resource.getFullPath().toPortableString();
+				String condition = lineBp.getCondition();
+				int hitCount = lineBp.getHitCount();
+				if (isLoadBp && resource.getType() == IResource.ROOT) {
+					file = "*";
+				}
+				return new JavaScriptBreakpointDesc(resource, lineNumber,
+						condition, hitCount);
+			}
+			return null;
 		}
 
 		private JSONObject newCommand(String command) {
@@ -752,16 +744,6 @@ public class LiveServer {
 		}
 	}
 
-	public IStackFrame[] extractStackFrames(JSODDDebugTarget debugTarget,
-			JSThread thread, JSONArray frames) {
-		IStackFrame[] result = new IStackFrame[frames.size()];
-		for (int i = 0; i < frames.size(); i++) {
-			String name = (String) frames.get(i);
-			result[i] = new JSStackFrame(debugTarget, thread, name, i);
-		}
-		return result;
-	}
-
 	public static IJavaScriptLineBreakpoint findBreakPoint(IPath file, long line) {
 		IBreakpoint[] bps = DebugPlugin.getDefault().getBreakpointManager()
 				.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
@@ -778,14 +760,6 @@ public class LiveServer {
 					// Just IGNORE!
 				}
 			}
-		}
-		return null;
-	}
-
-	private static IProject getProject(IJavaScriptLineBreakpoint bp) {
-		IMarker marker = bp.getMarker();
-		if (marker != null) {
-			return marker.getResource().getProject();
 		}
 		return null;
 	}
@@ -809,17 +783,9 @@ public class LiveServer {
 		}
 	}
 
-	public void setLineBreakpoint(boolean enabled, IFile file, int line) {
+	public void setLineBreakpoint(boolean enabled, JavaScriptBreakpointDesc bp) {
 		queues.broadcast(new DebuggerMessage(BREAKPOINT,
-				new InternalLineBreakpoint(enabled, file.getFullPath().toPortableString(), line)));
-	}
-
-	public void setBreakpoint(IJavaScriptLineBreakpoint bp) {
-		queues.broadcast(new DebuggerMessage(BREAKPOINT, bp));
-	}
-
-	public void removeBreakpoint(IJavaScriptLineBreakpoint breakpoint) {
-
+				new Pair<Boolean, Object>(enabled, bp)));
 	}
 
 	private int getPort() {
