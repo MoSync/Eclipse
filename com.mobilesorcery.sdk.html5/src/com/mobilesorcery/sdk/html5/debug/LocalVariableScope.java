@@ -74,6 +74,10 @@ public class LocalVariableScope {
 		return removedDuplicates;
 	}
 
+	public LocalVariableScope clear() {
+		return new LocalVariableScope();
+	}
+
 	@Override
 	public String toString() {
 		return Util.join(getLocalVariables().toArray(), ", ");
@@ -93,4 +97,5 @@ public class LocalVariableScope {
 		scope = scope.addLocalVariableDeclaration("c");
 		System.err.println(":" + scope);
 	}
+
 }

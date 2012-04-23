@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Set;
 import java.util.Timer;
@@ -25,6 +26,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceChangeEvent;
+import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.IResourceDeltaVisitor;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
@@ -47,13 +53,15 @@ import org.mortbay.thread.QueuedThreadPool;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.jsdt.JavaScriptBreakpointDesc;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
 
-public class LiveServer {
+public class LiveServer implements IResourceChangeListener {
 
 	static class DebuggerMessage {
 		static AtomicInteger idCounter = new AtomicInteger(0);
@@ -541,8 +549,12 @@ public class LiveServer {
 					JSONObject command = parseCommand(req);
 					int newSessionId = newSessionId();
 					jsonBps.put(SESSION_ID_ATTR, newSessionId);
-					ReloadVirtualMachine vm = resetVM(req, newSessionId);
-					vm.setCurrentLocation((String) command.get("location"));
+					String projectName = (String) command.get("project");
+					MoSyncProject project = MoSyncProject.create(ResourcesPlugin.getPlugin().getWorkspace().getRoot().getProject(projectName));
+					if (project != null) {
+						ReloadVirtualMachine vm = resetVM(req, project, newSessionId);
+						vm.setCurrentLocation((String) command.get("location"));
+					}
 				}
 				return jsonBps;
 			} else if (targetMatches(target, "/mobile/console")) {
@@ -657,6 +669,7 @@ public class LiveServer {
 			return;
 		}
 		try {
+			ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.POST_CHANGE);
 			server = new Server(getPort());
 			server.setThreadPool(new QueuedThreadPool(5));
 			server.setHandler(new LiveServerHandler());
@@ -698,7 +711,7 @@ public class LiveServer {
 	}
 
 	public synchronized ReloadVirtualMachine resetVM(HttpServletRequest req,
-			int newSessionId) {
+			MoSyncProject project, int newSessionId) {
 		String remoteIp = req.getRemoteAddr();
 		ReloadVirtualMachine vm = vmsByHost.get(remoteIp);
 		if (vm == null) {
@@ -708,7 +721,7 @@ public class LiveServer {
 		} else {
 			int oldSessionId = vm.getCurrentSessionId();
 		}
-		vm.reset(newSessionId);
+		vm.reset(newSessionId, project);
 
 		vmsByHost.put(remoteIp, vm);
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
@@ -765,6 +778,7 @@ public class LiveServer {
 	}
 
 	public synchronized void stopServer(Object ref) throws CoreException {
+		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.POST_CHANGE);
 		refs.remove(ref);
 		if (refs.isEmpty()) {
 			unassignedVMs.clear();
@@ -833,6 +847,9 @@ public class LiveServer {
 			if (vm != null && !vm.isTerminated()) {
 				DebuggerMessage msg = new DebuggerMessage(TERMINATE);
 				queues.offer(sessionId, msg);
+				// Just to make sure the terminate request is sent
+				// before the server is killed.
+				Thread.sleep(1000 * getTimeout(sessionId));
 			}
 		} catch (Exception e) {
 			CoreMoSyncPlugin.getDefault().log(e);
@@ -854,7 +871,7 @@ public class LiveServer {
 	private int getTimeout(int sessionId) {
 		// TODO: Use launch config/prefs. Hm. Prefs easier. And user-friendlier
 		// :)
-		return 5;
+		return 3;
 	}
 
 	public void addConsoleListener(ILineHandler handler) {
@@ -867,6 +884,41 @@ public class LiveServer {
 
 	public synchronized void registerVM(ReloadVirtualMachine vm) {
 		unassignedVMs.add(vm);
+	}
+
+	@Override
+	public void resourceChanged(IResourceChangeEvent event) {
+		IResourceDelta delta = event.getDelta();
+		final HashSet<IProject> projectsToReload = new HashSet<IProject>();
+		if (delta != null) {
+			try {
+				delta.accept(new IResourceDeltaVisitor() {
+					@Override
+					public boolean visit(IResourceDelta delta) throws CoreException {
+						IResource resource = delta.getResource();
+						if (resource != null && (delta.getFlags() & IResourceDelta.CONTENT) != 0) {
+							IProject project = resource.getProject();
+							JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project);
+							jsoddSupport.rewrite(resource.getFullPath(), null);
+							if (project != null && resource.getType() == IResource.FILE) {
+								projectsToReload.add(resource.getProject());
+							}
+							//try {
+								if (resource.getType() == IResource.FILE) {
+									//op.rewrite(resource.getFullPath());
+								}
+							/*} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}*/
+						}
+						return true;
+					}
+				});
+			} catch (Exception e) {
+				// TODO: handle exception
+			}
+		}
 	}
 
 }

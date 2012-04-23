@@ -49,11 +49,9 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			IncrementalBuilderVisitor {
 		private final class Rewriter {
 			private final JSODDSupport op;
-			private final boolean shouldAddBoilerPlate;
 
-			private Rewriter(JSODDSupport op, boolean shouldAddBoilerPlate) {
+			private Rewriter(JSODDSupport op) {
 				this.op = op;
-				this.shouldAddBoilerPlate = shouldAddBoilerPlate;
 			}
 
 			public boolean rewrite(IResource resourceToInstrument)
@@ -139,9 +137,9 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				setDiff(null);
 			}
 
-			final boolean shouldAddBoilerPlate = op.applyDiff(diff);
+			op.applyDiff(diff);
 			Set<IResource> instrumentThese = computeResourcesToRebuild(dependencies);
-			Rewriter rewriter = new Rewriter(op, shouldAddBoilerPlate);
+			Rewriter rewriter = new Rewriter(op);
 			for (IResource instrumentThis : instrumentThese) {
 				long start = System.currentTimeMillis();
 				rewriter.rewrite(instrumentThis);

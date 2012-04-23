@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.internal.localstore.IsSynchronizedVisitor;
@@ -37,6 +38,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
@@ -53,7 +55,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	private final NullValue nullValue;
 	private final ReloadUndefinedValue undefValue;
 	private int currentSessionId = LiveServer.NO_SESSION;
-	private IProject project;
+	private MoSyncProject project;
 	private final ReloadThreadReference mainThread;
 	private boolean isTerminated = false;
 
@@ -95,7 +97,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		server.suspend(currentSessionId);
 	}
 
-	public void reset(int newSessionId) {
+	public void reset(int newSessionId, MoSyncProject project) {
 		if (currentSessionId != LiveServer.NO_SESSION) {
 			server.reset(currentSessionId);
 			List exitRequests = requestMgr.threadExitRequests();
@@ -104,6 +106,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 			}
 		}
 		setCurrentSessionId(newSessionId);
+		this.project = project;
 	}
 
 	@Override
@@ -142,24 +145,16 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	@Override
 	public List allScripts() {
-		//Html5Plugin.getDefault().getJSODDSupport(project);
-		IBreakpoint[] bps = DebugPlugin.getDefault().getBreakpointManager().getBreakpoints(JavaScriptDebugModel.MODEL_ID);
-		HashSet<IFile> scriptPaths = new HashSet<IFile>();
-		for (IBreakpoint bp : bps) {
-			if (bp instanceof IJavaScriptLineBreakpoint) {
-				IJavaScriptLineBreakpoint lineBp = (IJavaScriptLineBreakpoint) bp;
-				IResource resource = lineBp.getMarker().getResource();
-				if (resource.getType() == IResource.FILE) {
-					scriptPaths.add((IFile) resource);
-				}
+		ArrayList<ScriptReference> result = new ArrayList<ScriptReference>();
+		if (project != null) {
+			JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project.getWrappedProject());
+			Set<IPath> allFiles = jsoddSupport.getAllFiles();
+			for (IPath file : allFiles) {
+				SimpleScriptReference ref = new SimpleScriptReference(this, file);
+				result.add(ref);
 			}
 		}
-		List<SimpleScriptReference> refs = new ArrayList<SimpleScriptReference>();
-		for (IFile scriptPath : scriptPaths) {
-			SimpleScriptReference ref = new SimpleScriptReference(this, scriptPath);
-			refs.add(ref);
-		}
-		return refs;
+		return result;
 	}
 
 	@Override

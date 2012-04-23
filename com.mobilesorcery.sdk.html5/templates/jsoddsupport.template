@@ -2,6 +2,7 @@
 window.MoSyncDebugProtocol = new (function() {
     var serverHost = '%SERVER_HOST%';
     var serverPort = '%SERVER_PORT%';
+    var project = '%PROJECT_NAME%';
     var serverUrl = 'http://' + serverHost + ':' + serverPort;
     var breakpoints = {};
     var breakpointConditions = {};
@@ -268,6 +269,7 @@ window.MoSyncDebugProtocol = new (function() {
         var location = window ? window.document.location.href : "<unknown>";
         var cmd = sendToServer('/init', {
             command: 'mobile-connected',
+            project: project,
             location: location
         });
         
@@ -278,6 +280,16 @@ window.MoSyncDebugProtocol = new (function() {
 
         listenToServer();
     };
+    
+    this.loadScript = function(fileId, segment) {
+        var cmd = sendToServer('/load-script', {
+            file: fileId
+            segment: segment
+        });
+        if (cmd) {
+            processCommand(cmd);
+        }
+    }
     
     this.updatePosition = function(fileId, line, isDebuggerStatement, evalScopeFunc) {
         if (inUpdatePosition || terminating || disconnected) {
