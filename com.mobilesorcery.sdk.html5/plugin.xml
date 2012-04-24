@@ -70,6 +70,37 @@
       </participant>
    </extension>
       <extension
+         point="org.eclipse.core.runtime.adapters">
+      <factory
+            adaptableType="org.eclipse.wst.jsdt.debug.core.model.IJavaScriptThread"
+            class="com.mobilesorcery.sdk.html5.debug.jsdt.ReloadAdapterFactory">
+         <adapter
+               type="org.eclipse.debug.core.commands.IDropToFrameHandler">
+         </adapter>
+         <adapter
+               type="org.eclipse.debug.core.model.IDropToFrame">
+         </adapter>
+      </factory>
+            <factory
+            adaptableType="org.eclipse.wst.jsdt.debug.core.model.IJavaScriptStackFrame"
+            class="com.mobilesorcery.sdk.html5.debug.jsdt.ReloadAdapterFactory">
+         <adapter
+               type="org.eclipse.debug.core.commands.IDropToFrameHandler">
+         </adapter>
+         <adapter
+               type="org.eclipse.debug.core.model.IDropToFrame">
+         </adapter>
+      </factory>
+      <!-- Lots of internal API accesses here; jsdt does not support variable mods.-->
+     <!-- <factory
+            adaptableType="org.eclipse.wst.jsdt.debug.internal.core.model.JavaScriptVariable"
+            class="com.mobilesorcery.sdk.html5.debug.jsdt.ForceJavaScriptVariableEditor">
+         <adapter
+               type="org.eclipse.debug.internal.ui.viewers.model.provisional.IElementEditor">
+         </adapter>
+      </factory>-->
+   </extension>
+      <extension
             point="com.mobilesorcery.sdk.build.steps">
          <factory
                id="com.mobilesorcery.sdk.html5.debugsupport"

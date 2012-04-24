@@ -225,7 +225,8 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 		// MAIN THREAD
 		ReloadThreadReference thread = (ReloadThreadReference) threads.get(0);
-		if (thread.isSuspended()) {
+		boolean isClientSuspend = Boolean.parseBoolean("" + json.get("suspended"));
+		if (thread.isSuspended() && !isClientSuspend) {
 			return;
 		}
 		thread.markSuspended(true);

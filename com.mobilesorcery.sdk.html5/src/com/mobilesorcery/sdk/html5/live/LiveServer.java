@@ -836,7 +836,7 @@ public class LiveServer implements IResourceChangeListener {
 
 	public void suspend(int sessionId) {
 		try {
-			queues.offer(sessionId, new DebuggerMessage(SUSPEND));
+			queues.await(sessionId, new DebuggerMessage(SUSPEND), Integer.MAX_VALUE);
 		} catch (Exception e) {
 			CoreMoSyncPlugin.getDefault().log(e);
 		}

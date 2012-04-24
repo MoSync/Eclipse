@@ -59,8 +59,6 @@ public class ReloadEventQueue implements EventQueue {
 	private EventSet handleEvent(String commandName, Object commandObj) {
 		ReloadEventSet eventSet = new ReloadEventSet(vm);
 		ReloadVirtualMachine targetVM = extractVM(commandObj);
-		System.err.println("TARGET " + System.identityHashCode(targetVM));
-		System.err.println("THIS " + System.identityHashCode(vm));
 		if (targetVM == this.vm) {
 			List bpRequests = requests.breakpointRequests();
 			List stepRequests = requests.stepRequests();
@@ -133,7 +131,7 @@ public class ReloadEventQueue implements EventQueue {
 					}
 				}
 				if (!eventSet.isEmpty()) {
-					thread.markSuspended(!isStepping && !isException);
+					thread.markSuspended(!isStepping && !isException && !isSuspendedByDebugger);
 				}
 			} else if (CUSTOM_EVENT.equals(commandName)) {
 				ReloadEvent event = (ReloadEvent) commandObj;
