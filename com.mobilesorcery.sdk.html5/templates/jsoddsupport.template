@@ -5,8 +5,7 @@ window.MoSyncDebugProtocol = new (function() {
     var project = '%PROJECT_NAME%';
     var serverUrl = 'http://' + serverHost + ':' + serverPort;
     var breakpoints = {};
-    var breakpointConditions = {};
-    var breakpointHitcount = {};
+    var breakpointDescs = {};
     var loadBreakpoints = {};
     var shouldBreak = function() { return false; };
     var asyncXHR = null;
@@ -133,26 +132,29 @@ window.MoSyncDebugProtocol = new (function() {
                     var file = bp.file;
                     var line = bp.line;
                     var condition = bp.condition;
+                    var conditionSuspend = bp.conditionSuspend;
                     var hitcount = bp.hitcount;
                     var fileId = fileToId[file];
                     var set = (cmd.command == 'set-breakpoints');
-                    if (line >= 0) {
+                    if (line >= 0 && fileId) {
                         if (!breakpoints[fileId]) {
                             breakpoints[fileId] = {};
                         }
                         breakpoints[fileId][line] = set;
+                        if (!breakpointDescs[fileId]) {
+                            breakpointDescs[fileId] = {};
+                        }
+                        var breakpointDesc = {};
                         if (condition) {
-	                        if (!breakpointConditions[fileId]) {
-	                            breakpointConditions[fileId] = {};
-	                        }
-	                        breakpointConditions[fileId][line] = condition;
+                        	breakpointDesc.condition = condition;
+                        }
+                        if (conditionSuspend) {
+                            breakpointDesc.conditionSuspend = conditionSuspend;
                         }
                         if (hitcount) {
-	                        if (!breakpointHitcount[fileId]) {
-	                            breakpointHitcount[fileId] = {};
-	                        }
-	                        breakpointHitcount[fileId][line] = hitcount - 1;
+                            breakpointDesc.hitcount = hitcount - 1;
                         }
+                        breakpointDescs[fileId][line] = breakpointDesc;
                     } else {
                         // Script load.
                         if (fileId == '*') {
@@ -283,7 +285,7 @@ window.MoSyncDebugProtocol = new (function() {
     
     this.loadScript = function(fileId, segment) {
         var cmd = sendToServer('/load-script', {
-            file: fileId
+            file: fileId,
             segment: segment
         });
         if (cmd) {
@@ -309,15 +311,25 @@ window.MoSyncDebugProtocol = new (function() {
                                isDebuggerStatement ||                            /* debugger; statement? */
                                shouldBreak(stackDepth);                          /* step (in|over|out) or break-on-next? */
             
-            if (breakpointConditions[fileId] && breakpointConditions[fileId][line]) {
-                isBreakpoint = evalScopeFunc(breakpointConditions[fileId][line]);
+            if (isBreakpoint && breakpointDescs[fileId] && breakpointDescs[fileId][line]) {
+                var breakpointDesc = breakpointDescs[fileId][line];
+                var condition = breakpointDesc.condition;
+                var hitcount = breakpointDesc.hitcount;
+                if (condition) {
+                    var conditionSuspend = breakpointDesc.conditionSuspend;
+                    var evaluatedCondition = evalScopeFunc(condition);
+                    if ("change" == conditionSuspend) {
+                        isBreakpoint = (evaluatedCondition != breakpointDesc.lastEvaluation);
+                    } else {
+                        isBreakpoint = evaluatedCondition;
+                    }
+                }
+                if (isBreakpoint && hitcount) {
+                    breakpointDesc.hitcount--;
+                    isBreakpoint = false;
+                }
             }
-            
-            if (breakpointHitcount[fileId] && breakpointHitcount[fileId][line]) {
-                breakpointHitcount[fileId][line]--;
-                isBreakpoint = false;
-            }
-            
+
             if (!isBreakpoint) {
                 inUpdatePosition = false;
                 return;

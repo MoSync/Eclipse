@@ -1144,7 +1144,7 @@ public class MoSyncBuilder extends ACBuilder {
 
 	public static IProject getProject(ILaunchConfiguration launchConfig)
 			throws CoreException {
-		String projectName = launchConfig.getAttribute(
+		String projectName = launchConfig == null ? null : launchConfig.getAttribute(
 				ILaunchConstants.PROJECT, "");
 		if (Util.isEmpty(projectName)) {
 			return null;

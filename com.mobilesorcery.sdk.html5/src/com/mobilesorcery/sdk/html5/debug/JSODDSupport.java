@@ -540,6 +540,9 @@ public class JSODDSupport {
 		final boolean[] result = new boolean[1];
 		if (diff == null) {
 			try {
+				if (fileIds == null) {
+					fileIds = new HashMap<IPath, Long>();
+				}
 				project.accept(new IResourceVisitor() {
 					@Override
 					public boolean visit(IResource resource)
@@ -633,8 +636,7 @@ public class JSODDSupport {
 		// TODO: Use content descriptors!?
 		// TODO: JS embedded in HTML
 		return isEmbeddedJavaScriptFile(file)
-				|| (file != null && file.toFile().exists()
-						&& file.toFile().isFile() && "js".equalsIgnoreCase(file
+				|| (file != null && "js".equalsIgnoreCase(file
 						.getFileExtension()));
 	}
 
@@ -739,6 +741,9 @@ public class JSODDSupport {
 	}
 
 	public Set<IPath> getAllFiles() {
+		if (fileIds == null) {
+			applyDiff(null);
+		}
 		Set<IPath> allPaths = new HashSet<IPath>(fileIds.keySet());
 		return allPaths;
 	}

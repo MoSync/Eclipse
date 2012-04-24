@@ -222,7 +222,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	}
 
 	public boolean hasHTML5Support(MoSyncProject project) {
-		return PropertyUtil.getBoolean(project, JS_PROJECT_SUPPORT_PROP);
+		return project != null && PropertyUtil.getBoolean(project, JS_PROJECT_SUPPORT_PROP);
 	}
 
 	private IBuildStepFactory createHTML5PackagerBuildStep() {
@@ -238,7 +238,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	}
 
 	public synchronized JSODDSupport getJSODDSupport(IProject project) {
-		if (MoSyncProject.create(project) == null) {
+		if (!hasHTML5Support(MoSyncProject.create(project))) {
 			return null;
 		}
 		JSODDSupport result = jsOddSupport.get(project);

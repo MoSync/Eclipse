@@ -115,6 +115,8 @@ public class LiveServer implements IResourceChangeListener {
 
 		private final HashMap<Integer, Long> takeTimestamps = new HashMap<Integer, Long>();
 
+		private final HashSet<Integer> pendingPings = new HashSet<Integer>();
+
 		private final Object queueLock = new Object();
 
 		private Timer pinger;
@@ -146,6 +148,10 @@ public class LiveServer implements IResourceChangeListener {
 
 			synchronized (queueLock) {
 				takeTimestamps.remove(sessionId);
+			}
+
+			if (result.type == PING) {
+				pendingPings.remove(sessionId);
 			}
 
 			if (result != null && result.type == POISON) {
@@ -306,9 +312,11 @@ public class LiveServer implements IResourceChangeListener {
 			synchronized (queueLock) {
 				for (Integer sessionId : consumers.keySet()) {
 					Long timeOfLastTake = takeTimestamps.get(sessionId);
-					boolean needsPing = timeOfLastTake != null
+					boolean isWaitingForPing = pendingPings.contains(sessionId);
+					boolean needsPing = !isWaitingForPing && timeOfLastTake != null
 							&& System.currentTimeMillis() - timeOfLastTake > PING_INTERVAL;
 					if (needsPing) {
+						pendingPings.add(sessionId);
 						offer(sessionId, ping());
 					}
 				}
@@ -396,7 +404,7 @@ public class LiveServer implements IResourceChangeListener {
 				HttpServletResponse res, boolean preflight) {
 			JSONObject result = null;
 			if (targetMatches(target, "/mobile/incoming")) {
-				ReloadVirtualMachine vm = vmsByHost.get(req.getRemoteAddr());
+				ReloadVirtualMachine vm = getVM(req.getRemoteAddr());
 				int sessionId = vm == null ? NO_SESSION : vm
 						.getCurrentSessionId();
 				result = pushCommandsToClient(sessionId, preflight);
@@ -603,7 +611,7 @@ public class LiveServer implements IResourceChangeListener {
 						int lineNo = bp instanceof IJavaScriptLoadBreakpoint ? -1
 								: lineBp.getLineNumber();
 						IResource resource = lineBp.getResource();
-						String file = resource.getFullPath().toPortableString();
+						String file = resource.getType() == IResource.ROOT ? "*" : resource.getFullPath().toPortableString();
 						String condition = lineBp.getCondition();
 						int hitCount = lineBp.getHitCount();
 
@@ -612,6 +620,7 @@ public class LiveServer implements IResourceChangeListener {
 						jsonBp.put("line", lineNo);
 						if (!Util.isEmpty(condition)) {
 							jsonBp.put("condition", condition);
+							jsonBp.put("conditionSuspend", lineBp.getConditionSuspend());
 						}
 						if (hitCount > 0) {
 							jsonBp.put("hitcount", hitCount);
@@ -634,14 +643,12 @@ public class LiveServer implements IResourceChangeListener {
 				int lineNumber = lineBp instanceof IJavaScriptLoadBreakpoint ? -1
 						: lineBp.getLineNumber();
 				IResource resource = lineBp.getMarker().getResource();
-				String file = resource.getFullPath().toPortableString();
 				String condition = lineBp.getCondition();
 				int hitCount = lineBp.getHitCount();
-				if (isLoadBp && resource.getType() == IResource.ROOT) {
-					file = "*";
-				}
+				String conditionSuspend = lineBp.isConditionSuspendOnTrue() ?
+						JavaScriptBreakpointDesc.SUSPEND_ON_TRUE : JavaScriptBreakpointDesc.SUSPEND_ON_CHANGE;
 				return new JavaScriptBreakpointDesc(resource, lineNumber,
-						condition, hitCount);
+						condition, conditionSuspend,hitCount);
 			}
 			return null;
 		}
@@ -710,10 +717,19 @@ public class LiveServer implements IResourceChangeListener {
 		return null;
 	}
 
+	private ReloadVirtualMachine getVM(String remoteAddr) {
+		ReloadVirtualMachine vm = vmsByHost.get(remoteAddr);
+		if (vm != null && vm.isTerminated()) {
+			vmsByHost.remove(remoteAddr);
+			return null;
+		}
+		return vm;
+	}
+
 	public synchronized ReloadVirtualMachine resetVM(HttpServletRequest req,
 			MoSyncProject project, int newSessionId) {
 		String remoteIp = req.getRemoteAddr();
-		ReloadVirtualMachine vm = vmsByHost.get(remoteIp);
+		ReloadVirtualMachine vm = getVM(remoteIp);
 		if (vm == null) {
 			if (!unassignedVMs.isEmpty()) {
 				vm = unassignedVMs.remove(0);

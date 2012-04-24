@@ -55,7 +55,8 @@ public class ReloadBreakpointRequest extends ReloadEventRequest implements
 			ScriptReference scriptRef = location.scriptReference();
 			if (scriptRef instanceof SimpleScriptReference) {
 				IFile file = ((SimpleScriptReference) scriptRef).getFile();
-				JavaScriptBreakpointDesc bp = new JavaScriptBreakpointDesc(file, location.lineNumber(), condition, hitcount);
+				// TODO: How do we get the suspend type here? Want this on client side only!
+				JavaScriptBreakpointDesc bp = new JavaScriptBreakpointDesc(file, location.lineNumber(), condition, JavaScriptBreakpointDesc.SUSPEND_ON_TRUE, hitcount);
 				Html5Plugin.getDefault().getReloadServer().setLineBreakpoint(enabled, bp);
 			}
 		}

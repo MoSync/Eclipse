@@ -1,6 +1,7 @@
 package com.mobilesorcery.sdk.html5.debug.jsdt;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -12,6 +13,7 @@ import org.eclipse.core.internal.localstore.IsSynchronizedVisitor;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
@@ -55,11 +57,12 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	private final NullValue nullValue;
 	private final ReloadUndefinedValue undefValue;
 	private int currentSessionId = LiveServer.NO_SESSION;
-	private MoSyncProject project;
+	private IProject project;
 	private final ReloadThreadReference mainThread;
 	private boolean isTerminated = false;
 
 	public ReloadVirtualMachine(int port) throws Exception {
+		System.err.println("NEW VM " + System.identityHashCode(this));
 		// TODO: PORT
 		server = Html5Plugin.getDefault().getReloadServer();
 		// JUST ONE MAIN THREAD
@@ -106,7 +109,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 			}
 		}
 		setCurrentSessionId(newSessionId);
-		this.project = project;
+		this.project = project.getWrappedProject();
 	}
 
 	@Override
@@ -146,12 +149,22 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	@Override
 	public List allScripts() {
 		ArrayList<ScriptReference> result = new ArrayList<ScriptReference>();
+		// Before the project has been initialized, we just send all the scripts in the workspace...
+		ArrayList<IProject> projects = new ArrayList<IProject>();
 		if (project != null) {
-			JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project.getWrappedProject());
-			Set<IPath> allFiles = jsoddSupport.getAllFiles();
-			for (IPath file : allFiles) {
-				SimpleScriptReference ref = new SimpleScriptReference(this, file);
-				result.add(ref);
+			projects.add(project);
+		} else {
+			projects.addAll(Arrays.asList(ResourcesPlugin.getWorkspace().getRoot().getProjects()));
+		}
+
+		for (IProject project : projects) {
+			JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project);
+			if (jsoddSupport != null) {
+				Set<IPath> allFiles = jsoddSupport.getAllFiles();
+				for (IPath file : allFiles) {
+					SimpleScriptReference ref = new SimpleScriptReference(this, file);
+					result.add(ref);
+				}
 			}
 		}
 		return result;

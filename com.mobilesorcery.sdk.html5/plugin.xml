@@ -63,6 +63,13 @@
       </connector>
    </extension>
       <extension
+         point="org.eclipse.wst.jsdt.debug.core.breakpointParticipants">
+      <participant
+            class="com.mobilesorcery.sdk.html5.debug.jsdt.ReloadBreakpointParticipant"
+            kind="*">
+      </participant>
+   </extension>
+      <extension
             point="com.mobilesorcery.sdk.build.steps">
          <factory
                id="com.mobilesorcery.sdk.html5.debugsupport"
