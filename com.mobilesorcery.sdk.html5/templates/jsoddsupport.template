@@ -136,7 +136,7 @@ window.MoSyncDebugProtocol = new (function() {
                     var hitcount = bp.hitcount;
                     var fileId = fileToId[file];
                     var set = (cmd.command == 'set-breakpoints');
-                    if (line >= 0 && fileId) {
+                    if (line >= 0 && (fileId || fileId === 0)) {
                         if (!breakpoints[fileId]) {
                             breakpoints[fileId] = {};
                         }
@@ -155,7 +155,7 @@ window.MoSyncDebugProtocol = new (function() {
                             breakpointDesc.hitcount = hitcount - 1;
                         }
                         breakpointDescs[fileId][line] = breakpointDesc;
-                    } else {
+                    } else if (line < 0) {
                         // Script load.
                         if (fileId == '*') {
                             // All files
