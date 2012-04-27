@@ -43,18 +43,18 @@ public class ReloadStackFrame implements StackFrame {
 	}
 
 	private void init(JSONObject suspended, int ix) {
-		String file = (String) suspended.get("file");
 		int line = ((Long) suspended.get("line")).intValue();
-		IFile resource = ResourcesPlugin.getWorkspace().getRoot().getFile(new Path(file));
 		JSONArray stack = (JSONArray) suspended.get("stack");
 		JSONArray frame = ix >= 0 ? (JSONArray) stack.get(ix) : null;
 		String functionName = frame == null ? "<unknown>" : (String) frame.get(0);
+		String file = frame == null ? (String) suspended.get("file") : (String) frame.get(1);
 		// For the non-top stack frame, the line has been stored elsewhere.
 		isTop = ix == stack.size() - 1;
 		if (!isTop) {
 			JSONArray nextFrame = (JSONArray) stack.get(ix + 1);
 			line = ((Long) nextFrame.get(3)).intValue();
 		}
+		IFile resource = ResourcesPlugin.getWorkspace().getRoot().getFile(new Path(file));
 		location = new SimpleLocation(vm, resource, line);
 		location.setFunctionName(functionName);
 	}

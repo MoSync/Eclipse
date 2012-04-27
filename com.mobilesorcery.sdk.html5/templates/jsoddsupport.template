@@ -392,12 +392,24 @@ window.MoSyncDebugProtocol = new (function() {
                     type = 'debugger';
                 }
                 
+                var resolvedStack = [];
+                var frameCount = stack.length;
+                for (var i = 0; i < frameCount; i++) {
+                    var frame = stack[i];
+                    var resolvedFrame = [];
+                    resolvedFrame[0] = frame[0];
+                    resolvedFrame[1] = idToFile[frame[1]];
+                    resolvedFrame[2] = frame[2];
+                    resolvedFrame[3] = frame[3];
+                    resolvedStack.push(resolvedFrame);
+                }
+                
                 var cmd = sendToServer('/breakpoint', {
                     command: 'report-breakpoint',
                     type: type,
                     file: file,
                     line: line,
-                    stack: stack,
+                    stack: resolvedStack,
                     step: step,
                     suspended: (clientSuspend > 0),
                     id: clientSuspend
