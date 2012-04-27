@@ -338,6 +338,8 @@ public class LiveServer implements IResourceChangeListener {
 
 	private static final int RESUME = 20;
 
+	private static final int DROP_TO_FRAME = 25;
+
 	private static final int STEP = 30;
 
 	private static final int SUSPEND = 200;
@@ -844,6 +846,10 @@ public class LiveServer implements IResourceChangeListener {
 
 	public void step(int sessionId, int stepType) {
 		queues.offer(sessionId, new DebuggerMessage(STEP, stepType));
+	}
+
+	public void dropToFrame(int sessionId, int stackDepth) {
+		queues.offer(sessionId, new DebuggerMessage(DROP_TO_FRAME, stackDepth));
 	}
 
 	public void reset(int sessionId) {

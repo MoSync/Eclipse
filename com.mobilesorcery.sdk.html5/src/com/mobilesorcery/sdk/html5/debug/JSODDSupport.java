@@ -77,6 +77,8 @@ import com.mobilesorcery.sdk.html5.Html5Plugin;
 
 public class JSODDSupport {
 
+	private static final String DROP_TO_FRAME = "drop.to.frame";
+
 	private class Position {
 		private final ASTNode node;
 		private final JavaScriptUnit unit;
@@ -430,7 +432,10 @@ public class JSODDSupport {
 					insert(position, "{");
 				}
 				int mappedLineNo = lineMap.getLine(position.getPosition());
-				insert(position(node, true),
+				if (supports(DROP_TO_FRAME)) {
+					insert(position, "do {");
+				}
+				insert(position,
 						MessageFormat
 								.format("try '{' MoSyncDebugProtocol.pushStack(\"{0}\",{1},{2});",
 										funcName, Long.toString(fileId),
@@ -446,14 +451,21 @@ public class JSODDSupport {
 			}
 			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
 				ASTNode node = nodePosition.first;
-				insert(position(node, false), "}" + "catch (anException) {"
-						+ "if (!anException.alreadyThrown) {"
+				Position position = position(node, false);
+				insert(position, "}" + "catch (anException) {"
+						+ "if (!anException.alreadyThrown && !anException.dropToFrame) {"
 						+ "MoSyncDebugProtocol.reportException(anException);"
 						+ "} anException.alreadyThrown = true;"
-						+ "throw anException;} finally {"
-						+ "MoSyncDebugProtocol.popStack();}");
+						+ "if (!anException.dropToFrame) {"
+						+ "throw anException;}"
+						+ "} finally {"
+						+ "MoSyncDebugProtocol.popStack();"
+						+ "}");
+				if (supports(DROP_TO_FRAME)) {
+					insert(position, "} while (MoSyncDebugProtocol.dropToFrame());");
+				}
 				if (shouldBlockify(node)) {
-					insert(position(node, false), "}");
+					insert(position, "}");
 				}
 			}
 		}
@@ -534,6 +546,10 @@ public class JSODDSupport {
 		this.project = project;
 		applyDiff(null);
 		parser = ASTParser.newParser(AST.JLS3);
+	}
+
+	public boolean supports(String feature) {
+		return true;
 	}
 
 	public boolean applyDiff(IFileTreeDiff diff) {

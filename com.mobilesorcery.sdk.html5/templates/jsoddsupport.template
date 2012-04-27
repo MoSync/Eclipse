@@ -24,6 +24,8 @@ window.MoSyncDebugProtocol = new (function() {
     var clientSuspend = 0;
     var step = false;
     
+    var suppressStepCount;
+    
     var inUpdatePosition = false;
 
     this.assignOID = function(obj) {
@@ -121,7 +123,12 @@ window.MoSyncDebugProtocol = new (function() {
     
     function suspendOnNext() {
         step = true;
-        shouldBreak = function() { return true; };            
+        shouldBreak = function() { return true; };
+        if (suppressStepCount > 0) {
+            suppressStepCount--;
+            return false;
+        }
+        return true;           
     }
     
     function processCommand(cmd) {
@@ -146,7 +153,7 @@ window.MoSyncDebugProtocol = new (function() {
                         }
                         var breakpointDesc = {};
                         if (condition) {
-                        	breakpointDesc.condition = condition;
+                            breakpointDesc.condition = condition;
                         }
                         if (conditionSuspend) {
                             breakpointDesc.conditionSuspend = conditionSuspend;
@@ -181,8 +188,7 @@ window.MoSyncDebugProtocol = new (function() {
             case 'break-on-next':
             case 'breakpoint-step':
             case 'breakpoint-step-in':
-                suspendOnNext();
-                return false;
+                return !suspendOnNext();
                 
             case 'breakpoint-step-out':
                 step = true;
@@ -220,6 +226,7 @@ window.MoSyncDebugProtocol = new (function() {
     
     function doEval(evalScopeFunc, cmd) {
         var evalResult;
+        var rethrow = null;
         try {
             if (cmd.stackDepth) {
                 var fn = evalScopes[cmd.stackDepth];
@@ -228,13 +235,21 @@ window.MoSyncDebugProtocol = new (function() {
                 evalResult = evalScopeFunc(cmd.data);
             }
         } catch (ex) {
-            evalResult = 'ERROR: ' + ex.toString();
+            if (ex.dropToFrame) {
+                evalResult = new Object();
+                rethrow = ex;
+            } else {
+                evalResult = 'ERROR: ' + ex.toString();
+            }
         }  
         sendToServer('/console', {
             command: 'print-eval-result',
             result: evalResult,
             id: cmd.id
         });
+        if (rethrow) {
+            throw rethrow;
+        }
     }
     
     function getStack() {
@@ -293,6 +308,37 @@ window.MoSyncDebugProtocol = new (function() {
         }
     }
     
+    var shouldDropToFrame = -1;
+    
+    // Gets + resets the drop to frame flag.
+    this.dropToFrame = function() {
+        if (shouldDropToFrame == -1) {
+           return false;
+        }
+        if (shouldDropToFrame == stackDepth) {
+            suspendOnNext();
+            // The server needs to send an extra step request,
+            // so we need to suppress stepping on the first one.
+            // Also note we need to have this line AFTER
+            // the above suspendOnNext() call.
+            suppressStepCount = 1;
+            shouldDropToFrame = -1;
+            return true;
+        } else if (shouldDropToFrame < stackDepth) {
+            this.doDropToFrame(shouldDropToFrame);
+        } else {
+            shouldDropToFrame = -1;
+        }
+        return false;
+    }
+    
+    this.doDropToFrame = function(stackDepth) {
+        shouldDropToFrame = stackDepth;
+        var exception = {};
+        exception.dropToFrame = true;
+        throw exception;
+    }
+    
     this.updatePosition = function(fileId, line, isDebuggerStatement, evalScopeFunc) {
         if (inUpdatePosition || terminating || disconnected) {
             return;
@@ -304,80 +350,80 @@ window.MoSyncDebugProtocol = new (function() {
         lastFileId = fileId;
         lastLine = line;
         lastEvalScopeFunc = evalScopeFunc;
+        
+        try {        
+            while (true) {
+                var isBreakpoint = (breakpoints[fileId] && breakpoints[fileId][line]) || /* explicit breakpoint? */
+                                   loadBreakpoints[fileId] ||
+                                   isDebuggerStatement ||                            /* debugger; statement? */
+                                   shouldBreak(stackDepth);                          /* step (in|over|out) or break-on-next? */
                 
-        while (true) {
-            var isBreakpoint = (breakpoints[fileId] && breakpoints[fileId][line]) || /* explicit breakpoint? */
-                               loadBreakpoints[fileId] ||
-                               isDebuggerStatement ||                            /* debugger; statement? */
-                               shouldBreak(stackDepth);                          /* step (in|over|out) or break-on-next? */
-            
-            if (isBreakpoint && breakpointDescs[fileId] && breakpointDescs[fileId][line]) {
-                var breakpointDesc = breakpointDescs[fileId][line];
-                var condition = breakpointDesc.condition;
-                var hitcount = breakpointDesc.hitcount;
-                if (condition) {
-                    var conditionSuspend = breakpointDesc.conditionSuspend;
-                    var evaluatedCondition = evalScopeFunc(condition);
-                    if ("change" == conditionSuspend) {
-                        isBreakpoint = (evaluatedCondition != breakpointDesc.lastEvaluation);
-                    } else {
-                        isBreakpoint = evaluatedCondition;
+                if (isBreakpoint && breakpointDescs[fileId] && breakpointDescs[fileId][line]) {
+                    var breakpointDesc = breakpointDescs[fileId][line];
+                    var condition = breakpointDesc.condition;
+                    var hitcount = breakpointDesc.hitcount;
+                    if (condition) {
+                        var conditionSuspend = breakpointDesc.conditionSuspend;
+                        var evaluatedCondition = evalScopeFunc(condition);
+                        if ("change" == conditionSuspend) {
+                            isBreakpoint = (evaluatedCondition != breakpointDesc.lastEvaluation);
+                        } else {
+                            isBreakpoint = evaluatedCondition;
+                        }
+                    }
+                    if (isBreakpoint && hitcount) {
+                        breakpointDesc.hitcount--;
+                        isBreakpoint = false;
                     }
                 }
-                if (isBreakpoint && hitcount) {
-                    breakpointDesc.hitcount--;
-                    isBreakpoint = false;
-                }
-            }
-
-            if (!isBreakpoint) {
-                inUpdatePosition = false;
-                return;
-            }
-        
-            dropCommandConnection();
-            
-            var file = idToFile[fileId];
-            var type = 'line';
-            if (loadBreakpoints[fileId]) {
-                type = 'load';
-                loadBreakpoints[fileId] = false;
-            } else if (isDebuggerStatement) {
-                type = 'debugger';
-            }
-            
-            var cmd = sendToServer('/breakpoint', {
-                command: 'report-breakpoint',
-                type: type,
-                file: file,
-                line: line,
-                stack: stack,
-                step: step,
-                suspended: (clientSuspend > 0),
-                id: clientSuspend
-            });
-            clientSuspend = 0;
-            suspendOnLoad = false;
-            
-            step = false;
-                        
-            if (!cmd) {
-                listenToServer();
-                inUpdatePosition = false;       
-                return;
-            }                
-                
-            if (cmd.command == 'eval') {
-                doEval(evalScopeFunc, cmd);
-            }
-            else {
-                var isInternalCommand = processCommand(cmd);
-                if (!isInternalCommand) {
-                    listenToServer();
-                    inUpdatePosition = false;       
+    
+                if (!isBreakpoint) {
                     return;
                 }
+            
+                dropCommandConnection();
+                
+                var file = idToFile[fileId];
+                var type = 'line';
+                if (loadBreakpoints[fileId]) {
+                    type = 'load';
+                    loadBreakpoints[fileId] = false;
+                } else if (isDebuggerStatement) {
+                    type = 'debugger';
+                }
+                
+                var cmd = sendToServer('/breakpoint', {
+                    command: 'report-breakpoint',
+                    type: type,
+                    file: file,
+                    line: line,
+                    stack: stack,
+                    step: step,
+                    suspended: (clientSuspend > 0),
+                    id: clientSuspend
+                });
+                clientSuspend = 0;
+                suspendOnLoad = false;
+                
+                step = false;
+                            
+                if (!cmd) {
+                    listenToServer();      
+                    return;
+                }                
+                
+                if (cmd.command == 'eval') {
+                    doEval(evalScopeFunc, cmd);
+                } else {
+                    var isInternalCommand = processCommand(cmd);
+                    if (!isInternalCommand) {
+                        listenToServer();
+                        return;
+                    }
+                }
             }
+        } finally {
+            inUpdatePosition = false;
         }
         
     };
