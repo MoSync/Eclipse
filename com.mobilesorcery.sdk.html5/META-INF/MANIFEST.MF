@@ -52,7 +52,8 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.wst.common.ui;bundle-version="1.1.500",
  org.eclipse.wst.web;bundle-version="1.1.500",
  org.eclipse.wst.web.ui;bundle-version="1.1.400",
- org.eclipse.debug.ui;bundle-version="3.7.0"
+ org.eclipse.debug.ui;bundle-version="3.7.0",
+ org.eclipse.jface.text;bundle-version="3.7.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Export-Package: com.mobilesorcery.sdk.html5

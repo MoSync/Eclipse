@@ -3,6 +3,7 @@ window.MoSyncDebugProtocol = new (function() {
     var serverHost = '%SERVER_HOST%';
     var serverPort = '%SERVER_PORT%';
     var project = '%PROJECT_NAME%';
+    var timeoutInMs = %TIMEOUT_IN_MS%;
     var serverUrl = 'http://' + serverHost + ':' + serverPort;
     var breakpoints = {};
     var breakpointDescs = {};
@@ -82,9 +83,17 @@ window.MoSyncDebugProtocol = new (function() {
         asyncXHR = null;
     }
     
-    function sendToServer(path, payload) {
+    function sendToServer(path, payload, timeout) {
         try {
             var req = new XMLHttpRequest();
+            var timeoutHandle = null;
+            var timeoutFn = new function() {
+                req.abort();
+                disconnect("Could not connect to debug server");
+            };
+            if (timeout) {
+                timeoutHandle = setTimeout(timeoutFn);
+            }
             req.open('POST', serverUrl + '/mobile' + path + "/" + timestamp(), false);
             req.setRequestHeader('Content-Type', 'application/json');
             if (sessionId != null) {
@@ -92,6 +101,9 @@ window.MoSyncDebugProtocol = new (function() {
             }
             var json = JSON.stringify(payload)
             req.send(json);
+            if (timeout) {
+                clearTimeout(timeoutHandle);
+            }
             return safeJSONParse(req.responseText);
         } catch (ex) {
             disconnect(ex);
@@ -288,7 +300,7 @@ window.MoSyncDebugProtocol = new (function() {
             command: 'mobile-connected',
             project: project,
             location: location
-        });
+        }, timeoutInMs);
         
         if (cmd) {
             sessionId = cmd.sessionId;

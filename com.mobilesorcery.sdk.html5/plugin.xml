@@ -107,4 +107,41 @@
                implementation="com.mobilesorcery.sdk.html5.HTML5DebugSupportBuildStepExtension">
          </factory>
       </extension>
+      <extension
+            point="org.eclipse.ui.commands">
+         <command
+               defaultHandler="com.mobilesorcery.sdk.html5.ui.EvaluateHandler"
+               id="com.mobilesorcery.sdk.html5.evaluate"
+               name="Evaluate JavaScript">
+         </command>
+      </extension>
+      <extension
+            point="org.eclipse.ui.menus">
+             <menuContribution
+               locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+            <command
+                  commandId="com.mobilesorcery.sdk.html5.evaluate"
+                  label="Evaluate JavaScript"
+                  style="push"
+                  tooltip="Evalutate selected JavaScript">
+               <visibleWhen
+                     checkEnabled="true">
+                     <!-- <test
+                           forcePluginActivation="true"
+                     property="com.mobilesorcery.sdk.testers.hasMoreNature">
+      			</test>-->
+                                      </visibleWhen>
+            </command>
+            </menuContribution>
+      </extension>
+            <extension point="org.eclipse.ui.bindings">
+  <key
+        commandId="com.mobilesorcery.sdk.html5.evaluate"
+        schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+        sequence="M1+M3+E">
+  </key>
+</extension>
+      <extension
+            point="org.eclipse.ui.handlers">
+      </extension>
 </plugin>

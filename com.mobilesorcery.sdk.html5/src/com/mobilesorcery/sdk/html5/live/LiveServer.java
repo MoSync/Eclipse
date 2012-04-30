@@ -925,8 +925,7 @@ public class LiveServer implements IResourceChangeListener {
 							if (project != null && resource.getType() == IResource.FILE) {
 								projectsToReload.add(resource.getProject());
 							}
-							//try {
-								if (resource.getType() == IResource.FILE) {
+							if (resource.getType() == IResource.FILE) {
 									//op.rewrite(resource.getFullPath());
 								}
 							/*} catch (IOException e) {
@@ -940,6 +939,13 @@ public class LiveServer implements IResourceChangeListener {
 			} catch (Exception e) {
 				// TODO: handle exception
 			}
+		}
+	}
+
+	public Set<Integer> getSessions() {
+		// MOVE TO QUEUES.
+		synchronized (queues.queueLock) {
+			return new HashSet<Integer>(this.queues.consumers.keySet());
 		}
 	}
 

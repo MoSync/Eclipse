@@ -721,6 +721,7 @@ public class JSODDSupport {
 
 		properties.put("INIT_FILE_IDS", generateFileIdInitCode());
 		properties.put("PROJECT_NAME", project.getName());
+		properties.put("TIMEOUT_IN_MS", "5000");
 
 		try {
 			String contents = template.resolve(properties);
