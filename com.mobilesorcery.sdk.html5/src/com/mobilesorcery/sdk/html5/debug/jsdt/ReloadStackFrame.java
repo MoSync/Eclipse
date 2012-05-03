@@ -16,6 +16,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.debug.LocalVariableScope;
 
 public class ReloadStackFrame implements StackFrame {
@@ -25,6 +26,7 @@ public class ReloadStackFrame implements StackFrame {
 	private final ReloadVirtualMachine vm;
 	private Variable thisVar;
 	private SimpleLocation location;
+	private Number catchLine;
 
 	private boolean inited;
 
@@ -57,6 +59,8 @@ public class ReloadStackFrame implements StackFrame {
 		IFile resource = ResourcesPlugin.getWorkspace().getRoot().getFile(new Path(file));
 		location = new SimpleLocation(vm, resource, line);
 		location.setFunctionName(functionName);
+		// For exceptions; where was it caught!?
+		this.catchLine = (Number) suspended.get("catchLine");
 	}
 
 	@Override
@@ -75,7 +79,8 @@ public class ReloadStackFrame implements StackFrame {
 			inited = true;
 			thisVar = new ReloadVariable(vm, this, "this", "this");
 			localVars = new ArrayList<ReloadVariable>();
-			LocalVariableScope scope = vm.getLocalVariableScope(location);
+			int scopeLine = catchLine == null ? location.lineNumber() : catchLine.intValue();
+			LocalVariableScope scope = vm.getLocalVariableScope(location.scriptReference(), scopeLine);
 			if (scope != null) {
 				for (String localVar : scope.getLocalVariables()) {
 					localVars.add(new ReloadVariable(vm, this, localVar, localVar));
@@ -115,6 +120,14 @@ public class ReloadStackFrame implements StackFrame {
 
 	private Value parse(String valueStr) {
 		return vm.mirrorOf(valueStr);
+	}
+	
+	public static String createDropToFrameExpression(int frameToDropTo, String expression) {
+		if (Util.isEmpty(expression)) {
+			// Noop.
+			expression = "{}";
+		}
+		return MessageFormat.format("MoSyncDebugProtocol.doDropToFrame({0}, {1});", Integer.toString(frameToDropTo), expression);
 	}
 
 	public Value getValue(String name) {

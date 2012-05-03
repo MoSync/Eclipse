@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,6 +32,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.text.Position;
+import org.eclipse.wst.jsdt.core.IJavaScriptUnit;
 import org.eclipse.wst.jsdt.core.dom.AST;
 import org.eclipse.wst.jsdt.core.dom.ASTNode;
 import org.eclipse.wst.jsdt.core.dom.ASTParser;
@@ -68,6 +70,7 @@ import org.eclipse.wst.xml.core.internal.provisional.document.IDOMModel;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
+import com.mobilesorcery.sdk.core.IProvider;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Pair;
@@ -103,11 +106,16 @@ public class JSODDSupport {
 		}
 	}
 
-	public class DebugRewriteOperationVisitor extends ASTVisitor {
+	// TODO: Now we always keep the entire source tree in memory -- not necessarily a good thing...
+	public class DebugRewriteOperationVisitor extends ASTVisitor implements IProvider<String, ASTNode> {
+		
+		private static final String EVAL_FUNC_SNIPPET = "function(____eval) {return eval(____eval);}";
+		
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> statementsToRewrite = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPreambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPostambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<ASTNode, String> functionNames = new HashMap<ASTNode, String>();
+		private final TreeMap<Integer, Integer> movedSourceMap = new TreeMap<Integer, Integer>();
 
 		private JavaScriptUnit unit;
 		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
@@ -120,6 +128,7 @@ public class JSODDSupport {
 		private final TreeMap<Integer, List<String>> insertions = new TreeMap<Integer, List<String>>();
 		private final HashMap<ASTNode, JavaScriptUnit> nodeToUnitMap = new HashMap<ASTNode, JavaScriptUnit>();
 		private TreeSet<Integer> scopeResetPoints;
+		private String instrumented;
 
 		@Override
 		public void preVisit(ASTNode node) {
@@ -381,12 +390,11 @@ public class JSODDSupport {
 		}
 
 		public void rewrite(long fileId, String originalSource, String prunedSource, Writer output,
-				NavigableMap<Integer, LocalVariableScope> scopeMap)
+				NavigableMap<Integer, LocalVariableScope> scopeMap, HashMap<String, IRedefinable> redefinables)
 				throws IOException {
-			// TODO: I guess there is some better AST rewrite methods around.
+			// TODO: I guess there are some better AST rewrite methods around.
 			LineMap lineByLinePrunedSource = new LineMap(prunedSource);
 			LineMap lineByLineOriginalSource = new LineMap(originalSource);
-			StringBuffer result = new StringBuffer();
 
 			int lineNo = 1;
 			int lineCount =  lineByLinePrunedSource.getLineCount();
@@ -402,19 +410,24 @@ public class JSODDSupport {
 				scopeMap.put(mappedLineNo, scope.getValue());
 			}
 
-			lineNo = 1;
+			StringBuffer result = new StringBuffer();
+
 			int prevPos = 0;
+			int posDelta = 0;
 			for (Map.Entry<Integer, List<String>> insertion : insertions.entrySet()) {
 				Integer pos = insertion.getKey();
 				List<String> insertionsAtPos = insertion.getValue();
 				result.append(originalSource.substring(prevPos, pos));
-				result.append(Util.join(insertionsAtPos.toArray(), ""));
+				String insertionStr = Util.join(insertionsAtPos.toArray(), ""); 
+				result.append(insertionStr);
 				prevPos = pos;
+				posDelta += insertionStr.length();
+				movedSourceMap.put(prevPos, posDelta);
 			}
 			result.append(originalSource.substring(prevPos));
-
+			instrumented = result.toString();
 			if (output != null) {
-				output.write(result.toString());
+				output.write(instrumented);
 			}
 		}
 
@@ -454,11 +467,13 @@ public class JSODDSupport {
 				Position position = position(node, false);
 				insert(position, "}" + "catch (anException) {"
 						+ "if (!anException.alreadyThrown && !anException.dropToFrame) {"
-						+ "MoSyncDebugProtocol.reportException(anException);"
+						+ "anException = MoSyncDebugProtocol.reportException(anException, " + lineNo + "," + EVAL_FUNC_SNIPPET + ");"
 						+ "} anException.alreadyThrown = true;"
 						+ "if (!anException.dropToFrame) {"
-						+ "throw anException;}"
-						+ "} finally {"
+						+ "throw anException;}else{"
+						+ "if (anException.expression) {"
+						+ "eval(anException.expression);}"
+						+ "}} finally {"
 						+ "MoSyncDebugProtocol.popStack();"
 						+ "}");
 				if (supports(DROP_TO_FRAME)) {
@@ -517,7 +532,7 @@ public class JSODDSupport {
 					String addThis = scopeDesc
 							+ " MoSyncDebugProtocol.updatePosition(" + fileId + ","
 							+ mappedLineNo + "," + isDebuggerStatement + ","
-							+ "function(____eval) {return eval(____eval);});"
+							+ EVAL_FUNC_SNIPPET + ");"
 							+ "\n";
 					insert(position(node, before), addThis);
 				}
@@ -527,17 +542,37 @@ public class JSODDSupport {
 		public void setScopeResetPoints(TreeSet<Integer> scopeResetPoints) {
 			this.scopeResetPoints = new TreeSet<Integer>(scopeResetPoints);
 		}
+		
+		public String get(ASTNode node) {
+			Position startPos = position(node, true);
+			Position endPos = position(node, false);
+			int start = startPos.getPosition();
+			int end = endPos.getPosition();
+			Entry<Integer, Integer> startDeltaEntry = movedSourceMap.floorEntry(start - 1);
+			Entry<Integer, Integer> endDeltaEntry = movedSourceMap.floorEntry(end);
+			int startDelta = startDeltaEntry == null ? 0 : startDeltaEntry.getValue();
+			int endDelta = endDeltaEntry == null ? 0 : endDeltaEntry.getValue();
+			return instrumented.substring(start + startDelta, end + endDelta - (start + startDelta));
+		}
+
+		public String getInstrumentedSource() {
+			return instrumented;
+		}
 	}
 
 	public static final String SERVER_HOST_PROP = "SERVER_HOST";
 	public static final String SERVER_PORT_PROP = "SERVER_PORT";
 	public static final String PROJECT_NAME_PROP = "PROJECT_NAME";
 
+	private static final Map<String, IRedefinable> EMPTY = Collections.emptyMap();
+
 	private final ASTParser parser;
 
 	private HashMap<IPath, Long> fileIds = null;
 	private final TreeMap<Long, IPath> reverseFileIds = new TreeMap<Long, IPath>();
 	private final HashMap<Long, NavigableMap<Integer, LocalVariableScope>> scopeMaps = new HashMap<Long, NavigableMap<Integer, LocalVariableScope>>();
+	private final HashMap<IFile, String> instrumentedSource = new HashMap<IFile, String>();
+	
 	private long currentFileId = 0;
 
 	private final IProject project;
@@ -587,10 +622,10 @@ public class JSODDSupport {
 		return result[0];
 	}
 
-	public void rewrite(IPath filePath, Writer output) throws CoreException {
+	public Map<String, IRedefinable> rewrite(IPath filePath, Writer output) throws CoreException {
 		try {
 			if (!isValidJavaScriptFile(filePath)) {
-				return;
+				return EMPTY;
 			}
 
 			IFile file = (IFile) ResourcesPlugin.getWorkspace().getRoot()
@@ -612,8 +647,12 @@ public class JSODDSupport {
 			ast.accept(visitor);
 			long fileId = assignFileId(filePath);
 			TreeMap<Integer, LocalVariableScope> scopeMap = new TreeMap<Integer, LocalVariableScope>();
-			visitor.rewrite(fileId, source, prunedSource, output, scopeMap);
+			HashMap<String, IRedefinable> result = new HashMap<String, IRedefinable>();
+			visitor.rewrite(fileId, source, prunedSource, output, scopeMap, result);
+			String instrumentedSource = visitor.getInstrumentedSource();
+			this.instrumentedSource.put(file, instrumentedSource);
 			scopeMaps.put(fileId, scopeMap);
+			return result;
 		} catch (CoreException e) {
 			throw e;
 		} catch (Exception e) {
@@ -763,5 +802,9 @@ public class JSODDSupport {
 		}
 		Set<IPath> allPaths = new HashSet<IPath>(fileIds.keySet());
 		return allPaths;
+	}
+
+	public String getInstrumentedSource(IFile file) {
+		return instrumentedSource.get(file);
 	}
 }

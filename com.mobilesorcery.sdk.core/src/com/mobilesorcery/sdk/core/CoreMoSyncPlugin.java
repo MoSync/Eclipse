@@ -934,13 +934,15 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	public Collection<MoSyncProject> extractProjectsToReinit(IResourceChangeEvent event) {
 		final HashSet<MoSyncProject> result = new HashSet<MoSyncProject>();
-		if (event.getType() == IResourceChangeEvent.POST_CHANGE) {
+		boolean isContentChange = event.getDelta() != null && (event.getDelta().getFlags() & IResourceDelta.CONTENT) != 0;
+		boolean isFileResource = event.getResource() != null && event.getResource().getType() == IResource.FILE;
+		if (event.getType() == IResourceChangeEvent.POST_CHANGE && isContentChange && isFileResource) {
 			try {
 				event.getDelta().accept(new IResourceDeltaVisitor() {
 					@Override
 					public boolean visit(IResourceDelta delta) throws CoreException {
 						IResource resource = delta.getResource();
-						if (resource != null && (delta.getFlags() & IResourceDelta.CONTENT) != 0) {
+						if (resource != null) {
 							String name = resource.getName();
 							if (MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME.equals(name) ||
 								MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME.equals(name)) {

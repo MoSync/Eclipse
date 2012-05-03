@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
@@ -38,6 +39,12 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.model.IBreakpoint;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLoadBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.StepRequest;
@@ -45,11 +52,6 @@ import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.handler.AbstractHandler;
-import org.mortbay.jetty.nio.SelectChannelConnector;
-import org.mortbay.thread.QueuedThreadPool;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
@@ -333,6 +335,8 @@ public class LiveServer implements IResourceChangeListener {
 	private static final int PING = 0;
 
 	private static final int EVAL = 5;
+	
+	private static final int RELOAD = 8;
 
 	private static final int BREAKPOINT = 10;
 
@@ -361,8 +365,8 @@ public class LiveServer implements IResourceChangeListener {
 		private final HashMap<Object, Thread> waitThreads = new HashMap<Object, Thread>();
 
 		@Override
-		public void handle(String target, HttpServletRequest req,
-				HttpServletResponse res, int dispatch) throws IOException {
+		public void handle(String target, Request baseRequest, HttpServletRequest req,
+				HttpServletResponse res) throws IOException {
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 				CoreMoSyncPlugin.trace(
 						"{3}: STARTED {0} REQUEST {1} ON THREAD {2}", req
@@ -376,9 +380,10 @@ public class LiveServer implements IResourceChangeListener {
 			configureForPreflight(req, res);
 
 			// COMMANDS
-			JSONObject result = handleCommand(target, req, res, preflight);
+			JSONObject command = preflight || targetMatches(target, "/mobile/incoming") ? null : parseCommand(req);
+			JSONObject result = handleCommand(target, command, req, res, preflight);
 			if (result == null) {
-				result = waitForClient(target, req, res, preflight);
+				result = waitForClient(target, command, req, res, preflight);
 			}
 
 			if (result != null) {
@@ -402,7 +407,7 @@ public class LiveServer implements IResourceChangeListener {
 			}
 		}
 
-		private JSONObject waitForClient(String target, HttpServletRequest req,
+		private JSONObject waitForClient(String target, JSONObject command, HttpServletRequest req,
 				HttpServletResponse res, boolean preflight) {
 			JSONObject result = null;
 			if (targetMatches(target, "/mobile/incoming")) {
@@ -413,7 +418,6 @@ public class LiveServer implements IResourceChangeListener {
 			} else if (targetMatches(target, "/mobile/breakpoint")) {
 				// RACE CONDITION WILL OCCUR HERE!
 				if (!preflight) {
-					JSONObject command = parseCommand(req);
 					Integer sessionId = extractSessionId(command);
 					notifyListeners(getCommand(command), command);
 					result = pushCommandsToClient(sessionId, preflight);
@@ -459,6 +463,14 @@ public class LiveServer implements IResourceChangeListener {
 					result = newCommand("breakpoint-continue");
 				} else if (queuedType == STEP) {
 					result = newCommand(getStepCommand((Integer) queuedElement.data));
+				} else if (queuedType == RELOAD) {
+					String command = queuedObject == null ? "restart" : "reload";
+					result = newCommand(command);
+					if (queuedObject != null) {
+						Pair<String, Boolean> updateData = (Pair<String, Boolean>) queuedObject;
+						result.put("resource", updateData.first);
+						result.put("reload", updateData.second);
+					}
 				} else if (queuedType == SUSPEND) {
 					result = newCommand("suspend");
 				} else if (queuedType == EVAL) {
@@ -547,7 +559,7 @@ public class LiveServer implements IResourceChangeListener {
 			return null;
 		}
 
-		private JSONObject handleCommand(String target, HttpServletRequest req,
+		private JSONObject handleCommand(String target, JSONObject command, HttpServletRequest req,
 				HttpServletResponse res, boolean preflight) {
 			if (targetMatches(target, "/mobile/init")) {
 				// Just push the breakpoints!
@@ -555,8 +567,7 @@ public class LiveServer implements IResourceChangeListener {
 						.getBreakpointManager()
 						.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
 				JSONObject jsonBps = createBreakpointJSON(bps, true);
-				if (!preflight) {
-					JSONObject command = parseCommand(req);
+				if (command != null) {
 					int newSessionId = newSessionId();
 					jsonBps.put(SESSION_ID_ATTR, newSessionId);
 					String projectName = (String) command.get("project");
@@ -568,8 +579,7 @@ public class LiveServer implements IResourceChangeListener {
 				}
 				return jsonBps;
 			} else if (targetMatches(target, "/mobile/console")) {
-				if (!preflight) {
-					JSONObject command = parseCommand(req);
+				if (command != null) {
 					if ("print-message".equals(getCommand(command))) {
 						String level = "" + command.get("type");
 						String msg = "" + command.get("message");
@@ -586,6 +596,21 @@ public class LiveServer implements IResourceChangeListener {
 					}
 				}
 				return new JSONObject();
+			} else if (targetMatches(target, "mobile/fetch")) {
+				if (command != null) {
+					String localPath = (String) command.get("resource");
+					Integer sessionId = extractSessionId(command);
+					if (sessionId != null) {
+						ReloadVirtualMachine vm = getVM(sessionId);
+						IProject project = vm.getProject();
+						JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project);
+						IFile file = project.getFile(Html5Plugin.getHTML5Folder(project).append(localPath));
+						String source = jsoddSupport.getInstrumentedSource(file);
+						JSONObject result = new JSONObject();
+						result.put("source", source);
+						return result;
+					}
+				}
 			}
 			return null;
 		}
@@ -861,6 +886,10 @@ public class LiveServer implements IResourceChangeListener {
 		Object result = awaitEvalResult(sessionId, expression, stackDepth,
 				getTimeout(sessionId));
 		return result;
+	}
+	
+	public void update(int currentSessionId, String resourcePath, boolean reloadHint) {
+		queues.offer(currentSessionId, new DebuggerMessage(RELOAD, new Pair<String, Boolean>(resourcePath, reloadHint)));
 	}
 
 	public void terminate(int sessionId) {

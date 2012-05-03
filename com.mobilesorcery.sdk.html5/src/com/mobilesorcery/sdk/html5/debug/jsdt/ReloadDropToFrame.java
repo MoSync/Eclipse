@@ -35,7 +35,7 @@ public class ReloadDropToFrame implements IDropToFrame {
 		// Reverse numbering here!
 		int frameToDropTo = frame.getThread().getStackFrames().length - stackDepth - 1;
 		// HACK: We use 'evaluate' to pass on our own twisted expressions.
-		frame.evaluate(MessageFormat.format("MoSyncDebugProtocol.doDropToFrame({0});", Integer.toString(frameToDropTo)));
+		frame.evaluate(ReloadStackFrame.createDropToFrameExpression(frameToDropTo, null));
 		frame.stepInto();
 	}
 

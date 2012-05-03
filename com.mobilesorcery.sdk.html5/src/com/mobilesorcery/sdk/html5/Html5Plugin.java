@@ -10,6 +10,7 @@ import java.util.List;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
@@ -273,5 +274,16 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 				}
 			}
 		}
+	}
+
+	/**
+	 * Returns the path where HTML5 content is stored.
+	 * The path is project relative.
+	 * @param wrappedProject
+	 * @return
+	 */
+	public static IPath getHTML5Folder(IProject wrappedProject) {
+		// I guess this might always be constant...
+		return new Path("LocalFiles");
 	}
 }

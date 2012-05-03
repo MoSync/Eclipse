@@ -218,7 +218,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult result,
 			IProgressMonitor monitor) throws Exception {
 		IProject wrappedProject = project.getWrappedProject();
-		Path inputRootPath = new Path("LocalFiles");
+		IPath inputRootPath = Html5Plugin.getHTML5Folder(wrappedProject);
 		IFolder inputRoot = wrappedProject.getFolder(inputRootPath);
 		if (inputRoot.exists()) {
 			IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project,

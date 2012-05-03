@@ -100,8 +100,12 @@ public class ReloadThreadReference implements ThreadReference {
 	}
 
 	public void markSuspended(boolean isAtBreakpoint) {
+		markSuspended(true, isAtBreakpoint);
+	}
+	
+	public void markSuspended(boolean suspended, boolean isAtBreakpoint) {
 		this.isAtBreakpoint = isAtBreakpoint;
-		this.suspended = true;
+		this.suspended = suspended;
 	}
 
 	public void setFrames(StackFrame[] frames) {

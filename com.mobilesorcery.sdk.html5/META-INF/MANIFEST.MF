@@ -19,8 +19,6 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.wst.jsdt.support.firefox;bundle-version="1.0.400",
  org.eclipse.debug.core;bundle-version="3.7.0",
  org.eclipse.equinox.http.jetty;bundle-version="2.0.100",
- org.mortbay.jetty.server;bundle-version="6.1.23",
- org.mortbay.jetty.util;bundle-version="6.1.23",
  com.mobilesorcery.sdk.ui;bundle-version="1.0.0",
  org.eclipse.wst.jsdt.debug.rhino;bundle-version="1.0.100",
  org.eclipse.wst.jsdt.debug.rhino.ui;bundle-version="1.0.0",
@@ -53,7 +51,9 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.wst.web;bundle-version="1.1.500",
  org.eclipse.wst.web.ui;bundle-version="1.1.400",
  org.eclipse.debug.ui;bundle-version="3.7.0",
- org.eclipse.jface.text;bundle-version="3.7.0"
+ org.eclipse.jface.text;bundle-version="3.7.0",
+ org.eclipse.jetty.server;bundle-version="8.1.1",
+ org.eclipse.jetty.util;bundle-version="8.1.1"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Export-Package: com.mobilesorcery.sdk.html5

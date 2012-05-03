@@ -51,31 +51,46 @@ import com.mobilesorcery.sdk.html5.live.LiveServer;
 public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener {
 
 	private final LiveServer server;
-	private final List threads = new ArrayList<ThreadReference>();
+	private List threads = new ArrayList();
 	private final ReloadEventRequestManager requestMgr;
-	private final ReloadEventQueue eventQueue;
+	private ReloadEventQueue eventQueue;
 	private final NullValue nullValue;
 	private final ReloadUndefinedValue undefValue;
 	private int currentSessionId = LiveServer.NO_SESSION;
 	private IProject project;
-	private final ReloadThreadReference mainThread;
+	private ReloadThreadReference mainThread;
 	private boolean isTerminated = false;
 
 	public ReloadVirtualMachine(int port) throws Exception {
-		System.err.println("NEW VM " + System.identityHashCode(this));
 		// TODO: PORT
 		server = Html5Plugin.getDefault().getReloadServer();
 		// JUST ONE MAIN THREAD
 		mainThread = new ReloadThreadReference(this);
 		threads.add(mainThread);
+		resetThreads();
+
 		requestMgr = new ReloadEventRequestManager(this);
 		eventQueue = new ReloadEventQueue(this, requestMgr);
+		
 		nullValue = new ReloadNullValue(this);
 		undefValue = new ReloadUndefinedValue(this);
 
 		server.addListener(this);
 		server.startServer(this);
 		server.registerVM(this);
+	}
+
+	private void resetThreads() {
+		mainThread.markSuspended(false, false);
+	}
+	
+	private void resetEventQueue() {
+		if (eventQueue != null) {
+			List exitRequests = requestMgr.threadExitRequests();
+			for (Object exitRequest : exitRequests) {
+				eventQueue.received(ReloadEventQueue.CUSTOM_EVENT, new ReloadThreadExitEvent(this, mainThread, null, (EventRequest) exitRequest));
+			}
+		}
 	}
 
 	public void setCurrentSessionId(int sessionId) {
@@ -101,12 +116,10 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	}
 
 	public void reset(int newSessionId, MoSyncProject project) {
+		resetThreads();
 		if (currentSessionId != LiveServer.NO_SESSION) {
 			server.reset(currentSessionId);
-			List exitRequests = requestMgr.threadExitRequests();
-			for (Object exitRequest : exitRequests) {
-				eventQueue.received(ReloadEventQueue.CUSTOM_EVENT, new ReloadThreadExitEvent(this, mainThread, null, (EventRequest) exitRequest));
-			}
+			resetEventQueue();
 		}
 		setCurrentSessionId(newSessionId);
 		this.project = project.getWrappedProject();
@@ -169,6 +182,10 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		}
 		return result;
 	}
+	
+	public IProject getProject() {
+		return project;
+	}
 
 	@Override
 	public void dispose() {
@@ -210,12 +227,45 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		return eventQueue;
 	}
 
+	/**
+	 * Evaluates an expression in the current scope.
+	 * @param expression The JavaScript expression to evaluate
+	 * @return The result of the evaluation
+	 * @throws InterruptedException If the waiting thread was interrupted,
+	 * for example by a terminate request.
+	 * @throws TimeoutException If the client failed to respond within
+	 * a specified timeout.
+	 */
 	public Object evaluate(String expression) throws InterruptedException, TimeoutException {
 		return evaluate(expression, null);
 	}
 
+
+	/**
+	 * Evaluates an expression at a specified stack depth
+	 * @param expression The JavaScript expression to evaluate
+	 * @param stackDepth The stackdepth to perform the evaluation, or {@code null} to
+	 * use the current scope.
+	 * @return The result of the evaluation
+	 * @throws InterruptedException If the waiting thread was interrupted,
+	 * for example by a terminate request.
+	 * @throws TimeoutException If the client failed to respond within
+	 * a specified timeout.
+	 */
 	public Object evaluate(String expression, Integer stackDepth) throws InterruptedException, TimeoutException {
 		return server.evaluate(currentSessionId, expression, stackDepth);
+	}
+	
+	/**
+	 * Issues a reload request to the client.
+	 * @param resourcePath The resource to reload.
+	 * A {@code null} value will cause a full reload of the app.
+	 * @param resourcePath The resource to upload, relative
+	 * to the project's HTML5 location
+	 * @param reloadHint If applicable; whether to reload the page
+	 */
+	public void update(String resourcePath, boolean reloadHint) {
+		server.update(currentSessionId, resourcePath, reloadHint);
 	}
 
 	@Override
@@ -246,13 +296,12 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		eventQueue.received(command, json);
 	}
 
-	public LocalVariableScope getLocalVariableScope(Location location) {
+	public LocalVariableScope getLocalVariableScope(ScriptReference ref, int line) {
 		// TODO: Faster?
-		ScriptReference ref = location.scriptReference();
 		if (ref instanceof SimpleScriptReference) {
 			IFile file = ((SimpleScriptReference) ref).getFile();
 			JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(file.getProject());
-			LocalVariableScope scope = jsoddSupport.getScope(file, location.lineNumber());
+			LocalVariableScope scope = jsoddSupport.getScope(file, line);
 			if (scope != null) {
 				return scope;
 			}
@@ -275,6 +324,10 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	public boolean isTerminated() {
 		return isTerminated;
+	}
+
+	public ReloadThreadReference mainThread() {
+		return mainThread;
 	}
 
 }
