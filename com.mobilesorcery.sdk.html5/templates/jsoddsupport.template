@@ -8,6 +8,8 @@ window.MoSyncDebugProtocol = new (function() {
     var breakpoints = {};
     var breakpointDescs = {};
     var loadBreakpoints = {};
+    var redefinedFunctions = {};
+    var registeredFunctions = {};
     var shouldBreak = function() { return false; };
     var asyncXHR = null;
     var lastFileId = -1;
@@ -239,10 +241,28 @@ window.MoSyncDebugProtocol = new (function() {
                 
             case 'update':
                 return update(cmd);
+            
+            case 'update-function':
+                updateFunctions(cmd);
+                return true;
         }
     }
     
+    function updateFunctions(cmd) {
+         cmd.functions.forEach(function(fn) {
+             var redefineKey = fn.key;
+             var expression = fn.definition;
+             redefinedFunctions[redefineKey] = expression;
+             if (redefineKey in registeredFunctions) {
+                 var registeredFunction = registeredFunctions[redefineKey];
+                 // Will trigger a reload of the function
+                 registeredFunction.____yaloid = null;
+             }                 
+         });
+    }
+        
     function update(cmd) {
+    // TODO TODO TODO
         var reply = sendToServer('/fetch', { 
             resource: cmd.resource
         });
@@ -467,6 +487,18 @@ window.MoSyncDebugProtocol = new (function() {
             }
         }
         return e;
+    }
+    
+    this.yaloid = function(key) {
+        var result = redefinedFunctions[key];
+        if (result) {
+            redefinedFunctions[key] = null;
+        }
+        return result;
+    }
+    
+    this.registerFunction = function(key, fn) {
+        registeredFunctions[key] = fn;
     }
     
     function handleBreakpoint(breakpointInfo, evalScopeFunc) {

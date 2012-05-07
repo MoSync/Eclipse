@@ -10,6 +10,10 @@ public class RedefineException extends Exception {
 		super(cause);
 	}
 
+	public RedefineException(RedefinitionResult redefineResult) {
+		this(redefineResult.getMessage());
+	}
+
 	public static RedefineException wrap(Exception e) {
 		if (e instanceof RedefineException) {
 			return (RedefineException) e;

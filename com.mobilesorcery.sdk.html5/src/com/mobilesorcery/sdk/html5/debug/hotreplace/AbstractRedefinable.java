@@ -1,6 +1,8 @@
 package com.mobilesorcery.sdk.html5.debug.hotreplace;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import org.eclipse.wst.jsdt.core.dom.ASTNode;
@@ -8,23 +10,23 @@ import org.eclipse.wst.jsdt.core.dom.ASTNode;
 import com.mobilesorcery.sdk.core.IProvider;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.debug.IRedefinable;
+import com.mobilesorcery.sdk.html5.debug.IRedefiner;
+import com.mobilesorcery.sdk.html5.debug.RedefineException;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
 
 public abstract class AbstractRedefinable implements IRedefinable {
 
-	protected ReloadVirtualMachine vm;
 	private IRedefinable parent;
-	private List<IRedefinable> children;
+	private List<IRedefinable> children = new ArrayList<IRedefinable>();
 	private IProvider<String, ASTNode> source;
+	private HashMap<String, IRedefinable> childrenByKey;
 
-	protected AbstractRedefinable(IRedefinable parent, IProvider<String, ASTNode> source, ReloadVirtualMachine vm) {
+	protected AbstractRedefinable(IRedefinable parent, IProvider<String, ASTNode> source) {
 		this.parent = parent;
 		this.source = source;
 		if (parent != null) {
 			parent.addChild(this);	
 		}
-		
-		this.vm = vm;
 	}
 	
 	/**
@@ -37,22 +39,57 @@ public abstract class AbstractRedefinable implements IRedefinable {
 	}
 	
 	public void addChild(IRedefinable child) {
-		if (children == null) {
-			children = new ArrayList<IRedefinable>();
-		}
 		children.add(child);
+		// Just to trigger reindexing.
+		childrenByKey = null;
+	}
+	
+	public IRedefinable getChild(String key) {
+		if (childrenByKey == null) {
+			childrenByKey = new HashMap<String, IRedefinable>();
+			for (IRedefinable child : children) {
+				childrenByKey.put(child.key(), child);
+			}
+		}
+		return childrenByKey.get(key);
+	}
+	
+	/**
+	 * The default implementation redefines all children as well,
+	 * delegating to the {@link #redefineAdded(IRedefinable, ReloadVirtualMachine)}
+	 * method if the replacement has a child not present in this
+	 * {@link IRedefinable}.
+	 */
+	@Override
+	public void redefine(IRedefinable replacement, IRedefiner redefiner) {
+		if (replacement != null && !Util.equals(replacement.key(), key())) {
+			throw new IllegalArgumentException("Internal error: key mismatch");
+		}
+		if (redefiner != null) {
+			redefiner.collect(this, replacement);
+		}
+		HashSet<String> redefined = new HashSet();
+		for (IRedefinable child : getChildren()) {
+			String key = child.key();
+			IRedefinable replacementChild = replacement.getChild(key);
+			replacementChild.redefine(child, redefiner);
+			redefined.add(key);
+		}
+		
+		for (IRedefinable replaceChild : replacement.getChildren()) {
+			if (!redefined.contains(replaceChild.key())) {
+				redefineAdded(replaceChild, redefiner);
+			}
+		}
 	}
 
-	@Override
-	public boolean canRedefine(IRedefinable toBeRedefined, boolean inPlace) {
-		if (toBeRedefined == null) {
-			return true;
-		}
-		if (!(toBeRedefined instanceof ASTRedefinable)) {
-			return false;
-		}
-		boolean equalKey = Util.equals(toBeRedefined.key(), key());
-		return equalKey;
+	/**
+	 * Clients may override.
+	 * @param replaceChild
+	 * @param redefiner
+	 */
+	protected void redefineAdded(IRedefinable replaceChild, IRedefiner redefiner) {
+		
 	}
 
 	@Override
@@ -78,6 +115,11 @@ public abstract class AbstractRedefinable implements IRedefinable {
 			parent = parent.getParent();
 		}
 		return result;
+	}
+	
+	public String constructKey(String subkey) {
+		String parentKey = parent == null ? "" : parent.key();
+		return parentKey + "/" + subkey;
 	}
 
 }

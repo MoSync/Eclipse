@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -60,7 +61,10 @@ import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
+import com.mobilesorcery.sdk.html5.debug.RedefineException;
+import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
 import com.mobilesorcery.sdk.html5.debug.jsdt.JavaScriptBreakpointDesc;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadRedefiner;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
 
 public class LiveServer implements IResourceChangeListener {
@@ -315,7 +319,8 @@ public class LiveServer implements IResourceChangeListener {
 				for (Integer sessionId : consumers.keySet()) {
 					Long timeOfLastTake = takeTimestamps.get(sessionId);
 					boolean isWaitingForPing = pendingPings.contains(sessionId);
-					boolean needsPing = !isWaitingForPing && timeOfLastTake != null
+					boolean needsPing = !isWaitingForPing
+							&& timeOfLastTake != null
 							&& System.currentTimeMillis() - timeOfLastTake > PING_INTERVAL;
 					if (needsPing) {
 						pendingPings.add(sessionId);
@@ -335,6 +340,8 @@ public class LiveServer implements IResourceChangeListener {
 	private static final int PING = 0;
 
 	private static final int EVAL = 5;
+
+	private static final int REDEFINE = 7;
 	
 	private static final int RELOAD = 8;
 
@@ -365,8 +372,9 @@ public class LiveServer implements IResourceChangeListener {
 		private final HashMap<Object, Thread> waitThreads = new HashMap<Object, Thread>();
 
 		@Override
-		public void handle(String target, Request baseRequest, HttpServletRequest req,
-				HttpServletResponse res) throws IOException {
+		public void handle(String target, Request baseRequest,
+				HttpServletRequest req, HttpServletResponse res)
+				throws IOException {
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 				CoreMoSyncPlugin.trace(
 						"{3}: STARTED {0} REQUEST {1} ON THREAD {2}", req
@@ -380,8 +388,11 @@ public class LiveServer implements IResourceChangeListener {
 			configureForPreflight(req, res);
 
 			// COMMANDS
-			JSONObject command = preflight || targetMatches(target, "/mobile/incoming") ? null : parseCommand(req);
-			JSONObject result = handleCommand(target, command, req, res, preflight);
+			JSONObject command = preflight
+					|| targetMatches(target, "/mobile/incoming") ? null
+					: parseCommand(req);
+			JSONObject result = handleCommand(target, command, req, res,
+					preflight);
 			if (result == null) {
 				result = waitForClient(target, command, req, res, preflight);
 			}
@@ -407,8 +418,9 @@ public class LiveServer implements IResourceChangeListener {
 			}
 		}
 
-		private JSONObject waitForClient(String target, JSONObject command, HttpServletRequest req,
-				HttpServletResponse res, boolean preflight) {
+		private JSONObject waitForClient(String target, JSONObject command,
+				HttpServletRequest req, HttpServletResponse res,
+				boolean preflight) {
 			JSONObject result = null;
 			if (targetMatches(target, "/mobile/incoming")) {
 				ReloadVirtualMachine vm = getVM(req.getRemoteAddr());
@@ -464,12 +476,12 @@ public class LiveServer implements IResourceChangeListener {
 				} else if (queuedType == STEP) {
 					result = newCommand(getStepCommand((Integer) queuedElement.data));
 				} else if (queuedType == RELOAD) {
-					String command = queuedObject == null ? "restart" : "reload";
+					String command = queuedObject == null ? "restart"
+							: "reload";
 					result = newCommand(command);
 					if (queuedObject != null) {
-						Pair<String, Boolean> updateData = (Pair<String, Boolean>) queuedObject;
-						result.put("resource", updateData.first);
-						result.put("reload", updateData.second);
+						IFile resource = (IFile) queuedObject;
+						result.put("resource", getLocalPath(resource));
 					}
 				} else if (queuedType == SUSPEND) {
 					result = newCommand("suspend");
@@ -484,6 +496,15 @@ public class LiveServer implements IResourceChangeListener {
 					} else {
 						result.put("noStack", true);
 					}
+				} else if (queuedType == REDEFINE) { 
+					Pair<String, String> data = (Pair<String, String>) queuedObject;
+					result = newCommand("update-function");
+					JSONArray functions = new JSONArray();
+					JSONObject function = new JSONObject();
+					function.put("key", data.first);
+					function.put("definition", data.second);
+					functions.add(function);
+					result.put("functions", functions);
 				} else if (queuedType == TERMINATE) {
 					result = newCommand("terminate");
 				} else if (queuedType == DISCONNECT) {
@@ -559,8 +580,9 @@ public class LiveServer implements IResourceChangeListener {
 			return null;
 		}
 
-		private JSONObject handleCommand(String target, JSONObject command, HttpServletRequest req,
-				HttpServletResponse res, boolean preflight) {
+		private JSONObject handleCommand(String target, JSONObject command,
+				HttpServletRequest req, HttpServletResponse res,
+				boolean preflight) {
 			if (targetMatches(target, "/mobile/init")) {
 				// Just push the breakpoints!
 				IBreakpoint[] bps = DebugPlugin.getDefault()
@@ -571,9 +593,12 @@ public class LiveServer implements IResourceChangeListener {
 					int newSessionId = newSessionId();
 					jsonBps.put(SESSION_ID_ATTR, newSessionId);
 					String projectName = (String) command.get("project");
-					MoSyncProject project = MoSyncProject.create(ResourcesPlugin.getPlugin().getWorkspace().getRoot().getProject(projectName));
+					MoSyncProject project = MoSyncProject
+							.create(ResourcesPlugin.getPlugin().getWorkspace()
+									.getRoot().getProject(projectName));
 					if (project != null) {
-						ReloadVirtualMachine vm = resetVM(req, project, newSessionId);
+						ReloadVirtualMachine vm = resetVM(req, project,
+								newSessionId);
 						vm.setCurrentLocation((String) command.get("location"));
 					}
 				}
@@ -603,9 +628,12 @@ public class LiveServer implements IResourceChangeListener {
 					if (sessionId != null) {
 						ReloadVirtualMachine vm = getVM(sessionId);
 						IProject project = vm.getProject();
-						JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project);
-						IFile file = project.getFile(Html5Plugin.getHTML5Folder(project).append(localPath));
-						String source = jsoddSupport.getInstrumentedSource(file);
+						JSODDSupport jsoddSupport = Html5Plugin.getDefault()
+								.getJSODDSupport(project);
+						IFile file = project.getFile(Html5Plugin
+								.getHTML5Folder(project).append(localPath));
+						String source = jsoddSupport
+								.getInstrumentedSource(file);
 						JSONObject result = new JSONObject();
 						result.put("source", source);
 						return result;
@@ -638,7 +666,8 @@ public class LiveServer implements IResourceChangeListener {
 						int lineNo = bp instanceof IJavaScriptLoadBreakpoint ? -1
 								: lineBp.getLineNumber();
 						IResource resource = lineBp.getResource();
-						String file = resource.getType() == IResource.ROOT ? "*" : resource.getFullPath().toPortableString();
+						String file = resource.getType() == IResource.ROOT ? "*"
+								: resource.getFullPath().toPortableString();
 						String condition = lineBp.getCondition();
 						int hitCount = lineBp.getHitCount();
 
@@ -647,7 +676,8 @@ public class LiveServer implements IResourceChangeListener {
 						jsonBp.put("line", lineNo);
 						if (!Util.isEmpty(condition)) {
 							jsonBp.put("condition", condition);
-							jsonBp.put("conditionSuspend", lineBp.getConditionSuspend());
+							jsonBp.put("conditionSuspend",
+									lineBp.getConditionSuspend());
 						}
 						if (hitCount > 0) {
 							jsonBp.put("hitcount", hitCount);
@@ -672,10 +702,10 @@ public class LiveServer implements IResourceChangeListener {
 				IResource resource = lineBp.getMarker().getResource();
 				String condition = lineBp.getCondition();
 				int hitCount = lineBp.getHitCount();
-				String conditionSuspend = lineBp.isConditionSuspendOnTrue() ?
-						JavaScriptBreakpointDesc.SUSPEND_ON_TRUE : JavaScriptBreakpointDesc.SUSPEND_ON_CHANGE;
+				String conditionSuspend = lineBp.isConditionSuspendOnTrue() ? JavaScriptBreakpointDesc.SUSPEND_ON_TRUE
+						: JavaScriptBreakpointDesc.SUSPEND_ON_CHANGE;
 				return new JavaScriptBreakpointDesc(resource, lineNumber,
-						condition, conditionSuspend,hitCount);
+						condition, conditionSuspend, hitCount);
 			}
 			return null;
 		}
@@ -703,7 +733,8 @@ public class LiveServer implements IResourceChangeListener {
 			return;
 		}
 		try {
-			ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.POST_CHANGE);
+			ResourcesPlugin.getWorkspace().addResourceChangeListener(this,
+					IResourceChangeEvent.POST_CHANGE);
 			server = new Server(getPort());
 			server.setThreadPool(new QueuedThreadPool(5));
 			server.setHandler(new LiveServerHandler());
@@ -726,6 +757,14 @@ public class LiveServer implements IResourceChangeListener {
 		}
 	}
 
+	public IPath getLocalPath(IFile file) {
+		IPath root = Html5Plugin.getHTML5Folder(file.getProject());
+		if (root.isPrefixOf(file.getFullPath())) {
+			return file.getFullPath().removeFirstSegments(root.segmentCount());
+		}
+		return null;
+	}
+
 	public static Integer extractSessionId(JSONObject command) {
 		Object sessionIdObj = command.get(SESSION_ID_ATTR);
 		Integer sessionId = sessionIdObj == null ? null : Integer
@@ -742,6 +781,16 @@ public class LiveServer implements IResourceChangeListener {
 			}
 		}
 		return null;
+	}
+	
+	public synchronized List<ReloadVirtualMachine> getVMs(boolean includeUnassigned) {
+		ArrayList<ReloadVirtualMachine> result = new ArrayList<ReloadVirtualMachine>();
+		for (ReloadVirtualMachine vm : vmsByHost.values()) {
+			if (includeUnassigned || !unassignedVMs.contains(vm)) {
+				result.add(vm);
+			}
+		}
+		return result;
 	}
 
 	private ReloadVirtualMachine getVM(String remoteAddr) {
@@ -821,7 +870,8 @@ public class LiveServer implements IResourceChangeListener {
 	}
 
 	public synchronized void stopServer(Object ref) throws CoreException {
-		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.POST_CHANGE);
+		ResourcesPlugin.getWorkspace().addResourceChangeListener(this,
+				IResourceChangeEvent.POST_CHANGE);
 		refs.remove(ref);
 		if (refs.isEmpty()) {
 			unassignedVMs.clear();
@@ -863,7 +913,8 @@ public class LiveServer implements IResourceChangeListener {
 
 	public void suspend(int sessionId) {
 		try {
-			queues.await(sessionId, new DebuggerMessage(SUSPEND), Integer.MAX_VALUE);
+			queues.await(sessionId, new DebuggerMessage(SUSPEND),
+					Integer.MAX_VALUE);
 		} catch (Exception e) {
 			CoreMoSyncPlugin.getDefault().log(e);
 		}
@@ -887,9 +938,17 @@ public class LiveServer implements IResourceChangeListener {
 				getTimeout(sessionId));
 		return result;
 	}
+
+	public void update(int sessionId, IFile resource) {
+		queues.offer(sessionId, new DebuggerMessage(RELOAD, resource));
+	}
 	
-	public void update(int currentSessionId, String resourcePath, boolean reloadHint) {
-		queues.offer(currentSessionId, new DebuggerMessage(RELOAD, new Pair<String, Boolean>(resourcePath, reloadHint)));
+	public void reload(int sessionId) {
+		queues.offer(sessionId, new DebuggerMessage(RELOAD, null));
+	}
+
+	public void updateFunction(int sessionId, String key, String source) {
+		queues.offer(sessionId, new DebuggerMessage(REDEFINE, new Pair<String, String>(key, source)));
 	}
 
 	public void terminate(int sessionId) {
@@ -939,28 +998,36 @@ public class LiveServer implements IResourceChangeListener {
 
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
+		List<ReloadVirtualMachine> vms = getVMs(false);
+		final HashMap<IProject, ProjectRedefinable> projectsToReload = new HashMap<IProject, ProjectRedefinable>();
+		for (ReloadVirtualMachine vm : vms) {
+			IProject project = vm.getProject();
+			if (!projectsToReload.containsKey(project)) {
+				projectsToReload.put(project, new ProjectRedefinable(project));
+			}
+		}
+		
 		IResourceDelta delta = event.getDelta();
-		final HashSet<IProject> projectsToReload = new HashSet<IProject>();
+		
 		if (delta != null) {
 			try {
 				delta.accept(new IResourceDeltaVisitor() {
 					@Override
-					public boolean visit(IResourceDelta delta) throws CoreException {
+					public boolean visit(IResourceDelta delta)
+							throws CoreException {
 						IResource resource = delta.getResource();
-						if (resource != null && (delta.getFlags() & IResourceDelta.CONTENT) != 0) {
+						if (resource != null
+								&& (delta.getFlags() & IResourceDelta.CONTENT) != 0) {
 							IProject project = resource.getProject();
-							JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project);
-							jsoddSupport.rewrite(resource.getFullPath(), null);
 							if (project != null && resource.getType() == IResource.FILE) {
-								projectsToReload.add(resource.getProject());
-							}
-							if (resource.getType() == IResource.FILE) {
-									//op.rewrite(resource.getFullPath());
+								ProjectRedefinable projectRedefinable = projectsToReload.get(project);
+								if (projectRedefinable == null) {
+									return false;
 								}
-							/*} catch (IOException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}*/
+								JSODDSupport jsoddSupport = Html5Plugin
+										.getDefault().getJSODDSupport(project);
+								projectRedefinable.addChild(jsoddSupport.rewrite(resource.getFullPath(), null));
+							}
 						}
 						return true;
 					}
@@ -969,6 +1036,46 @@ public class LiveServer implements IResourceChangeListener {
 				// TODO: handle exception
 			}
 		}
+		
+		int failedRedefineResolution = 0;
+		for (ReloadVirtualMachine vm : vms) {
+			ProjectRedefinable projectRedefinable = projectsToReload.get(vm.getProject());
+			ReloadRedefiner redefiner = new ReloadRedefiner(vm);
+			ProjectRedefinable snapshot = vm.getSnapshot();
+			if (snapshot != null) {
+				snapshot.redefine(projectRedefinable, redefiner);
+			}
+			boolean storeSnapshot = false;
+			try {
+				redefiner.commit(false);
+				storeSnapshot = true;
+			} catch (RedefineException e) {
+				if (failedRedefineResolution == 0) {
+					failedRedefineResolution = askForRedefineResolution(e);
+				}
+				switch (failedRedefineResolution) {
+				case RELOAD:
+					try {
+						redefiner.commit(true);
+						storeSnapshot = true;
+					} catch (RedefineException nestedException) {
+						// Ignore.
+					}
+				case TERMINATE:
+					vm.terminate();
+				default:
+					// Continue/cancel; do nothing.
+				}
+			}
+			if (storeSnapshot) {
+				vm.setSnapshot(projectRedefinable);
+			}
+		}
+	}
+
+	private int askForRedefineResolution(RedefineException e) {
+		// TODO: Dialog!
+		return RELOAD;
 	}
 
 	public Set<Integer> getSessions() {
@@ -977,5 +1084,6 @@ public class LiveServer implements IResourceChangeListener {
 			return new HashSet<Integer>(this.queues.consumers.keySet());
 		}
 	}
+
 
 }

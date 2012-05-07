@@ -9,7 +9,9 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.StackFrame;
 
 import com.mobilesorcery.sdk.core.IProvider;
 import com.mobilesorcery.sdk.html5.debug.IRedefinable;
+import com.mobilesorcery.sdk.html5.debug.IRedefiner;
 import com.mobilesorcery.sdk.html5.debug.RedefineException;
+import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadStackFrame;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadReference;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
@@ -17,42 +19,26 @@ import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
 public class FunctionRedefinable extends ASTRedefinable {
 
 	private Boolean isAnonymous;
+	private String subkey;
 
-	public FunctionRedefinable(IRedefinable parent, IProvider<String, ASTNode> source,
-			ReloadVirtualMachine vm, ASTNode node) {
-		super(parent, source, vm, node);
+	public FunctionRedefinable(IRedefinable parent, IProvider<String, ASTNode> source, ASTNode node) {
+		super(parent, source, node);
 		this.isAnonymous = isAnonymous();
-	}
-
-	@Override
-	public boolean canRedefine(IRedefinable toBeRedefined, boolean inPlace) {
-		boolean canRedefine = canRedefine(toBeRedefined, inPlace);
-		if (isAnonymous() && !inPlace) {
-			// Is this the only anonymous function?
-			List<IRedefinable> childrenToBeRedefined = toBeRedefined
-					.getParent().getChildren();
-			List<IRedefinable> siblings = getParent().getChildren();
-			canRedefine &= (countAnonymousFunctions(childrenToBeRedefined)[0] <= 1 && countAnonymousFunctions(siblings)[0] <= 1);
-		}
-		if (isAnonymous() || inPlace) {
-			canRedefine &= inPlace;
-		}
-		return canRedefine;
 	}
 
 	private int[] countAnonymousFunctions(List<IRedefinable> children) {
 		int[] result = new int[2];
-		int ix = 0;
+		int count = 0;
 		for (IRedefinable child : children) {
 			if (child instanceof FunctionRedefinable
 					&& ((FunctionRedefinable) child).isAnonymous()) {
-				result[0]++;
+				count++;
 			}
 			if (child == this) {
-				result[1] = ix;
+				result[1] = count;
 			}
-			ix++;
 		}
+		result[0] = count;
 		return result;
 	}
 
@@ -67,40 +53,33 @@ public class FunctionRedefinable extends ASTRedefinable {
 		return (FunctionDeclaration) getNode();
 	}
 
-	@Override
-	public void redefine(IRedefinable toBeRedefined, boolean inPlace)
-			throws RedefineException {
-		FunctionDeclaration decl = getFunctionDeclaration();
-		try {
-			if (canRedefine(toBeRedefined, inPlace)) {
-				vm.evaluate(getSource(decl));
-				if (inPlace) {
-					Block body = decl.getBody();
-					ReloadThreadReference thread = vm.mainThread();
-					int frameToDropTo = thread.frameCount() - 1;
-					StackFrame frame = thread.frame(frameToDropTo);
-					String expression = "MoSyncDebugProtocol.obsoleteStackTop();"
-							+ getSource(body);
-					// +1 will make the drop to frame request cleared from the
-					// client,
-					// the expression will instead trigger step request
-					frame.evaluate(ReloadStackFrame
-							.createDropToFrameExpression(frameToDropTo + 1,
-									expression));
-				}
+	public RedefinitionResult canRedefine(IRedefinable replacement) {
+		if (isAnonymous()) {
+			// Is this the only anonymous function? That's a nice heurisitic for assuming it's the 'same' function.
+			List<IRedefinable> childrenToBeRedefined = replacement.getParent().getChildren();
+			List<IRedefinable> siblings = getParent().getChildren();
+			if (countAnonymousFunctions(childrenToBeRedefined)[0] > 1 || countAnonymousFunctions(siblings)[0] > 1) {
+				return RedefinitionResult.fail("Cannot replace anonymous functions if there is more than one anonymous function in the same scope.");
 			}
-		} catch (Exception e) {
-			throw RedefineException.wrap(e);
 		}
+		return RedefinitionResult.ok();
 	}
 
+	public String getFunctionSource() {
+		return getSource(getFunctionDeclaration());
+	}
+	
 	@Override
 	public String key() {
-		if (isAnonymous()) {
-			int index = countAnonymousFunctions(getChildren())[1];
-			return "<" + index + ">";
-		} else {
-			return getFunctionDeclaration().getName().getIdentifier();
+		if (subkey == null) {
+			if (isAnonymous()) {
+				int index = countAnonymousFunctions(getParent().getChildren())[1];
+				subkey =  "<" + index + ">";
+			} else {
+				subkey = getFunctionDeclaration().getName().getIdentifier();
+			}
 		}
+		
+		return constructKey(subkey);
 	}
 }

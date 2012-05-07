@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.core.resources.IFile;
@@ -31,8 +32,6 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jface.text.Position;
-import org.eclipse.wst.jsdt.core.IJavaScriptUnit;
 import org.eclipse.wst.jsdt.core.dom.AST;
 import org.eclipse.wst.jsdt.core.dom.ASTNode;
 import org.eclipse.wst.jsdt.core.dom.ASTParser;
@@ -57,16 +56,10 @@ import org.eclipse.wst.jsdt.core.dom.SwitchStatement;
 import org.eclipse.wst.jsdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.wst.jsdt.core.dom.WhileStatement;
 import org.eclipse.wst.jsdt.core.dom.WithStatement;
-import org.eclipse.wst.jsdt.web.core.javascript.IJsTranslation;
-import org.eclipse.wst.jsdt.web.core.javascript.JsTranslationAdapter;
-import org.eclipse.wst.jsdt.web.core.javascript.JsTranslationAdapterFactory;
 import org.eclipse.wst.jsdt.web.core.javascript.JsTranslator;
 import org.eclipse.wst.sse.core.StructuredModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IModelManager;
-import org.eclipse.wst.sse.core.internal.provisional.IStructuredModel;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
-import org.eclipse.wst.xml.core.internal.provisional.document.IDOMDocument;
-import org.eclipse.wst.xml.core.internal.provisional.document.IDOMModel;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
@@ -77,10 +70,14 @@ import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.templates.Template;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.hotreplace.FileRedefinable;
+import com.mobilesorcery.sdk.html5.debug.hotreplace.FunctionRedefinable;
+import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
 
 public class JSODDSupport {
 
 	private static final String DROP_TO_FRAME = "drop.to.frame";
+	private static final String EDIT_AND_CONTINUE = "edit.continue";
 
 	private class Position {
 		private final ASTNode node;
@@ -94,26 +91,43 @@ public class JSODDSupport {
 		}
 
 		public int getLine() {
-			return unit.getLineNumber(getPosition());
+			// Special case since JSDT and 'my' positions are offset by 1...
+			// TODO: Reconcile these models, but only once everything works
+			// to satisfaction.
+			int pos = getPosition();
+			if (pos >= unit.getLength()) {
+				return unit.getLineNumber(unit.getLength() - 1);
+			}
+			return unit.getLineNumber(pos);
 		}
 
 		public int getColumn() {
-			return unit.getColumnNumber(getPosition());
+			int pos = getPosition();
+			if (pos >= unit.getLength()) {
+				return unit.getColumnNumber(unit.getLength() - 1) + 1;
+			}
+			return unit.getColumnNumber(pos);
 		}
 
 		public int getPosition() {
-			return before ? node.getStartPosition() : (node.getStartPosition() + node.getLength());
+			return before ? node.getStartPosition()
+					: (node.getStartPosition() + node.getLength());
 		}
 	}
 
-	// TODO: Now we always keep the entire source tree in memory -- not necessarily a good thing...
-	public class DebugRewriteOperationVisitor extends ASTVisitor implements IProvider<String, ASTNode> {
-		
+	// TODO: Now we always keep the entire source tree in memory -- not
+	// necessarily a good thing...
+	public class DebugRewriteOperationVisitor extends ASTVisitor implements
+			IProvider<String, ASTNode> {
+
 		private static final String EVAL_FUNC_SNIPPET = "function(____eval) {return eval(____eval);}";
-		
+
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> statementsToRewrite = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPreambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPostambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
+		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> editAndContinuePreambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
+		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> editAndContinuePostambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
+
 		private final HashMap<ASTNode, String> functionNames = new HashMap<ASTNode, String>();
 		private final TreeMap<Integer, Integer> movedSourceMap = new TreeMap<Integer, Integer>();
 
@@ -121,14 +135,20 @@ public class JSODDSupport {
 		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
 		private LocalVariableScope currentScope = new LocalVariableScope()
 				.nestScope();
+		private final Stack<IRedefinable> redefinableStack = new Stack<IRedefinable>();
 		private final TreeMap<Integer, LocalVariableScope> localVariables = new TreeMap<Integer, LocalVariableScope>();
 		private final HashSet<Integer> debuggerStatements = new HashSet<Integer>();
 		private final HashSet<ASTNode> exclusions = new HashSet<ASTNode>();
 		private final HashSet<ASTNode> blockifiables = new HashSet<ASTNode>();
 		private final TreeMap<Integer, List<String>> insertions = new TreeMap<Integer, List<String>>();
 		private final HashMap<ASTNode, JavaScriptUnit> nodeToUnitMap = new HashMap<ASTNode, JavaScriptUnit>();
+		private final HashMap<ASTNode, String> nodeRedefinables = new HashMap<ASTNode, String>();
+		private final HashMap<String, IRedefinable> redefinables = new HashMap<String, IRedefinable>();
+
 		private TreeSet<Integer> scopeResetPoints;
 		private String instrumented;
+
+		private String originalSource;
 
 		@Override
 		public void preVisit(ASTNode node) {
@@ -157,8 +177,15 @@ public class JSODDSupport {
 							.addLocalVariableDeclaration(name);
 				}
 				SimpleName functionName = fd.getName();
-				String functionIdentifier = functionName == null ? "<anonymous>"
+				boolean isAnonymous = functionName == null;
+				String functionIdentifier = isAnonymous ? "<anonymous>"
 						: functionName.getIdentifier();
+				if (!isAnonymous) {
+					addStatementInstrumentationLocation(unit, fd,
+							editAndContinuePreambles, true);
+					addStatementInstrumentationLocation(unit, fd,
+							editAndContinuePostambles, false);
+				}
 				Block body = fd.getBody();
 				List statements = body.statements();
 				boolean emptyFunction = statements.isEmpty();
@@ -181,6 +208,10 @@ public class JSODDSupport {
 				// stop here -- will make stepping etc more useful.
 				addStatementInstrumentationLocation(unit, lastStatement,
 						statementsToRewrite, false);
+
+				// Add this to the set of redefinables
+				pushRedefinable(new FunctionRedefinable(currentRedefinable(),
+						this, node), fd);
 
 				// Already nested!
 				nest = false;
@@ -237,6 +268,41 @@ public class JSODDSupport {
 			if (currentScope != startScope) {
 				localVariables.put(start, currentScope);
 			}
+		}
+
+		@Override
+		public void postVisit(ASTNode node) {
+			LocalVariableScope startScope = currentScope;
+			boolean unnest = isNestStatement(node);
+
+			if (node instanceof FunctionDeclaration) {
+				popRedefinable();
+			}
+
+			if (node instanceof VariableDeclarationFragment) {
+				VariableDeclarationFragment localVar = (VariableDeclarationFragment) node;
+				String name = localVar.getName().getIdentifier();
+				currentScope = currentScope.addLocalVariableDeclaration(name);
+			}
+
+			if (node instanceof JavaScriptUnit) {
+				unit = null;
+			}
+
+			if (node instanceof Statement) {
+				statementStack.pop();
+			}
+
+			if (unnest) {
+				currentScope = currentScope.unnestScope();
+			}
+
+			if (currentScope != startScope) {
+				int end = getStartPosition(node) + getLength(node);
+				localVariables.put(end, currentScope);
+			}
+
+			exclusions.remove(node);
 		}
 
 		private boolean isNestStatement(ASTNode node) {
@@ -347,37 +413,6 @@ public class JSODDSupport {
 			return allowInstrumentation;
 		}
 
-		@Override
-		public void postVisit(ASTNode node) {
-			LocalVariableScope startScope = currentScope;
-			boolean unnest = isNestStatement(node);
-
-			if (node instanceof VariableDeclarationFragment) {
-				VariableDeclarationFragment localVar = (VariableDeclarationFragment) node;
-				String name = localVar.getName().getIdentifier();
-				currentScope = currentScope.addLocalVariableDeclaration(name);
-			}
-
-			if (node instanceof JavaScriptUnit) {
-				unit = null;
-			}
-
-			if (node instanceof Statement) {
-				statementStack.pop();
-			}
-
-			if (unnest) {
-				currentScope = currentScope.unnestScope();
-			}
-
-			if (currentScope != startScope) {
-				int end = getStartPosition(node) + getLength(node);
-				localVariables.put(end, currentScope);
-			}
-
-			exclusions.remove(node);
-		}
-
 		private void insert(Position position, String text) {
 			int pos = position.getPosition();
 			List<String> insertionsForPosition = insertions.get(pos);
@@ -389,24 +424,32 @@ public class JSODDSupport {
 			insertionsForPosition.add(text);
 		}
 
-		public void rewrite(long fileId, String originalSource, String prunedSource, Writer output,
-				NavigableMap<Integer, LocalVariableScope> scopeMap, HashMap<String, IRedefinable> redefinables)
-				throws IOException {
+		public void rewrite(long fileId, String originalSource,
+				String prunedSource, Writer output,
+				NavigableMap<Integer, LocalVariableScope> scopeMap) throws IOException {
 			// TODO: I guess there are some better AST rewrite methods around.
+			// Or... never mind, I've invested way too much time in this :)
 			LineMap lineByLinePrunedSource = new LineMap(prunedSource);
 			LineMap lineByLineOriginalSource = new LineMap(originalSource);
 
+			this.originalSource = originalSource;
+
 			int lineNo = 1;
-			int lineCount =  lineByLinePrunedSource.getLineCount();
+			int lineCount = lineByLinePrunedSource.getLineCount();
 			for (int i = 0; i < lineCount; i++) {
 				insertFunctionPreamble(fileId, lineNo, lineByLineOriginalSource);
-				insertInstrumentedStatement(fileId, lineNo, lineByLineOriginalSource);
+				insertEditAndContinuePreamble(lineNo);
+				insertInstrumentedStatement(fileId, lineNo,
+						lineByLineOriginalSource);
 				insertFunctionPostamble(fileId, lineNo);
+				insertEditAndContinuePostamble(lineNo);
 				lineNo++;
 			}
 
-			for (Map.Entry<Integer, LocalVariableScope> scope : localVariables.entrySet()) {
-				int mappedLineNo = lineByLineOriginalSource.getLine(scope.getKey());
+			for (Map.Entry<Integer, LocalVariableScope> scope : localVariables
+					.entrySet()) {
+				int mappedLineNo = lineByLineOriginalSource.getLine(scope
+						.getKey());
 				scopeMap.put(mappedLineNo, scope.getValue());
 			}
 
@@ -414,11 +457,12 @@ public class JSODDSupport {
 
 			int prevPos = 0;
 			int posDelta = 0;
-			for (Map.Entry<Integer, List<String>> insertion : insertions.entrySet()) {
+			for (Map.Entry<Integer, List<String>> insertion : insertions
+					.entrySet()) {
 				Integer pos = insertion.getKey();
 				List<String> insertionsAtPos = insertion.getValue();
 				result.append(originalSource.substring(prevPos, pos));
-				String insertionStr = Util.join(insertionsAtPos.toArray(), ""); 
+				String insertionStr = Util.join(insertionsAtPos.toArray(), "");
 				result.append(insertionStr);
 				prevPos = pos;
 				posDelta += insertionStr.length();
@@ -431,7 +475,72 @@ public class JSODDSupport {
 			}
 		}
 
-		private void insertFunctionPreamble(long fileId, int lineNo, LineMap lineMap) {
+		private void insertEditAndContinuePreamble(int lineNo) {
+			if (!supports(EDIT_AND_CONTINUE)) {
+				return;
+			}
+			Collection<Pair<ASTNode, Boolean>> nodeList = editAndContinuePreambles
+					.get(lineNo);
+			if (nodeList == null) {
+				return;
+			}
+
+			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
+				FunctionDeclaration fd = (FunctionDeclaration) nodePosition.first;
+				Position position = position(fd, true);
+				// Not anonymous = getName returns something.
+				String name = fd.getName().getIdentifier();
+				int fdStart = fd.getStartPosition();
+				int bodyStart = fd.getBody().getStartPosition();
+				String signature = originalSource.substring(fdStart, bodyStart);
+				String functionRef = name + ".____yaloid";
+				String redefineKey = nodeRedefinables.get(fd);
+				String preamble = signature + "{\nif(!" + functionRef + ") { "
+						+ "var ____unevaled=MoSyncDebugProtocol.yaloid(\""
+						+ redefineKey + "\");\n" + "if (____unevaled){\n"
+						+ "eval(\"" + functionRef + "=\" + ____unevaled);}\n" + "if(typeof " + functionRef + " !== \'function\')\n"
+						+ "{" + functionRef + "=";
+				insert(position, preamble);
+			}
+
+		}
+
+		private void insertEditAndContinuePostamble(int lineNo) {
+			if (!supports(EDIT_AND_CONTINUE)) {
+				return;
+			}
+			Collection<Pair<ASTNode, Boolean>> nodeList = editAndContinuePostambles
+					.get(lineNo);
+			if (nodeList == null) {
+				return;
+			}
+
+			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
+				FunctionDeclaration fd = (FunctionDeclaration) nodePosition.first;
+				Position position = position(fd, false);
+				String name = fd.getName().getIdentifier();
+				List parameters = fd.parameters();
+				String[] parameterNames = new String[parameters.size()];
+				for (int i = 0; i < parameterNames.length; i++) {
+					SingleVariableDeclaration parameter = (SingleVariableDeclaration) parameters
+							.get(i);
+					String parameterName = parameter.getName().getIdentifier();
+					parameterNames[i] = parameterName;
+				}
+				String redefineKey = nodeRedefinables.get(fd);
+				String functionRef = name + ".____yaloid";
+				String postamble = ";}"
+						+ "MoSyncDebugProtocol.registerFunction(\""
+						+ redefineKey + "\"," + name + ");}\n"
+						+ functionRef + "(" + Util.join(parameterNames, ",")
+						+ ");\n}";
+				insert(position, postamble);
+			}
+
+		}
+
+		private void insertFunctionPreamble(long fileId, int lineNo,
+				LineMap lineMap) {
 			Collection<Pair<ASTNode, Boolean>> nodeList = functionPreambles
 					.get(lineNo);
 			if (nodeList == null) {
@@ -465,19 +574,22 @@ public class JSODDSupport {
 			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
 				ASTNode node = nodePosition.first;
 				Position position = position(node, false);
-				insert(position, "}" + "catch (anException) {"
-						+ "if (!anException.alreadyThrown && !anException.dropToFrame) {"
-						+ "anException = MoSyncDebugProtocol.reportException(anException, " + lineNo + "," + EVAL_FUNC_SNIPPET + ");"
-						+ "} anException.alreadyThrown = true;"
-						+ "if (!anException.dropToFrame) {"
-						+ "throw anException;}else{"
-						+ "if (anException.expression) {"
-						+ "eval(anException.expression);}"
-						+ "}} finally {"
-						+ "MoSyncDebugProtocol.popStack();"
-						+ "}");
+				insert(position,
+						"}"
+								+ "catch (anException) {"
+								+ "if (!anException.alreadyThrown && !anException.dropToFrame) {"
+								+ "anException = MoSyncDebugProtocol.reportException(anException, "
+								+ lineNo + "," + EVAL_FUNC_SNIPPET + ");"
+								+ "} anException.alreadyThrown = true;"
+								+ "if (!anException.dropToFrame) {"
+								+ "throw anException;}else{"
+								+ "if (anException.expression) {"
+								+ "eval(anException.expression);}"
+								+ "}} finally {"
+								+ "MoSyncDebugProtocol.popStack();" + "}");
 				if (supports(DROP_TO_FRAME)) {
-					insert(position, "} while (MoSyncDebugProtocol.dropToFrame());");
+					insert(position,
+							"} while (MoSyncDebugProtocol.dropToFrame());");
 				}
 				if (shouldBlockify(node)) {
 					insert(position, "}");
@@ -493,7 +605,8 @@ public class JSODDSupport {
 			return new Position(node, unit, start);
 		}
 
-		private void insertInstrumentedStatement(long fileId, int lineNo, LineMap lineMap) {
+		private void insertInstrumentedStatement(long fileId, int lineNo,
+				LineMap lineMap) {
 			List<Pair<ASTNode, Boolean>> nodeList = statementsToRewrite
 					.get(lineNo);
 
@@ -501,14 +614,20 @@ public class JSODDSupport {
 				TreeMap<Integer, Pair<ASTNode, Boolean>> nodesToInstrument = new TreeMap<Integer, Pair<ASTNode, Boolean>>();
 				// Max 1 instrumentation per line.
 				for (Pair<ASTNode, Boolean> node : nodeList) {
-					int mappedLineNo = lineMap.getLine(position(node.first, node.second).getPosition());
-					Pair<ASTNode, Boolean> nodeToInstrument = nodesToInstrument.get(mappedLineNo);
-					if (nodeToInstrument == null || position(nodeToInstrument.first, nodeToInstrument.second).getPosition() > position(node.first, node.second).getPosition()) {
+					int mappedLineNo = lineMap.getLine(position(node.first,
+							node.second).getPosition());
+					Pair<ASTNode, Boolean> nodeToInstrument = nodesToInstrument
+							.get(mappedLineNo);
+					if (nodeToInstrument == null
+							|| position(nodeToInstrument.first,
+									nodeToInstrument.second).getPosition() > position(
+									node.first, node.second).getPosition()) {
 						nodesToInstrument.put(mappedLineNo, node);
 					}
 				}
 
-				for (Map.Entry<Integer, Pair<ASTNode, Boolean>> nodePosition : nodesToInstrument.entrySet()) {
+				for (Map.Entry<Integer, Pair<ASTNode, Boolean>> nodePosition : nodesToInstrument
+						.entrySet()) {
 					ASTNode node = nodePosition.getValue().first;
 					boolean before = nodePosition.getValue().second;
 
@@ -530,10 +649,9 @@ public class JSODDSupport {
 							.contains(lineNo);
 
 					String addThis = scopeDesc
-							+ " MoSyncDebugProtocol.updatePosition(" + fileId + ","
-							+ mappedLineNo + "," + isDebuggerStatement + ","
-							+ EVAL_FUNC_SNIPPET + ");"
-							+ "\n";
+							+ " MoSyncDebugProtocol.updatePosition(" + fileId
+							+ "," + mappedLineNo + "," + isDebuggerStatement
+							+ "," + EVAL_FUNC_SNIPPET + ");" + "\n";
 					insert(position(node, before), addThis);
 				}
 			}
@@ -542,21 +660,44 @@ public class JSODDSupport {
 		public void setScopeResetPoints(TreeSet<Integer> scopeResetPoints) {
 			this.scopeResetPoints = new TreeSet<Integer>(scopeResetPoints);
 		}
-		
+
+		private void pushRedefinable(IRedefinable redefinable, ASTNode node) {
+			redefinables.put(redefinable.key(), redefinable);
+			if (node != null) {
+				nodeRedefinables.put(node, redefinable.key());
+			}
+			redefinableStack.push(redefinable);
+		}
+
+		private IRedefinable popRedefinable() {
+			return redefinableStack.pop();
+		}
+
+		private IRedefinable currentRedefinable() {
+			return redefinableStack.peek();
+		}
+
 		public String get(ASTNode node) {
 			Position startPos = position(node, true);
 			Position endPos = position(node, false);
 			int start = startPos.getPosition();
 			int end = endPos.getPosition();
-			Entry<Integer, Integer> startDeltaEntry = movedSourceMap.floorEntry(start - 1);
-			Entry<Integer, Integer> endDeltaEntry = movedSourceMap.floorEntry(end);
-			int startDelta = startDeltaEntry == null ? 0 : startDeltaEntry.getValue();
+			Entry<Integer, Integer> startDeltaEntry = movedSourceMap
+					.floorEntry(start - 1);
+			Entry<Integer, Integer> endDeltaEntry = movedSourceMap
+					.floorEntry(end);
+			int startDelta = startDeltaEntry == null ? 0 : startDeltaEntry
+					.getValue();
 			int endDelta = endDeltaEntry == null ? 0 : endDeltaEntry.getValue();
-			return instrumented.substring(start + startDelta, end + endDelta - (start + startDelta));
+			return instrumented.substring(start + startDelta, end + endDelta);
 		}
 
 		public String getInstrumentedSource() {
 			return instrumented;
+		}
+
+		public void setFileRedefinable(FileRedefinable file) {
+			pushRedefinable(file, null);
 		}
 	}
 
@@ -564,7 +705,8 @@ public class JSODDSupport {
 	public static final String SERVER_PORT_PROP = "SERVER_PORT";
 	public static final String PROJECT_NAME_PROP = "PROJECT_NAME";
 
-	private static final Map<String, IRedefinable> EMPTY = Collections.emptyMap();
+	private static final Map<String, IRedefinable> EMPTY = Collections
+			.emptyMap();
 
 	private final ASTParser parser;
 
@@ -572,7 +714,10 @@ public class JSODDSupport {
 	private final TreeMap<Long, IPath> reverseFileIds = new TreeMap<Long, IPath>();
 	private final HashMap<Long, NavigableMap<Integer, LocalVariableScope>> scopeMaps = new HashMap<Long, NavigableMap<Integer, LocalVariableScope>>();
 	private final HashMap<IFile, String> instrumentedSource = new HashMap<IFile, String>();
-	
+	private HashMap<IPath, Map<String, IRedefinable>> redefinables = new HashMap<IPath, Map<String, IRedefinable>>();
+
+	private CopyOnWriteArrayList<IRedefineListener> redefineListeners = new CopyOnWriteArrayList<IRedefineListener>();
+
 	private long currentFileId = 0;
 
 	private final IProject project;
@@ -584,6 +729,7 @@ public class JSODDSupport {
 	}
 
 	public boolean supports(String feature) {
+		// TODO: Prefs!?
 		return true;
 	}
 
@@ -622,37 +768,43 @@ public class JSODDSupport {
 		return result[0];
 	}
 
-	public Map<String, IRedefinable> rewrite(IPath filePath, Writer output) throws CoreException {
+	public FileRedefinable rewrite(IPath filePath, Writer output)
+			throws CoreException {
 		try {
-			if (!isValidJavaScriptFile(filePath)) {
-				return EMPTY;
-			}
 
 			IFile file = (IFile) ResourcesPlugin.getWorkspace().getRoot()
 					.findMember(filePath);
 			File absoluteFile = file.getLocation().toFile();
+			FileRedefinable fileRedefinable = new FileRedefinable(null, file);
 
-			String source = Util.readFile(absoluteFile.getAbsolutePath());
-			String prunedSource = source;
-			TreeSet<Integer> scopeResetPoints = new TreeSet<Integer>();
+			if (isValidJavaScriptFile(filePath)) {
+				String source = Util.readFile(absoluteFile.getAbsolutePath());
+				String prunedSource = source;
+				TreeSet<Integer> scopeResetPoints = new TreeSet<Integer>();
 
-			if (isEmbeddedJavaScriptFile(filePath)) {
-				prunedSource = getEmbeddedJavaScript(file, scopeResetPoints);
+				if (isEmbeddedJavaScriptFile(filePath)) {
+					prunedSource = getEmbeddedJavaScript(file, scopeResetPoints);
+				}
+
+				// 1. Parse (JSDT)
+				parser.setSource(prunedSource.toCharArray());
+				ASTNode ast = parser.createAST(new NullProgressMonitor());
+
+				// 2. Instrument
+				DebugRewriteOperationVisitor visitor = new DebugRewriteOperationVisitor();
+				visitor.setFileRedefinable(fileRedefinable);
+				visitor.setScopeResetPoints(scopeResetPoints);
+				ast.accept(visitor);
+				long fileId = assignFileId(filePath);
+				TreeMap<Integer, LocalVariableScope> scopeMap = new TreeMap<Integer, LocalVariableScope>();
+				visitor.rewrite(fileId, source, prunedSource, output, scopeMap);
+
+				// 3. Update state and notify listeners
+				String instrumentedSource = visitor.getInstrumentedSource();
+				this.instrumentedSource.put(file, instrumentedSource);
+				scopeMaps.put(fileId, scopeMap);
 			}
-
-			parser.setSource(prunedSource.toCharArray());
-			ASTNode ast = parser.createAST(new NullProgressMonitor());
-			DebugRewriteOperationVisitor visitor = new DebugRewriteOperationVisitor();
-			visitor.setScopeResetPoints(scopeResetPoints);
-			ast.accept(visitor);
-			long fileId = assignFileId(filePath);
-			TreeMap<Integer, LocalVariableScope> scopeMap = new TreeMap<Integer, LocalVariableScope>();
-			HashMap<String, IRedefinable> result = new HashMap<String, IRedefinable>();
-			visitor.rewrite(fileId, source, prunedSource, output, scopeMap, result);
-			String instrumentedSource = visitor.getInstrumentedSource();
-			this.instrumentedSource.put(file, instrumentedSource);
-			scopeMaps.put(fileId, scopeMap);
-			return result;
+			return fileRedefinable;
 		} catch (CoreException e) {
 			throw e;
 		} catch (Exception e) {
@@ -661,15 +813,17 @@ public class JSODDSupport {
 		}
 	}
 
-	// Returns a string where everything that is not javascript is replace by spaces
-	private String getEmbeddedJavaScript(IFile file, NavigableSet<Integer> scopeResetPoints) throws IOException, CoreException, InterruptedException {
+	// Returns a string where everything that is not javascript is replace by
+	// spaces
+	private String getEmbeddedJavaScript(IFile file,
+			NavigableSet<Integer> scopeResetPoints) throws IOException,
+			CoreException, InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(1);
-		IModelManager modelManager = StructuredModelManager
-				.getModelManager();
+		IModelManager modelManager = StructuredModelManager.getModelManager();
 		IStructuredDocument doc = modelManager
 				.createStructuredDocumentFor(file);
-		JsTranslator translator = new JsTranslator(doc, file
-				.getFullPath().toOSString()) {
+		JsTranslator translator = new JsTranslator(doc, file.getFullPath()
+				.toOSString()) {
 			@Override
 			public void finishedTranslation() {
 				super.finishedTranslation();
@@ -680,7 +834,8 @@ public class JSODDSupport {
 		latch.await();
 		// This is because we parse embedded js as one file; we need to know
 		// where to reset the scopes. Overly complicated...
-		org.eclipse.jface.text.Position[] htmlLocations = translator.getHtmlLocations();
+		org.eclipse.jface.text.Position[] htmlLocations = translator
+				.getHtmlLocations();
 		for (org.eclipse.jface.text.Position htmlLocation : htmlLocations) {
 			scopeResetPoints.add(htmlLocation.offset);
 		}
@@ -807,4 +962,5 @@ public class JSODDSupport {
 	public String getInstrumentedSource(IFile file) {
 		return instrumentedSource.get(file);
 	}
+
 }

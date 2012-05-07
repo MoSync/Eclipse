@@ -129,8 +129,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			 * boilerplateOutput); } finally {
 			 * Util.safeClose(boilerplateOutput); } }
 			 */
-			final JSODDSupport op = Html5Plugin.getDefault().getJSODDSupport(
-					project);
+			final JSODDSupport op = Html5Plugin.getDefault().getJSODDSupport(project);
 
 			// If we've changed the IP addr, then rebuild it all...
 			if (updateServerProps(op)) {

@@ -2,36 +2,33 @@ package com.mobilesorcery.sdk.html5.debug;
 
 import java.util.List;
 
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
 
 public interface IRedefinable {
 
 	/**
-	 * A 'primary key' of this {@link IRedefinable}.
-	 * To be able to redefine, the primary key of
-	 * this {@link IRedefinable} and another must match.
+	 * A 'primary key' of this {@link IRedefinable}. To be able to redefine, the
+	 * primary key of this {@link IRedefinable} and another must match.
+	 * 
 	 * @return
 	 */
 	public String key();
-	
+
 	/**
-	 * Returns {@code true} if {@code peer} can be redefined.
-	 * It can be redefined if it has a {@link #key()} equal
-	 * to this {@link #key()},
-	 * and if the actual contents of the two {@link IRedefinable}s
-	 * differ. If {@link peer} is {@code null}, this method
-	 * returns {@code true}.
-	 * @param toBeRedefined
-	 * @param inPlace
-	 * @return
+	 * Performs a redefinition; this method delegates to a {@link IRedefinable}
+	 * and traverses the tree of child redefinitions.
+	 * @see IRedefiner
+	 * @param replacement
+	 * @param redefiner
 	 */
-	public boolean canRedefine(IRedefinable toBeRedefined, boolean inPlace);
-	
-	public void redefine(IRedefinable toBeRedefined, boolean inPlace) throws RedefineException;
-	
+	public void redefine(IRedefinable replacement, IRedefiner redefiner);
+
 	public List<IRedefinable> getChildren();
-	
+
 	public IRedefinable getParent();
 
 	public void addChild(IRedefinable child);
-	
+
+	public IRedefinable getChild(String key);
+
 }

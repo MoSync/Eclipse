@@ -1,20 +1,10 @@
 package com.mobilesorcery.sdk.html5.debug.jsdt;
 
-import java.text.MessageFormat;
-
 import org.eclipse.debug.core.DebugException;
-import org.eclipse.debug.core.commands.IDebugCommandRequest;
-import org.eclipse.debug.core.commands.IDropToFrameHandler;
-import org.eclipse.debug.core.commands.IEnabledStateRequest;
 import org.eclipse.debug.core.model.IDropToFrame;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IThread;
-import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
-import org.eclipse.wst.jsdt.debug.core.model.IJavaScriptDebugTarget;
 import org.eclipse.wst.jsdt.debug.core.model.IJavaScriptStackFrame;
-import org.eclipse.wst.jsdt.debug.core.model.IJavaScriptThread;
-import org.eclipse.wst.jsdt.debug.internal.core.model.JavaScriptDebugTarget;
-import org.eclipse.wst.jsdt.debug.internal.core.model.JavaScriptStackFrame;
 
 public class ReloadDropToFrame implements IDropToFrame {
 

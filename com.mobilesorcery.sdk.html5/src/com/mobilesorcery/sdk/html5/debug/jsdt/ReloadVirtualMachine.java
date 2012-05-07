@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
@@ -42,9 +43,13 @@ import org.json.simple.JSONObject;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.IRedefinable;
+import com.mobilesorcery.sdk.html5.debug.IRedefineListener;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.LocalVariableScope;
+import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
 import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
 import com.mobilesorcery.sdk.html5.live.LiveServer;
 
@@ -60,6 +65,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	private IProject project;
 	private ReloadThreadReference mainThread;
 	private boolean isTerminated = false;
+	private ProjectRedefinable snapshot;
 
 	public ReloadVirtualMachine(int port) throws Exception {
 		// TODO: PORT
@@ -263,10 +269,30 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	 * @param resourcePath The resource to upload, relative
 	 * to the project's HTML5 location
 	 * @param reloadHint If applicable; whether to reload the page
+	 * @return {@code true} If this virtual machine accepted the
+	 * file for updating.
 	 */
-	public void update(String resourcePath, boolean reloadHint) {
-		server.update(currentSessionId, resourcePath, reloadHint);
+	public boolean update(IFile resource) {
+		boolean doUpdate = resource != null && resource.getProject().equals(project);
+		if (doUpdate) {
+			server.update(currentSessionId, resource);
+		}
+		return doUpdate;
 	}
+	
+	public void reload() {
+		server.reload(currentSessionId);
+	}
+	
+	/**
+	 * Updates a function reference on the client.
+	 * @param key
+	 * @param source
+	 */
+	public void updateFunction(String key, String source) {
+		server.updateFunction(currentSessionId, key, source);
+	}
+
 
 	@Override
 	public void received(String command, JSONObject json) {
@@ -328,6 +354,18 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	public ReloadThreadReference mainThread() {
 		return mainThread;
+	}
+
+	public void dropToFrame(int dropToFrame) {
+		// TODO: Blah blah
+	}
+
+	public ProjectRedefinable getSnapshot() {
+		return snapshot;
+	}
+
+	public void setSnapshot(ProjectRedefinable snapshot) {
+		this.snapshot = snapshot;
 	}
 
 }

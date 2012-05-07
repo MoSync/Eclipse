@@ -44,6 +44,10 @@ public class ReloadStackFrame implements StackFrame {
 		init(suspendCommand, ix);
 	}
 
+	public int getStackDepth() {
+		return stackDepth;
+	}
+	
 	private void init(JSONObject suspended, int ix) {
 		int line = ((Long) suspended.get("line")).intValue();
 		JSONArray stack = (JSONArray) suspended.get("stack");
