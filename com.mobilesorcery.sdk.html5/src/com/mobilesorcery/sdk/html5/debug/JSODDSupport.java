@@ -32,6 +32,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.wst.jsdt.core.IJavaScriptUnit;
 import org.eclipse.wst.jsdt.core.dom.AST;
 import org.eclipse.wst.jsdt.core.dom.ASTNode;
 import org.eclipse.wst.jsdt.core.dom.ASTParser;
@@ -73,60 +74,31 @@ import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FileRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FunctionRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
+import com.mobilesorcery.sdk.html5.debug.rewrite.FunctionRewrite;
+import com.mobilesorcery.sdk.html5.debug.rewrite.ISourceSupport;
+import com.mobilesorcery.sdk.html5.debug.rewrite.NodeRewrite;
+import com.mobilesorcery.sdk.html5.debug.rewrite.StatementRewrite;
 
 public class JSODDSupport {
 
-	private static final String DROP_TO_FRAME = "drop.to.frame";
-	private static final String EDIT_AND_CONTINUE = "edit.continue";
-
-	private class Position {
-		private final ASTNode node;
-		private final JavaScriptUnit unit;
-		private final boolean before;
-
-		public Position(ASTNode node, JavaScriptUnit unit, boolean before) {
-			this.node = node;
-			this.unit = unit;
-			this.before = before;
-		}
-
-		public int getLine() {
-			// Special case since JSDT and 'my' positions are offset by 1...
-			// TODO: Reconcile these models, but only once everything works
-			// to satisfaction.
-			int pos = getPosition();
-			if (pos >= unit.getLength()) {
-				return unit.getLineNumber(unit.getLength() - 1);
-			}
-			return unit.getLineNumber(pos);
-		}
-
-		public int getColumn() {
-			int pos = getPosition();
-			if (pos >= unit.getLength()) {
-				return unit.getColumnNumber(unit.getLength() - 1) + 1;
-			}
-			return unit.getColumnNumber(pos);
-		}
-
-		public int getPosition() {
-			return before ? node.getStartPosition()
-					: (node.getStartPosition() + node.getLength());
-		}
-	}
+	public static final String DROP_TO_FRAME = "drop.to.frame";
+	public static final String EDIT_AND_CONTINUE = "edit.continue";
+	public static final String LINE_BREAKPOINTS = "line.breakpoint";
+	
+	public static final String EVAL_FUNC_SNIPPET = "function(____eval) {return eval(____eval);}";
 
 	// TODO: Now we always keep the entire source tree in memory -- not
 	// necessarily a good thing...
 	public class DebugRewriteOperationVisitor extends ASTVisitor implements
-			IProvider<String, ASTNode> {
-
-		private static final String EVAL_FUNC_SNIPPET = "function(____eval) {return eval(____eval);}";
+			ISourceSupport {
 
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> statementsToRewrite = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPreambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPostambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> editAndContinuePreambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> editAndContinuePostambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
+		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> dropToFramePreambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
+		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> dropToFramePostambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 
 		private final HashMap<ASTNode, String> functionNames = new HashMap<ASTNode, String>();
 		private final TreeMap<Integer, Integer> movedSourceMap = new TreeMap<Integer, Integer>();
@@ -148,7 +120,11 @@ public class JSODDSupport {
 		private TreeSet<Integer> scopeResetPoints;
 		private String instrumented;
 
+		private HashMap<ASTNode, NodeRewrite> rewrites = new HashMap<ASTNode, NodeRewrite>();
+		
 		private String originalSource;
+		private long fileId;
+		private Set<Integer> instrumentedLines = new HashSet<Integer>();
 
 		@Override
 		public void preVisit(ASTNode node) {
@@ -176,32 +152,26 @@ public class JSODDSupport {
 					currentScope = currentScope
 							.addLocalVariableDeclaration(name);
 				}
+				
 				SimpleName functionName = fd.getName();
-				boolean isAnonymous = functionName == null;
+				boolean isAnonymous = isAnonymous(fd);
 				String functionIdentifier = isAnonymous ? "<anonymous>"
 						: functionName.getIdentifier();
-				if (!isAnonymous) {
-					addStatementInstrumentationLocation(unit, fd,
-							editAndContinuePreambles, true);
-					addStatementInstrumentationLocation(unit, fd,
-							editAndContinuePostambles, false);
-				}
-				Block body = fd.getBody();
-				List statements = body.statements();
-				boolean emptyFunction = statements.isEmpty();
-				if (statements.isEmpty()) {
-					// Small hack here to work with nodes rather than file
-					// positions...
-					forceBlockify(body);
-				}
+				
+				rewrites.put(fd, new FunctionRewrite(this, fd, fileId, nodeRedefinables));
+				
+				addStatementInstrumentationLocation(unit, fd,
+						editAndContinuePreambles, true);
+				addStatementInstrumentationLocation(unit, fd,
+						editAndContinuePostambles, false);
 
-				ASTNode firstStatement = emptyFunction ? body
-						: (ASTNode) statements.get(0);
+				Block body = fd.getBody();
+
+				ASTNode firstStatement = startOfFunction(fd);
 				addStatementInstrumentationLocation(unit, firstStatement,
 						functionPreambles, true);
 				functionNames.put(firstStatement, functionIdentifier);
-				ASTNode lastStatement = emptyFunction ? body
-						: (ASTNode) statements.get(statements.size() - 1);
+				ASTNode lastStatement = endOfFunction(fd);
 				addStatementInstrumentationLocation(unit, lastStatement,
 						functionPostambles, false);
 				// If the } is on a separate line, let's add an extra
@@ -209,6 +179,9 @@ public class JSODDSupport {
 				addStatementInstrumentationLocation(unit, lastStatement,
 						statementsToRewrite, false);
 
+				if (firstStatement instanceof Block && lastStatement instanceof Block) {
+					forceBlockify(body);
+				}
 				// Add this to the set of redefinables
 				pushRedefinable(new FunctionRedefinable(currentRedefinable(),
 						this, node), fd);
@@ -257,6 +230,7 @@ public class JSODDSupport {
 			}
 
 			if (isInstrumentableStatement(node)) {
+				rewrites.put(node, new StatementRewrite(this, node, fileId, localVariables, blockifiables, instrumentedLines));
 				addStatementInstrumentationLocation(unit, node,
 						statementsToRewrite, true);
 			}
@@ -268,6 +242,34 @@ public class JSODDSupport {
 			if (currentScope != startScope) {
 				localVariables.put(start, currentScope);
 			}
+		}
+		
+		private ASTNode startOfFunction(FunctionDeclaration fd) {
+			Block body = fd.getBody();
+			List statements = body.statements();
+			boolean useBody = statements.isEmpty();
+			return (ASTNode) (useBody ? body : statements.get(0));
+		}
+		
+		private ASTNode endOfFunction(FunctionDeclaration fd) {
+			Block body = fd.getBody();
+			List statements = body.statements();
+			boolean useBody = statements.isEmpty();
+			return (ASTNode) (useBody ? body : statements.get(statements.size() - 1));
+		}
+		
+		private Position functionPosition(ASTNode node, boolean start) {
+			boolean emptyBody = node.getParent() instanceof FunctionDeclaration;
+
+			Position pos = getPosition(node, start && !emptyBody);
+			// We always use the last }, since there is no comments or
+			// anything that can ruin or position.
+			int offset = emptyBody ? -1 : 0;
+			return pos.offset(offset);
+		}
+
+		private boolean isAnonymous(FunctionDeclaration fd) {
+			return fd.getName() == null;
 		}
 
 		@Override
@@ -387,7 +389,7 @@ public class JSODDSupport {
 
 			nodeToUnitMap.put(node, unit);
 
-			Position pos = position(node, before);
+			Position pos = getPosition(node, before);
 			int insertionLine = pos.getLine();
 			int insertionCol = pos.getColumn();
 
@@ -423,6 +425,10 @@ public class JSODDSupport {
 
 			insertionsForPosition.add(text);
 		}
+		
+		private void block(Position position, boolean start) {
+			insert(position, "\n" + (start ? '{' : '}') + "\n");
+		}
 
 		public void rewrite(long fileId, String originalSource,
 				String prunedSource, Writer output,
@@ -432,18 +438,22 @@ public class JSODDSupport {
 			LineMap lineByLinePrunedSource = new LineMap(prunedSource);
 			LineMap lineByLineOriginalSource = new LineMap(originalSource);
 
+			this.fileId = fileId;
+			
 			this.originalSource = originalSource;
 
 			int lineNo = 1;
 			int lineCount = lineByLinePrunedSource.getLineCount();
 			for (int i = 0; i < lineCount; i++) {
-				insertFunctionPreamble(fileId, lineNo, lineByLineOriginalSource);
+				/*insertFunctionBlockifier(lineNo, true);
 				insertEditAndContinuePreamble(lineNo);
+				insertFunctionPreamble(fileId, lineNo, lineByLineOriginalSource);
 				insertInstrumentedStatement(fileId, lineNo,
 						lineByLineOriginalSource);
 				insertFunctionPostamble(fileId, lineNo);
 				insertEditAndContinuePostamble(lineNo);
-				lineNo++;
+				//insertFunctionBlockifier(lineNo, true);
+				lineNo++;*/
 			}
 
 			for (Map.Entry<Integer, LocalVariableScope> scope : localVariables
@@ -470,15 +480,54 @@ public class JSODDSupport {
 			}
 			result.append(originalSource.substring(prevPos));
 			instrumented = result.toString();
+			
+			NodeRewrite rootRewrite = new NodeRewrite(this, null);
+			// Collect rewrites
+			for (ASTNode rewrittenNode : rewrites.keySet()) {
+				NodeRewrite parentRewrite = getClosestRewriteAncestor(rewrittenNode);
+				if (parentRewrite == null) {
+					parentRewrite = rootRewrite;
+				}
+				parentRewrite.addChild(rewrites.get(rewrittenNode));
+			}
+			
+			instrumented = rootRewrite.rewrite();
+			
 			if (output != null) {
 				output.write(instrumented);
 			}
 		}
+		
+		private NodeRewrite getClosestRewriteAncestor(ASTNode node) {
+			ASTNode parent = node.getParent();
+			if (parent == null) {
+				return null;
+			}
+			NodeRewrite parentRewrite = rewrites.get(parent);
+			if (parentRewrite == null) {
+				return getClosestRewriteAncestor(parent);
+			}
+			return parentRewrite;
+		}
+	
 
-		private void insertEditAndContinuePreamble(int lineNo) {
-			if (!supports(EDIT_AND_CONTINUE)) {
+		private void insertFunctionBlockifier(int lineNo, boolean start) {
+			HashMap<Integer, List<Pair<ASTNode, Boolean>>> nodes = start ? functionPreambles : functionPostambles;
+			Collection<Pair<ASTNode, Boolean>> nodeList = nodes.get(lineNo);
+			if (nodeList == null) {
 				return;
 			}
+			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
+				ASTNode node = nodePosition.first;
+				Position position = getPosition(node, start);
+				if (shouldBlockify(node)) {
+					block(position, start);
+				}
+			}
+			
+		}
+
+		private void insertEditAndContinuePreamble(int lineNo) {
 			Collection<Pair<ASTNode, Boolean>> nodeList = editAndContinuePreambles
 					.get(lineNo);
 			if (nodeList == null) {
@@ -487,28 +536,37 @@ public class JSODDSupport {
 
 			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
 				FunctionDeclaration fd = (FunctionDeclaration) nodePosition.first;
-				Position position = position(fd, true);
-				// Not anonymous = getName returns something.
-				String name = fd.getName().getIdentifier();
-				int fdStart = fd.getStartPosition();
-				int bodyStart = fd.getBody().getStartPosition();
-				String signature = originalSource.substring(fdStart, bodyStart);
-				String functionRef = name + ".____yaloid";
-				String redefineKey = nodeRedefinables.get(fd);
-				String preamble = signature + "{\nif(!" + functionRef + ") { "
-						+ "var ____unevaled=MoSyncDebugProtocol.yaloid(\""
-						+ redefineKey + "\");\n" + "if (____unevaled){\n"
-						+ "eval(\"" + functionRef + "=\" + ____unevaled);}\n" + "if(typeof " + functionRef + " !== \'function\')\n"
-						+ "{" + functionRef + "=";
-				insert(position, preamble);
+				Position functionPosition = getPosition(fd, true);
+				String signature = "";
+				String editAndContinuePreamble = "";
+				String dropToFramePreamble = supports(DROP_TO_FRAME) ? "do {" : "";
+				if (supports(EDIT_AND_CONTINUE) && !isAnonymous(fd)) {
+					String name = fd.getName().getIdentifier();
+					int fdStart = fd.getStartPosition();
+					int bodyStart = fd.getBody().getStartPosition();
+					signature = originalSource.substring(fdStart, bodyStart);
+					String functionRef = name + ".____yaloid";
+					String redefineKey = nodeRedefinables.get(fd);
+					editAndContinuePreamble = "if(!" + functionRef + ") { "
+							+ "var ____unevaled=MoSyncDebugProtocol.yaloid(\""
+							+ redefineKey + "\");\n" + "if (____unevaled){\n"
+							+ "eval(\"" + functionRef + "=\" + ____unevaled);}\n" + "if(typeof " + functionRef + " !== \'function\')\n"
+							+ "{" + functionRef + "=";
+					insert(functionPosition, signature);
+					block(functionPosition, true);
+					insert(functionPosition, dropToFramePreamble);
+					insert(functionPosition, editAndContinuePreamble);
+				} else {
+					// If only drop to frame preamble, it should be inserted elsewhere.
+					ASTNode firstStatement = startOfFunction(fd);
+					block(getPosition(firstStatement, true), true);
+					insert(getPosition(firstStatement, true), dropToFramePreamble);
+				}
 			}
 
 		}
 
 		private void insertEditAndContinuePostamble(int lineNo) {
-			if (!supports(EDIT_AND_CONTINUE)) {
-				return;
-			}
 			Collection<Pair<ASTNode, Boolean>> nodeList = editAndContinuePostambles
 					.get(lineNo);
 			if (nodeList == null) {
@@ -516,29 +574,41 @@ public class JSODDSupport {
 			}
 
 			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
+				String editAndContinuePostamble = "";
 				FunctionDeclaration fd = (FunctionDeclaration) nodePosition.first;
-				Position position = position(fd, false);
-				String name = fd.getName().getIdentifier();
-				List parameters = fd.parameters();
-				String[] parameterNames = new String[parameters.size()];
-				for (int i = 0; i < parameterNames.length; i++) {
-					SingleVariableDeclaration parameter = (SingleVariableDeclaration) parameters
-							.get(i);
-					String parameterName = parameter.getName().getIdentifier();
-					parameterNames[i] = parameterName;
+				Position position = getPosition(fd, false);
+				String dropToFramePostamble = supports(DROP_TO_FRAME) ? "} while (MoSyncDebugProtocol.dropToFrame());" : "";
+				
+				if (supports(EDIT_AND_CONTINUE) && !isAnonymous(fd)) {
+					String name = fd.getName().getIdentifier();
+					List parameters = fd.parameters();
+					String[] parameterNames = new String[parameters.size()];
+					for (int i = 0; i < parameterNames.length; i++) {
+						SingleVariableDeclaration parameter = (SingleVariableDeclaration) parameters
+								.get(i);
+						String parameterName = parameter.getName().getIdentifier();
+						parameterNames[i] = parameterName;
+					}
+					String redefineKey = nodeRedefinables.get(fd);
+					String functionRef = name + ".____yaloid";
+					editAndContinuePostamble = ";}"
+							+ "MoSyncDebugProtocol.registerFunction(\""
+							+ redefineKey + "\"," + name + ");}\n"
+							+ functionRef + "(" + Util.join(parameterNames, ",")
+							+ ");";
+					insert(position, editAndContinuePostamble);
+					insert(position, dropToFramePostamble);
+					block(position, false);
+				} else {
+					// If only drop to frame preamble, it should be inserted elsewhere.
+					ASTNode lastStatement = endOfFunction(fd);
+					insert(getPosition(lastStatement, false), dropToFramePostamble);
+					block(getPosition(lastStatement, false), false);
 				}
-				String redefineKey = nodeRedefinables.get(fd);
-				String functionRef = name + ".____yaloid";
-				String postamble = ";}"
-						+ "MoSyncDebugProtocol.registerFunction(\""
-						+ redefineKey + "\"," + name + ");}\n"
-						+ functionRef + "(" + Util.join(parameterNames, ",")
-						+ ");\n}";
-				insert(position, postamble);
 			}
 
 		}
-
+        
 		private void insertFunctionPreamble(long fileId, int lineNo,
 				LineMap lineMap) {
 			Collection<Pair<ASTNode, Boolean>> nodeList = functionPreambles
@@ -549,14 +619,10 @@ public class JSODDSupport {
 			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
 				ASTNode node = nodePosition.first;
 				String funcName = functionNames.get(node);
-				Position position = position(node, true);
-				if (shouldBlockify(node)) {
-					insert(position, "{");
-				}
+				Position position = functionPosition(node, true);
+				
 				int mappedLineNo = lineMap.getLine(position.getPosition());
-				if (supports(DROP_TO_FRAME)) {
-					insert(position, "do {");
-				}
+				
 				insert(position,
 						MessageFormat
 								.format("try '{' MoSyncDebugProtocol.pushStack(\"{0}\",{1},{2});",
@@ -573,32 +639,24 @@ public class JSODDSupport {
 			}
 			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
 				ASTNode node = nodePosition.first;
-				Position position = position(node, false);
-				insert(position,
-						"}"
-								+ "catch (anException) {"
-								+ "if (!anException.alreadyThrown && !anException.dropToFrame) {"
+				Position position = functionPosition(node, false);
+				block(position, false);
+				insert(position, "catch (anException) {\n"
+								+ "if (!anException.alreadyThrown && !anException.dropToFrame) {\n"
 								+ "anException = MoSyncDebugProtocol.reportException(anException, "
-								+ lineNo + "," + EVAL_FUNC_SNIPPET + ");"
-								+ "} anException.alreadyThrown = true;"
-								+ "if (!anException.dropToFrame) {"
-								+ "throw anException;}else{"
-								+ "if (anException.expression) {"
-								+ "eval(anException.expression);}"
-								+ "}} finally {"
-								+ "MoSyncDebugProtocol.popStack();" + "}");
-				if (supports(DROP_TO_FRAME)) {
-					insert(position,
-							"} while (MoSyncDebugProtocol.dropToFrame());");
-				}
-				if (shouldBlockify(node)) {
-					insert(position, "}");
-				}
+								+ lineNo + "," + EVAL_FUNC_SNIPPET + ");\n"
+								+ "} anException.alreadyThrown = true;\n"
+								+ "if (!anException.dropToFrame) {\n"
+								+ "throw anException;}else{\n"
+								+ "if (anException.expression) {\n"
+								+ "eval(anException.expression);}\n"
+								+ "}} finally {\n"
+								+ "MoSyncDebugProtocol.popStack();}\n");
 			}
 		}
 
-		private Position position(ASTNode node, boolean start) {
-			JavaScriptUnit unit = nodeToUnitMap.get(node);
+		public Position getPosition(ASTNode node, boolean start) {
+			JavaScriptUnit unit = (JavaScriptUnit) node.getRoot();
 			if (unit == null) {
 				throw new IllegalStateException("Node has no matched unit");
 			}
@@ -614,13 +672,13 @@ public class JSODDSupport {
 				TreeMap<Integer, Pair<ASTNode, Boolean>> nodesToInstrument = new TreeMap<Integer, Pair<ASTNode, Boolean>>();
 				// Max 1 instrumentation per line.
 				for (Pair<ASTNode, Boolean> node : nodeList) {
-					int mappedLineNo = lineMap.getLine(position(node.first,
+					int mappedLineNo = lineMap.getLine(getPosition(node.first,
 							node.second).getPosition());
 					Pair<ASTNode, Boolean> nodeToInstrument = nodesToInstrument
 							.get(mappedLineNo);
 					if (nodeToInstrument == null
-							|| position(nodeToInstrument.first,
-									nodeToInstrument.second).getPosition() > position(
+							|| getPosition(nodeToInstrument.first,
+									nodeToInstrument.second).getPosition() > getPosition(
 									node.first, node.second).getPosition()) {
 						nodesToInstrument.put(mappedLineNo, node);
 					}
@@ -632,13 +690,13 @@ public class JSODDSupport {
 					boolean before = nodePosition.getValue().second;
 
 					if (shouldBlockify(node)) {
-						insert(position(node, true), "{");
-						insert(position(node, false), "}");
+						insert(getPosition(node, true), "{");
+						insert(getPosition(node, false), "}");
 					}
 					int mappedLineNo = nodePosition.getKey();
 
 					Entry<Integer, LocalVariableScope> scope = localVariables
-							.floorEntry(position(node, true).getPosition());
+							.floorEntry(getPosition(node, true).getPosition());
 					String scopeDesc = "";
 					if (scope != null) {
 						scopeDesc = "/*" + scope.getValue().getLocalVariables()
@@ -652,7 +710,7 @@ public class JSODDSupport {
 							+ " MoSyncDebugProtocol.updatePosition(" + fileId
 							+ "," + mappedLineNo + "," + isDebuggerStatement
 							+ "," + EVAL_FUNC_SNIPPET + ");" + "\n";
-					insert(position(node, before), addThis);
+					insert(getPosition(node, before), addThis);
 				}
 			}
 		}
@@ -678,8 +736,15 @@ public class JSODDSupport {
 		}
 
 		public String get(ASTNode node) {
-			Position startPos = position(node, true);
-			Position endPos = position(node, false);
+			NodeRewrite rewrite = rewrites.get(node);
+			if (rewrite == null) {
+				// TODO
+				throw new RuntimeException("Could not find rewrite for node.");
+			}
+			return rewrite.rewrite(NodeRewrite.include(JSODDSupport.LINE_BREAKPOINTS));
+			
+			/*Position startPos = getPosition(node, true);
+			Position endPos = getPosition(node, false);
 			int start = startPos.getPosition();
 			int end = endPos.getPosition();
 			Entry<Integer, Integer> startDeltaEntry = movedSourceMap
@@ -689,7 +754,7 @@ public class JSODDSupport {
 			int startDelta = startDeltaEntry == null ? 0 : startDeltaEntry
 					.getValue();
 			int endDelta = endDeltaEntry == null ? 0 : endDeltaEntry.getValue();
-			return instrumented.substring(start + startDelta, end + endDelta);
+			return instrumented.substring(start + startDelta, end + endDelta);*/
 		}
 
 		public String getInstrumentedSource() {
@@ -698,6 +763,21 @@ public class JSODDSupport {
 
 		public void setFileRedefinable(FileRedefinable file) {
 			pushRedefinable(file, null);
+		}
+
+		@Override
+		public String getSource(ASTNode node) {
+			return getSource(getPosition(node, true).getPosition(), getPosition(node, false).getPosition());
+		}
+
+		@Override
+		public String getSource(int start, int end) {
+			return getSource().substring(start, end);
+		}
+
+		@Override
+		public String getSource() {
+			return originalSource;
 		}
 	}
 

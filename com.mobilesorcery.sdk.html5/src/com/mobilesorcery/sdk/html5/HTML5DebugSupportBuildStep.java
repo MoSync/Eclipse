@@ -140,6 +140,9 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			Set<IResource> instrumentThese = computeResourcesToRebuild(dependencies);
 			Rewriter rewriter = new Rewriter(op);
 			for (IResource instrumentThis : instrumentThese) {
+				if (monitor.isCanceled()) {
+					return;
+				}
 				long start = System.currentTimeMillis();
 				rewriter.rewrite(instrumentThis);
 				long elapsed = System.currentTimeMillis() - start;
