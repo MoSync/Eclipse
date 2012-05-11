@@ -7,21 +7,21 @@ import java.util.List;
 
 import org.eclipse.wst.jsdt.core.dom.ASTNode;
 
-import com.mobilesorcery.sdk.core.IProvider;
+import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.debug.IRedefinable;
 import com.mobilesorcery.sdk.html5.debug.IRedefiner;
-import com.mobilesorcery.sdk.html5.debug.RedefineException;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.debug.rewrite.ISourceSupport;
 
 public abstract class AbstractRedefinable implements IRedefinable {
 
 	private IRedefinable parent;
 	private List<IRedefinable> children = new ArrayList<IRedefinable>();
-	private IProvider<String, ASTNode> source;
+	private ISourceSupport source;
 	private HashMap<String, IRedefinable> childrenByKey;
 
-	protected AbstractRedefinable(IRedefinable parent, IProvider<String, ASTNode> source) {
+	protected AbstractRedefinable(IRedefinable parent, ISourceSupport source) {
 		this.parent = parent;
 		this.source = source;
 		if (parent != null) {
@@ -34,8 +34,8 @@ public abstract class AbstractRedefinable implements IRedefinable {
 	 * @param node 
 	 * @return
 	 */
-	protected String getSource(ASTNode node) {
-		return source.get(node);
+	protected String getInstrumentedSource(IFilter<String> features, ASTNode node) {
+		return source.getInstrumentedSource(features, node);
 	}
 	
 	public void addChild(IRedefinable child) {
@@ -72,8 +72,10 @@ public abstract class AbstractRedefinable implements IRedefinable {
 		for (IRedefinable child : getChildren()) {
 			String key = child.key();
 			IRedefinable replacementChild = replacement.getChild(key);
-			replacementChild.redefine(child, redefiner);
-			redefined.add(key);
+			if (replacementChild != null) {
+				replacementChild.redefine(child, redefiner);
+				redefined.add(key);
+			}
 		}
 		
 		for (IRedefinable replaceChild : replacement.getChildren()) {

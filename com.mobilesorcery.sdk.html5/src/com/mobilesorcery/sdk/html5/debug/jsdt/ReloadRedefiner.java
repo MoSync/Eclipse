@@ -52,7 +52,7 @@ public class ReloadRedefiner implements IRedefiner {
 		ReloadThreadReference mainThread = vm.mainThread();
 		if (mainThread.isSuspended()) {
 			if (matchedFrames == null) {
-				matchFrames();
+				matchFrames(mainThread);
 			}
 			ReloadStackFrame frame = matchedFrames.get(redefinable);
 			if (frame != null) {
@@ -64,8 +64,12 @@ public class ReloadRedefiner implements IRedefiner {
 		return RedefinitionResult.ok();
 	}
 
-	private void matchFrames() {
+	private void matchFrames(ReloadThreadReference mainThread) {
 		matchedFrames = new HashMap<IRedefinable, ReloadStackFrame>();
+		for (Object frameObj : mainThread.frames()) {
+			ReloadStackFrame frame = (ReloadStackFrame) frameObj;
+			// NOT YET IMPL.
+		}
 	}
 
 	private RedefinitionResult collectFile(FileRedefinable redefinable,

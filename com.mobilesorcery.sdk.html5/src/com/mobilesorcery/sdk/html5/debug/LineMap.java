@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.html5.debug;
 
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 public class LineMap {
@@ -35,6 +36,14 @@ public class LineMap {
 			return 1;
 		}
 		return lines.get(line);
+	}
+	
+	public int getColumn(int pos) {
+		Entry<Integer, Integer> entry = lines.floorEntry(pos);
+		if (entry == null) {
+			return pos;
+		}
+		return lines.get(entry.getKey()) - pos;
 	}
 
 	public int getLineCount() {

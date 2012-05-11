@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.html5.debug.rewrite;
 
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -8,6 +9,7 @@ import org.eclipse.wst.jsdt.core.dom.ASTNode;
 import org.eclipse.wst.jsdt.core.dom.Expression;
 import org.eclipse.wst.jsdt.core.dom.ExpressionStatement;
 import org.eclipse.wst.jsdt.core.dom.SimpleName;
+import org.eclipse.wst.jsdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.wst.jsdt.internal.compiler.ast.DebuggerStatement;
 
 import com.mobilesorcery.sdk.core.IFilter;
@@ -20,21 +22,25 @@ public class StatementRewrite extends NodeRewrite {
 	private long fileId;
 	private NavigableMap<Integer, LocalVariableScope> localVariables;
 	private Set<ASTNode> blockifiables;
-	private Set<Integer> instrumentedLines;
+	private Map<Integer, NodeRewrite> instrumentedLines;
+	private boolean forceInstrumentation;
 
-	public StatementRewrite(ISourceSupport rewriter, ASTNode node, long fileId, NavigableMap<Integer, LocalVariableScope> localVariables, Set<ASTNode> blockifiables, Set<Integer> instrumentedLines) {
+	public StatementRewrite(ISourceSupport rewriter, ASTNode node, long fileId, NavigableMap<Integer, LocalVariableScope> localVariables, Set<ASTNode> blockifiables, Map<Integer, NodeRewrite> instrumentedLines, boolean forceInstrumentation) {
 		super(rewriter, node);
 		this.fileId = fileId;
 		this.localVariables = localVariables;
 		this.blockifiables = blockifiables;
 		this.instrumentedLines = instrumentedLines;
+		this.forceInstrumentation = forceInstrumentation;
 	}
 
 	@Override
-	public String rewrite(IFilter<String> features) {
-		Position position = getPosition(node, true);
-		int lineNo = position.getLine();
-		Entry<Integer, LocalVariableScope> scope = localVariables.floorEntry(position.getPosition());
+	public void rewrite(IFilter<String> features, IRewrite rewrite) {
+		ASTNode node = getNode();
+		Position start = getPosition(node, true);
+		Position end = getPosition(node, false);
+		int lineNo = start.getLine();
+		Entry<Integer, LocalVariableScope> scope = localVariables.floorEntry(start.getPosition());
 		String scopeDesc = "";
 		if (scope != null) {
 			scopeDesc = "/*" + scope.getValue().getLocalVariables()
@@ -43,7 +49,7 @@ public class StatementRewrite extends NodeRewrite {
 		
 		boolean isInstrumentationSupported = supports(features, JSODDSupport.LINE_BREAKPOINTS);
 		boolean isDebuggerStatement = false;
-		if (isInstrumentationSupported && node instanceof ExpressionStatement) {
+		if (node instanceof ExpressionStatement) {
 			Expression expression = ((ExpressionStatement) node)
 					.getExpression();
 			if (expression instanceof SimpleName) {
@@ -52,24 +58,33 @@ public class StatementRewrite extends NodeRewrite {
 			}
 		}
 		
-		String result = defaultRewrite(features);
-		if (isInstrumentationSupported && !instrumentedLines.contains(lineNo)) {
-			// Max one instrumentation per line!
+		NodeRewrite instrumentor = instrumentedLines.get(lineNo);
+		boolean canInstrumentThisLine = instrumentor == null || instrumentor == this;
+		boolean doInstrument = forceInstrumentation || isDebuggerStatement || (isInstrumentationSupported && canInstrumentThisLine);
+		rewrite.seek(start);
+		if (doInstrument) {
+			// Max one instrumentation per line! Except for debugger statements.
 			String addThisBefore = scopeDesc
 					+ " MoSyncDebugProtocol.updatePosition(" + fileId
 					+ "," + lineNo + "," + isDebuggerStatement
 					+ "," + JSODDSupport.EVAL_FUNC_SNIPPET + ");" + "\n";
-			result = addThisBefore + result;
+			instrumentedLines.put(lineNo, this);
 			if (shouldBlockify()) {
-				result = '{' + result + '}';
+				rewrite.insert("{");
 			}
+			rewrite.insert(addThisBefore);
 		}
-		instrumentedLines.add(lineNo);
-		return result;
+		
+		defaultRewrite(features, rewrite);
+		
+		rewrite.seek(end);
+		if (doInstrument && shouldBlockify()) {
+			rewrite.insert("}");
+		}
 	}
 
 	private boolean shouldBlockify() {
-		return blockifiables.contains(node);
+		return blockifiables.contains(getNode());
 	}
 
 }

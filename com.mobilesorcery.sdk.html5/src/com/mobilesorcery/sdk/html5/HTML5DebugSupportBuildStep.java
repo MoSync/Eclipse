@@ -39,6 +39,7 @@ import com.mobilesorcery.sdk.core.build.AbstractBuildStepFactory;
 import com.mobilesorcery.sdk.core.build.BundleBuildStep;
 import com.mobilesorcery.sdk.core.build.IBuildStep;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
+import com.mobilesorcery.sdk.html5.debug.hotreplace.FileRedefinable;
 import com.mobilesorcery.sdk.internal.builder.IncrementalBuilderVisitor;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.ui.UIUtils;
@@ -54,7 +55,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				this.op = op;
 			}
 
-			public boolean rewrite(IResource resourceToInstrument)
+			public int rewrite(IResource resourceToInstrument)
 					throws CoreException {
 				IPath resourcePath = resourceToInstrument.getFullPath();
 				resourcePath = resourcePath.removeFirstSegments(inputRoot
@@ -74,7 +75,8 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 						/*output.write(Util.readFile(resourceToInstrument
 								.getLocation().toOSString()));*/
 					}
-					op.rewrite(resourceToInstrument.getFullPath(), output);
+					FileRedefinable result = op.rewrite(resourceToInstrument.getFullPath(), output);
+					return result.getMemSize();
 				} catch (IOException e) {
 					throw new CoreException(new Status(IStatus.ERROR,
 							Html5Plugin.PLUGIN_ID,
@@ -82,7 +84,6 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				} finally {
 					Util.safeClose(output);
 				}
-				return !MoSyncBuilder.isInOutput(project, resourceToInstrument);
 			}
 		}
 
@@ -144,12 +145,13 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 					return;
 				}
 				long start = System.currentTimeMillis();
-				rewriter.rewrite(instrumentThis);
+				int memoryConsumption = rewriter.rewrite(instrumentThis);
 				long elapsed = System.currentTimeMillis() - start;
 				console.addMessage(MessageFormat.format(
-						"Instrumented {0} [{1}].",
+						"Instrumented {0} [{1}, {2}].",
 						instrumentThis.getFullPath(),
-						Util.elapsedTime((int) elapsed)));
+						Util.elapsedTime((int) elapsed),
+						Util.dataSize(memoryConsumption)));
 			}
 		}
 

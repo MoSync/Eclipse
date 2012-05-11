@@ -10,18 +10,21 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.StackFrame;
 import com.mobilesorcery.sdk.core.IProvider;
 import com.mobilesorcery.sdk.html5.debug.IRedefinable;
 import com.mobilesorcery.sdk.html5.debug.IRedefiner;
+import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.RedefineException;
 import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadStackFrame;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadReference;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.debug.rewrite.ISourceSupport;
+import com.mobilesorcery.sdk.html5.debug.rewrite.NodeRewrite;
 
 public class FunctionRedefinable extends ASTRedefinable {
 
 	private Boolean isAnonymous;
 	private String subkey;
 
-	public FunctionRedefinable(IRedefinable parent, IProvider<String, ASTNode> source, ASTNode node) {
+	public FunctionRedefinable(IRedefinable parent, ISourceSupport source, ASTNode node) {
 		super(parent, source, node);
 		this.isAnonymous = isAnonymous();
 	}
@@ -66,7 +69,7 @@ public class FunctionRedefinable extends ASTRedefinable {
 	}
 
 	public String getFunctionSource() {
-		return getSource(getFunctionDeclaration());
+		return getInstrumentedSource(NodeRewrite.include(JSODDSupport.LINE_BREAKPOINTS), getFunctionDeclaration());
 	}
 	
 	@Override

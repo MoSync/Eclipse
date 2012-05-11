@@ -64,6 +64,7 @@ import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
+import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.IProvider;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -77,6 +78,7 @@ import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
 import com.mobilesorcery.sdk.html5.debug.rewrite.FunctionRewrite;
 import com.mobilesorcery.sdk.html5.debug.rewrite.ISourceSupport;
 import com.mobilesorcery.sdk.html5.debug.rewrite.NodeRewrite;
+import com.mobilesorcery.sdk.html5.debug.rewrite.SourceRewrite;
 import com.mobilesorcery.sdk.html5.debug.rewrite.StatementRewrite;
 
 public class JSODDSupport {
@@ -84,6 +86,7 @@ public class JSODDSupport {
 	public static final String DROP_TO_FRAME = "drop.to.frame";
 	public static final String EDIT_AND_CONTINUE = "edit.continue";
 	public static final String LINE_BREAKPOINTS = "line.breakpoint";
+	public static final String ARTIFICIAL_STACK = "artificial.stack";
 	
 	public static final String EVAL_FUNC_SNIPPET = "function(____eval) {return eval(____eval);}";
 
@@ -92,6 +95,10 @@ public class JSODDSupport {
 	public class DebugRewriteOperationVisitor extends ASTVisitor implements
 			ISourceSupport {
 
+		private static final int INSTRUMENTATION_DISALLOWED = 0;
+		private static final int INSTRUMENTATION_ALLOWED = 1;
+		private static final int FORCE_INSTRUMENTATION = 2;
+		
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> statementsToRewrite = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPreambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPostambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
@@ -124,7 +131,13 @@ public class JSODDSupport {
 		
 		private String originalSource;
 		private long fileId;
-		private Set<Integer> instrumentedLines = new HashSet<Integer>();
+		private HashMap<Integer, NodeRewrite> instrumentedLines = new HashMap<Integer, NodeRewrite>();
+		private LineMap lineMap;
+
+		public DebugRewriteOperationVisitor(LineMap lineMap, long fileId) {
+			this.lineMap = lineMap;
+			this.fileId = fileId;
+		}
 
 		@Override
 		public void preVisit(ASTNode node) {
@@ -190,24 +203,7 @@ public class JSODDSupport {
 				nest = false;
 			}
 
-			if (node instanceof SwitchStatement) {
-				// The first statement in a switch statement
-				// should always be a case-switch statement.
-				SwitchStatement switchStatement = (SwitchStatement) node;
-				List statements = switchStatement.statements();
-				for (Object statementObj : statements) {
-					if (statementObj instanceof SwitchCase) {
-						addToExclusionList((SwitchCase) statementObj);
-						continue;
-					}
-				}
-			}
-
-			if (node instanceof LabeledStatement) {
-				// Labels aren't really executable, but their statements are.
-				LabeledStatement labeledStatement = (LabeledStatement) node;
-				addToExclusionList(labeledStatement.getBody());
-			}
+			checkForExclusion(node);
 
 			if (node instanceof JavaScriptUnit) {
 				unit = (JavaScriptUnit) node;
@@ -229,8 +225,9 @@ public class JSODDSupport {
 				}
 			}
 
-			if (isInstrumentableStatement(node)) {
-				rewrites.put(node, new StatementRewrite(this, node, fileId, localVariables, blockifiables, instrumentedLines));
+			int instrumentable = isInstrumentableStatement(node);
+			if (instrumentable != INSTRUMENTATION_DISALLOWED) {
+				rewrites.put(node, new StatementRewrite(this, node, fileId, localVariables, blockifiables, instrumentedLines, instrumentable == FORCE_INSTRUMENTATION));
 				addStatementInstrumentationLocation(unit, node,
 						statementsToRewrite, true);
 			}
@@ -244,6 +241,32 @@ public class JSODDSupport {
 			}
 		}
 		
+		private void checkForExclusion(ASTNode node) {
+			if (node instanceof SwitchStatement) {
+				// The first statement in a switch statement
+				// should always be a case-switch statement.
+				SwitchStatement switchStatement = (SwitchStatement) node;
+				List statements = switchStatement.statements();
+				for (Object statementObj : statements) {
+					if (statementObj instanceof SwitchCase) {
+						addToExclusionList((SwitchCase) statementObj);
+						continue;
+					}
+				}
+			}
+
+			if (node instanceof LabeledStatement) {
+				// Labels aren't really executable, but their statements are.
+				LabeledStatement labeledStatement = (LabeledStatement) node;
+				addToExclusionList(labeledStatement.getBody());
+			}
+			
+			if (node instanceof ForInStatement) {
+				ForInStatement forInStatement = (ForInStatement) node;
+				addToExclusionList(forInStatement.getIterationVariable());
+			}
+		}
+
 		private ASTNode startOfFunction(FunctionDeclaration fd) {
 			Block body = fd.getBody();
 			List statements = body.statements();
@@ -265,7 +288,7 @@ public class JSODDSupport {
 			// We always use the last }, since there is no comments or
 			// anything that can ruin or position.
 			int offset = emptyBody ? -1 : 0;
-			return pos.offset(offset);
+			throw new IllegalArgumentException("!agdfgfdlj");
 		}
 
 		private boolean isAnonymous(FunctionDeclaration fd) {
@@ -404,15 +427,20 @@ public class JSODDSupport {
 			}
 		}
 
-		private boolean isInstrumentableStatement(ASTNode node) {
+		private int isInstrumentableStatement(ASTNode node) {
 			if (exclusions.contains(node)) {
-				return false;
+				return INSTRUMENTATION_DISALLOWED;
 			}
 			boolean isStatement = node instanceof Statement;
 			boolean isBlock = node instanceof Block;
-			boolean allowInstrumentation = isStatement && !isBlock;
+			// We should be able to break in empty function blocks.
+			boolean isEmptyFunctionBlock = isBlock && ((Block) node).statements().isEmpty() && node.getParent() instanceof FunctionDeclaration;
+			if (isEmptyFunctionBlock) {
+				return FORCE_INSTRUMENTATION;
+			}
+			boolean allowInstrumentation = (isStatement && !isBlock);
 
-			return allowInstrumentation;
+			return allowInstrumentation ? INSTRUMENTATION_ALLOWED : INSTRUMENTATION_DISALLOWED;
 		}
 
 		private void insert(Position position, String text) {
@@ -430,31 +458,13 @@ public class JSODDSupport {
 			insert(position, "\n" + (start ? '{' : '}') + "\n");
 		}
 
-		public void rewrite(long fileId, String originalSource,
-				String prunedSource, Writer output,
+		public void rewrite(long fileId, String originalSource, Writer output,
 				NavigableMap<Integer, LocalVariableScope> scopeMap) throws IOException {
 			// TODO: I guess there are some better AST rewrite methods around.
 			// Or... never mind, I've invested way too much time in this :)
-			LineMap lineByLinePrunedSource = new LineMap(prunedSource);
 			LineMap lineByLineOriginalSource = new LineMap(originalSource);
-
-			this.fileId = fileId;
 			
 			this.originalSource = originalSource;
-
-			int lineNo = 1;
-			int lineCount = lineByLinePrunedSource.getLineCount();
-			for (int i = 0; i < lineCount; i++) {
-				/*insertFunctionBlockifier(lineNo, true);
-				insertEditAndContinuePreamble(lineNo);
-				insertFunctionPreamble(fileId, lineNo, lineByLineOriginalSource);
-				insertInstrumentedStatement(fileId, lineNo,
-						lineByLineOriginalSource);
-				insertFunctionPostamble(fileId, lineNo);
-				insertEditAndContinuePostamble(lineNo);
-				//insertFunctionBlockifier(lineNo, true);
-				lineNo++;*/
-			}
 
 			for (Map.Entry<Integer, LocalVariableScope> scope : localVariables
 					.entrySet()) {
@@ -463,24 +473,6 @@ public class JSODDSupport {
 				scopeMap.put(mappedLineNo, scope.getValue());
 			}
 
-			StringBuffer result = new StringBuffer();
-
-			int prevPos = 0;
-			int posDelta = 0;
-			for (Map.Entry<Integer, List<String>> insertion : insertions
-					.entrySet()) {
-				Integer pos = insertion.getKey();
-				List<String> insertionsAtPos = insertion.getValue();
-				result.append(originalSource.substring(prevPos, pos));
-				String insertionStr = Util.join(insertionsAtPos.toArray(), "");
-				result.append(insertionStr);
-				prevPos = pos;
-				posDelta += insertionStr.length();
-				movedSourceMap.put(prevPos, posDelta);
-			}
-			result.append(originalSource.substring(prevPos));
-			instrumented = result.toString();
-			
 			NodeRewrite rootRewrite = new NodeRewrite(this, null);
 			// Collect rewrites
 			for (ASTNode rewrittenNode : rewrites.keySet()) {
@@ -491,7 +483,9 @@ public class JSODDSupport {
 				parentRewrite.addChild(rewrites.get(rewrittenNode));
 			}
 			
-			instrumented = rootRewrite.rewrite();
+			SourceRewrite doc = new SourceRewrite(originalSource);
+			rootRewrite.rewrite(null, doc);
+			instrumented = doc.rewrite();
 			
 			if (output != null) {
 				output.write(instrumented);
@@ -660,7 +654,7 @@ public class JSODDSupport {
 			if (unit == null) {
 				throw new IllegalStateException("Node has no matched unit");
 			}
-			return new Position(node, unit, start);
+			return new Position(node, lineMap, start);
 		}
 
 		private void insertInstrumentedStatement(long fileId, int lineNo,
@@ -735,13 +729,16 @@ public class JSODDSupport {
 			return redefinableStack.peek();
 		}
 
-		public String get(ASTNode node) {
+		@Override
+		public String getInstrumentedSource(IFilter<String> features, ASTNode node) {
 			NodeRewrite rewrite = rewrites.get(node);
 			if (rewrite == null) {
 				// TODO
 				throw new RuntimeException("Could not find rewrite for node.");
 			}
-			return rewrite.rewrite(NodeRewrite.include(JSODDSupport.LINE_BREAKPOINTS));
+			SourceRewrite doc = new SourceRewrite(originalSource, node);
+			rewrite.rewrite(features, doc);
+			return doc.rewrite();
 			
 			/*Position startPos = getPosition(node, true);
 			Position endPos = getPosition(node, false);
@@ -772,13 +769,14 @@ public class JSODDSupport {
 
 		@Override
 		public String getSource(int start, int end) {
-			return getSource().substring(start, end);
+			return originalSource.substring(start, end);
 		}
 
 		@Override
 		public String getSource() {
 			return originalSource;
 		}
+
 	}
 
 	public static final String SERVER_HOST_PROP = "SERVER_HOST";
@@ -871,13 +869,14 @@ public class JSODDSupport {
 				ASTNode ast = parser.createAST(new NullProgressMonitor());
 
 				// 2. Instrument
-				DebugRewriteOperationVisitor visitor = new DebugRewriteOperationVisitor();
+				long fileId = assignFileId(filePath);
+				LineMap sourceLineMap = new LineMap(source);
+				DebugRewriteOperationVisitor visitor = new DebugRewriteOperationVisitor(sourceLineMap, fileId);
 				visitor.setFileRedefinable(fileRedefinable);
 				visitor.setScopeResetPoints(scopeResetPoints);
 				ast.accept(visitor);
-				long fileId = assignFileId(filePath);
 				TreeMap<Integer, LocalVariableScope> scopeMap = new TreeMap<Integer, LocalVariableScope>();
-				visitor.rewrite(fileId, source, prunedSource, output, scopeMap);
+				visitor.rewrite(fileId, source, output, scopeMap);
 
 				// 3. Update state and notify listeners
 				String instrumentedSource = visitor.getInstrumentedSource();

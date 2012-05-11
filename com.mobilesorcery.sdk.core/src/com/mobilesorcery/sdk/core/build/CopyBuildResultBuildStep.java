@@ -108,6 +108,11 @@ public class CopyBuildResultBuildStep extends AbstractBuildStep {
 	}
 
 	@Override
+	public boolean shouldAdd(IBuildSession session) {
+		return session.doPack();
+	}
+	
+	@Override
 	public int incrementalBuild(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult result,
 			IProgressMonitor monitor) throws Exception {
