@@ -5,6 +5,7 @@ import org.eclipse.debug.core.model.IDropToFrame;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IThread;
 import org.eclipse.wst.jsdt.debug.core.model.IJavaScriptStackFrame;
+import org.eclipse.wst.jsdt.debug.core.model.IJavaScriptThread;
 
 public class ReloadDropToFrame implements IDropToFrame {
 
@@ -21,15 +22,26 @@ public class ReloadDropToFrame implements IDropToFrame {
 
 	@Override
 	public void dropToFrame() throws DebugException {
-		int stackDepth = getStackDepth();
-		// Reverse numbering here!
+		dropToFrame(frame);
+	}
+	
+	public static void dropToFrame(IThread thread, int frameToDropTo) throws DebugException {
+		if (thread instanceof IJavaScriptThread) {
+			// Reverse numbering here!
+			IJavaScriptStackFrame frame = (IJavaScriptStackFrame) thread.getStackFrames()[frameToDropTo];
+			// HACK: We use 'evaluate' to pass on our own twisted expressions.
+			frame.evaluate(ReloadStackFrame.createDropToFrameExpression(frameToDropTo, null));
+			frame.stepInto();
+		}
+	}
+	
+	public static void dropToFrame(IJavaScriptStackFrame frame) throws DebugException {
+		int stackDepth = getStackDepth(frame);
 		int frameToDropTo = frame.getThread().getStackFrames().length - stackDepth - 1;
-		// HACK: We use 'evaluate' to pass on our own twisted expressions.
-		frame.evaluate(ReloadStackFrame.createDropToFrameExpression(frameToDropTo, null));
-		frame.stepInto();
+		dropToFrame(frame.getThread(), frameToDropTo);
 	}
 
-	private int getStackDepth() {
+	private static int getStackDepth(IJavaScriptStackFrame frame) {
 		IThread thread = frame.getThread();
 		IStackFrame[] allFrames = new IStackFrame[0];
 		try {

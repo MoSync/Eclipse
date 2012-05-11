@@ -8,6 +8,7 @@ import org.eclipse.wst.jsdt.core.dom.FunctionDeclaration;
 import org.eclipse.wst.jsdt.debug.core.jsdi.StackFrame;
 
 import com.mobilesorcery.sdk.core.IProvider;
+import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.IRedefinable;
 import com.mobilesorcery.sdk.html5.debug.IRedefiner;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
@@ -79,10 +80,16 @@ public class FunctionRedefinable extends ASTRedefinable {
 				int index = countAnonymousFunctions(getParent().getChildren())[1];
 				subkey =  "<" + index + ">";
 			} else {
-				subkey = getFunctionDeclaration().getName().getIdentifier();
+				subkey = getFunctionName();
 			}
 		}
 		
 		return constructKey(subkey);
 	}
+
+	public String getFunctionName() {
+		return isAnonymous() ? Html5Plugin.ANONYMOUS_FUNCTION :
+		getFunctionDeclaration().getName().getIdentifier();
+	}
+
 }

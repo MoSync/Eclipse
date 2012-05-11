@@ -240,7 +240,8 @@ window.MoSyncDebugProtocol = new (function() {
                 return false;
                 
             case 'update':
-                return update(cmd);
+                update(cmd);
+                return true;
             
             case 'update-function':
                 updateFunctions(cmd);

@@ -63,6 +63,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 	public static final String ODD_SUPPORT_PROP = PLUGIN_ID + ".odd";
 
+	public static final String ANONYMOUS_FUNCTION = "<anonymous>";
+
 	// The shared instance
 	private static Html5Plugin plugin;
 

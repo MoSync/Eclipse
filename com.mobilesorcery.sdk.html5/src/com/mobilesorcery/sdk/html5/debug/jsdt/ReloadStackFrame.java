@@ -17,6 +17,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.LocalVariableScope;
 
 public class ReloadStackFrame implements StackFrame {
@@ -135,6 +136,7 @@ public class ReloadStackFrame implements StackFrame {
 	}
 
 	public Value getValue(String name) {
+		// TODO: Put on client so it may be precompiled!
 		String metaExpr = String.format(
 				"var ____info = {};" +
 				"var ____keys = [];" +

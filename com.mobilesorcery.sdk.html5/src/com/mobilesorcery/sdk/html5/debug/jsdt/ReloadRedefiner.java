@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.debug.core.DebugException;
 
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.debug.IRedefinable;
@@ -19,7 +20,6 @@ public class ReloadRedefiner implements IRedefiner {
 	
 	private ArrayList<IFile> fileUpdates = new ArrayList<IFile>();
 	private ArrayList<FunctionRedefinable> functionUpdates = new ArrayList<FunctionRedefinable>();
-	private HashMap<IRedefinable, ReloadStackFrame> matchedFrames;
 	private int dropToFrame = -1;
 
 	private RedefinitionResult redefineResult;
@@ -51,25 +51,34 @@ public class ReloadRedefiner implements IRedefiner {
 		functionUpdates.add(replacement);
 		ReloadThreadReference mainThread = vm.mainThread();
 		if (mainThread.isSuspended()) {
-			if (matchedFrames == null) {
-				matchFrames(mainThread);
+			for (Object frameObj : mainThread.frames()) {
+				ReloadStackFrame frame = (ReloadStackFrame) frameObj;
+				if (frame != null) {
+					if (matchesFrame(redefinable, frame)) {
+						int stackDepth = frame.getStackDepth();
+						// As usual: reverse!
+						dropToFrame = Math.max(dropToFrame, mainThread.frameCount() - stackDepth - 1);	
+					}
+				}
 			}
-			ReloadStackFrame frame = matchedFrames.get(redefinable);
-			if (frame != null) {
-				int stackDepth = frame.getStackDepth();
-				// As usual: reverse!
-				dropToFrame = Math.max(dropToFrame, mainThread.frameCount() - stackDepth - 1);
-			}
+			
 		}
 		return RedefinitionResult.ok();
 	}
 
-	private void matchFrames(ReloadThreadReference mainThread) {
-		matchedFrames = new HashMap<IRedefinable, ReloadStackFrame>();
-		for (Object frameObj : mainThread.frames()) {
-			ReloadStackFrame frame = (ReloadStackFrame) frameObj;
-			// NOT YET IMPL.
+	private boolean matchesFrame(FunctionRedefinable redefinable,
+			ReloadStackFrame frame) {
+		SimpleLocation location = (SimpleLocation) frame.location();
+		SimpleScriptReference script = (SimpleScriptReference) location.scriptReference();
+		IFile file = script.getFile();
+		int line = location.lineNumber();
+		FileRedefinable fileRedefinable = redefinable.getParent(FileRedefinable.class);
+		if (fileRedefinable != null) {
+			return Util.equals(redefinable.getFunctionName(), location.functionName()) && 
+					redefinable.isLineInSourceRange(line) &&
+					fileRedefinable.getFile().equals(file);
 		}
+		return false;
 	}
 
 	private RedefinitionResult collectFile(FileRedefinable redefinable,
@@ -97,7 +106,11 @@ public class ReloadRedefiner implements IRedefiner {
 			}
 			
 			if (dropToFrame >= 0) {
-				vm.dropToFrame(dropToFrame);
+				try {
+					vm.dropToFrame(dropToFrame);
+				} catch (DebugException e) {
+					throw RedefineException.wrap(e);
+				}
 			}
 		}
 	}

@@ -168,7 +168,7 @@ public class JSODDSupport {
 				
 				SimpleName functionName = fd.getName();
 				boolean isAnonymous = isAnonymous(fd);
-				String functionIdentifier = isAnonymous ? "<anonymous>"
+				String functionIdentifier = isAnonymous ? Html5Plugin.ANONYMOUS_FUNCTION
 						: functionName.getIdentifier();
 				
 				rewrites.put(fd, new FunctionRewrite(this, fd, fileId, nodeRedefinables));

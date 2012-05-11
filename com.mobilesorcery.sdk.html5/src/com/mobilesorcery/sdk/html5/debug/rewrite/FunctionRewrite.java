@@ -21,6 +21,7 @@ import org.eclipse.wst.jsdt.internal.compiler.util.SimpleNameVector;
 
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.Position;
 
@@ -83,7 +84,7 @@ public class FunctionRewrite extends NodeRewrite {
 
 		SimpleName functionName = fd.getName();
 		boolean isAnonymous = isAnonymous(fd);
-		String functionIdentifier = isAnonymous ? "<anonymous>"
+		String functionIdentifier = isAnonymous ? Html5Plugin.ANONYMOUS_FUNCTION
 				: functionName.getIdentifier();
 		/*
 		AST ast = rewrite.getAST();

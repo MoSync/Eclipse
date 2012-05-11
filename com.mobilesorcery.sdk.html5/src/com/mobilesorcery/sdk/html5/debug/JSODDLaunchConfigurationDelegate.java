@@ -105,6 +105,7 @@ public class JSODDLaunchConfigurationDelegate implements
 		JavaScriptDebugTarget target = new JavaScriptDebugTarget(vm, process,
 				launch, true, true);
 		launch.addDebugTarget(target);
+		vm.setDebugTarget(target);
 	}
 
 	@Override

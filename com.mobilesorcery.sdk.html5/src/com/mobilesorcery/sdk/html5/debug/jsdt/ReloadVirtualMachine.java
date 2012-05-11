@@ -18,9 +18,12 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IStackFrame;
+import org.eclipse.debug.core.model.IThread;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.jsdi.BooleanValue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
@@ -36,7 +39,9 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.event.EventQueue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.ThreadExitEvent;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequest;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequestManager;
+import org.eclipse.wst.jsdt.debug.core.model.IJavaScriptDebugTarget;
 import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
+import org.eclipse.wst.jsdt.debug.internal.core.model.JavaScriptDebugTarget;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -66,6 +71,8 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	private ReloadThreadReference mainThread;
 	private boolean isTerminated = false;
 	private ProjectRedefinable snapshot;
+	private ILaunch launch;
+	private IJavaScriptDebugTarget debugTarget;
 
 	public ReloadVirtualMachine(int port) throws Exception {
 		// TODO: PORT
@@ -356,8 +363,16 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		return mainThread;
 	}
 
-	public void dropToFrame(int dropToFrame) {
-		// TODO: Blah blah
+	public void dropToFrame(int dropToFrame) throws DebugException {
+		IThread[] threads = getJavaScriptDebugTarget().getThreads();
+		for (int i = 0; i < threads.length; i++) {
+			IThread thread = threads[i];
+			ReloadDropToFrame.dropToFrame(thread, dropToFrame);
+		}
+	}
+
+	private IJavaScriptDebugTarget getJavaScriptDebugTarget() {
+		return debugTarget;
 	}
 
 	public ProjectRedefinable getSnapshot() {
@@ -366,6 +381,14 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	public void setSnapshot(ProjectRedefinable snapshot) {
 		this.snapshot = snapshot;
+	}
+
+	public void setLaunch(ILaunch launch) {
+		this.launch = launch;
+	}
+
+	public void setDebugTarget(IJavaScriptDebugTarget debugTarget) {
+		this.debugTarget = debugTarget;
 	}
 
 }

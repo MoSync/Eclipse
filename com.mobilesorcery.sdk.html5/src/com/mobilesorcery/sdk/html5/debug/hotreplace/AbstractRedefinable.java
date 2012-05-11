@@ -18,7 +18,7 @@ public abstract class AbstractRedefinable implements IRedefinable {
 
 	private IRedefinable parent;
 	private List<IRedefinable> children = new ArrayList<IRedefinable>();
-	private ISourceSupport source;
+	protected ISourceSupport source;
 	private HashMap<String, IRedefinable> childrenByKey;
 
 	protected AbstractRedefinable(IRedefinable parent, ISourceSupport source) {
@@ -102,6 +102,17 @@ public abstract class AbstractRedefinable implements IRedefinable {
 	@Override
 	public IRedefinable getParent() {
 		return parent;
+	}
+	
+	public <T extends IRedefinable> T getParent(Class<T> parentType) {
+		IRedefinable parent = this.parent;
+		while (parent != null) {
+			if (parentType.isAssignableFrom(parent.getClass())) {
+				return (T) parent;
+			}
+			parent = parent.getParent();
+		}
+		return null;
 	}
 	
 	/**
