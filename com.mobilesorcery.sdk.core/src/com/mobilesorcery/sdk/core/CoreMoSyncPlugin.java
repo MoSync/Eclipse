@@ -86,7 +86,6 @@ import com.mobilesorcery.sdk.internal.RebuildListener;
 import com.mobilesorcery.sdk.internal.ReindexListener;
 import com.mobilesorcery.sdk.internal.SecurePasswordProvider;
 import com.mobilesorcery.sdk.internal.SecureProperties;
-import com.mobilesorcery.sdk.internal.debug.MoSyncBreakpointSynchronizer;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLauncherProxy;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
@@ -145,8 +144,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
     private Integer[] sortedPanicErrorCodes;
 
-	private MoSyncBreakpointSynchronizer bpSync;
-
 	private boolean isHeadless = false;
 
 	private HashMap<String, IDeviceFilterFactory> factories;
@@ -193,7 +190,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         initPropertyInitializers();
         initGlobalDependencyManager();
         initEmulatorProcessManager();
-        installBreakpointHack();
         installResourceListener();
         initBuildConfigurationTypes();
         initLaunchers();
@@ -290,11 +286,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		}
 	}
 
-    private void installBreakpointHack() {
-    	bpSync = new MoSyncBreakpointSynchronizer();
-    	bpSync.install();
-	}
-
 	private void initGlobalDependencyManager() {
     	// Currently, all workspaces share this guy -- fixme later.
         this.projectDependencyManager = new DependencyManager<IProject>();
@@ -312,7 +303,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         projectDependencyManager = null;
         disposeUpdater();
         MoSyncProject.removeGlobalPropertyChangeListener(reindexListener);
-        bpSync.uninstall();
         deinstallResourceListener();
         super.stop(context);
     }
