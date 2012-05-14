@@ -19,6 +19,8 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.request.ThreadExitRequest;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.VMDeathRequest;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.VMDisconnectRequest;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 
 public class ReloadEventRequestManager implements EventRequestManager {
 

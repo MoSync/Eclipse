@@ -19,6 +19,7 @@ import org.json.simple.parser.JSONParser;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.LocalVariableScope;
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 
 public class ReloadStackFrame implements StackFrame {
 

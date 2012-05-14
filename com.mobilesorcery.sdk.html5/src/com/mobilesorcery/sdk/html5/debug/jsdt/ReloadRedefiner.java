@@ -11,6 +11,7 @@ import com.mobilesorcery.sdk.html5.debug.IRedefinable;
 import com.mobilesorcery.sdk.html5.debug.IRedefiner;
 import com.mobilesorcery.sdk.html5.debug.RedefineException;
 import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FileRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FunctionRedefinable;
 

@@ -5,6 +5,8 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.BreakpointEvent;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequest;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 public class ReloadBreakpointEvent extends ReloadLocatableEvent implements BreakpointEvent {
 
 	ReloadBreakpointEvent(ReloadVirtualMachine vm, ThreadReference thread,

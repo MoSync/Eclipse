@@ -13,6 +13,7 @@ import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 
 public class ReloadBreakpointRequest extends ReloadEventRequest implements
 		BreakpointRequest {

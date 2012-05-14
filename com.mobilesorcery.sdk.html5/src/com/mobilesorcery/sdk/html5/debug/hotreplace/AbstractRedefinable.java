@@ -11,7 +11,7 @@ import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.debug.IRedefinable;
 import com.mobilesorcery.sdk.html5.debug.IRedefiner;
-import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.debug.rewrite.ISourceSupport;
 
 public abstract class AbstractRedefinable implements IRedefinable {

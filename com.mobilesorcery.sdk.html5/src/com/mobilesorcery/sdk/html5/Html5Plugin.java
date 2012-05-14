@@ -288,4 +288,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		// I guess this might always be constant...
 		return new Path("LocalFiles");
 	}
+
+	public int getTimeout() {
+		return 3000;
+	}
 }

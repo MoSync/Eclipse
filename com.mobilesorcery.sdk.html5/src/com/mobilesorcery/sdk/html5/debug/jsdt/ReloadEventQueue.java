@@ -19,6 +19,7 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.live.LiveServer;
 
 public class ReloadEventQueue implements EventQueue {

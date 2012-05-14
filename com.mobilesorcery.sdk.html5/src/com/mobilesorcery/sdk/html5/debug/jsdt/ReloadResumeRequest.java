@@ -4,6 +4,8 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.ResumeRequest;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 
 public class ReloadResumeRequest extends ReloadEventRequest implements ResumeRequest {
 

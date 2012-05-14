@@ -1,60 +1,49 @@
-package com.mobilesorcery.sdk.html5.debug.jsdt;
+package com.mobilesorcery.sdk.html5.debug;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.core.internal.localstore.IsSynchronizedVisitor;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.debug.core.DebugException;
-import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
-import org.eclipse.debug.core.model.IBreakpoint;
-import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IThread;
-import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.jsdi.BooleanValue;
-import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.NullValue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.NumberValue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ScriptReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.StringValue;
-import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.UndefinedValue;
-import org.eclipse.wst.jsdt.debug.core.jsdi.Value;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.EventQueue;
-import org.eclipse.wst.jsdt.debug.core.jsdi.event.ThreadExitEvent;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequest;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequestManager;
 import org.eclipse.wst.jsdt.debug.core.model.IJavaScriptDebugTarget;
-import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
-import org.eclipse.wst.jsdt.debug.internal.core.model.JavaScriptDebugTarget;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
-import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
-import com.mobilesorcery.sdk.html5.debug.IRedefinable;
-import com.mobilesorcery.sdk.html5.debug.IRedefineListener;
-import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
-import com.mobilesorcery.sdk.html5.debug.LocalVariableScope;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadBooleanValue;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadDropToFrame;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadEventQueue;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadEventRequestManager;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadNullValue;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadNumberValue;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadStackFrame;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadStringValue;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadExitEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadReference;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadUndefinedValue;
+import com.mobilesorcery.sdk.html5.debug.jsdt.SimpleScriptReference;
 import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
 import com.mobilesorcery.sdk.html5.live.LiveServer;
 
@@ -389,6 +378,11 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	public void setDebugTarget(IJavaScriptDebugTarget debugTarget) {
 		this.debugTarget = debugTarget;
+	}
+
+	@Override
+	public void timeout(ReloadVirtualMachine vm) {
+		// Ignore.
 	}
 
 }

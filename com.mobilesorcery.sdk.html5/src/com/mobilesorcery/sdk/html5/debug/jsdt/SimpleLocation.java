@@ -5,6 +5,8 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ScriptReference;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 public class SimpleLocation implements Location {
 
 	private final SimpleScriptReference ref;

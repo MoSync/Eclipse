@@ -4,6 +4,8 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.NumberValue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 public class ReloadNumberValue extends ReloadValue implements NumberValue {
 
 	private final Number number;

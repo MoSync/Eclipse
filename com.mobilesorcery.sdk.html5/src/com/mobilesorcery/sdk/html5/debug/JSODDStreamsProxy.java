@@ -12,7 +12,6 @@ import org.eclipse.debug.core.model.IStreamsProxy;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
-import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
 
 public class JSODDStreamsProxy implements IStreamsProxy {
 

@@ -5,6 +5,8 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.ExceptionEvent;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.ExceptionRequest;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 public class ReloadExceptionEvent extends ReloadLocatableEvent implements ExceptionEvent {
 
 	private final String message;

@@ -27,7 +27,6 @@ import org.eclipse.wst.jsdt.debug.internal.core.model.JavaScriptDebugTarget;
 
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadListeningConnector;
-import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
 
 public class JSODDLaunchConfigurationDelegate implements
 		ILaunchConfigurationDelegate2 {

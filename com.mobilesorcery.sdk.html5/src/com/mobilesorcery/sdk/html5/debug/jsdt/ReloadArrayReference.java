@@ -11,6 +11,8 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.Property;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Value;
 import org.eclipse.wst.jsdt.debug.internal.rhino.jsdi.UndefinedValueImpl;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 public class ReloadArrayReference extends ReloadObjectReference implements ArrayReference {
 
 	private ArrayList<Value> values = null;

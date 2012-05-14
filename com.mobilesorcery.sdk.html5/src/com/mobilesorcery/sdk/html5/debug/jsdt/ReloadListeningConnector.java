@@ -8,6 +8,8 @@ import java.util.Map;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.eclipse.wst.jsdt.debug.core.jsdi.connect.ListeningConnector;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 public class ReloadListeningConnector implements ListeningConnector {
 
 	private static ReloadListeningConnector DEFAULT = null;

@@ -5,6 +5,8 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.ScriptLoadEvent;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.ScriptLoadRequest;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 public class ReloadScriptEvent extends ReloadLocatableEvent implements ScriptLoadEvent {
 
 	private final SimpleScriptReference script;

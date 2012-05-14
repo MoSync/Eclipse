@@ -7,6 +7,8 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.ObjectReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Value;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 public class ReloadObjectReference extends ReloadValue implements ObjectReference {
 
 	private String ctr;

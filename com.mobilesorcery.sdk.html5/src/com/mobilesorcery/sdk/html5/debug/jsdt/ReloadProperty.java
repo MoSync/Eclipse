@@ -3,6 +3,8 @@ package com.mobilesorcery.sdk.html5.debug.jsdt;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Property;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Value;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 public class ReloadProperty extends ReloadMirror implements Property {
 
 	private final String name;

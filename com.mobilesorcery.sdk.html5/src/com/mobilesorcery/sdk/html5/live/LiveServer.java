@@ -62,10 +62,11 @@ import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.RedefineException;
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
 import com.mobilesorcery.sdk.html5.debug.jsdt.JavaScriptBreakpointDesc;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadRedefiner;
-import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.live.LiveServer.InternalQueues.ITimeoutListener;
 
 public class LiveServer implements IResourceChangeListener {
 
@@ -75,6 +76,7 @@ public class LiveServer implements IResourceChangeListener {
 		AtomicBoolean processed = new AtomicBoolean(false);
 		int type;
 		Object data;
+		private long timestamp;
 
 		public DebuggerMessage(int type) {
 			this(type, null);
@@ -83,6 +85,14 @@ public class LiveServer implements IResourceChangeListener {
 		public DebuggerMessage(int type, Object data) {
 			this.type = type;
 			this.data = data;
+		}
+
+		void setOfferTimestamp(long timestamp) {
+			this.timestamp = timestamp;
+		}
+
+		public long getOfferTimestamp() {
+			return timestamp;
 		}
 
 		public boolean setProcessed() {
@@ -108,6 +118,10 @@ public class LiveServer implements IResourceChangeListener {
 
 			public int getSessionId();
 		}
+		
+		interface ITimeoutListener {
+			public void timeoutOccurred(int sessionId);
+		}
 
 		private static final int PING_INTERVAL = 15000;
 
@@ -116,8 +130,9 @@ public class LiveServer implements IResourceChangeListener {
 		// TODO: Slow refactoring to make this class useful
 		private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> consumers = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
 
-		// TODO: Only one listener per message id? I guess so.
 		private final HashMap<Integer, IMessageListener> messageListeners = new HashMap<Integer, IMessageListener>();
+		
+		private ITimeoutListener timeoutListener = null;
 
 		private final HashMap<Integer, Long> takeTimestamps = new HashMap<Integer, Long>();
 
@@ -180,6 +195,7 @@ public class LiveServer implements IResourceChangeListener {
 				LinkedBlockingQueue<DebuggerMessage> consumer = consumers
 						.get(sessionId);
 				if (consumer != null) {
+					msg.setOfferTimestamp(System.currentTimeMillis());
 					consumer.offer(msg);
 				}
 			}
@@ -224,6 +240,10 @@ public class LiveServer implements IResourceChangeListener {
 			return result[0];
 		}
 
+		public void setTimeoutListener(ITimeoutListener timeoutListener) {
+			this.timeoutListener = timeoutListener;
+		}
+		
 		private synchronized void setMessageListener(int sessionId, int id,
 				IMessageListener listener) {
 			synchronized (queueLock) {
@@ -319,9 +339,16 @@ public class LiveServer implements IResourceChangeListener {
 				for (Integer sessionId : consumers.keySet()) {
 					Long timeOfLastTake = takeTimestamps.get(sessionId);
 					boolean isWaitingForPing = pendingPings.contains(sessionId);
+					long now = System.currentTimeMillis();
 					boolean needsPing = !isWaitingForPing
 							&& timeOfLastTake != null
-							&& System.currentTimeMillis() - timeOfLastTake > PING_INTERVAL;
+							&& now - timeOfLastTake > PING_INTERVAL;
+					DebuggerMessage unHandled = consumers.get(sessionId).poll();
+					boolean timeoutOccured = unHandled != null
+							&& now - unHandled.getOfferTimestamp() > 30000; // TODO!
+					if (timeoutOccured && timeoutListener != null) {
+						timeoutListener.timeoutOccurred(sessionId);
+					}
 					if (needsPing) {
 						pendingPings.add(sessionId);
 						offer(sessionId, ping());
@@ -342,7 +369,7 @@ public class LiveServer implements IResourceChangeListener {
 	private static final int EVAL = 5;
 
 	private static final int REDEFINE = 7;
-	
+
 	private static final int RELOAD = 8;
 
 	private static final int BREAKPOINT = 10;
@@ -431,7 +458,7 @@ public class LiveServer implements IResourceChangeListener {
 				// RACE CONDITION WILL OCCUR HERE!
 				if (!preflight) {
 					Integer sessionId = extractSessionId(command);
-					notifyListeners(getCommand(command), command);
+					notifyCommandListeners(getCommand(command), command);
 					result = pushCommandsToClient(sessionId, preflight);
 				} else {
 					return new JSONObject();
@@ -496,7 +523,7 @@ public class LiveServer implements IResourceChangeListener {
 					} else {
 						result.put("noStack", true);
 					}
-				} else if (queuedType == REDEFINE) { 
+				} else if (queuedType == REDEFINE) {
 					Pair<String, String> data = (Pair<String, String>) queuedObject;
 					result = newCommand("update-function");
 					JSONArray functions = new JSONArray();
@@ -744,6 +771,15 @@ public class LiveServer implements IResourceChangeListener {
 			server.setConnectors(new Connector[] { connector });
 			server.start();
 			queues.startPingDeamon();
+			queues.setTimeoutListener(new ITimeoutListener() {
+				@Override
+				public void timeoutOccurred(int sessionId) {
+					ReloadVirtualMachine vm = getVM(sessionId);
+					if (vm != null) {
+						notifyTimeoutListeners(vm);
+					}
+				}
+			});
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 				InetAddress host = InetAddress.getLocalHost();
 				String hostName = host.getHostName();
@@ -782,8 +818,9 @@ public class LiveServer implements IResourceChangeListener {
 		}
 		return null;
 	}
-	
-	public synchronized List<ReloadVirtualMachine> getVMs(boolean includeUnassigned) {
+
+	public synchronized List<ReloadVirtualMachine> getVMs(
+			boolean includeUnassigned) {
 		ArrayList<ReloadVirtualMachine> result = new ArrayList<ReloadVirtualMachine>();
 		for (ReloadVirtualMachine vm : vmsByHost.values()) {
 			if (includeUnassigned || !unassignedVMs.contains(vm)) {
@@ -843,9 +880,15 @@ public class LiveServer implements IResourceChangeListener {
 		this.listeners.remove(listener);
 	}
 
-	private void notifyListeners(String commandName, JSONObject command) {
+	private void notifyCommandListeners(String commandName, JSONObject command) {
 		for (ILiveServerListener listener : listeners) {
 			listener.received(commandName, command);
+		}
+	}
+	
+	private void notifyTimeoutListeners(ReloadVirtualMachine vm) {
+		for (ILiveServerListener listener : listeners) {
+			listener.timeout(vm);
 		}
 	}
 
@@ -876,6 +919,7 @@ public class LiveServer implements IResourceChangeListener {
 		if (refs.isEmpty()) {
 			unassignedVMs.clear();
 			vmsByHost.clear();
+			queues.setTimeoutListener(null);
 			queues.stopPingDeamon();
 			queues.killAllSessions();
 			if (server != null) {
@@ -942,13 +986,14 @@ public class LiveServer implements IResourceChangeListener {
 	public void update(int sessionId, IFile resource) {
 		queues.offer(sessionId, new DebuggerMessage(RELOAD, resource));
 	}
-	
+
 	public void reload(int sessionId) {
 		queues.offer(sessionId, new DebuggerMessage(RELOAD, null));
 	}
 
 	public void updateFunction(int sessionId, String key, String source) {
-		queues.offer(sessionId, new DebuggerMessage(REDEFINE, new Pair<String, String>(key, source)));
+		queues.offer(sessionId, new DebuggerMessage(REDEFINE,
+				new Pair<String, String>(key, source)));
 	}
 
 	public void terminate(int sessionId) {
@@ -981,7 +1026,7 @@ public class LiveServer implements IResourceChangeListener {
 	private int getTimeout(int sessionId) {
 		// TODO: Use launch config/prefs. Hm. Prefs easier. And user-friendlier
 		// :)
-		return 3;
+		return Html5Plugin.getDefault().getTimeout();
 	}
 
 	public void addConsoleListener(ILineHandler handler) {
@@ -1006,9 +1051,9 @@ public class LiveServer implements IResourceChangeListener {
 				projectsToReload.put(project, new ProjectRedefinable(project));
 			}
 		}
-		
+
 		IResourceDelta delta = event.getDelta();
-		
+
 		if (delta != null) {
 			try {
 				delta.accept(new IResourceDeltaVisitor() {
@@ -1019,14 +1064,17 @@ public class LiveServer implements IResourceChangeListener {
 						if (resource != null
 								&& (delta.getFlags() & IResourceDelta.CONTENT) != 0) {
 							IProject project = resource.getProject();
-							if (project != null && resource.getType() == IResource.FILE) {
-								ProjectRedefinable projectRedefinable = projectsToReload.get(project);
+							if (project != null
+									&& resource.getType() == IResource.FILE) {
+								ProjectRedefinable projectRedefinable = projectsToReload
+										.get(project);
 								if (projectRedefinable == null) {
 									return false;
 								}
 								JSODDSupport jsoddSupport = Html5Plugin
 										.getDefault().getJSODDSupport(project);
-								projectRedefinable.addChild(jsoddSupport.rewrite(resource.getFullPath(), null));
+								projectRedefinable.addChild(jsoddSupport
+										.rewrite(resource.getFullPath(), null));
 							}
 						}
 						return true;
@@ -1036,10 +1084,11 @@ public class LiveServer implements IResourceChangeListener {
 				// TODO: handle exception
 			}
 		}
-		
+
 		int failedRedefineResolution = 0;
 		for (ReloadVirtualMachine vm : vms) {
-			ProjectRedefinable projectRedefinable = projectsToReload.get(vm.getProject());
+			ProjectRedefinable projectRedefinable = projectsToReload.get(vm
+					.getProject());
 			ReloadRedefiner redefiner = new ReloadRedefiner(vm);
 			ProjectRedefinable snapshot = vm.getSnapshot();
 			if (snapshot != null) {
@@ -1084,6 +1133,5 @@ public class LiveServer implements IResourceChangeListener {
 			return new HashSet<Integer>(this.queues.consumers.keySet());
 		}
 	}
-
 
 }

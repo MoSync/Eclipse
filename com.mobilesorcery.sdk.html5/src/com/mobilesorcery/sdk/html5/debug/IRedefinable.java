@@ -2,7 +2,6 @@ package com.mobilesorcery.sdk.html5.debug;
 
 import java.util.List;
 
-import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
 
 public interface IRedefinable {
 

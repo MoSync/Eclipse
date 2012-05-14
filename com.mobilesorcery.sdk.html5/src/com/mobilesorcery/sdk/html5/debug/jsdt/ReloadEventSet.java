@@ -7,6 +7,8 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.EventSet;
 import org.eclipse.wst.jsdt.debug.internal.rhino.jsdi.ThreadReferenceImpl;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 public class ReloadEventSet extends HashSet implements EventSet {
 
 	private final ReloadVirtualMachine vm;

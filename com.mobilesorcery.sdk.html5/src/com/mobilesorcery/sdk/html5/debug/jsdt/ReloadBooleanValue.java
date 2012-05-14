@@ -3,12 +3,14 @@ package com.mobilesorcery.sdk.html5.debug.jsdt;
 import org.eclipse.wst.jsdt.debug.core.jsdi.BooleanValue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 
 public class ReloadBooleanValue extends ReloadValue implements BooleanValue {
 
 	private final boolean bool;
 
-	protected ReloadBooleanValue(ReloadVirtualMachine vm, boolean bool) {
+	public ReloadBooleanValue(ReloadVirtualMachine vm, boolean bool) {
 		super(vm);
 		this.bool = bool;
 	}

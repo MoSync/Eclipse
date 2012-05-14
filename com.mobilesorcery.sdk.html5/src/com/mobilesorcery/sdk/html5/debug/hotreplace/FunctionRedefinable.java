@@ -14,9 +14,9 @@ import com.mobilesorcery.sdk.html5.debug.IRedefiner;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.RedefineException;
 import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadStackFrame;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadReference;
-import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.debug.rewrite.ISourceSupport;
 import com.mobilesorcery.sdk.html5.debug.rewrite.NodeRewrite;
 

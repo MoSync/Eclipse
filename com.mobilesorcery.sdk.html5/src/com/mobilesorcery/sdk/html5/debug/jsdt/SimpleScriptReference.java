@@ -12,6 +12,8 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ScriptReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+
 public class SimpleScriptReference implements ScriptReference {
 
 	private final ReloadVirtualMachine vm;

@@ -56,7 +56,9 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.jetty.util;bundle-version="8.1.1"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
-Export-Package: com.mobilesorcery.sdk.html5
+Export-Package: com.mobilesorcery.sdk.html5,
+ com.mobilesorcery.sdk.html5.debug,
+ com.mobilesorcery.sdk.html5.live
 Import-Package: javax.servlet;version="2.5.0",
  javax.servlet.http,
  javax.servlet.resources;version="2.5.0",
