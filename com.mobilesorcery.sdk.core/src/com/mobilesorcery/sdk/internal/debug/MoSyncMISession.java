@@ -19,6 +19,10 @@ import org.eclipse.cdt.debug.mi.core.MIProcess;
 import org.eclipse.cdt.debug.mi.core.MISession;
 import org.eclipse.cdt.debug.mi.core.command.CommandFactory;
 import org.eclipse.cdt.debug.mi.core.command.MITargetSelect;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 
 public class MoSyncMISession extends MISession {
 
@@ -28,14 +32,34 @@ public class MoSyncMISession extends MISession {
 	}
 
 	protected void initialize() throws MIException {
-		super.initialize();
+		// MOSYNC-2163: An intermittent bug that causes connection failed
+		// on some computers. Let's just try to reconnect two or three times
+		// before giving up.
+		int retries = 3;
+		while (retries > 0)
+		try {
+			// MDB will die immediately if no connection can be established.
+			super.initialize();
+			// MBD also requires us connecting to port 50000 and then
+			// an exec-continue needs to be sent to it.
+			MITargetSelect selectTarget = getCommandFactory().createMITargetSelect(new String[] { "remote", "localhost:50000" });
+		    postCommand(selectTarget);
+			selectTarget.getMIInfo();
+			retries = 0;
+		} catch (MIException e) {
+			retries--;
+			// Sleep for a short while between retries.
+			try {
+				Thread.sleep(3000);
+			} catch (InterruptedException e1) {
+				// Silently ignore.
+			}
+			if (retries <= 0) {
+				throw e;
+			}
+			CoreMoSyncPlugin.getDefault().getLog().log(new Status(IStatus.INFO, CoreMoSyncPlugin.PLUGIN_ID, "Failed to connect to debug target. Will retry; retries left: " + retries));
+		}
 
-		// MBD also requires us connecting to port 50000 and then
-		// an exec-continue needs to be sent to it.
-		MITargetSelect selectTarget = getCommandFactory().createMITargetSelect(
-				new String[] { "remote", "localhost:50000" });
-		postCommand(selectTarget);
-		selectTarget.getMIInfo();
 
 		// MIExecContinue start = getCommandFactory().createMIExecContinue();
 		// postCommand(start);
