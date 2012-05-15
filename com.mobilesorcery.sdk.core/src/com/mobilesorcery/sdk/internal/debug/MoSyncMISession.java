@@ -42,7 +42,7 @@ public class MoSyncMISession extends MISession {
 		try {
 			// MBD also requires us connecting to port 50000 and then
 			// an exec-continue needs to be sent to it.
-			MITargetSelect selectTarget = getCommandFactory().createMITargetSelect(new String[] { "remote", "localhost:50006" });
+			MITargetSelect selectTarget = getCommandFactory().createMITargetSelect(new String[] { "remote", "localhost:50000" });
 		    postCommand(selectTarget);
 			selectTarget.getMIInfo();
 			retries = 0;
