@@ -290,6 +290,6 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	}
 
 	public int getTimeout() {
-		return 3000;
+		return 3;
 	}
 }

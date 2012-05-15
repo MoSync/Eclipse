@@ -335,6 +335,8 @@ public class LiveServer implements IResourceChangeListener {
 		}
 
 		protected void pingAll() {
+			// This ping is there to make sure that long polling does not timeout
+			// on the client side.
 			synchronized (queueLock) {
 				for (Integer sessionId : consumers.keySet()) {
 					Long timeOfLastTake = takeTimestamps.get(sessionId);
@@ -504,7 +506,7 @@ public class LiveServer implements IResourceChangeListener {
 					result = newCommand(getStepCommand((Integer) queuedElement.data));
 				} else if (queuedType == RELOAD) {
 					String command = queuedObject == null ? "restart"
-							: "reload";
+							: "update";
 					result = newCommand(command);
 					if (queuedObject != null) {
 						IFile resource = (IFile) queuedObject;
@@ -648,11 +650,11 @@ public class LiveServer implements IResourceChangeListener {
 					}
 				}
 				return new JSONObject();
-			} else if (targetMatches(target, "mobile/fetch")) {
+			} else if (targetMatches(target, "/mobile/fetch")) {
 				if (command != null) {
 					String localPath = (String) command.get("resource");
 					Integer sessionId = extractSessionId(command);
-					if (sessionId != null) {
+					if (sessionId != null && localPath != null) {
 						ReloadVirtualMachine vm = getVM(sessionId);
 						IProject project = vm.getProject();
 						JSODDSupport jsoddSupport = Html5Plugin.getDefault()
@@ -794,7 +796,7 @@ public class LiveServer implements IResourceChangeListener {
 	}
 
 	public IPath getLocalPath(IFile file) {
-		IPath root = Html5Plugin.getHTML5Folder(file.getProject());
+		IPath root = file.getProject().getFolder(Html5Plugin.getHTML5Folder(file.getProject())).getFullPath();
 		if (root.isPrefixOf(file.getFullPath())) {
 			return file.getFullPath().removeFirstSegments(root.segmentCount());
 		}

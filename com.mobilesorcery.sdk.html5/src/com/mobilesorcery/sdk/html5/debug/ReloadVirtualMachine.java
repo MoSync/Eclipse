@@ -88,9 +88,11 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	
 	private void resetEventQueue() {
 		if (eventQueue != null) {
+			eventQueue.close();
 			List exitRequests = requestMgr.threadExitRequests();
 			for (Object exitRequest : exitRequests) {
-				eventQueue.received(ReloadEventQueue.CUSTOM_EVENT, new ReloadThreadExitEvent(this, mainThread, null, (EventRequest) exitRequest));
+				// Don't reactivate this yet!
+				//eventQueue.received(ReloadEventQueue.CUSTOM_EVENT, new ReloadThreadExitEvent(this, mainThread, null, (EventRequest) exitRequest));
 			}
 		}
 	}

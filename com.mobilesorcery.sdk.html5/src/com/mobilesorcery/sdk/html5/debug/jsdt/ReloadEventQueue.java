@@ -48,7 +48,7 @@ public class ReloadEventQueue implements EventQueue {
 			// TODO: EVENTS SHOULD BE PURE JSON!?
 			Pair<String, Object> event = timeout > 0 ? internalQueue.poll(
 					timeout, TimeUnit.MILLISECONDS) : internalQueue.take();
-			if (event != null) {
+			if (event.first != null) {
 				return handleEvent(event.first, event.second);
 			}
 		} catch (Exception e) {
@@ -58,6 +58,9 @@ public class ReloadEventQueue implements EventQueue {
 	}
 
 	private EventSet handleEvent(String commandName, Object commandObj) {
+		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+			CoreMoSyncPlugin.trace("Event {0}", commandName);
+		}
 		ReloadEventSet eventSet = new ReloadEventSet(vm);
 		ReloadVirtualMachine targetVM = extractVM(commandObj);
 		if (targetVM == this.vm) {
@@ -180,6 +183,8 @@ public class ReloadEventQueue implements EventQueue {
 	}
 
 	public void close() {
-		internalQueue.offer(null);
+		internalQueue.offer(new Pair<String, Object>(null, null));
+		internalQueue.clear();
 	}
+
 }
