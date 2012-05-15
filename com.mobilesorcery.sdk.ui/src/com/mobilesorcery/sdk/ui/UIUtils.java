@@ -29,6 +29,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Widget;
@@ -304,6 +305,17 @@ public class UIUtils {
 		int x = (screenSize.width - newShell.getSize().x) / 2;
 		int y = (screenSize.height - newShell.getSize().y) / 2;
 		newShell.setLocation(x, y);
+	}
+
+	/**
+	 * Sets the name of control. For testing purposes.
+	 * @param control
+	 * @param name
+	 */
+	public static void nameControl(Control control, String name) {
+		if (control != null) {
+			control.setData("name", name);
+		}
 	}
 
 }
