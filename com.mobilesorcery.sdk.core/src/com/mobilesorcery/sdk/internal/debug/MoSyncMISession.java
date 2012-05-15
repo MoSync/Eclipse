@@ -32,14 +32,14 @@ public class MoSyncMISession extends MISession {
 	}
 
 	protected void initialize() throws MIException {
-		super.initialize();
-
 		// MOSYNC-2163: An intermittent bug that causes connection failed
 		// on some computers. Let's just try to reconnect two or three times
 		// before giving up.
 		int retries = 3;
 		while (retries > 0)
 		try {
+			// MDB will die immediately if no connection can be established.
+			super.initialize();
 			// MBD also requires us connecting to port 50000 and then
 			// an exec-continue needs to be sent to it.
 			MITargetSelect selectTarget = getCommandFactory().createMITargetSelect(new String[] { "remote", "localhost:50000" });
