@@ -33,7 +33,9 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
@@ -836,6 +838,25 @@ public class Util {
 			}
 		}
 		return buf.toString();
+	}
+
+	/**
+	 * Reverses a map into a {@link HashMap}.
+	 * @param original The original map to reverse.
+	 * @return A reverse map. If the original map contains several
+	 * keys with the same value an {@link IllegalArgumentException}
+	 * is thrown.
+	 */
+	public static <K, V> HashMap<V, K> reverseMap(Map<K, V> map) {
+		HashMap<V, K> result = new HashMap<V, K>();
+		for (Map.Entry<K, V> entry : map.entrySet()) {
+			V key = entry.getValue();
+			if (result.containsKey(key)) {
+				throw new IllegalArgumentException("Key already present.");
+			}
+			result.put(key, entry.getKey());
+		}
+		return result;
 	}
 
 }

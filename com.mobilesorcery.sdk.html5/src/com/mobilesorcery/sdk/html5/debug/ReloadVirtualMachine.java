@@ -362,7 +362,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		}
 	}
 
-	private IJavaScriptDebugTarget getJavaScriptDebugTarget() {
+	public IJavaScriptDebugTarget getJavaScriptDebugTarget() {
 		return debugTarget;
 	}
 

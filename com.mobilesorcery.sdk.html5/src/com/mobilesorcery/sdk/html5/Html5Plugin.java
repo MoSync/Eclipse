@@ -38,6 +38,7 @@ import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 import com.mobilesorcery.sdk.html5.debug.JSODDLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
+import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
 import com.mobilesorcery.sdk.html5.live.LiveServer;
 import com.mobilesorcery.sdk.html5.live.ReloadManager;
 import com.mobilesorcery.sdk.profiles.ITargetProfileProvider;
@@ -64,6 +65,20 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	public static final String ODD_SUPPORT_PROP = PLUGIN_ID + ".odd";
 
 	public static final String ANONYMOUS_FUNCTION = "<anonymous>";
+
+	static final String RELOAD_STRATEGY_PREF = "reload.strategy";
+	
+	static final String SOURCE_CHANGE_STRATEGY_PREF = "source.change.strategy";
+
+	public static final String TIMEOUT_PREF = "timeout";
+
+	public static final int DEFAULT_TIMEOUT = 3;
+
+	public static final int DO_NOTHING = 0;
+	
+	public static final int RELOAD = 1;
+	
+	public static final int HOT_CODE_REPLACE = 2;
 
 	// The shared instance
 	private static Html5Plugin plugin;
@@ -290,6 +305,33 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	}
 
 	public int getTimeout() {
-		return 3;
+		int result = getPreferenceStore().getInt(TIMEOUT_PREF);
+		if (result < 1) {
+			result = DEFAULT_TIMEOUT; // Default; regardless of store value
+		}
+		return result;
 	}
+	
+	public void setTimeout(int timeout) {
+		getPreferenceStore().setValue(TIMEOUT_PREF, timeout);
+	}
+
+	public int getReloadStrategy() {
+		// TODO. Default = 0 = UNDEFINED
+		return getPreferenceStore().getInt(RELOAD_STRATEGY_PREF);
+	}
+	
+	public void setReloadStrategy(int reloadStrategy) {
+		getPreferenceStore().setDefault(RELOAD_STRATEGY_PREF, reloadStrategy);
+	}
+
+	public void setSourceChangeStrategy(int sourceChangeStrategy) {
+		getPreferenceStore().setValue(SOURCE_CHANGE_STRATEGY_PREF, sourceChangeStrategy);
+	}
+	
+	public int getSourceChangeStrategy() {
+		return getPreferenceStore().getInt(SOURCE_CHANGE_STRATEGY_PREF);
+	}
+
+
 }

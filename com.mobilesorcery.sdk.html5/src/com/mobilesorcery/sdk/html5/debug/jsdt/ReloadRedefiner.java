@@ -25,8 +25,11 @@ public class ReloadRedefiner implements IRedefiner {
 
 	private RedefinitionResult redefineResult;
 
-	public ReloadRedefiner(ReloadVirtualMachine vm) {
+	private boolean reloadOnly;
+
+	public ReloadRedefiner(ReloadVirtualMachine vm, boolean reloadOnly) {
 		this.vm = vm;
+		this.reloadOnly = reloadOnly;
 		this.redefineResult = RedefinitionResult.ok();
 	}
 	
@@ -34,7 +37,7 @@ public class ReloadRedefiner implements IRedefiner {
 	public void collect(IRedefinable redefinable, IRedefinable replacement) {
 		if (redefinable instanceof FileRedefinable) {
 			redefineResult = redefineResult.merge(collectFile((FileRedefinable) redefinable, (FileRedefinable) replacement));
-		} else if (redefinable instanceof FunctionRedefinable) {
+		} else if (!reloadOnly && redefinable instanceof FunctionRedefinable) {
 			redefineResult = redefineResult.merge(collectFunction((FunctionRedefinable) redefinable, (FunctionRedefinable) replacement));
 		}
 	}
@@ -101,7 +104,7 @@ public class ReloadRedefiner implements IRedefiner {
 		
 		if (reloadHint) {
 			vm.reload();
-		} else {
+		} else if (!reloadOnly) {
 			for (FunctionRedefinable functionUpdate : functionUpdates) {
 				vm.updateFunction(functionUpdate.key(), functionUpdate.getFunctionSource());
 			}

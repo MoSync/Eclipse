@@ -2,6 +2,12 @@ package com.mobilesorcery.sdk.html5.debug;
 
 public class RedefinitionResult {
 
+	public static final int UNDETERMINED = 0;
+	public static final int TERMINATE = 1;
+	public static final int RELOAD = 2;
+	public static final int CONTINUE = 3;
+	
+	
 	public static final int REDEFINE_OK = 0;
 	public static final int CANNOT_REDEFINE = 1 << 2;
 	public static final int CANNOT_RESTART = 1 << 1;
