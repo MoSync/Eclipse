@@ -18,6 +18,7 @@ import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
@@ -51,7 +52,7 @@ public interface IBuildState {
      * @return
      */
     public abstract boolean isValid();
-    
+
     /**
      * Sets the valid state returned by isValid.
      * @param valid
@@ -66,7 +67,7 @@ public interface IBuildState {
      * <p>If the resource is a container, then the state of
      * the container's children will be updated recursively.</p>
      * @param resource
-     * @throws CoreException 
+     * @throws CoreException
      */
     public abstract void updateState(IResource resource) throws CoreException;
 
@@ -82,7 +83,7 @@ public interface IBuildState {
      * @param result
      */
     public abstract void updateResult(IBuildResult buildResult);
-    
+
     /**
      * <p>Updates the properties used for this build (will serve as a nice log
      * of 'what did I build with'.</p>
@@ -119,7 +120,13 @@ public interface IBuildState {
      * the ones currently set for the project.
      */
     public abstract Set<String> getChangedBuildProperties();
-    
+
+    /**
+     * Get the properties used for building (the last build).
+     * @return
+     */
+    public Map<String, String> getBuildProperties();
+
     /**
      * Clears all build state. Calling <code>fullRebuildNeeded</code>
      * right after this method will return <code>true</code>.
@@ -130,5 +137,11 @@ public interface IBuildState {
 
     public IBuildResult getBuildResult();
 
+    /**
+     * Returns the location of the build result meta data directory.
+     * Clients may add files to this directory.
+     * @return
+     */
+    public IPath getLocation();
 
 }

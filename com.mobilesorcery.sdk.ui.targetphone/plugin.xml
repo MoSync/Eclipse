@@ -17,7 +17,7 @@
       <actionSet
             id="com.mobilesorcery.sdk.ui.targetphone"
             label="Target Phone Actions"
-            visible="false">
+            visible="true">
          <action
                class="com.mobilesorcery.sdk.ui.targetphone.internal.SelectTargetPhoneAction"
                icon="icons/search_mobile.png"

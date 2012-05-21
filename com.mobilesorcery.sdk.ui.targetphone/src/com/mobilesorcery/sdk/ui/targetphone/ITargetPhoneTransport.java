@@ -17,7 +17,7 @@ import org.eclipse.jface.resource.ImageDescriptor;
 
 
 public interface ITargetPhoneTransport extends ITargetPhoneTransportDelegate {
-	
+
 	/**
 	 * Returns the unique identifier of this <code>ITargetPhoneTransport</code>.
 	 * A shared instance of <code>ITargetPhoneTransport</code> with a specified id
@@ -25,7 +25,7 @@ public interface ITargetPhoneTransport extends ITargetPhoneTransportDelegate {
 	 * @return
 	 */
 	public String getId();
-	
+
 	/**
 	 * Returns a default icon for this means of transport.
 	 * @return

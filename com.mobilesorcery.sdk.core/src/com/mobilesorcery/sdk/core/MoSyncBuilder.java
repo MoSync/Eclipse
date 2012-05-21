@@ -411,17 +411,20 @@ public class MoSyncBuilder extends ACBuilder {
 				CONSOLE_ID);
 		prepareConsole(null, console);
 
+		// We use a null monitor to avoid overloading the UI thread.
+		IProgressMonitor subMonitor = new NullProgressMonitor();
+
 		console.addMessage(createBuildMessage("Cleaning",
 				MoSyncProject.create(project), variant));
 		Util.deleteFiles(getPackageOutputPath(project, variant).toFile(), null,
-				512, monitor);
+				512, subMonitor);
 		Util.deleteFiles(getProgramOutputPath(project, variant).toFile(), null,
-				1, monitor);
+				1, subMonitor);
 		Util.deleteFiles(getProgramCombOutputPath(project, variant).toFile(),
-				null, 1, monitor);
+				null, 1, subMonitor);
 		Util.deleteFiles(getResourceOutputPath(project, variant).toFile(),
-				null, 1, monitor);
-		Util.deleteFiles(outputFile, Util.getExtensionFilter("s"), 512, monitor);
+				null, 1, subMonitor);
+		Util.deleteFiles(outputFile, Util.getExtensionFilter("s"), 512, subMonitor);
 
 		IBuildState buildState = MoSyncProject.create(project).getBuildState(
 				variant);
@@ -620,6 +623,8 @@ public class MoSyncBuilder extends ACBuilder {
 				if (monitor.isCanceled()) {
 					return buildResult;
 				}
+
+				console.addMessage(IProcessConsole.MESSAGE, MessageFormat.format("Performing build step ''{0}''", buildStep.getName()));
 
 				if (continueFlag != IBuildStep.SKIP
 						&& buildStep.shouldBuild(mosyncProject, session,
@@ -1139,7 +1144,7 @@ public class MoSyncBuilder extends ACBuilder {
 
 	public static IProject getProject(ILaunchConfiguration launchConfig)
 			throws CoreException {
-		String projectName = launchConfig.getAttribute(
+		String projectName = launchConfig == null ? null : launchConfig.getAttribute(
 				ILaunchConstants.PROJECT, "");
 		if (Util.isEmpty(projectName)) {
 			return null;

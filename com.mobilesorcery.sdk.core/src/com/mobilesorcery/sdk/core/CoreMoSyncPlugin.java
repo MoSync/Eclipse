@@ -15,7 +15,6 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -23,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -33,12 +33,13 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 import javax.crypto.spec.PBEKeySpec;
-import javax.rmi.CORBA.Tie;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -51,8 +52,6 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.equinox.security.storage.SecurePreferencesFactory;
-import org.eclipse.equinox.security.storage.StorageException;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -61,8 +60,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
-import sun.security.action.GetLongAction;
-
+import com.mobilesorcery.sdk.core.build.BuildSequence;
 import com.mobilesorcery.sdk.core.build.BundleBuildStep;
 import com.mobilesorcery.sdk.core.build.CommandLineBuildStep;
 import com.mobilesorcery.sdk.core.build.CompileBuildStep;
@@ -78,7 +76,6 @@ import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.core.memory.LowMemoryManager;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.core.stats.Stats;
-import com.mobilesorcery.sdk.core.templates.TemplateManager;
 import com.mobilesorcery.sdk.internal.ErrorPackager;
 import com.mobilesorcery.sdk.internal.HeadlessUpdater;
 import com.mobilesorcery.sdk.internal.PID;
@@ -89,7 +86,6 @@ import com.mobilesorcery.sdk.internal.RebuildListener;
 import com.mobilesorcery.sdk.internal.ReindexListener;
 import com.mobilesorcery.sdk.internal.SecurePasswordProvider;
 import com.mobilesorcery.sdk.internal.SecureProperties;
-import com.mobilesorcery.sdk.internal.debug.MoSyncBreakpointSynchronizer;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLauncherProxy;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
@@ -148,8 +144,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
     private Integer[] sortedPanicErrorCodes;
 
-	private MoSyncBreakpointSynchronizer bpSync;
-
 	private boolean isHeadless = false;
 
 	private HashMap<String, IDeviceFilterFactory> factories;
@@ -196,7 +190,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         initPropertyInitializers();
         initGlobalDependencyManager();
         initEmulatorProcessManager();
-        installBreakpointHack();
         installResourceListener();
         initBuildConfigurationTypes();
         initLaunchers();
@@ -293,11 +286,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		}
 	}
 
-    private void installBreakpointHack() {
-    	bpSync = new MoSyncBreakpointSynchronizer();
-    	bpSync.install();
-	}
-
 	private void initGlobalDependencyManager() {
     	// Currently, all workspaces share this guy -- fixme later.
         this.projectDependencyManager = new DependencyManager<IProject>();
@@ -315,7 +303,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         projectDependencyManager = null;
         disposeUpdater();
         MoSyncProject.removeGlobalPropertyChangeListener(reindexListener);
-        bpSync.uninstall();
         deinstallResourceListener();
         super.stop(context);
     }
@@ -631,7 +618,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 	}
 
 	private void installResourceListener() {
-		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.PRE_DELETE | IResourceChangeEvent.PRE_BUILD | IResourceChangeEvent.PRE_CLOSE);
+		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.PRE_DELETE | IResourceChangeEvent.PRE_BUILD | IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.POST_CHANGE);
 	}
 
 	private void deinstallResourceListener() {
@@ -887,7 +874,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
-		if (event.getType() == IResourceChangeEvent.PRE_DELETE || event.getType() == IResourceChangeEvent.PRE_CLOSE) {
+		int eventType = event.getType();
+		if (eventType == IResourceChangeEvent.PRE_DELETE || eventType == IResourceChangeEvent.PRE_CLOSE) {
 		    IResource resource = event.getResource();
 	        IProject project = (resource != null && resource.getType() == IResource.PROJECT) ? (IProject) resource : null;
 
@@ -896,7 +884,7 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 			    // So we do not keep any old references to this project
 			    mosyncProject.dispose();
 			}
-		} else if (event.getType() == IResourceChangeEvent.PRE_BUILD && event.getBuildKind() != IncrementalProjectBuilder.CLEAN_BUILD && event.getBuildKind() != IncrementalProjectBuilder.AUTO_BUILD) {
+		} else if (eventType == IResourceChangeEvent.PRE_BUILD && event.getBuildKind() != IncrementalProjectBuilder.CLEAN_BUILD && event.getBuildKind() != IncrementalProjectBuilder.AUTO_BUILD) {
 		    Object source = event.getSource();
 		    ArrayList<IResource> mosyncProjects = new ArrayList<IResource>();
 		    IProject[] projects = null;
@@ -926,7 +914,44 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 		            currentJob.cancel();
 		        }
 		    }
+		} else {
+			Collection<MoSyncProject> projects = extractProjectsToReinit(event);
+			for (MoSyncProject project : projects) {
+				project.reinit(true);
+			}
 		}
+	}
+
+	public Collection<MoSyncProject> extractProjectsToReinit(IResourceChangeEvent event) {
+		final HashSet<MoSyncProject> result = new HashSet<MoSyncProject>();
+		boolean isContentChange = event.getDelta() != null && (event.getDelta().getFlags() & IResourceDelta.CONTENT) != 0;
+		boolean isFileResource = event.getResource() != null && event.getResource().getType() == IResource.FILE;
+		if (event.getType() == IResourceChangeEvent.POST_CHANGE && isContentChange && isFileResource) {
+			try {
+				event.getDelta().accept(new IResourceDeltaVisitor() {
+					@Override
+					public boolean visit(IResourceDelta delta) throws CoreException {
+						IResource resource = delta.getResource();
+						if (resource != null) {
+							String name = resource.getName();
+							if (MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME.equals(name) ||
+								MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME.equals(name)) {
+								MoSyncProject mosyncProject = MoSyncProject.create(resource.getProject());
+								if (mosyncProject != null) {
+									result.add(mosyncProject);
+									// And for good measure...
+									BuildSequence.clearCache(mosyncProject);
+								}
+							}
+						}
+						return true;
+					}
+				});
+			} catch (CoreException e) {
+				CoreMoSyncPlugin.getDefault().log(e);
+			}
+		}
+		return result;
 	}
 
     public String[] getBuildConfigurationTypes() {

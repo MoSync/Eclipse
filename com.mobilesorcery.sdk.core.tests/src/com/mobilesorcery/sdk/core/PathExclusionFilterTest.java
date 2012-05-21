@@ -41,7 +41,7 @@ public class PathExclusionFilterTest {
 				project.delete(true, new NullProgressMonitor());
 			}
 			project.create(null);
-			MoSyncNature.addNatureToProject(project);
+			MoSyncNature.addNatureToProject(project, true);
 		} catch (CoreException e) {
 			e.printStackTrace();
 		}

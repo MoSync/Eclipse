@@ -104,8 +104,14 @@ public class CopyBuildResultBuildStep extends AbstractBuildStep {
 
 	public CopyBuildResultBuildStep(Factory prototype) {
 		this.prototype = prototype;
+		setName(prototype.getName());
 	}
 
+	@Override
+	public boolean shouldAdd(IBuildSession session) {
+		return session.doPack();
+	}
+	
 	@Override
 	public int incrementalBuild(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult result,

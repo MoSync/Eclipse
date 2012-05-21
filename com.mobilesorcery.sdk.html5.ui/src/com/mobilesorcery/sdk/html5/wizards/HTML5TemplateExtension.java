@@ -16,6 +16,7 @@ package com.mobilesorcery.sdk.html5.wizards;
 import org.eclipse.core.runtime.CoreException;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.templates.IProjectTemplateExtensionDelegate;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 
@@ -23,7 +24,8 @@ public class HTML5TemplateExtension implements IProjectTemplateExtensionDelegate
 
 	@Override
 	public void configureProject(MoSyncProject project) throws CoreException {
-		Html5Plugin.getDefault().addHTML5Support(project);
+		boolean configureForODD = PropertyUtil.getBoolean(project, Html5Plugin.ODD_SUPPORT_PROP);
+		Html5Plugin.getDefault().addHTML5Support(project, configureForODD);
 	}
 
 }

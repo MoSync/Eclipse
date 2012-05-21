@@ -33,6 +33,7 @@ import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 import com.mobilesorcery.sdk.builder.android.launch.ADB;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
+import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.ProfileDBManager;
@@ -120,6 +121,10 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 		if (phone instanceof AndroidTargetPhone) {
 			AndroidTargetPhone androidPhone = (AndroidTargetPhone) phone;
 			String serialNumberOfDevice = androidPhone.getSerialNumber();
+			// For internal debugging purposes.
+			if (PropertyUtil.getBoolean(project, "adb.log.cat")) {
+				ADB.getDefault().startLogCat();
+			}
 			ADB.getDefault().install(packageToSend, serialNumberOfDevice);
 			String androidComponent = Activator.getAndroidComponentName(project);
 			ADB.getDefault().launch(androidComponent, serialNumberOfDevice);
