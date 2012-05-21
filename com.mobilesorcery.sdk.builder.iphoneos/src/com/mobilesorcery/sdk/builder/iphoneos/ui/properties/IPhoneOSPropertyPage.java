@@ -43,7 +43,7 @@ public class IPhoneOSPropertyPage extends MoSyncPropertyPage implements IWorkben
         initUI();
         updateUI();
 
-        return main;
+		return main;
 	}
 
     private void initUI() {
