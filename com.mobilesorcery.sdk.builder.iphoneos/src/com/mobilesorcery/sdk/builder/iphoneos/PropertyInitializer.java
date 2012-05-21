@@ -24,12 +24,16 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
 
     public final static String IOS_SIM_SDK_AUTO = IOS_SIM_SDK + ".auto";
 
+	public static final String IOS_BUNDLE_IDENTIFIER = PREFIX + "bundle.id";
+
 	@Override
 	public String getDefaultValue(IPropertyOwner p, String key) {
 		if (IPHONE_PROJECT_SPECIFIC_CERT.equals(key)) {
 			return PropertyUtil.fromBoolean(false);
 		} else if (IOS_SDK_AUTO.equals(key) || IOS_SIM_SDK_AUTO.equals(key)){
 			return PropertyUtil.fromBoolean(true);
+		} else if (IOS_BUNDLE_IDENTIFIER.equals(key)) {
+			return "com.%app-vendor%.%project-name%";
 		} else {
 			return Activator.getDefault().getPreferenceStore().getString(key);
 		}

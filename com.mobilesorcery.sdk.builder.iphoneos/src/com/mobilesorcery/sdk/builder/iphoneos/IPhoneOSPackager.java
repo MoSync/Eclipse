@@ -149,6 +149,8 @@ public class IPhoneOSPackager extends PackageToolPackager
 		String ver = new Version(version).asCanonicalString(Version.MICRO);
     	commandLine.flag("--version").with(ver);
 
+    	commandLine.flag("--ios-bundle-id").with(project.getProperty(PropertyInitializer.IOS_BUNDLE_IDENTIFIER));
+    	
     	if (!shouldBuildWithXcode(project, variant)) {
     		commandLine.flag("--ios-project-only");
     	} else {
