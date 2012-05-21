@@ -455,12 +455,8 @@ public class LiveServer implements IResourceChangeListener {
 				res.setContentType("application/json;charset=utf-8");
 				res.setContentLength(output.getBytes(UTF8).length);
 				res.getWriter().print(result);
-				try {
 				res.getWriter().flush();
 				res.getWriter().close();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
 			}
 
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
