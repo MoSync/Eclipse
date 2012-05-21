@@ -1,44 +1,58 @@
 package com.mobilesorcery.sdk.html5;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.jface.util.Policy;
+import org.eclipse.ui.IStartup;
+import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
-import org.eclipse.wst.jsdt.core.IIncludePathEntry;
 import org.eclipse.wst.jsdt.core.IJavaScriptProject;
 import org.eclipse.wst.jsdt.core.JavaScriptCore;
 import org.eclipse.wst.jsdt.core.LibrarySuperType;
-import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
 import org.eclipse.wst.jsdt.internal.core.JavaProject;
-import org.eclipse.wst.jsdt.web.core.internal.project.JsWebNature;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IPropertyOwner;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PrivilegedAccess;
 import com.mobilesorcery.sdk.core.PropertyUtil;
-import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
-import com.mobilesorcery.sdk.core.build.BundleBuildStep.Factory;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
-import com.mobilesorcery.sdk.core.build.PackBuildStep;
 import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
+import com.mobilesorcery.sdk.html5.debug.JSODDLaunchConfigurationDelegate;
+import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
+import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
+import com.mobilesorcery.sdk.html5.live.LiveServer;
+import com.mobilesorcery.sdk.html5.live.ReloadManager;
+import com.mobilesorcery.sdk.profiles.ITargetProfileProvider;
 import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
+import com.mobilesorcery.sdk.ui.IWorkbenchStartupListener;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
+import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransportListener;
+import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
+import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
 
 /**
  * The activator class controls the plug-in life cycle
  */
-public class Html5Plugin extends AbstractUIPlugin {
+public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPhoneTransportListener {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.html5"; //$NON-NLS-1$
@@ -48,8 +62,32 @@ public class Html5Plugin extends AbstractUIPlugin {
 
 	public static final String HTML5_TEMPLATE_TYPE = "html5";
 
+	public static final String ODD_SUPPORT_PROP = PLUGIN_ID + ".odd";
+
+	public static final String ANONYMOUS_FUNCTION = "<anonymous>";
+
+	static final String RELOAD_STRATEGY_PREF = "reload.strategy";
+	
+	static final String SOURCE_CHANGE_STRATEGY_PREF = "source.change.strategy";
+
+	public static final String TIMEOUT_PREF = "timeout";
+
+	public static final int DEFAULT_TIMEOUT = 3;
+
+	public static final int DO_NOTHING = 0;
+	
+	public static final int RELOAD = 1;
+	
+	public static final int HOT_CODE_REPLACE = 2;
+
 	// The shared instance
 	private static Html5Plugin plugin;
+
+	private ReloadManager reloadManager;
+
+	private LiveServer server;
+
+	private final HashMap<IProject, JSODDSupport> jsOddSupport = new HashMap<IProject, JSODDSupport>();
 
 	/**
 	 * The constructor
@@ -67,7 +105,19 @@ public class Html5Plugin extends AbstractUIPlugin {
 	@Override
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
+		// We do not yet have the eclipse fix #54993
+		MosyncUIPlugin.getDefault().awaitWorkbenchStartup(new IWorkbenchStartupListener() {
+			@Override
+			public void started(IWorkbench workbench) {
+				DebugPlugin.getDefault().getBreakpointManager().getBreakpoints();
+			}
+		});
 		plugin = this;
+
+		// Since we are an IStartup, this will work.
+		TargetPhonePlugin.getDefault().addTargetPhoneTransportListener(this);
+
+		initReloadManager();
 	}
 
 	/*
@@ -81,8 +131,36 @@ public class Html5Plugin extends AbstractUIPlugin {
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
+		TargetPhonePlugin.getDefault().removeTargetPhoneTransportListener(this);
+		disposeReloadManager();
 	}
 
+	public LiveServer getReloadServer() {
+		if (server == null) {
+			server = new LiveServer();
+		}
+		return server;
+	}
+
+	private void initReloadManager() {
+		this.reloadManager = new ReloadManager();
+	}
+
+	private void disposeReloadManager() {
+		if (reloadManager != null) {
+			reloadManager.dispose();
+		}
+		this.reloadManager = null;
+	}
+
+	/**
+	 * @deprecated Only to get hold of file id , refactor!!!
+	 * @return
+	 */
+	@Deprecated
+	public ReloadManager getReloadManager() {
+		return reloadManager;
+	}
 	/**
 	 * Returns the shared instance
 	 *
@@ -94,10 +172,11 @@ public class Html5Plugin extends AbstractUIPlugin {
 
 	/**
 	 * Adds HTML5 support to a {@link MoSyncProject}.
+	 * @param configureForODD
 	 *
 	 * @throws CoreException
 	 */
-	public void addHTML5Support(MoSyncProject project) throws CoreException {
+	public void addHTML5Support(MoSyncProject project, boolean configureForODD) throws CoreException {
 		try {
 			BuildSequence sequence = new BuildSequence(project);
 			List<IBuildStepFactory> factories = sequence
@@ -161,15 +240,98 @@ public class Html5Plugin extends AbstractUIPlugin {
 	}
 
 	public boolean hasHTML5Support(MoSyncProject project) {
-		return PropertyUtil.getBoolean(project, JS_PROJECT_SUPPORT_PROP);
+		return project != null && PropertyUtil.getBoolean(project, JS_PROJECT_SUPPORT_PROP);
 	}
 
 	private IBuildStepFactory createHTML5PackagerBuildStep() {
-		Factory factory = new Factory();
+		/*BundleBuildStep.Factory factory = new BundleBuildStep.Factory();
 		factory.setFailOnError(true);
 		factory.setName("HTML5/JavaScript bundling");
 		factory.setInFile("%current-project%/LocalFiles");
 		factory.setOutFile("%current-project%/Resources/LocalFiles.bin");
+		return factory;*/
+		// BAH -- We do NOT always want to copy LocalFiles to package etc
+		HTML5DebugSupportBuildStep.Factory factory = new HTML5DebugSupportBuildStep.Factory();
 		return factory;
 	}
+
+	public synchronized JSODDSupport getJSODDSupport(IProject project) {
+		if (!hasHTML5Support(MoSyncProject.create(project))) {
+			return null;
+		}
+		JSODDSupport result = jsOddSupport.get(project);
+		if (result == null) {
+			result = new JSODDSupport(project);
+			jsOddSupport.put(project, result);
+		}
+		return result;
+	}
+
+	@Override
+	public void earlyStartup() {
+		// Just to activate the bundle.
+	}
+
+	public Collection<IProject> getProjectsWithJSODDSupport() {
+		return Collections.unmodifiableCollection(jsOddSupport.keySet());
+	}
+
+	@Override
+	public void handleEvent(TargetPhoneTransportEvent event) {
+		// Launch the debug server if sending package in debug mode
+		if (TargetPhoneTransportEvent.isType(TargetPhoneTransportEvent.PRE_SEND, event)) {
+			MoSyncProject project = event.project;
+			IBuildVariant variant = event.variant;
+			IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
+			if (hasHTML5Support(project) && PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
+				try {
+					JSODDLaunchConfigurationDelegate.launchDefault();
+				} catch (CoreException e) {
+					Policy.getStatusHandler().show(e.getStatus(), "Could not launch JavaScript On-Device Debug Server");
+				}
+			}
+		}
+	}
+
+	/**
+	 * Returns the path where HTML5 content is stored.
+	 * The path is project relative.
+	 * @param wrappedProject
+	 * @return
+	 */
+	public static IPath getHTML5Folder(IProject wrappedProject) {
+		// I guess this might always be constant...
+		return new Path("LocalFiles");
+	}
+
+	public int getTimeout() {
+		int result = getPreferenceStore().getInt(TIMEOUT_PREF);
+		if (result < 1) {
+			result = DEFAULT_TIMEOUT; // Default; regardless of store value
+		}
+		return result;
+	}
+	
+	public void setTimeout(int timeout) {
+		getPreferenceStore().setValue(TIMEOUT_PREF, timeout);
+	}
+
+	public int getReloadStrategy() {
+		// TODO. Default = 0 = UNDEFINED
+		return getPreferenceStore().getInt(RELOAD_STRATEGY_PREF);
+	}
+	
+	public void setReloadStrategy(int reloadStrategy) {
+		getPreferenceStore().setDefault(RELOAD_STRATEGY_PREF, reloadStrategy);
+	}
+
+	public void setSourceChangeStrategy(int sourceChangeStrategy) {
+		getPreferenceStore().setValue(SOURCE_CHANGE_STRATEGY_PREF, sourceChangeStrategy);
+	}
+	
+	public int getSourceChangeStrategy() {
+		return getPreferenceStore().getInt(SOURCE_CHANGE_STRATEGY_PREF);
+	}
+
+
 }

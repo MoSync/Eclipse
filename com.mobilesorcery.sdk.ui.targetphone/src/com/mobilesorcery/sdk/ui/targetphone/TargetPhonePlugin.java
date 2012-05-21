@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -78,6 +79,8 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 	private ITargetPhone selectedPhone;
 
 	private final HashMap<String, ITargetPhoneTransport> transports = new HashMap<String, ITargetPhoneTransport>();
+
+	private final CopyOnWriteArrayList<ITargetPhoneTransportListener> listeners = new CopyOnWriteArrayList<ITargetPhoneTransportListener>();
 
 	/**
 	 * The constructor
@@ -299,5 +302,19 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 			return MoSyncTool.DEFAULT_PROFILE_TYPE;
 		}
 		return current.getProfileManagerType();
+	}
+
+	public void addTargetPhoneTransportListener(ITargetPhoneTransportListener listener) {
+		listeners.add(listener);
+	}
+
+	public void removeTargetPhoneTransportListener(ITargetPhoneTransportListener listener) {
+		listeners.remove(listener);
+	}
+
+	public void notifyListeners(TargetPhoneTransportEvent event) {
+		for (ITargetPhoneTransportListener listener : listeners) {
+			listener.handleEvent(event);
+		}
 	}
 }

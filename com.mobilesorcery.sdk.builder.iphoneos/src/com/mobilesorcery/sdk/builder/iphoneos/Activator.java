@@ -95,5 +95,4 @@ public class Activator extends AbstractUIPlugin {
 		project.setProperty(sdkType == XCodeBuild.IOS_SDKS ? PropertyInitializer.IOS_SDK : PropertyInitializer.IOS_SIM_SDK, sdkId);
 	}
 
-
 }

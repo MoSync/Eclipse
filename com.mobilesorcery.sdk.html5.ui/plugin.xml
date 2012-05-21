@@ -25,4 +25,13 @@
               type="html5">
         </templateextension>
      </extension>
+           <extension
+            point="org.eclipse.ui.preferencePages">
+         <page
+               category="com.mobilesorcery.sdk.preferences.main"
+               class="com.mobilesorcery.sdk.html5.ui.internal.preferences.JavaScriptOnDeviceDebugPreferencePage"
+               id="com.mobilesorcery.sdk.html5.jsodd"
+               name="JavaScript On-Device Debug">
+         </page>
+         </extension>
 </plugin>

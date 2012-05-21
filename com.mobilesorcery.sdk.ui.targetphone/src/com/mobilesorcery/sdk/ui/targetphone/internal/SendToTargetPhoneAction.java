@@ -18,6 +18,7 @@ import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -41,7 +42,9 @@ import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
+import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransport;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
+import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
 import com.mobilesorcery.sdk.ui.targetphone.internal.bt.BTTargetPhone;
 
 public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
@@ -96,8 +99,11 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 					IProfile targetProfile = getProfile(project, phone);
 					assertNotNull(targetProfile, "No target profile selected");
 
-					File packageToSend = buildBeforeSend(targetProfile, monitor);
-					phone.getTransport().send(window, project, phone,
+					IBuildVariant variant = MoSyncBuilder.createVariant(project, targetProfile);
+					ITargetPhoneTransport transport = phone.getTransport();
+					TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.PRE_SEND, transport, project, variant));
+					File packageToSend = buildBeforeSend(variant, monitor);
+					transport.send(window, project, phone,
 							packageToSend, new SubProgressMonitor(monitor, 4));
 				}
 			} catch (CoreException e) {
@@ -112,10 +118,9 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 			}
 		}
 
-		private File buildBeforeSend(IProfile targetProfile,
+		private File buildBeforeSend(IBuildVariant variant,
 				IProgressMonitor monitor) throws CoreException {
 			IBuildResult buildResult = null;
-            IBuildVariant variant = MoSyncBuilder.createVariant(project, targetProfile);
             IBuildSession session = MoSyncBuilder.createDefaultBuildSession(variant);
 			buildResult = new MoSyncBuilder().build(project
 					.getWrappedProject(), session, variant, null,

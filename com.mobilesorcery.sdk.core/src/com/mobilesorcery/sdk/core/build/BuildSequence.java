@@ -44,7 +44,7 @@ public class BuildSequence implements IBuildSequence {
 	public static BuildSequence getCached(MoSyncProject project) {
 		// TODO: cache all projects, dispose when project is disposed.
 		if (project.isDisposed()) {
-			cache.remove(project);
+			clearCache(project);
 			return null;
 		}
 		BuildSequence cached = cache.get(project);
@@ -53,6 +53,10 @@ public class BuildSequence implements IBuildSequence {
 			cache.put(project, cached);
 		}
 		return cached;
+	}
+
+	public static void clearCache(MoSyncProject project) {
+		cache.remove(project);
 	}
 
 	private void initDefaultFactories() {

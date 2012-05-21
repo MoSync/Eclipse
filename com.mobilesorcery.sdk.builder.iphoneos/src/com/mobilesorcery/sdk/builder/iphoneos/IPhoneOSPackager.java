@@ -14,6 +14,7 @@
 package com.mobilesorcery.sdk.builder.iphoneos;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +24,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
+import com.mobilesorcery.sdk.core.BuildResult;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
@@ -33,6 +35,7 @@ import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
 import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
@@ -59,6 +62,11 @@ public class IPhoneOSPackager extends PackageToolPackager
         	DefaultPackager intern = new DefaultPackager(project, variant);
 
             super.createPackage(project, session, variant, diff, buildResult);
+            
+            if (shouldUseProvisioning(project)) {
+            	executeProvisioning(intern, project, variant);
+            }
+            
             buildResult.setBuildResult(computeBuildResult(project, variant));
 
             // Notify user if we did not build the generated project and say why
@@ -75,7 +83,21 @@ public class IPhoneOSPackager extends PackageToolPackager
         }
     }
 
-    @Override
+    private void executeProvisioning(DefaultPackager intern, MoSyncProject project, IBuildVariant variant) throws IOException, CoreException {
+		CommandLineBuilder commandLine = new CommandLineBuilder("xcrun", true);
+		SDK sdk = getSDK(project, variant);
+		commandLine.flag("-sdk").with(sdk.getId());
+		commandLine.flag("PackageApplication");
+		File appFile = getAppFile(project, variant);
+		commandLine.flag("-v").with(appFile);
+		File ipaFile = getIpaFile(project, variant);
+		commandLine.flag("-o").with(ipaFile);
+		commandLine.flag("--sign").with(getCertificate(project));
+		commandLine.flag("--embed").with(project.getProperty(PropertyInitializer.IOS_PROVISIONING_FILE));
+		intern.runCommandLine(commandLine.asArray(), commandLine.toHiddenString());
+	}
+
+	@Override
     public String getGenerateMode(IProfile profile) {
     	return BUILD_GEN_CPP_MODE;
     }
@@ -97,19 +119,50 @@ public class IPhoneOSPackager extends PackageToolPackager
 
 	@Override
 	protected Map<String, List<File>> computeBuildResult(MoSyncProject project, IBuildVariant variant) throws CoreException {
-		DefaultPackager packager = new DefaultPackager(project, variant);
-		File xcodeProject = packager.resolveFile( "%package-output-dir%/xcode-proj" );
+		File xcodeProject = getXcodeProject(project, variant);
 		if (shouldBuildWithXcode(project, variant)) {
-			String target = getXcodeTarget(project, variant);
-			SDK sdk = getSDK(project, variant);
-			String xcodeTarget = target + "-" + sdk.getSDKType();
-			// Hm, is this always true...?
-			return createBuildResult(packager.resolveFile(xcodeProject.getAbsolutePath() + "/build/" + xcodeTarget + "/%app-name%.app"));
+			File outputAppFile = getAppFile(project, variant);
+			File appFile = null;
+			if (shouldUseProvisioning(project)) {
+				appFile = outputAppFile;
+				outputAppFile = getIpaFile(project, variant);
+			}
+			Map<String, List<File>> buildResult = createBuildResult(outputAppFile);
+			if (appFile != null) {
+				buildResult.put("appfile", Arrays.asList(appFile));
+			}
+			return buildResult;
 		} else {
 			Map<String, List<File>> buildResult = new HashMap<String, List<File>>();
 			buildResult.put(PROJECT_FILE, Arrays.asList(xcodeProject));
 			return buildResult;
 		}
+	}
+	
+	private File getIpaFile(MoSyncProject project, IBuildVariant variant) throws CoreException {
+		File appFile = getAppFile(project, variant);
+		return new File(Util.replaceExtension(appFile.getAbsolutePath(), "ipa"));		
+	}
+
+	private File getAppFile(MoSyncProject project, IBuildVariant variant) throws CoreException {
+		File xcodeProject = getXcodeProject(project, variant);
+		DefaultPackager packager = new DefaultPackager(project, variant);
+		String target = getXcodeTarget(project, variant);
+		SDK sdk = getSDK(project, variant);
+		String xcodeTarget = target + "-" + sdk.getSDKType();
+		// Hm, is this always true...?
+		File appFile = packager.resolveFile(xcodeProject.getAbsolutePath() + "/build/" + xcodeTarget + "/%app-name%.app");
+		return appFile;
+	}
+
+	private File getXcodeProject(MoSyncProject project, IBuildVariant variant) {
+		DefaultPackager packager = new DefaultPackager(project, variant);
+		File xcodeProject = packager.resolveFile( "%package-output-dir%/xcode-proj" );
+		return xcodeProject;
+	}
+
+	private boolean shouldUseProvisioning(MoSyncProject project) {
+		return !Util.isEmpty(project.getProperty(PropertyInitializer.IOS_PROVISIONING_FILE));
 	}
 
 	private String getXcodeTarget(MoSyncProject project, IBuildVariant variant) {
@@ -140,15 +193,15 @@ public class IPhoneOSPackager extends PackageToolPackager
 		DefaultPackager internal = new DefaultPackager(project, variant);
 
         // We do not yet support configuration specific certs.
-        String cert = PropertyUtil.getBoolean(project, PropertyInitializer.IPHONE_PROJECT_SPECIFIC_CERT) ?
-        		project.getProperty(PropertyInitializer.IPHONE_CERT):
-        		Activator.getDefault().getPreferenceStore().getString(PropertyInitializer.IPHONE_CERT);
+        String cert = getCertificate(project);
         commandLine.flag("--ios-cert").with(cert);
 
     	String version = internal.get(DefaultPackager.APP_VERSION);
 		String ver = new Version(version).asCanonicalString(Version.MICRO);
     	commandLine.flag("--version").with(ver);
 
+    	commandLine.flag("--ios-bundle-id").with(project.getProperty(PropertyInitializer.IOS_BUNDLE_IDENTIFIER));
+    	
     	if (!shouldBuildWithXcode(project, variant)) {
     		commandLine.flag("--ios-project-only");
     	} else {
@@ -159,5 +212,11 @@ public class IPhoneOSPackager extends PackageToolPackager
     	}
 
     	commandLine.flag("--cpp-output").with(internal.resolveFile("%program-output%").getParent());
+	}
+
+	private String getCertificate(MoSyncProject project) {
+		return PropertyUtil.getBoolean(project, PropertyInitializer.IPHONE_PROJECT_SPECIFIC_CERT) ?
+        		project.getProperty(PropertyInitializer.IPHONE_CERT):
+        		Activator.getDefault().getPreferenceStore().getString(PropertyInitializer.IPHONE_CERT);
 	}
 }

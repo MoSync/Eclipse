@@ -15,6 +15,7 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
@@ -44,17 +45,17 @@ public class SectionedPropertiesFile {
 
 	public static class Section {
 		public static class Entry {
-			
-			private String value;
-			private String key;
+
+			private final String value;
+			private final String key;
 
 			public static Entry parse(String entry) {
-				boolean inEscape = false;				
+				boolean inEscape = false;
 				boolean commentStarted = false;
 				StringBuffer currentBuffer = new StringBuffer();
 				String key = null;
 				String value = null;
-				
+
 				char[] chars = entry.toCharArray();
 				for (int i = 0; i < chars.length && !commentStarted; i++) {
 					char ch = chars[i];
@@ -71,13 +72,13 @@ public class SectionedPropertiesFile {
 						currentBuffer.append(ch);
 					}
 				}
-				
+
 				value = currentBuffer.toString().trim();
 				if (key == null) {
 				    // If no = sign, this key = value
 				    key = value;
 				}
-				
+
 				// Bug #751: used to check whether value
 				// empty too, but we shouldn't.
 				if (!Util.isEmpty(key)) {
@@ -86,48 +87,49 @@ public class SectionedPropertiesFile {
 				    return null;
 				}
 			}
-			
+
 			public Entry(String key, String value) {
 				this.key = key;
 				this.value = value;
 			}
-			
+
 			public String getValue() {
 				return value;
 			}
-			
+
 			public String getKey() {
 				return key;
 			}
-			
+
+			@Override
 			public String toString() {
 				StringBuffer toString = new StringBuffer();
 				if (key != null) {
 					toString.append(escape(key));
 					toString.append(" = "); //$NON-NLS-1$
 				}
-				
+
 				toString.append(escape(value));
 				return toString.toString();
 			}
 		}
-		
 
-		private String name;
-		private ArrayList<Entry> entries = new ArrayList<Entry>();
+
+		private final String name;
+		private final ArrayList<Entry> entries = new ArrayList<Entry>();
 
 		Section(String name) {
 			this.name = name;
 		}
-		
+
 		public String getName() {
 			return name;
 		}
-		
+
 		public List<Entry> getEntries() {
-			return entries; 
+			return entries;
 		}
-		
+
 		public void addEntry(Entry entry) {
 			entries.add(entry);
 		}
@@ -135,7 +137,7 @@ public class SectionedPropertiesFile {
 		public void addEntry(String key, String value) {
 			addEntry(new Entry(key, value));
 		}
-		
+
         public void addEntries(Map<String, String> properties) {
             for (String key : properties.keySet()) {
                 addEntry(new Entry(key, properties.get(key)));
@@ -147,10 +149,10 @@ public class SectionedPropertiesFile {
 			for (int i = 0; i < values.length; i++) {
 				values[i] = entries.get(i).getValue();
 			}
-			
+
 			return values;
 		}
-		
+
 		public Map<String, String> getEntriesAsMap() {
 			HashMap<String, String> map = new HashMap<String, String>();
 			for (Entry entry : entries) {
@@ -161,7 +163,8 @@ public class SectionedPropertiesFile {
 			}
 			return map;
 		}
-		
+
+		@Override
 		public String toString() {
 			StringBuffer toString = new StringBuffer();
 			if (name != null) {
@@ -169,21 +172,21 @@ public class SectionedPropertiesFile {
 				toString.append(name);
 				toString.append("]\n"); //$NON-NLS-1$
 			}
-			
+
 			for (Entry entry : entries) {
 				toString.append(entry.toString());
 				toString.append('\n');
 			}
-			
+
 			return toString.toString();
 		}
-		
+
 		private static String escape(String str) {
 			return str.replace("\\", "\\\\").replace("=", "\\="); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 		}
 
 	}
-	
+
 	public static SectionedPropertiesFile parse(File file) throws IOException {
 		FileReader reader = new FileReader(file);
 		try {
@@ -194,13 +197,13 @@ public class SectionedPropertiesFile {
 			}
 		}
 	}
-	
+
 	public static SectionedPropertiesFile parse(Reader input) throws IOException {
 	    SectionedPropertiesFile result = new SectionedPropertiesFile();
 		LineNumberReader lines = new LineNumberReader(input);
-		
+
 		Section currentSection = new Section(null);
-		
+
 		// TODO: Refactor into separate class.
 		for (String line = lines.readLine(); line != null; line = lines.readLine()) {
 			String trimmed = line.trim();
@@ -219,23 +222,23 @@ public class SectionedPropertiesFile {
 			    }
 			}
 		}
-	
+
 		result.sections.add(currentSection);
 		return result;
 	}
-	
+
 	public static SectionedPropertiesFile create() {
 	    SectionedPropertiesFile result = new SectionedPropertiesFile();
 	    result.sections.add(new Section(null));
 	    return result;
 	}
 
-	private ArrayList<Section> sections = new ArrayList<Section>();
+	private final ArrayList<Section> sections = new ArrayList<Section>();
 
 	private SectionedPropertiesFile() {
-		
+
 	}
-	
+
 	public Section getFirstSection(String name) {
 		for (Section section : sections) {
 			if (section.getName() == null && name == null) {
@@ -245,28 +248,29 @@ public class SectionedPropertiesFile {
 				return section;
 			}
 		}
-		
+
 		return null;
 	}
-	
+
 	public Section addSection(String name) {
 	    Section section = new Section(name);
 	    sections.add(section);
 	    return section;
 	}
-	
+
 	/**
 	 * Returns a string representation of this sectioned
 	 * properties that can be parsed using the <code>parse</code>
 	 * methods.
 	 */
+	@Override
 	public String toString() {
 		StringBuffer toString = new StringBuffer();
 		for (Section section : sections) {
 			toString.append(section);
 			toString.append('\n');
 		}
-		
+
 		return toString.toString();
 	}
 
@@ -282,6 +286,22 @@ public class SectionedPropertiesFile {
 
 	public List<Section> getSections() {
 		return sections;
+	}
+
+	/**
+	 * Writes these properties to a file that can
+	 * be parsed using {@link #parse(File)}.
+	 * @param output
+	 * @throws IOException
+	 */
+	public void write(File output) throws IOException {
+		output.getParentFile().mkdirs();
+		FileWriter writeTo = new FileWriter(output);
+		try {
+			writeTo.write(toString());
+		} finally {
+			Util.safeClose(writeTo);
+		}
 	}
 
 }

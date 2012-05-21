@@ -1,0 +1,566 @@
+// Based on the AARDWOLF project: https://github.com/lexandera/Aardwolf
+window.MoSyncDebugProtocol = new (function() {
+    var serverHost = '%SERVER_HOST%';
+    var serverPort = '%SERVER_PORT%';
+    var project = '%PROJECT_NAME%';
+    var timeoutInMs = %TIMEOUT_IN_MS%;
+    var serverUrl = 'http://' + serverHost + ':' + serverPort;
+    var breakpoints = {};
+    var breakpointDescs = {};
+    var loadBreakpoints = {};
+    var redefinedFunctions = {};
+    var registeredFunctions = {};
+    var shouldBreak = function() { return false; };
+    var asyncXHR = null;
+    var lastFileId = -1;
+    var lastLine = '';
+    var lastEvalScopeFunc = null;
+    
+    var idToFile = [];
+    var fileToId = {};
+    
+    var sessionId = null;
+    var currentOID = 0;
+    
+    var disconnected = false;
+    var terminating = false;
+    var clientSuspend = 0;
+    var step = false;
+    
+    var suppressStepCount;
+    
+    var inUpdatePosition = false;
+
+    this.assignOID = function(obj) {
+        currentOID++;
+        obj.____oid = currentOID;
+    }
+    
+    function timestamp() {
+        return new Date().getTime();
+    }
+    
+    function listenToServer() {
+        try {
+            dropCommandConnection();
+            
+            if (disconnected || terminating) {
+                return;
+            }
+            asyncXHR = new XMLHttpRequest();
+            asyncXHR.onreadystatechange = function () {
+                if (asyncXHR.readyState == 4) {
+                    if (asyncXHR.responseText) {
+                        var cmd = safeJSONParse(asyncXHR.responseText);
+                            
+                        if (cmd && cmd.command == 'eval') {
+                            doEval(function(____fn) { return eval(____fn); }, cmd);
+                        }
+                        else {
+                            processCommand(cmd);
+                        }
+                        
+                        setTimeout(listenToServer, 0);
+                    }
+                }
+            };
+            asyncXHR.open('GET', serverUrl + '/mobile/incoming/' + timestamp(), true);
+            asyncXHR.send(null);
+        } catch (ex) {
+            disconnect(ex);
+        }
+    }
+    
+    function disconnect(ex) {
+        if (!disconnected) {
+            disconnected = true;
+            alert('Disconnected from debug session. To debug, you need to restart.\nReason:' + ex.toString());
+        }
+    }
+    
+    function dropCommandConnection() {
+        if (asyncXHR) {
+            asyncXHR.abort();
+        }
+        asyncXHR = null;
+    }
+    
+    function sendToServer(path, payload, timeout) {
+        if (disconnected) {
+            return;
+        }
+        try {
+            var req = new XMLHttpRequest();
+            var timeoutHandle = null;
+            var timeoutFn = function() {
+                req.abort();
+                disconnect("Could not connect to debug server");
+            };
+            if (timeout) {
+                timeoutHandle = setTimeout(timeoutFn, timeout);
+            }
+            req.open('POST', serverUrl + '/mobile' + path + "/" + timestamp(), false);
+            req.setRequestHeader('Content-Type', 'application/json');
+            if (sessionId != null) {
+                payload.sessionId = sessionId;
+            }
+            var json = JSON.stringify(payload)
+            req.send(json);
+            if (timeout) {
+                clearTimeout(timeoutHandle);
+            }
+            return safeJSONParse(req.responseText);
+        } catch (ex) {
+            disconnect(ex);
+        }
+    }
+    
+    function replaceConsole() {
+        if (!window.console) {
+            window.console = {};
+        }
+        
+        ['info', 'log', 'warn', 'error'].forEach(function(f) {
+            var oldFunc = window.console[f];
+            
+            window.console[f] = function() {
+                var args = Array.prototype.slice.call(arguments);
+                /* Write to local console before writing to the potentially slow remote console.
+                   Make sure that the original function actually exists, otherwise this will
+                   case an error on WindowsPhone where the console object is not available. */
+                oldFunc && oldFunc.apply(window.console, args);
+                sendToServer('/console', { 
+                    command: 'print-message',
+                    type: f.toUpperCase(),
+                    message: args.toString()
+                });
+            };
+        });
+    }
+    
+    function suspendOnNext() {
+        step = true;
+        shouldBreak = function() { return true; };
+        if (suppressStepCount > 0) {
+            suppressStepCount--;
+            return false;
+        }
+        return true;           
+    }
+    
+    function processCommand(cmd) {
+        switch (cmd.command) {
+            case 'set-breakpoints':
+            case 'clear-breakpoints':
+                cmd.data.forEach(function(bp) {
+                    var file = bp.file;
+                    var line = bp.line;
+                    var condition = bp.condition;
+                    var conditionSuspend = bp.conditionSuspend;
+                    var hitcount = bp.hitcount;
+                    var fileId = fileToId[file];
+                    var set = (cmd.command == 'set-breakpoints');
+                    if (line >= 0 && (fileId || fileId === 0)) {
+                        if (!breakpoints[fileId]) {
+                            breakpoints[fileId] = {};
+                        }
+                        breakpoints[fileId][line] = set;
+                        if (!breakpointDescs[fileId]) {
+                            breakpointDescs[fileId] = {};
+                        }
+                        var breakpointDesc = {};
+                        if (condition) {
+                            breakpointDesc.condition = condition;
+                        }
+                        if (conditionSuspend) {
+                            breakpointDesc.conditionSuspend = conditionSuspend;
+                        }
+                        if (hitcount) {
+                            breakpointDesc.hitcount = hitcount - 1;
+                        }
+                        breakpointDescs[fileId][line] = breakpointDesc;
+                    } else if (line < 0) {
+                        // Script load.
+                        if (fileId == '*') {
+                            // All files
+                            for (var fileId in idToFile) {
+                                loadBreakpoints[fileId] = set;
+                            }
+                        } else {
+                            loadBreakpoints[fileId] = set;
+                        }
+                    }
+                });
+                if (cmd.suspend) {
+                    suspendOnNext();
+                }
+                return true;
+            
+            case 'breakpoint-continue':
+                shouldBreak = function() { return false; };
+                return false;
+            
+            case 'suspend':
+                clientSuspend = cmd.id;
+            case 'break-on-next':
+            case 'breakpoint-step':
+            case 'breakpoint-step-in':
+                return !suspendOnNext();
+                
+            case 'breakpoint-step-out':
+                step = true;
+                shouldBreak = (function(oldDepth) {
+                    return function(depth) {
+                        return depth < oldDepth;
+                    };
+                })(stackDepth);
+                return false;
+                
+            case 'breakpoint-step-over':
+                step = true;
+                shouldBreak = (function(oldDepth) {
+                    return function(depth) {
+                        return depth <= oldDepth;
+                    };
+                })(stackDepth);
+                return false;
+                
+            case 'terminate':
+                terminating = true;
+                step = false;
+                shouldBreak = function() { return false; };
+                // Try to kill it -- this obviously requires wormhole.
+                mosync.bridge.send(["close"]);
+                return false;
+                
+            case 'disconnect':
+                step = false;
+                shouldBreak = function() { return false; };
+                disconnect("Disconnected by debugger");
+                return false;
+                
+            case 'update':
+                update(cmd);
+                return true;
+            
+            case 'update-function':
+                updateFunctions(cmd);
+                return true;
+        }
+    }
+    
+    function updateFunctions(cmd) {
+         cmd.functions.forEach(function(fn) {
+             var redefineKey = fn.key;
+             var expression = fn.definition;
+             redefinedFunctions[redefineKey] = expression;
+             if (redefineKey in registeredFunctions) {
+                 var registeredFunction = registeredFunctions[redefineKey];
+                 // Will trigger a reload of the function
+                 registeredFunction.____yaloid = null;
+             }                 
+         });
+    }
+        
+    function update(cmd) {
+    // TODO TODO TODO
+        var reply = sendToServer('/fetch', { 
+            resource: cmd.resource
+        });
+        var source = reply.source;
+        var reload = cmd.reload;
+        
+        var errorCallback = function() {
+            // TODO.
+        };
+        
+        var fsCallback = function(fs) {
+           console.log("TODO");
+        };
+        
+        if (!fileSystem) {
+            window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, fsCallback, errorCallback);
+        }
+        
+        return !reload;
+    }
+    
+    function doEval(evalScopeFunc, cmd) {
+        var evalResult;
+        var rethrow = null;
+        try {
+            if (cmd.stackDepth) {
+                var fn = evalScopes[cmd.stackDepth];
+                evalResult = fn(cmd.data);
+            } else {
+                evalResult = evalScopeFunc(cmd.data);
+            }
+        } catch (ex) {
+            if (ex.dropToFrame) {
+                evalResult = new Object();
+                rethrow = ex;
+            } else {
+                evalResult = 'ERROR: ' + ex.toString();
+            }
+        }  
+        sendToServer('/console', {
+            command: 'print-eval-result',
+            result: evalResult,
+            id: cmd.id
+        });
+        if (rethrow) {
+            throw rethrow;
+        }
+    }
+    
+    function getStack() {
+        var callstack = [];
+        var currentFunction = arguments.callee;
+        while (currentFunction = currentFunction.caller) {
+            var fname = currentFunction.name || '<anonymous>';
+            callstack.push(fname);
+        }
+        return callstack;
+    }
+    
+    function internalJSONParse(JSONDocument) {
+        // This function is here because wormhole.js
+        // overrides the default JSON.parse and we
+        // later instrument that method. So we'd
+        // get a quasi-infinite loop when debugging
+        // wormhole.js functions.
+        var parsedObject = eval('(' + JSONDocument + ')');
+        return parsedObject;
+    }
+    
+    function safeJSONParse(str) {
+        try {
+            return internalJSONParse(str);
+        } catch (ex) {
+            return null;
+        }
+    }
+    
+    this.init = function() {
+        %INIT_FILE_IDS%
+        replaceConsole();
+        var location = window ? window.document.location.href : "<unknown>";
+        var cmd = sendToServer('/init', {
+            command: 'mobile-connected',
+            project: project,
+            location: location
+        }, timeoutInMs);
+        
+        if (cmd) {
+            sessionId = cmd.sessionId;
+            processCommand(cmd);
+        }
+
+        listenToServer();
+    };
+    
+    this.loadScript = function(fileId, segment) {
+        var cmd = sendToServer('/load-script', {
+            file: fileId,
+            segment: segment
+        });
+        if (cmd) {
+            processCommand(cmd);
+        }
+    }
+    
+    var shouldDropToFrame = -1;
+    
+    // Gets + resets the drop to frame flag.
+    this.dropToFrame = function() {
+        if (shouldDropToFrame == -1) {
+           return false;
+        }
+        if (shouldDropToFrame == stackDepth) {
+            suspendOnNext();
+            // The server needs to send an extra step request,
+            // so we need to suppress stepping on the first one.
+            // Also note we need to have this line AFTER
+            // the above suspendOnNext() call.
+            suppressStepCount = 1;
+            shouldDropToFrame = -1;
+            return true;
+        } else if (shouldDropToFrame < stackDepth) {
+            this.doDropToFrame(shouldDropToFrame);
+        } else {
+            shouldDropToFrame = -1;
+        }
+        return false;
+    }
+
+    this.doDropToFrame = function(stackDepth, expression) {
+        shouldDropToFrame = stackDepth;
+        var exception = {};
+        exception.dropToFrame = true;
+        exception.expression = expression;
+        if (expression) {
+            suspendOnNext();
+        }
+        throw exception;
+    }
+    
+    this.updatePosition = function(fileId, line, isDebuggerStatement, evalScopeFunc) {
+        if (inUpdatePosition || terminating || disconnected) {
+            return;
+        }
+        inUpdatePosition = true;
+        
+        /* Webkit's exceptions don't contain any useful file and line data,
+           so we keep track of this manually for exception reporting purposes. */
+        lastFileId = fileId;
+        lastLine = line;
+        lastEvalScopeFunc = evalScopeFunc;
+        
+        try {
+            var isBreakpoint = (breakpoints[fileId] && breakpoints[fileId][line]) || /* explicit breakpoint? */
+                               loadBreakpoints[fileId] ||
+                               isDebuggerStatement ||                            /* debugger; statement? */
+                               shouldBreak(stackDepth);                          /* step (in|over|out) or break-on-next? */
+            
+            if (isBreakpoint && breakpointDescs[fileId] && breakpointDescs[fileId][line]) {
+                var breakpointDesc = breakpointDescs[fileId][line];
+                var condition = breakpointDesc.condition;
+                var hitcount = breakpointDesc.hitcount;
+                if (condition) {
+                    var conditionSuspend = breakpointDesc.conditionSuspend;
+                    var evaluatedCondition = evalScopeFunc(condition);
+                    if ("change" == conditionSuspend) {
+                        isBreakpoint = (evaluatedCondition != breakpointDesc.lastEvaluation);
+                    } else {
+                        isBreakpoint = evaluatedCondition;
+                    }
+                }
+                if (isBreakpoint && hitcount) {
+                    breakpointDesc.hitcount--;
+                    isBreakpoint = false;
+                }
+            }
+
+            if (!isBreakpoint) {
+                return;
+            }
+            
+            var file = idToFile[fileId];
+            var type = 'line';
+            if (loadBreakpoints[fileId]) {
+                type = 'load';
+                loadBreakpoints[fileId] = false;
+            } else if (isDebuggerStatement) {
+                type = 'debugger';
+            }
+            
+            handleBreakpoint({
+                command: 'report-breakpoint',
+                type: type,
+                file: file,
+                line: line,
+                stack: resolveStack(stack),
+                step: step,
+                suspended: (clientSuspend > 0),
+                id: clientSuspend
+            }, evalScopeFunc);
+        } finally {
+            inUpdatePosition = false;
+        }
+        
+    };
+    
+    this.reportException = function(e, catchLine, evalScopeFunc) {
+        var lastFile = idToFile[lastFileId];
+        try {
+	        handleBreakpoint({
+	            command: 'report-breakpoint',
+	            type: 'exception',
+	            message: e.toString(),
+	            file: lastFile,
+	            line: lastLine,
+	            catchLine: catchLine,
+	            stack: resolveStack(stack)
+	        }, evalScopeFunc);
+        } catch (potentialDropToFrame) {
+            if (potentialDropToFrame.dropToFrame) {
+                return potentialDropToFrame;
+            }
+        }
+        return e;
+    }
+    
+    this.yaloid = function(key) {
+        var result = redefinedFunctions[key];
+        if (result) {
+            redefinedFunctions[key] = null;
+        }
+        return result;
+    }
+    
+    this.registerFunction = function(key, fn) {
+        registeredFunctions[key] = fn;
+    }
+    
+    function handleBreakpoint(breakpointInfo, evalScopeFunc) {
+        while (true) {
+            dropCommandConnection();
+            var cmd = sendToServer('/breakpoint', breakpointInfo);
+            clientSuspend = 0;
+            step = false;
+                        
+            if (!cmd) {
+                listenToServer();      
+                return;
+            }                
+            
+            if (cmd.command == 'eval') {
+                doEval(evalScopeFunc, cmd);
+            } else {
+                var isInternalCommand = processCommand(cmd);
+                if (!isInternalCommand) {
+                    listenToServer();
+                    return;
+                }
+            }
+        }
+    }
+    
+    function resolveStack(stack) {
+        var resolvedStack = [];
+	    var frameCount = stack.length;
+        for (var i = 0; i < frameCount; i++) {
+            var frame = stack[i];
+            var resolvedFrame = [];
+            resolvedFrame[0] = frame[0];
+            resolvedFrame[1] = idToFile[frame[1]];
+            resolvedFrame[2] = frame[2];
+            resolvedFrame[3] = frame[3];
+            resolvedStack.push(resolvedFrame);
+        }
+        return resolvedStack;
+    }
+    
+    var stack = [];
+    var evalScopes = [];
+    var stackDepth = 0;
+    
+    this.pushStack = function(functionName, file, line) {
+        stack.push([functionName, file, line, lastLine]);
+        evalScopes.push(lastEvalScopeFunc);
+        ++stackDepth;
+    };
+    
+    this.popStack = function() {
+        stack.pop();
+        evalScopes.pop();
+        --stackDepth;
+    };
+    
+    this.obsoleteStackTop = function() {
+        stack[stack.length - 1].obsolete = true;
+    };
+    
+})();
+
+window.MoSyncDebugProtocol.init();

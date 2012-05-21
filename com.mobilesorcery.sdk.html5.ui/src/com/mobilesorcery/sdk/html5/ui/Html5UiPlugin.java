@@ -14,12 +14,17 @@
 package com.mobilesorcery.sdk.html5.ui;
 
 import org.eclipse.ui.plugin.AbstractUIPlugin;
+import org.json.simple.JSONObject;
 import org.osgi.framework.BundleContext;
+
+import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
 
 /**
  * The activator class controls the plug-in life cycle
  */
-public class Html5UiPlugin extends AbstractUIPlugin {
+public class Html5UiPlugin extends AbstractUIPlugin implements ILiveServerListener {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.html5.ui"; //$NON-NLS-1$
@@ -41,6 +46,7 @@ public class Html5UiPlugin extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
+		Html5Plugin.getDefault().getReloadServer().addListener(this);
 	}
 
 	/*
@@ -51,6 +57,7 @@ public class Html5UiPlugin extends AbstractUIPlugin {
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
+		Html5Plugin.getDefault().getReloadServer().removeListener(this);
 	}
 
 	/**
@@ -60,6 +67,17 @@ public class Html5UiPlugin extends AbstractUIPlugin {
 	 */
 	public static Html5UiPlugin getDefault() {
 		return plugin;
+	}
+
+	@Override
+	public void received(String command, JSONObject json) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void timeout(ReloadVirtualMachine vm) {
+		
 	}
 
 }

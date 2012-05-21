@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -497,23 +498,41 @@ public class BuildState implements IBuildState {
 
     @Override
 	public Set<String> getChangedBuildProperties() {
-        Map<String, String> currentBuildProperties = project.getProperties();
-        Set<String> changed = new HashSet<String>();
-        for (Map.Entry<String, String> entry : currentBuildProperties.entrySet()) {
+    	Map<String, String> currentBuildProperties = project.getProperties();
+        return getPropertiesDiff(properties, currentBuildProperties);
+    }
+
+    public static Set<String> getPropertiesDiff(Map<String, String> oldProperties, Map<String, String> newProperties) {
+    	Set<String> changed = new HashSet<String>();
+    	innerGetPropertiesDiff(changed, oldProperties, newProperties);
+    	innerGetPropertiesDiff(changed, newProperties, oldProperties);
+    	return changed;
+    }
+
+    private static void innerGetPropertiesDiff(Set<String> changed, Map<String, String> oldProperties, Map<String, String> newProperties) {
+        for (Map.Entry<String, String> entry : newProperties.entrySet()) {
             String key = entry.getKey();
             String currentValue = entry.getValue();
-            String oldValue = project.getProperty(key);
+            String oldValue = oldProperties.get(key);
             boolean bothEmpty = Util.isEmpty(currentValue) && Util.isEmpty(oldValue);
             if (!bothEmpty && !currentValue.equals(oldValue)) {
                 changed.add(key);
             }
         }
+    }
 
-        return changed;
+    @Override
+	public Map<String, String> getBuildProperties() {
+    	return Collections.unmodifiableMap(properties);
     }
 
     public void updateBuildVariant(IBuildVariant variant) {
         this.variant = variant;
     }
+
+	@Override
+	public IPath getLocation() {
+		return new Path(buildStateFile.getParentFile().getAbsolutePath());
+	}
 
 }

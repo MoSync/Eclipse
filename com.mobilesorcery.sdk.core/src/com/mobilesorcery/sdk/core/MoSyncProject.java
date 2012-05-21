@@ -311,9 +311,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		Assert.isNotNull(project);
 		this.project = project;
 		this.deviceFilterListener = new DeviceFilterListener();
-		initFromProjectMetaData(null, SHARED_PROPERTY);
-		initFromProjectMetaData(null, LOCAL_PROPERTY);
-		initFromProjectMetaData(null, WORKSPACE_LOCAL_PROPERTY);
+		reinit(false);
 		permissions = new ApplicationPermissions(this);
 		addDeviceFilterListener();
 		securePropertyOwner = new SecureProperties(this, CoreMoSyncPlugin
@@ -327,6 +325,33 @@ public class MoSyncProject extends PropertyOwnerBase implements
 
 	private void removeDeviceFilterListener() {
 		deviceFilter.removePropertyChangeListener(deviceFilterListener);
+	}
+
+	/**
+	 * Reinitializes this project with the settings file(s). This
+	 * enables external programs to modify the setting file(s) and
+	 * this project to synchronize with the files.
+	 */
+	public void reinit(boolean fireEvents) {
+		Map<String, String> oldProperties = getProperties();
+		initFromProjectMetaData(null, SHARED_PROPERTY);
+		initFromProjectMetaData(null, LOCAL_PROPERTY);
+		initFromProjectMetaData(null, WORKSPACE_LOCAL_PROPERTY);
+
+		if (fireEvents) {
+			Map<String, String> newProperties = getProperties();
+			Set<String> changedProperties = BuildState.getPropertiesDiff(oldProperties, newProperties);
+
+			for (String changedProperty : changedProperties) {
+				Object oldValue = oldProperties.get(changedProperty);
+				Object newValue = newProperties.get(changedProperty);
+				firePropertyChange(new PropertyChangeEvent(this, changedProperty, oldValue, newValue));
+			}
+			if (!changedProperties.isEmpty()) {
+				invalidatePropertyDependentObjects();
+				setProfileManagerType(getProfileManagerType(), true);
+			}
+		}
 	}
 
 	private void initFromProjectMetaData(IPath projectMetaDataPath, int store) {
@@ -697,7 +722,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			result.initFromProjectMetaData(localMetaDataLocation,
 					LOCAL_PROPERTY);
 		}
-
+		result.updateProjectSpec();
 		return result;
 	}
 
@@ -997,7 +1022,11 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	 * @param type
 	 */
 	public void setProfileManagerType(int type) {
-		if (getProfileManagerType() != type) {
+		setProfileManagerType(type, false);
+	}
+
+	public void setProfileManagerType(int type, boolean force) {
+		if (force || getProfileManagerType() != type) {
 			PropertyUtil.setInteger(this, MoSyncProject.PROFILE_MANAGER_TYPE_KEY, type);
 			getDeviceFilter().removeAllFilters();
 			addCapabilityFilters(this, createCapabilitiesFromPermissions());

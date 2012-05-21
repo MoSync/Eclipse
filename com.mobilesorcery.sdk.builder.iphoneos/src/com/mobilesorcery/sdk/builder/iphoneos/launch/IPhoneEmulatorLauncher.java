@@ -66,7 +66,8 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
-		IPhoneSimulator.getDefault().assertValid();
+		IPhoneSimulator sim = IPhoneSimulator.createDefault();
+		sim.assertValid();
 		// TODO: Incremental building if we change the SDK!?
 		IProject project = EmulatorLaunchConfigurationDelegate.getProject(launchConfig);
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
@@ -74,7 +75,7 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 		Version sdkVersion = sdk == null ? null : sdk.getVersion();
 		File pathToApp = getPackageToInstall(launchConfig, mode);
 		String family = getFamily(getVariant(launchConfig, mode));
-		IPhoneSimulator.getDefault().runApp(new Path(pathToApp.getAbsolutePath()), sdkVersion == null ? null : sdkVersion.toString(), family);
+		sim.runApp(new Path(pathToApp.getAbsolutePath()), sdkVersion == null ? null : sdkVersion.toString(), family);
 	}
 
 	private String getFamily(IBuildVariant variant) {
