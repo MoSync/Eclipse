@@ -44,6 +44,8 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
      * The version code, as it's used in the android manifest
      */
     public static final String ANDROID_VERSION_CODE = PREFIX + "version.number";
+    
+	public static final String ADB_DEBUG_LOG = PREFIX + "adb.debug";
 
     private static Random rnd = new Random(System.currentTimeMillis());
     
@@ -71,6 +73,7 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
     public void initializeDefaultPreferences() {
         IPreferenceStore store = Activator.getDefault().getPreferenceStore();
         try {
+        	store.setDefault(ADB_DEBUG_LOG, false);
 			KeystoreCertificateInfo.createDefault().store(ANDROID_KEYSTORE_CERT_INFO,
 					new PreferenceStorePropertyOwner(store, true),
 					null);

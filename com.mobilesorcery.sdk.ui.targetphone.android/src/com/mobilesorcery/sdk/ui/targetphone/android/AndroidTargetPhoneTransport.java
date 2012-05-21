@@ -128,6 +128,7 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 			ADB.getDefault().install(packageToSend, serialNumberOfDevice);
 			String androidComponent = Activator.getAndroidComponentName(project);
 			ADB.getDefault().launch(androidComponent, serialNumberOfDevice);
+			ADB.getDefault().startLogCat();
 		} else {
 			throw new CoreException(new Status(IStatus.ERROR, TargetPhonePlugin.PLUGIN_ID, "Can only send to android phones"));
 		}
