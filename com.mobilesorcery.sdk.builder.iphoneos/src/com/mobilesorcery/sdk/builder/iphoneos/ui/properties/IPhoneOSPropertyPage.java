@@ -33,7 +33,7 @@ public class IPhoneOSPropertyPage extends MoSyncPropertyPage implements IWorkben
         main.setLayout(new GridLayout(2, false));
 
         Label bundleIdentifierLabel = new Label(main, SWT.NONE);
-        bundleIdentifierLabel.setText("Bundle identifier");
+        bundleIdentifierLabel.setText("Bundle identifier:");
         
         bundleIdentifier = new Text(main, SWT.SINGLE | SWT.BORDER);
         bundleIdentifier.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
@@ -43,7 +43,7 @@ public class IPhoneOSPropertyPage extends MoSyncPropertyPage implements IWorkben
         initUI();
         updateUI();
 
-		return main;
+        return main;
 	}
 
     private void initUI() {
