@@ -5,6 +5,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -91,8 +92,9 @@ public class ReloadEventQueue implements EventQueue {
 							.getFile(new Path(fileName));
 					Location location = new SimpleLocation(vm, file,
 							line.intValue());
-					IJavaScriptLineBreakpoint bp = LiveServer.findBreakPoint(
-							new Path(fileName), line);
+					IProject project = file.getProject();
+					IJavaScriptLineBreakpoint bp = Html5Plugin.getDefault().getJSODDSupport(project).findBreakPoint(
+							new Path(fileName), line.intValue());
 					for (Object bpRequestObj : bpRequests) {
 						ReloadBreakpointRequest bpRequest = (ReloadBreakpointRequest) bpRequestObj;
 						Location bpLocation = bpRequest.location();

@@ -43,6 +43,10 @@ public class RedefinitionResult {
 	}
 
 	public static RedefinitionResult fail(String msg) {
+		return new RedefinitionResult(CANNOT_REDEFINE, msg);
+	}
+	
+	public static RedefinitionResult unrecoverable(String msg) {
 		return new RedefinitionResult(CANNOT_REDEFINE | CANNOT_RESTART, msg);
 	}
 	

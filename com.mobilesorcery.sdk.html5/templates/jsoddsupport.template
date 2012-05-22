@@ -239,6 +239,12 @@ window.MoSyncDebugProtocol = new (function() {
                 disconnect("Disconnected by debugger");
                 return false;
                 
+            case 'reload':
+                step = false;
+                shouldBreak = function() { return false; };
+                performReload();
+                return false;
+                
             case 'update':
                 update(cmd);
                 return true;
@@ -263,26 +269,41 @@ window.MoSyncDebugProtocol = new (function() {
     }
         
     function update(cmd) {
-    // TODO TODO TODO
         var reply = sendToServer('/fetch', { 
             resource: cmd.resource
         });
         var source = reply.source;
         var reload = cmd.reload;
         
-        var errorCallback = function() {
-            // TODO.
+        var errorCallback = function(error) {
+            console.log("Could not update file. Error code: " + error.code);
         };
         
         var fsCallback = function(fs) {
-           console.log("TODO");
+           fs.root.getFile("readme.txt", {create: true}, gotFileEntry, errorCallback);
         };
         
-        if (!fileSystem) {
-            window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, fsCallback, errorCallback);
+        var gotFileEntry = function(fe) {
+            fileEntry.createWriter(gotFileWriter, errorCallback);
         }
         
+        var gotFileWriter = function(writer) {
+            writer.onwrite = function(evt) {
+            console.log("SUCCESS!");
+                if (reload) {
+                    performReload();
+                }
+            }
+            writer.write(source);
+        }
+        
+        window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, fsCallback, errorCallback);
+        
         return !reload;
+    }
+    
+    function performReload() {
+        window.location.reload();
     }
     
     function doEval(evalScopeFunc, cmd) {
@@ -358,16 +379,6 @@ window.MoSyncDebugProtocol = new (function() {
 
         listenToServer();
     };
-    
-    this.loadScript = function(fileId, segment) {
-        var cmd = sendToServer('/load-script', {
-            file: fileId,
-            segment: segment
-        });
-        if (cmd) {
-            processCommand(cmd);
-        }
-    }
     
     var shouldDropToFrame = -1;
     

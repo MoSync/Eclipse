@@ -147,7 +147,7 @@
                      <extension
          point="org.eclipse.core.runtime.preferences">
       <initializer
-            class="com.mobilesorcery.sdk.html5.ui.internal.HTML5PreferenceInitializer">
+            class="com.mobilesorcery.sdk.html5.HTML5PreferenceInitializer">
       </initializer>
    </extension>
 </plugin>

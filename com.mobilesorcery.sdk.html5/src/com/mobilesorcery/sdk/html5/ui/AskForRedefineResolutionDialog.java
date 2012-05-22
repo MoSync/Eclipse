@@ -56,6 +56,8 @@ public class AskForRedefineResolutionDialog extends IconAndMessageDialog {
 		if (rememberMyChoice.getSelection() && buttonId != -1) {
 			Html5Plugin.getDefault().setReloadStrategy(buttonId);
 		}
+		setReturnCode(buttonId);
+		close();
 	}
 
 	@Override

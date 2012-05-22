@@ -31,7 +31,10 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.wst.jsdt.core.IJavaScriptUnit;
 import org.eclipse.wst.jsdt.core.dom.AST;
 import org.eclipse.wst.jsdt.core.dom.ASTNode;
@@ -57,6 +60,8 @@ import org.eclipse.wst.jsdt.core.dom.SwitchStatement;
 import org.eclipse.wst.jsdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.wst.jsdt.core.dom.WhileStatement;
 import org.eclipse.wst.jsdt.core.dom.WithStatement;
+import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
+import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
 import org.eclipse.wst.jsdt.web.core.javascript.JsTranslator;
 import org.eclipse.wst.sse.core.StructuredModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IModelManager;
@@ -99,7 +104,7 @@ public class JSODDSupport {
 		private static final int INSTRUMENTATION_ALLOWED = 1;
 		private static final int FORCE_INSTRUMENTATION = 2;
 		
-		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> statementsToRewrite = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
+		/*private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> statementsToRewrite = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPreambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPostambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
 		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> editAndContinuePreambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
@@ -109,7 +114,7 @@ public class JSODDSupport {
 
 		private final HashMap<ASTNode, String> functionNames = new HashMap<ASTNode, String>();
 		private final TreeMap<Integer, Integer> movedSourceMap = new TreeMap<Integer, Integer>();
-
+*/
 		private JavaScriptUnit unit;
 		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
 		private LocalVariableScope currentScope = new LocalVariableScope()
@@ -173,24 +178,10 @@ public class JSODDSupport {
 				
 				rewrites.put(fd, new FunctionRewrite(this, fd, fileId, nodeRedefinables));
 				
-				addStatementInstrumentationLocation(unit, fd,
-						editAndContinuePreambles, true);
-				addStatementInstrumentationLocation(unit, fd,
-						editAndContinuePostambles, false);
-
 				Block body = fd.getBody();
 
 				ASTNode firstStatement = startOfFunction(fd);
-				addStatementInstrumentationLocation(unit, firstStatement,
-						functionPreambles, true);
-				functionNames.put(firstStatement, functionIdentifier);
 				ASTNode lastStatement = endOfFunction(fd);
-				addStatementInstrumentationLocation(unit, lastStatement,
-						functionPostambles, false);
-				// If the } is on a separate line, let's add an extra
-				// stop here -- will make stepping etc more useful.
-				addStatementInstrumentationLocation(unit, lastStatement,
-						statementsToRewrite, false);
 
 				if (firstStatement instanceof Block && lastStatement instanceof Block) {
 					forceBlockify(body);
@@ -228,8 +219,6 @@ public class JSODDSupport {
 			int instrumentable = isInstrumentableStatement(node);
 			if (instrumentable != INSTRUMENTATION_DISALLOWED) {
 				rewrites.put(node, new StatementRewrite(this, node, fileId, localVariables, blockifiables, instrumentedLines, instrumentable == FORCE_INSTRUMENTATION));
-				addStatementInstrumentationLocation(unit, node,
-						statementsToRewrite, true);
 			}
 
 			if (nest) {
@@ -459,7 +448,7 @@ public class JSODDSupport {
 		}
 
 		public void rewrite(long fileId, String originalSource, Writer output,
-				NavigableMap<Integer, LocalVariableScope> scopeMap) throws IOException {
+				NavigableMap<Integer, LocalVariableScope> scopeMap, NavigableSet<Integer> instrumentedLines) throws IOException {
 			// TODO: I guess there are some better AST rewrite methods around.
 			// Or... never mind, I've invested way too much time in this :)
 			LineMap lineByLineOriginalSource = new LineMap(originalSource);
@@ -487,6 +476,8 @@ public class JSODDSupport {
 			rootRewrite.rewrite(null, doc);
 			instrumented = doc.rewrite();
 			
+			instrumentedLines.addAll(this.instrumentedLines.keySet());
+			
 			if (output != null) {
 				output.write(instrumented);
 			}
@@ -504,209 +495,12 @@ public class JSODDSupport {
 			return parentRewrite;
 		}
 	
-
-		private void insertFunctionBlockifier(int lineNo, boolean start) {
-			HashMap<Integer, List<Pair<ASTNode, Boolean>>> nodes = start ? functionPreambles : functionPostambles;
-			Collection<Pair<ASTNode, Boolean>> nodeList = nodes.get(lineNo);
-			if (nodeList == null) {
-				return;
-			}
-			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
-				ASTNode node = nodePosition.first;
-				Position position = getPosition(node, start);
-				if (shouldBlockify(node)) {
-					block(position, start);
-				}
-			}
-			
-		}
-
-		private void insertEditAndContinuePreamble(int lineNo) {
-			Collection<Pair<ASTNode, Boolean>> nodeList = editAndContinuePreambles
-					.get(lineNo);
-			if (nodeList == null) {
-				return;
-			}
-
-			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
-				FunctionDeclaration fd = (FunctionDeclaration) nodePosition.first;
-				Position functionPosition = getPosition(fd, true);
-				String signature = "";
-				String editAndContinuePreamble = "";
-				String dropToFramePreamble = supports(DROP_TO_FRAME) ? "do {" : "";
-				if (supports(EDIT_AND_CONTINUE) && !isAnonymous(fd)) {
-					String name = fd.getName().getIdentifier();
-					int fdStart = fd.getStartPosition();
-					int bodyStart = fd.getBody().getStartPosition();
-					signature = originalSource.substring(fdStart, bodyStart);
-					String functionRef = name + ".____yaloid";
-					String redefineKey = nodeRedefinables.get(fd);
-					editAndContinuePreamble = "if(!" + functionRef + ") { "
-							+ "var ____unevaled=MoSyncDebugProtocol.yaloid(\""
-							+ redefineKey + "\");\n" + "if (____unevaled){\n"
-							+ "eval(\"" + functionRef + "=\" + ____unevaled);}\n" + "if(typeof " + functionRef + " !== \'function\')\n"
-							+ "{" + functionRef + "=";
-					insert(functionPosition, signature);
-					block(functionPosition, true);
-					insert(functionPosition, dropToFramePreamble);
-					insert(functionPosition, editAndContinuePreamble);
-				} else {
-					// If only drop to frame preamble, it should be inserted elsewhere.
-					ASTNode firstStatement = startOfFunction(fd);
-					block(getPosition(firstStatement, true), true);
-					insert(getPosition(firstStatement, true), dropToFramePreamble);
-				}
-			}
-
-		}
-
-		private void insertEditAndContinuePostamble(int lineNo) {
-			Collection<Pair<ASTNode, Boolean>> nodeList = editAndContinuePostambles
-					.get(lineNo);
-			if (nodeList == null) {
-				return;
-			}
-
-			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
-				String editAndContinuePostamble = "";
-				FunctionDeclaration fd = (FunctionDeclaration) nodePosition.first;
-				Position position = getPosition(fd, false);
-				String dropToFramePostamble = supports(DROP_TO_FRAME) ? "} while (MoSyncDebugProtocol.dropToFrame());" : "";
-				
-				if (supports(EDIT_AND_CONTINUE) && !isAnonymous(fd)) {
-					String name = fd.getName().getIdentifier();
-					List parameters = fd.parameters();
-					String[] parameterNames = new String[parameters.size()];
-					for (int i = 0; i < parameterNames.length; i++) {
-						SingleVariableDeclaration parameter = (SingleVariableDeclaration) parameters
-								.get(i);
-						String parameterName = parameter.getName().getIdentifier();
-						parameterNames[i] = parameterName;
-					}
-					String redefineKey = nodeRedefinables.get(fd);
-					String functionRef = name + ".____yaloid";
-					editAndContinuePostamble = ";}"
-							+ "MoSyncDebugProtocol.registerFunction(\""
-							+ redefineKey + "\"," + name + ");}\n"
-							+ functionRef + "(" + Util.join(parameterNames, ",")
-							+ ");";
-					insert(position, editAndContinuePostamble);
-					insert(position, dropToFramePostamble);
-					block(position, false);
-				} else {
-					// If only drop to frame preamble, it should be inserted elsewhere.
-					ASTNode lastStatement = endOfFunction(fd);
-					insert(getPosition(lastStatement, false), dropToFramePostamble);
-					block(getPosition(lastStatement, false), false);
-				}
-			}
-
-		}
-        
-		private void insertFunctionPreamble(long fileId, int lineNo,
-				LineMap lineMap) {
-			Collection<Pair<ASTNode, Boolean>> nodeList = functionPreambles
-					.get(lineNo);
-			if (nodeList == null) {
-				return;
-			}
-			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
-				ASTNode node = nodePosition.first;
-				String funcName = functionNames.get(node);
-				Position position = functionPosition(node, true);
-				
-				int mappedLineNo = lineMap.getLine(position.getPosition());
-				
-				insert(position,
-						MessageFormat
-								.format("try '{' MoSyncDebugProtocol.pushStack(\"{0}\",{1},{2});",
-										funcName, Long.toString(fileId),
-										Integer.toString(mappedLineNo)));
-			}
-		}
-
-		private void insertFunctionPostamble(long fileId, int lineNo) {
-			Collection<Pair<ASTNode, Boolean>> nodeList = functionPostambles
-					.get(lineNo);
-			if (nodeList == null) {
-				return;
-			}
-			for (Pair<ASTNode, Boolean> nodePosition : nodeList) {
-				ASTNode node = nodePosition.first;
-				Position position = functionPosition(node, false);
-				block(position, false);
-				insert(position, "catch (anException) {\n"
-								+ "if (!anException.alreadyThrown && !anException.dropToFrame) {\n"
-								+ "anException = MoSyncDebugProtocol.reportException(anException, "
-								+ lineNo + "," + EVAL_FUNC_SNIPPET + ");\n"
-								+ "} anException.alreadyThrown = true;\n"
-								+ "if (!anException.dropToFrame) {\n"
-								+ "throw anException;}else{\n"
-								+ "if (anException.expression) {\n"
-								+ "eval(anException.expression);}\n"
-								+ "}} finally {\n"
-								+ "MoSyncDebugProtocol.popStack();}\n");
-			}
-		}
-
 		public Position getPosition(ASTNode node, boolean start) {
 			JavaScriptUnit unit = (JavaScriptUnit) node.getRoot();
 			if (unit == null) {
 				throw new IllegalStateException("Node has no matched unit");
 			}
 			return new Position(node, lineMap, start);
-		}
-
-		private void insertInstrumentedStatement(long fileId, int lineNo,
-				LineMap lineMap) {
-			List<Pair<ASTNode, Boolean>> nodeList = statementsToRewrite
-					.get(lineNo);
-
-			if (nodeList != null) {
-				TreeMap<Integer, Pair<ASTNode, Boolean>> nodesToInstrument = new TreeMap<Integer, Pair<ASTNode, Boolean>>();
-				// Max 1 instrumentation per line.
-				for (Pair<ASTNode, Boolean> node : nodeList) {
-					int mappedLineNo = lineMap.getLine(getPosition(node.first,
-							node.second).getPosition());
-					Pair<ASTNode, Boolean> nodeToInstrument = nodesToInstrument
-							.get(mappedLineNo);
-					if (nodeToInstrument == null
-							|| getPosition(nodeToInstrument.first,
-									nodeToInstrument.second).getPosition() > getPosition(
-									node.first, node.second).getPosition()) {
-						nodesToInstrument.put(mappedLineNo, node);
-					}
-				}
-
-				for (Map.Entry<Integer, Pair<ASTNode, Boolean>> nodePosition : nodesToInstrument
-						.entrySet()) {
-					ASTNode node = nodePosition.getValue().first;
-					boolean before = nodePosition.getValue().second;
-
-					if (shouldBlockify(node)) {
-						insert(getPosition(node, true), "{");
-						insert(getPosition(node, false), "}");
-					}
-					int mappedLineNo = nodePosition.getKey();
-
-					Entry<Integer, LocalVariableScope> scope = localVariables
-							.floorEntry(getPosition(node, true).getPosition());
-					String scopeDesc = "";
-					if (scope != null) {
-						scopeDesc = "/*" + scope.getValue().getLocalVariables()
-								+ "*/";
-					}
-
-					boolean isDebuggerStatement = debuggerStatements
-							.contains(lineNo);
-
-					String addThis = scopeDesc
-							+ " MoSyncDebugProtocol.updatePosition(" + fileId
-							+ "," + mappedLineNo + "," + isDebuggerStatement
-							+ "," + EVAL_FUNC_SNIPPET + ");" + "\n";
-					insert(getPosition(node, before), addThis);
-				}
-			}
 		}
 
 		public void setScopeResetPoints(TreeSet<Integer> scopeResetPoints) {
@@ -791,6 +585,7 @@ public class JSODDSupport {
 	private HashMap<IPath, Long> fileIds = null;
 	private final TreeMap<Long, IPath> reverseFileIds = new TreeMap<Long, IPath>();
 	private final HashMap<Long, NavigableMap<Integer, LocalVariableScope>> scopeMaps = new HashMap<Long, NavigableMap<Integer, LocalVariableScope>>();
+	private final HashMap<Long, NavigableSet<Integer>> lineMaps = new HashMap<Long, NavigableSet<Integer>>();
 	private final HashMap<IFile, String> instrumentedSource = new HashMap<IFile, String>();
 	private HashMap<IPath, Map<String, IRedefinable>> redefinables = new HashMap<IPath, Map<String, IRedefinable>>();
 
@@ -876,12 +671,14 @@ public class JSODDSupport {
 				visitor.setScopeResetPoints(scopeResetPoints);
 				ast.accept(visitor);
 				TreeMap<Integer, LocalVariableScope> scopeMap = new TreeMap<Integer, LocalVariableScope>();
-				visitor.rewrite(fileId, source, output, scopeMap);
+				TreeSet<Integer> instrumentedLines = new TreeSet<Integer>();
+				visitor.rewrite(fileId, source, output, scopeMap, instrumentedLines);
 
 				// 3. Update state and notify listeners
 				String instrumentedSource = visitor.getInstrumentedSource();
 				this.instrumentedSource.put(file, instrumentedSource);
 				scopeMaps.put(fileId, scopeMap);
+				lineMaps.put(fileId, instrumentedLines);
 			}
 			return fileRedefinable;
 		} catch (CoreException e) {
@@ -1040,6 +837,59 @@ public class JSODDSupport {
 
 	public String getInstrumentedSource(IFile file) {
 		return instrumentedSource.get(file);
+	}
+
+	/**
+	 * Returns the best matching breakpoint for a specific file/line pair.
+	 * @param path
+	 * @param hitLine
+	 * @return
+	 */
+	public IJavaScriptLineBreakpoint findBreakPoint(IPath path, int hitLine) {
+		IBreakpoint[] bps = DebugPlugin.getDefault().getBreakpointManager()
+				.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
+		IJavaScriptLineBreakpoint closest = null;
+		for (IBreakpoint bp : bps) {
+			if (bp instanceof IJavaScriptLineBreakpoint) {
+				IJavaScriptLineBreakpoint lineBp = (IJavaScriptLineBreakpoint) bp;
+				try {
+					if (Util.equals(path, new Path(lineBp.getScriptPath()))) {
+						int closestLine = closest == null ? 0 : closest.getLineNumber();
+						int bpLine = lineBp.getLineNumber();
+						// We will try to get as close as possible to the hit line
+						// but never *after* it.
+						if (bpLine > closestLine && bpLine <= hitLine) {
+							closest = (IJavaScriptLineBreakpoint) bp;
+						}
+					}
+				} catch (CoreException e) {
+					// Just IGNORE!
+				}
+			}
+		}
+		return closest;
+	}
+	
+	/**
+	 * <p>Not all lines are actually instrumented for line breakpoints.
+	 * This method will find the best matching line that has been
+	 * instrumented for breakpoints.</p>
+	 * <p>The best matching line will always be at or <b>after</b>
+	 * the given line.</p> 
+	 * @param file
+	 * @param line
+	 * @return {@code -1} if no match is found.
+	 */
+	public int findClosestBreakpointLine(IPath file, int line) {
+		Long fileId = fileIds.get(file);
+		if (fileId != null) {
+			NavigableSet<Integer> lineMap = lineMaps.get(fileId);
+			Integer bestMatch = lineMap == null ? null : lineMap.ceiling(line);
+			if (bestMatch != null) {
+				return bestMatch;
+			}
+		}
+		return -1;
 	}
 
 }

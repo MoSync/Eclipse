@@ -177,7 +177,7 @@ public class LiveServer implements IResourceChangeListener {
 			DebuggerMessage result = consumer.take();
 
 			synchronized (queueLock) {
-				takeTimestamps.remove(sessionId);
+				//takeTimestamps.remove(sessionId);
 			}
 
 			if (result.type == PING) {
@@ -287,6 +287,7 @@ public class LiveServer implements IResourceChangeListener {
 			synchronized (queueLock) {
 				LinkedBlockingQueue<DebuggerMessage> sessionQueue = consumers
 						.remove(sessionId);
+				takeTimestamps.remove(sessionId);
 				if (sessionQueue != null) {
 					sessionQueue.offer(poison());
 				}
@@ -362,6 +363,9 @@ public class LiveServer implements IResourceChangeListener {
 						//timeoutListener.timeoutOccurred(sessionId);
 					}
 					if (needsPing) {
+						if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+							CoreMoSyncPlugin.trace("Ping will be sent to {0}", sessionId);
+						}
 						pendingPings.add(sessionId);
 						offer(sessionId, ping());
 					}
@@ -525,12 +529,12 @@ public class LiveServer implements IResourceChangeListener {
 				} else if (queuedType == STEP) {
 					result = newCommand(getStepCommand((Integer) queuedElement.data));
 				} else if (queuedType == RELOAD) {
-					String command = queuedObject == null ? "restart"
+					String command = queuedObject == null ? "reload"
 							: "update";
 					result = newCommand(command);
 					if (queuedObject != null) {
 						IFile resource = (IFile) queuedObject;
-						result.put("resource", getLocalPath(resource));
+						result.put("resource", getLocalPath(resource).toOSString());
 					}
 				} else if (queuedType == SUSPEND) {
 					result = newCommand("suspend");
@@ -563,7 +567,7 @@ public class LiveServer implements IResourceChangeListener {
 				}
 				result.put("id", queuedElement.getMessageId());
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 					CoreMoSyncPlugin
 							.trace("Dropped connection (often temporarily).");
@@ -722,6 +726,13 @@ public class LiveServer implements IResourceChangeListener {
 
 						JSONObject jsonBp = new JSONObject();
 						jsonBp.put("file", file);
+						JSODDSupport jsoddSupport = resource.getType() == IResource.FILE ? 
+								Html5Plugin.getDefault().getJSODDSupport(resource.getProject()) :
+								null;
+						int instrumentedLine = jsoddSupport == null ? lineNo : jsoddSupport.findClosestBreakpointLine(resource.getFullPath(), lineNo);
+						if (instrumentedLine >= 0) {
+							lineNo = instrumentedLine;
+						}
 						jsonBp.put("line", lineNo);
 						if (!Util.isEmpty(condition)) {
 							jsonBp.put("condition", condition);
@@ -920,26 +931,6 @@ public class LiveServer implements IResourceChangeListener {
 		for (ILiveServerListener listener : listeners) {
 			listener.timeout(vm);
 		}
-	}
-
-	public static IJavaScriptLineBreakpoint findBreakPoint(IPath file, long line) {
-		IBreakpoint[] bps = DebugPlugin.getDefault().getBreakpointManager()
-				.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
-		for (IBreakpoint bp : bps) {
-			if (bp instanceof IJavaScriptLineBreakpoint) {
-				IJavaScriptLineBreakpoint lineBp = (IJavaScriptLineBreakpoint) bp;
-				try {
-					if (line == lineBp.getLineNumber()
-							&& Util.equals(file,
-									new Path(lineBp.getScriptPath()))) {
-						return lineBp;
-					}
-				} catch (CoreException e) {
-					// Just IGNORE!
-				}
-			}
-		}
-		return null;
 	}
 
 	public synchronized void stopServer(Object ref) throws CoreException {
@@ -1148,8 +1139,10 @@ public class LiveServer implements IResourceChangeListener {
 					} catch (RedefineException nestedException) {
 						// Ignore.
 					}
+					break;
 				case RedefinitionResult.TERMINATE:
 					vm.terminate();
+					break;
 				default:
 					// Continue/cancel; do nothing.
 				}

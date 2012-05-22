@@ -280,6 +280,13 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	
 	public void reload() {
 		server.reload(currentSessionId);
+		if (debugTarget.isSuspended()) {
+			try {
+				debugTarget.resume();
+			} catch (DebugException e) {
+				CoreMoSyncPlugin.getDefault().log(e);
+			}
+		}
 	}
 	
 	/**
