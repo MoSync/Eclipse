@@ -36,7 +36,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
@@ -47,7 +46,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
@@ -72,10 +71,11 @@ import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
 import com.mobilesorcery.sdk.html5.debug.jsdt.JavaScriptBreakpointDesc;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadRedefiner;
-import com.mobilesorcery.sdk.html5.live.LiveServer.InternalQueues.ITimeoutListener;
+import com.mobilesorcery.sdk.html5.live.JSODDServer.InternalQueues.ITimeoutListener;
 import com.mobilesorcery.sdk.html5.ui.AskForRedefineResolutionDialog;
+import com.mobilesorcery.sdk.ui.UIUtils;
 
-public class LiveServer implements IResourceChangeListener {
+public class JSODDServer implements IResourceChangeListener {
 
 	static class DebuggerMessage {
 		static AtomicInteger idCounter = new AtomicInteger(0);
@@ -360,7 +360,8 @@ public class LiveServer implements IResourceChangeListener {
 					Long lastHeartbeat = lastHeartbeats.get(sessionId);
 					boolean timeoutOccured = lastHeartbeat != null && now - lastHeartbeat > 2 * PING_INTERVAL;
 					if (timeoutOccured && timeoutListener != null) {
-						//timeoutListener.timeoutOccurred(sessionId);
+						killSession(sessionId);
+						timeoutListener.timeoutOccurred(sessionId);
 					}
 					if (needsPing) {
 						if (CoreMoSyncPlugin.getDefault().isDebugging()) {
@@ -412,9 +413,7 @@ public class LiveServer implements IResourceChangeListener {
 
 	public static final String SESSION_ID_ATTR = "sessionId";
 
-	private class LiveServerHandler extends AbstractHandler {
-
-		private static final String SUSPEND_ATTR = "suspend";
+	private class JSODDServerHandler extends AbstractHandler {
 
 		private final HashMap<Object, Thread> waitThreads = new HashMap<Object, Thread>();
 
@@ -797,7 +796,7 @@ public class LiveServer implements IResourceChangeListener {
 					IResourceChangeEvent.POST_CHANGE);
 			server = new Server(getPort());
 			server.setThreadPool(new QueuedThreadPool(5));
-			server.setHandler(new LiveServerHandler());
+			server.setHandler(new JSODDServerHandler());
 			Connector connector = new SelectChannelConnector();
 			connector.setPort(getPort());
 			connector.setMaxIdleTime(120000);
@@ -891,7 +890,7 @@ public class LiveServer implements IResourceChangeListener {
 		} else {
 			int oldSessionId = vm.getCurrentSessionId();
 		}
-		vm.reset(newSessionId, project);
+		vm.reset(newSessionId, project, remoteIp);
 
 		vmsByHost.put(remoteIp, vm);
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
@@ -1153,13 +1152,19 @@ public class LiveServer implements IResourceChangeListener {
 		}
 	}
 
-	private int askForRedefineResolution(RedefineException e) {
-		int reloadStrategy = Html5Plugin.getDefault().getReloadStrategy();
-		if (reloadStrategy == RedefinitionResult.UNDETERMINED) {
-			Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-			reloadStrategy = AskForRedefineResolutionDialog.open(shell, e);
+	private int askForRedefineResolution(final RedefineException e) {
+		final int[] reloadStrategy = new int[] { Html5Plugin.getDefault().getReloadStrategy() };
+		if (reloadStrategy[0] == RedefinitionResult.UNDETERMINED) {
+			Display d = PlatformUI.getWorkbench().getDisplay();
+			UIUtils.onUiThread(d, new Runnable() {
+				@Override
+				public void run() {
+					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+					reloadStrategy[0] = AskForRedefineResolutionDialog.open(shell, e);
+				}
+			}, false);
 		}
-		return reloadStrategy;
+		return reloadStrategy[0];
 	}
 
 	public Set<Integer> getSessions() {

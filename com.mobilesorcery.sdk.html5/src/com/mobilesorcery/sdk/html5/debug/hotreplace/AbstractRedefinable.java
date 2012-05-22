@@ -56,7 +56,7 @@ public abstract class AbstractRedefinable implements IRedefinable {
 	
 	/**
 	 * The default implementation redefines all children as well,
-	 * delegating to the {@link #redefineAdded(IRedefinable, ReloadVirtualMachine)}
+	 * delegating to the {@link #redefineAdded(IRedefinable, IRedefiner)}
 	 * method if the replacement has a child not present in this
 	 * {@link IRedefinable}.
 	 */

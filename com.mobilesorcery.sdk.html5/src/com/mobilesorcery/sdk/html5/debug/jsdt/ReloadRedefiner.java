@@ -93,7 +93,7 @@ public class ReloadRedefiner implements IRedefiner {
 
 	@Override
 	public void commit(boolean reloadHint) throws RedefineException {
-		boolean isOk = RedefinitionResult.isOk(redefineResult) || (reloadHint && !redefineResult.isFlagSet(RedefinitionResult.CANNOT_RESTART));
+		boolean isOk = RedefinitionResult.isOk(redefineResult) || (reloadHint && !redefineResult.isFlagSet(RedefinitionResult.CANNOT_RELOAD));
 		if (!isOk) {
 			throw new RedefineException(redefineResult);
 		}

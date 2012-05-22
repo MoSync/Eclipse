@@ -21,7 +21,7 @@ import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
-import com.mobilesorcery.sdk.html5.live.LiveServer;
+import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
 public class ReloadEventQueue implements EventQueue {
 
@@ -149,7 +149,7 @@ public class ReloadEventQueue implements EventQueue {
 
 	private ReloadVirtualMachine extractVM(Object commandObj) {
 		if (commandObj instanceof JSONObject) {
-			Integer sessionId = LiveServer
+			Integer sessionId = JSODDServer
 					.extractSessionId((JSONObject) commandObj);
 			if (sessionId != null) {
 				return Html5Plugin.getDefault().getReloadServer()
