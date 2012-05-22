@@ -14,19 +14,27 @@
 package com.mobilesorcery.sdk.builder.android.launch;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 
 import com.mobilesorcery.sdk.builder.android.Activator;
+import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 import com.mobilesorcery.sdk.core.AbstractTool;
 import com.mobilesorcery.sdk.core.CollectingLineHandler;
+import com.mobilesorcery.sdk.core.CommandLineExecutor;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.LineReader;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 
@@ -38,7 +46,50 @@ import com.mobilesorcery.sdk.core.Util;
  */
 public class ADB extends AbstractTool {
 
+	private final class LogcatProcessHandler extends LineReader.LineAdapter {
+		private Process process;
+
+		@Override
+		public void stop(IOException e) {
+			process = null;
+		}
+
+		@Override
+		public void start(Process process) {
+			this.process = process;
+		}
+
+		public void killProcess() {
+			if (process != null) {
+				process.destroy();
+			}
+		}
+	}
+
+	private final class LogcatListener implements IPropertyChangeListener {
+		private ADB adb;
+
+		public LogcatListener(ADB adb) {
+			this.adb = adb;
+		}
+
+		@Override
+		public void propertyChange(PropertyChangeEvent event) {
+			if (PropertyInitializer.ADB_DEBUG_LOG.equals(event.getProperty()) ||
+				PropertyInitializer.ADB_LOGCAT_ARGS.equals(event.getProperty())) {
+				try {
+					adb.startLogCat();
+				} catch (CoreException e) {
+					CoreMoSyncPlugin.getDefault().log(e);
+				}
+			}
+		}
+	}
+
 	private static ADB instance = new ADB();
+	private boolean logcatStarted;
+	private IPropertyChangeListener logCatListener = null;
+	private LogcatProcessHandler logcatProcessHandler;
 
 	private ADB() {
 		this(MoSyncTool.getDefault().getBinary("android/adb"));
@@ -46,6 +97,8 @@ public class ADB extends AbstractTool {
 
 	public ADB(IPath pathToADB) {
 		super(pathToADB);
+		logCatListener = new LogcatListener(this);
+		logcatProcessHandler = new LogcatProcessHandler();
 	}
 
 	public static ADB getDefault() {
@@ -219,16 +272,39 @@ public class ADB extends AbstractTool {
 		}, cl, cl, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
 	}
 
-	public void startLogCat() throws CoreException {
-		execute(new String[] {
-			getToolPath().getAbsolutePath(),
-			"logcat"
-		}, null, null, true);
+	public synchronized void startLogCat() throws CoreException {
+		IPreferenceStore prefs = Activator.getDefault().getPreferenceStore();
+		if (!logcatStarted) {
+			logcatStarted = true;
+			prefs.addPropertyChangeListener(logCatListener);
+		}
+		boolean silent = !prefs.getBoolean(PropertyInitializer.ADB_DEBUG_LOG);
+
+		logcatProcessHandler.killProcess();
+		if (!silent) {
+				// Then restart!
+			ArrayList<String> commandLine = new ArrayList<String>();
+			commandLine.add(getToolPath().getAbsolutePath());
+			commandLine.add("logcat");
+			String[] args = CommandLineExecutor.parseCommandLine(prefs.getString(PropertyInitializer.ADB_LOGCAT_ARGS));
+			commandLine.addAll(Arrays.asList(args));
+			
+			// We never have more than one logcat process.
+			execute(commandLine.toArray(new String[0]), logcatProcessHandler, null, true);
+		}
+	}
+	
+	private synchronized void stopLogCat() {
+		logcatProcessHandler.killProcess();
+		logcatStarted = false;
+		IPreferenceStore prefs = Activator.getDefault().getPreferenceStore();
+		prefs.removePropertyChangeListener(logCatListener);
 	}
 
-	public void killServer() throws CoreException {
+	public synchronized void killServer() throws CoreException {
 		execute(new String[] { getToolPath().getAbsolutePath(),
 				"kill-server"
 		}, null, null, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
+		stopLogCat();
 	}
 }
