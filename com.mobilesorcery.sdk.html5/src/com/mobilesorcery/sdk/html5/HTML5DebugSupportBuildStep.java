@@ -120,21 +120,14 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 		public void instrument(IProgressMonitor monitor,
 				DependencyManager<IResource> dependencies,
 				IProcessConsole console) throws CoreException {
-			/*
-			 * TODO: Put boilerplate code in a separate file: boolean
-			 * addBoilerplate = !resourcesToInstrument.isEmpty(); if
-			 * (addBoilerplate) { File boilerplateFile = new File(outputRoot,
-			 * "BoIlErPlAtE.js"); boilerplateFile.getParentFile().mkdirs();
-			 * FileWriter boilerplateOutput = new FileWriter(boilerplateFile);
-			 * try { op.generateBoilerplate(MoSyncProject.create(getProject()),
-			 * boilerplateOutput); } finally {
-			 * Util.safeClose(boilerplateOutput); } }
-			 */
+
 			final JSODDSupport op = Html5Plugin.getDefault().getJSODDSupport(project);
 
+			IFileTreeDiff diff = this.diff;
 			// If we've changed the IP addr, then rebuild it all...
-			if (updateServerProps(op)) {
-				setDiff(null);
+			if (updateServerProps(op) || op.requiresFullBuild()) {
+				diff = null;
+				setDiff(diff);
 			}
 
 			op.applyDiff(diff);

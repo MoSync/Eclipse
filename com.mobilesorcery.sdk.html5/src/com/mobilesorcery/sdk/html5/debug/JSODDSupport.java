@@ -104,17 +104,6 @@ public class JSODDSupport {
 		private static final int INSTRUMENTATION_ALLOWED = 1;
 		private static final int FORCE_INSTRUMENTATION = 2;
 		
-		/*private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> statementsToRewrite = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
-		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPreambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
-		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> functionPostambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
-		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> editAndContinuePreambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
-		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> editAndContinuePostambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
-		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> dropToFramePreambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
-		private final HashMap<Integer, List<Pair<ASTNode, Boolean>>> dropToFramePostambles = new HashMap<Integer, List<Pair<ASTNode, Boolean>>>();
-
-		private final HashMap<ASTNode, String> functionNames = new HashMap<ASTNode, String>();
-		private final TreeMap<Integer, Integer> movedSourceMap = new TreeMap<Integer, Integer>();
-*/
 		private JavaScriptUnit unit;
 		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
 		private LocalVariableScope currentScope = new LocalVariableScope()
@@ -588,13 +577,14 @@ public class JSODDSupport {
 	private final HashMap<Long, NavigableSet<Integer>> lineMaps = new HashMap<Long, NavigableSet<Integer>>();
 	private final HashMap<IFile, String> instrumentedSource = new HashMap<IFile, String>();
 	private HashMap<IPath, Map<String, IRedefinable>> redefinables = new HashMap<IPath, Map<String, IRedefinable>>();
+	private ProjectRedefinable projectRedefinable;
 
 	private CopyOnWriteArrayList<IRedefineListener> redefineListeners = new CopyOnWriteArrayList<IRedefineListener>();
 
 	private long currentFileId = 0;
 
 	private final IProject project;
-
+	
 	public JSODDSupport(IProject project) {
 		this.project = project;
 		applyDiff(null);
@@ -609,6 +599,7 @@ public class JSODDSupport {
 	public boolean applyDiff(IFileTreeDiff diff) {
 		final boolean[] result = new boolean[1];
 		if (diff == null) {
+			projectRedefinable = null;
 			try {
 				if (fileIds == null) {
 					fileIds = new HashMap<IPath, Long>();
@@ -644,11 +635,11 @@ public class JSODDSupport {
 	public FileRedefinable rewrite(IPath filePath, Writer output)
 			throws CoreException {
 		try {
-
+			initProjectRedefinable();
 			IFile file = (IFile) ResourcesPlugin.getWorkspace().getRoot()
 					.findMember(filePath);
 			File absoluteFile = file.getLocation().toFile();
-			FileRedefinable fileRedefinable = new FileRedefinable(null, file);
+			FileRedefinable fileRedefinable = new FileRedefinable(projectRedefinable, file);
 
 			if (isValidJavaScriptFile(filePath)) {
 				String source = Util.readFile(absoluteFile.getAbsolutePath());
@@ -687,6 +678,14 @@ public class JSODDSupport {
 			throw new CoreException(new Status(IStatus.ERROR,
 					Html5Plugin.PLUGIN_ID, e.getMessage(), e));
 		}
+	}
+
+	private void initProjectRedefinable() {
+		// TODO: Maybe we should let all build state be stored here!?
+		if (projectRedefinable == null) {
+			projectRedefinable = new ProjectRedefinable(project);
+		}
+		
 	}
 
 	// Returns a string where everything that is not javascript is replace by
@@ -890,6 +889,14 @@ public class JSODDSupport {
 			}
 		}
 		return -1;
+	}
+
+	public boolean requiresFullBuild() {
+		return projectRedefinable == null;
+	}
+	
+	public ProjectRedefinable getProjectRedefinable() {
+		return projectRedefinable;
 	}
 
 }
