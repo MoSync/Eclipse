@@ -27,6 +27,8 @@ window.MoSyncDebugProtocol = new (function() {
     var clientSuspend = 0;
     var step = false;
     
+    var debugTrace = false;
+    
     var suppressStepCount;
     
     var inUpdatePosition = false;
@@ -65,6 +67,8 @@ window.MoSyncDebugProtocol = new (function() {
                 }
             };
             asyncXHR.open('GET', serverUrl + '/mobile/incoming/' + timestamp(), true);
+            asyncXHR.timeout = timeoutInMs;
+            asyncXHR.ontimeout = function() { disconnect("Could not connect to server"); }
             asyncXHR.send(null);
         } catch (ex) {
             disconnect(ex);
@@ -152,6 +156,9 @@ window.MoSyncDebugProtocol = new (function() {
         switch (cmd.command) {
             case 'set-breakpoints':
             case 'clear-breakpoints':
+                if (cmd.reset) {
+                    breakpoints = {};
+                }
                 cmd.data.forEach(function(bp) {
                     var file = bp.file;
                     var line = bp.line;
@@ -264,10 +271,16 @@ window.MoSyncDebugProtocol = new (function() {
                  var registeredFunction = registeredFunctions[redefineKey];
                  // Will trigger a reload of the function
                  registeredFunction.____yaloid = null;
+                 trace("Redefined function " + redefineKey);
              }                 
          });
     }
-        
+    
+    function trace(msg) {
+        if (debugTrace) {
+            console.log(msg);
+        }
+    } 
     function update(cmd) {
         var reply = sendToServer('/fetch', { 
             resource: cmd.resource
@@ -276,7 +289,7 @@ window.MoSyncDebugProtocol = new (function() {
         var reload = cmd.reload;
         
         var errorCallback = function(error) {
-            console.log("Could not update file. Error code: " + error.code);
+            trace("Could not update file. Error code: " + error.code);
         };
         
         var fsCallback = function(fs) {
@@ -284,12 +297,12 @@ window.MoSyncDebugProtocol = new (function() {
         };
         
         var gotFileEntry = function(fe) {
-            fileEntry.createWriter(gotFileWriter, errorCallback);
+            fe.createWriter(gotFileWriter, errorCallback);
         }
         
         var gotFileWriter = function(writer) {
             writer.onwrite = function(evt) {
-            console.log("SUCCESS!");
+                trace("Updated file: " + cmd.resource);
                 if (reload) {
                     performReload();
                 }
@@ -374,6 +387,7 @@ window.MoSyncDebugProtocol = new (function() {
         
         if (cmd) {
             sessionId = cmd.sessionId;
+            debugTrace = (sessionId >= 0xffff);
             processCommand(cmd);
         }
 

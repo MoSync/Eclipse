@@ -59,7 +59,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	private IProject project;
 	private ReloadThreadReference mainThread;
 	private boolean isTerminated = false;
-	private ProjectRedefinable snapshot;
+	private ProjectRedefinable baseline;
 	private ILaunch launch;
 	private IJavaScriptDebugTarget debugTarget;
 	private String remoteAddr;
@@ -263,6 +263,14 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	}
 	
 	/**
+	 * Clears and resets all breakpoints on target.
+	 */
+	public void refreshBreakpoints() {
+		// TODO: Clear per file instead.
+		server.refreshBreakpoints(currentSessionId);
+	}
+	
+	/**
 	 * Issues a reload request to the client.
 	 * @param resourcePath The resource to reload.
 	 * A {@code null} value will cause a full reload of the app.
@@ -375,18 +383,18 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		return debugTarget;
 	}
 
-	public ProjectRedefinable getSnapshot() {
-		if (snapshot == null) {
+	public ProjectRedefinable getBaseline() {
+		if (baseline == null) {
 			JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project);
 			if (jsoddSupport != null) {
-				return jsoddSupport.getProjectRedefinable();
+				setBaseline(jsoddSupport.getBaseline());
 			}
 		}
-		return snapshot;
+		return baseline;
 	}
 
-	public void setSnapshot(ProjectRedefinable snapshot) {
-		this.snapshot = snapshot;
+	public void setBaseline(ProjectRedefinable baseline) {
+		this.baseline = baseline;
 	}
 
 	public void setLaunch(ILaunch launch) {

@@ -5,6 +5,7 @@ import java.io.FileFilter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -55,35 +56,43 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				this.op = op;
 			}
 
-			public int rewrite(IResource resourceToInstrument)
+			public int rewrite(IResource resourceToInstrument, boolean delete)
 					throws CoreException {
 				IPath resourcePath = resourceToInstrument.getFullPath();
 				resourcePath = resourcePath.removeFirstSegments(inputRoot
 						.getFullPath().segmentCount());
 				File outputFile = new File(outputRoot,
 						resourcePath.toOSString());
-				outputFile.getParentFile().mkdirs();
-				FileWriter output = null;
-				try {
-					output = new FileWriter(outputFile);
-					// TODO! Not require wormhole!
-					boolean addBoilerPlate = resourcePath.lastSegment()
-							.equalsIgnoreCase("wormhole.js");
-					if (addBoilerPlate) {
-						op.generateBoilerplate(
-								MoSyncProject.create(getProject()), output);
-						/*output.write(Util.readFile(resourceToInstrument
-								.getLocation().toOSString()));*/
+				FileRedefinable result = null;
+				if (delete) {
+					result = op.delete(resourceToInstrument.getFullPath(), op.getBaseline());
+				} else {
+					outputFile.getParentFile().mkdirs();
+					FileWriter output = null;
+					try {
+						output = new FileWriter(outputFile);
+						// TODO! Not require wormhole!
+						boolean addBoilerPlate = resourcePath.lastSegment()
+								.equalsIgnoreCase("wormhole.js");
+						if (addBoilerPlate) {
+							op.generateBoilerplate(
+									MoSyncProject.create(getProject()), output);
+						}
+						// This is a *build* op, so update the baseline.
+						result = op.rewrite(resourceToInstrument.getFullPath(),
+								output, op.getBaseline());
+					} catch (IOException e) {
+						throw new CoreException(
+								new Status(
+										IStatus.ERROR,
+										Html5Plugin.PLUGIN_ID,
+										"Cannot instrument JavaScript for debugging",
+										e));
+					} finally {
+						Util.safeClose(output);
 					}
-					FileRedefinable result = op.rewrite(resourceToInstrument.getFullPath(), output);
-					return result.getMemSize();
-				} catch (IOException e) {
-					throw new CoreException(new Status(IStatus.ERROR,
-							Html5Plugin.PLUGIN_ID,
-							"Cannot instrument JavaScript for debugging", e));
-				} finally {
-					Util.safeClose(output);
 				}
+				return result.getMemSize();
 			}
 		}
 
@@ -121,7 +130,8 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				DependencyManager<IResource> dependencies,
 				IProcessConsole console) throws CoreException {
 
-			final JSODDSupport op = Html5Plugin.getDefault().getJSODDSupport(project);
+			final JSODDSupport op = Html5Plugin.getDefault().getJSODDSupport(
+					project);
 
 			IFileTreeDiff diff = this.diff;
 			// If we've changed the IP addr, then rebuild it all...
@@ -132,19 +142,22 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 			op.applyDiff(diff);
 			Set<IResource> instrumentThese = computeResourcesToRebuild(dependencies);
+			Set<IResource> deleted = new HashSet<IResource>(Arrays.asList(getDeletedResources()));
+			instrumentThese.addAll(deleted);
 			Rewriter rewriter = new Rewriter(op);
 			for (IResource instrumentThis : instrumentThese) {
 				if (monitor.isCanceled()) {
 					return;
 				}
 				long start = System.currentTimeMillis();
-				int memoryConsumption = rewriter.rewrite(instrumentThis);
+				boolean wasDeleted = deleted.contains(instrumentThis);
+				int memoryConsumption = rewriter.rewrite(instrumentThis, wasDeleted);
 				long elapsed = System.currentTimeMillis() - start;
 				console.addMessage(MessageFormat.format(
 						"Instrumented {0} [{1}, {2}].",
 						instrumentThis.getFullPath(),
 						Util.elapsedTime((int) elapsed),
-						Util.dataSize(memoryConsumption)));
+						wasDeleted ? "deleted" : Util.dataSize(memoryConsumption)));
 			}
 		}
 
@@ -178,7 +191,8 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 				jsoddPropsFile.write(jsoddMetaData.toFile());
 
-				return !Util.equals(host, oldHost) || !Util.equals(port, oldPort);
+				return !Util.equals(host, oldHost)
+						|| !Util.equals(port, oldPort);
 			} catch (IOException e) {
 				CoreMoSyncPlugin.getDefault().log(e);
 				return false;

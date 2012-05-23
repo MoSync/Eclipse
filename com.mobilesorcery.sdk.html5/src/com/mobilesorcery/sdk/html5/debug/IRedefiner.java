@@ -19,7 +19,11 @@ public interface IRedefiner {
 	 * @param problems
 	 * @return 
 	 */
-	public void collect(IRedefinable redefinable, IRedefinable replacement);
+	public void changed(IRedefinable redefinable, IRedefinable replacement);
+	
+	public void added(IRedefinable added);
+	
+	public void deleted(IRedefinable deleted);
 	
 	/**
 	 * Commits previously collected information.

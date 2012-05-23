@@ -80,7 +80,9 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 	public static final String TIMEOUT_PREF = "timeout";
 
-	public static final int DEFAULT_TIMEOUT = 3;
+	public static final int DEFAULT_TIMEOUT = 5;
+	
+	public static final int MINIMUM_TIMEOUT = 2;
 
 	public static final int DO_NOTHING = 0;
 	
@@ -334,8 +336,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 	public int getTimeout() {
 		int result = getPreferenceStore().getInt(TIMEOUT_PREF);
-		if (result < 1) {
-			result = DEFAULT_TIMEOUT; // Default; regardless of store value
+		if (result < MINIMUM_TIMEOUT) {
+			result = MINIMUM_TIMEOUT; // Minimum; regardless of store value
 		}
 		return result;
 	}

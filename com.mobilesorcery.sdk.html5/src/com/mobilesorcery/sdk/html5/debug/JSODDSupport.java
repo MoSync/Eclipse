@@ -632,14 +632,25 @@ public class JSODDSupport {
 		return result[0];
 	}
 
-	public FileRedefinable rewrite(IPath filePath, Writer output)
+	public FileRedefinable delete(IPath filePath, ProjectRedefinable baseline) {
+		initProjectRedefinable();
+		IFile file = (IFile) ResourcesPlugin.getWorkspace().getRoot()
+				.findMember(filePath);
+		FileRedefinable fileRedefinable = new FileRedefinable(projectRedefinable, file, true);
+		if (baseline != null) {
+			baseline.replaceChild(fileRedefinable);
+		}
+		return fileRedefinable;
+	}
+	
+	public FileRedefinable rewrite(IPath filePath, Writer output, ProjectRedefinable baseline)
 			throws CoreException {
 		try {
 			initProjectRedefinable();
 			IFile file = (IFile) ResourcesPlugin.getWorkspace().getRoot()
 					.findMember(filePath);
 			File absoluteFile = file.getLocation().toFile();
-			FileRedefinable fileRedefinable = new FileRedefinable(projectRedefinable, file);
+			FileRedefinable fileRedefinable = new FileRedefinable(null, file);
 
 			if (isValidJavaScriptFile(filePath)) {
 				String source = Util.readFile(absoluteFile.getAbsolutePath());
@@ -670,6 +681,10 @@ public class JSODDSupport {
 				this.instrumentedSource.put(file, instrumentedSource);
 				scopeMaps.put(fileId, scopeMap);
 				lineMaps.put(fileId, instrumentedLines);
+				
+				if (baseline != null) {
+					baseline.replaceChild(fileRedefinable);
+				}
 			}
 			return fileRedefinable;
 		} catch (CoreException e) {
@@ -761,8 +776,8 @@ public class JSODDSupport {
 				.get(fileId);
 		if (scopeMap == null) {
 			try {
-				// TODO: Force build instead!!!
-				rewrite(file.getFullPath(), null);
+				// TODO: Force build instead!!!?
+				rewrite(file.getFullPath(), null, getBaseline());
 				scopeMap = scopeMaps.get(fileId);
 			} catch (CoreException e) {
 				// Gah.
@@ -895,7 +910,7 @@ public class JSODDSupport {
 		return projectRedefinable == null;
 	}
 	
-	public ProjectRedefinable getProjectRedefinable() {
+	public ProjectRedefinable getBaseline() {
 		return projectRedefinable;
 	}
 

@@ -32,6 +32,7 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
+import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -64,6 +65,7 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.IRedefinable;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.RedefineException;
 import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
@@ -395,6 +397,8 @@ public class JSODDServer implements IResourceChangeListener {
 
 	private static final int BREAKPOINT = 10;
 
+	private static final int REFRESH_BREAKPOINTS = 12;
+	
 	private static final int RESUME = 20;
 
 	private static final int DROP_TO_FRAME = 25;
@@ -509,10 +513,9 @@ public class JSODDServer implements IResourceChangeListener {
 			}
 
 			// We use a zero-length breakpoint list as 'ping'
-			JSONObject result = createBreakpointJSON(new Object[0], true);
+			JSONObject result = createBreakpointJSON(new Object[0], true, false);
 
 			try {
-				ArrayList bps = new ArrayList();
 				DebuggerMessage queuedElement = queues.take(session);
 
 				Object queuedObject = queuedElement == null ? null
@@ -522,7 +525,7 @@ public class JSODDServer implements IResourceChangeListener {
 				if (queuedType == BREAKPOINT) {
 					Pair<Boolean, Object> bp = (Pair<Boolean, Object>) queuedObject;
 					result = createBreakpointJSON(new Object[] { bp.second },
-							bp.first);
+							bp.first, false);
 				} else if (queuedType == RESUME) {
 					result = newCommand("breakpoint-continue");
 				} else if (queuedType == STEP) {
@@ -548,6 +551,11 @@ public class JSODDServer implements IResourceChangeListener {
 					} else {
 						result.put("noStack", true);
 					}
+				} else if (queuedType == REFRESH_BREAKPOINTS) {
+					IBreakpoint[] bps = DebugPlugin.getDefault()
+							.getBreakpointManager()
+							.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
+					result = createBreakpointJSON(bps, true, true);
 				} else if (queuedType == REDEFINE) {
 					Pair<String, String> data = (Pair<String, String>) queuedObject;
 					result = newCommand("update-function");
@@ -640,7 +648,7 @@ public class JSODDServer implements IResourceChangeListener {
 				IBreakpoint[] bps = DebugPlugin.getDefault()
 						.getBreakpointManager()
 						.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
-				JSONObject jsonBps = createBreakpointJSON(bps, true);
+				JSONObject jsonBps = createBreakpointJSON(bps, true, true);
 				if (command != null) {
 					int newSessionId = newSessionId();
 					jsonBps.put(SESSION_ID_ATTR, newSessionId);
@@ -703,10 +711,13 @@ public class JSODDServer implements IResourceChangeListener {
 			return (String) command.get("command");
 		}
 
-		private JSONObject createBreakpointJSON(Object[] bps, boolean enabled) {
+		private JSONObject createBreakpointJSON(Object[] bps, boolean enabled, boolean reset) {
 			JSONObject command = new JSONObject();
 			command.put("command", enabled ? "set-breakpoints"
 					: "clear-breakpoints");
+			if (reset) {
+				command.put("reset", true);
+			}
 			JSONArray jsonBps = new JSONArray();
 			for (Object bp : bps) {
 				try {
@@ -901,7 +912,8 @@ public class JSODDServer implements IResourceChangeListener {
 	}
 
 	public int newSessionId() {
-		return sessionId.incrementAndGet();
+		int traceMask = CoreMoSyncPlugin.getDefault().isDebugging() ? 0xffff : 0;
+		return traceMask + sessionId.incrementAndGet();
 	}
 
 	private Object awaitEvalResult(int sessionId, String expression,
@@ -1043,6 +1055,10 @@ public class JSODDServer implements IResourceChangeListener {
 		}
 	}
 
+	public void refreshBreakpoints(int sessionId) {
+		queues.offer(sessionId, new DebuggerMessage(REFRESH_BREAKPOINTS));
+	}
+
 	private int getTimeout(int sessionId) {
 		// TODO: Use launch config/prefs. Hm. Prefs easier. And user-friendlier
 		// :)
@@ -1069,16 +1085,18 @@ public class JSODDServer implements IResourceChangeListener {
 		}
 		
 		List<ReloadVirtualMachine> vms = getVMs(false);
-		final HashMap<IProject, ProjectRedefinable> projectsToReload = new HashMap<IProject, ProjectRedefinable>();
+		final HashMap<IProject, ProjectRedefinable> replacements = new HashMap<IProject, ProjectRedefinable>();
 		for (ReloadVirtualMachine vm : vms) {
 			IProject project = vm.getProject();
-			if (!projectsToReload.containsKey(project)) {
-				projectsToReload.put(project, new ProjectRedefinable(project));
+			if (!replacements.containsKey(project)) {
+				ProjectRedefinable replacement = vm.getBaseline().shallowCopy();
+				replacements.put(project, replacement);
 			}
 		}
 
 		IResourceDelta delta = event.getDelta();
 
+		// This code seems to be repeated elsewhere; refactor! TODO!
 		if (delta != null) {
 			try {
 				delta.accept(new IResourceDeltaVisitor() {
@@ -1091,15 +1109,16 @@ public class JSODDServer implements IResourceChangeListener {
 							IProject project = resource.getProject();
 							if (project != null
 									&& resource.getType() == IResource.FILE) {
-								ProjectRedefinable projectRedefinable = projectsToReload
-										.get(project);
-								if (projectRedefinable == null) {
+								ProjectRedefinable replacement = replacements.get(project);
+								if (replacement == null) {
 									return false;
 								}
-								JSODDSupport jsoddSupport = Html5Plugin
-										.getDefault().getJSODDSupport(project);
-								projectRedefinable.addChild(jsoddSupport
-										.rewrite(resource.getFullPath(), null));
+								JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project);
+								if (delta.getKind() == IResourceDelta.REMOVED) {
+									jsoddSupport.delete(resource.getFullPath(), replacement);
+								} else {
+									jsoddSupport.rewrite(resource.getFullPath(), null, replacement);
+								}
 							}
 						}
 						return true;
@@ -1113,19 +1132,18 @@ public class JSODDServer implements IResourceChangeListener {
 		int failedRedefineResolution = 0;
 		for (ReloadVirtualMachine vm : vms) {
 			IProject project = vm.getProject();
-			ProjectRedefinable projectRedefinable = projectsToReload.get(project);
+			ProjectRedefinable replacement = replacements.get(project);
 			boolean tryToRelad = Html5Plugin.getDefault().getSourceChangeStrategy() == Html5Plugin.RELOAD;
 			ReloadRedefiner redefiner = new ReloadRedefiner(vm, tryToRelad);
-			ProjectRedefinable snapshot = vm.getSnapshot();
-			if (snapshot == null) {
-				snapshot = new ProjectRedefinable(project);
-			}
-			
-			snapshot.redefine(projectRedefinable, redefiner);
-			boolean storeSnapshot = false;
+			ProjectRedefinable baseline = vm.getBaseline();
+			boolean updateBaseline = false;
 			try {
+				if (baseline == null) {
+					throw new RedefineException(RedefinitionResult.unrecoverable("Client out of sync"));
+				}
+				baseline.redefine(replacement, redefiner);
 				redefiner.commit(tryToRelad);
-				storeSnapshot = true;
+				updateBaseline = true;
 			} catch (RedefineException e) {
 				if (failedRedefineResolution == 0) {
 					failedRedefineResolution = askForRedefineResolution(e);
@@ -1134,7 +1152,7 @@ public class JSODDServer implements IResourceChangeListener {
 				case RedefinitionResult.RELOAD:
 					try {
 						redefiner.commit(true);
-						storeSnapshot = true;
+						updateBaseline = true;
 					} catch (RedefineException nestedException) {
 						// Ignore.
 					}
@@ -1146,8 +1164,8 @@ public class JSODDServer implements IResourceChangeListener {
 					// Continue/cancel; do nothing.
 				}
 			}
-			if (storeSnapshot) {
-				vm.setSnapshot(projectRedefinable);
+			if (updateBaseline) {
+				vm.setBaseline(replacement);
 			}
 		}
 	}
@@ -1173,5 +1191,6 @@ public class JSODDServer implements IResourceChangeListener {
 			return new HashSet<Integer>(this.queues.consumers.keySet());
 		}
 	}
+
 
 }

@@ -486,13 +486,25 @@ public class Util {
 		}
 	}
 
-	public static void main(String[] args) {
-		System.err.println(Util.getExtension(new File(".a")));
-		System.err.println(Util.getNameWithoutExtension(new File("a")));
-
-		System.err
-				.println(toBase16(fromBase16("0123456789abcdefedcba9876543210")));
-
+	/**
+	 * Truncates a {@link String}, and if necessary adds an ellipsis to
+	 * the end of the string.
+	 * @param original
+	 * @param ellipsis The string to use as an ellipsis, or {@code null} to use the default (...).
+	 * @param maxLength If the length of the {@code original} {@link String} is greater than
+	 * this value, an ellipsis will be added.
+	 * @return A {@link String} that is guaranteed to be no longer than {@code maxLength}.
+	 * @throws StringIndexOutOfBoundsException If the length of the ellipsis is greater
+	 * than {@code maxLength}
+	 */
+	public static String truncate(String original, String ellipsis, int maxLength) {
+		if (original.length() > maxLength) {
+			if (ellipsis == null) {
+				ellipsis = "...";
+			}
+			return original.substring(0, maxLength - ellipsis.length()) + ellipsis;
+		}
+		return original;
 	}
 
 	public static void writeToFile(File file, String text) throws IOException {
