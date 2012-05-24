@@ -282,7 +282,7 @@ window.MoSyncDebugProtocol = new (function() {
         }
     } 
     function update(cmd) {
-        mosync.bridge.send(["fetchResource", serverHost, serverPort, cmd.resource]);
+        mosync.bridge.send(["fetchResource", serverHost, serverPort, project, cmd.resource]);
         /*var reply = sendToServer('/fetch', { 
             resource: cmd.resource
         });
