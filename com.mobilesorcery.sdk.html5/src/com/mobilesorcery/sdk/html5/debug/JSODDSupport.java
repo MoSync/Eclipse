@@ -79,6 +79,7 @@ import com.mobilesorcery.sdk.core.templates.Template;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FileRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FunctionRedefinable;
+import com.mobilesorcery.sdk.html5.debug.hotreplace.HTMLRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
 import com.mobilesorcery.sdk.html5.debug.rewrite.FunctionRewrite;
 import com.mobilesorcery.sdk.html5.debug.rewrite.ISourceSupport;
@@ -636,7 +637,7 @@ public class JSODDSupport {
 		initProjectRedefinable();
 		IFile file = (IFile) ResourcesPlugin.getWorkspace().getRoot()
 				.findMember(filePath);
-		FileRedefinable fileRedefinable = new FileRedefinable(projectRedefinable, file, true);
+		FileRedefinable fileRedefinable = new FileRedefinable(null, file, true);
 		if (baseline != null) {
 			baseline.replaceChild(fileRedefinable);
 		}
@@ -656,9 +657,17 @@ public class JSODDSupport {
 				String source = Util.readFile(absoluteFile.getAbsolutePath());
 				String prunedSource = source;
 				TreeSet<Integer> scopeResetPoints = new TreeSet<Integer>();
-
+				
+				long fileId = assignFileId(filePath);
+				LineMap sourceLineMap = new LineMap(source);
+				DebugRewriteOperationVisitor visitor = new DebugRewriteOperationVisitor(sourceLineMap, fileId);
+				
 				if (isEmbeddedJavaScriptFile(filePath)) {
-					prunedSource = getEmbeddedJavaScript(file, scopeResetPoints);
+					ArrayList<Pair<Integer, Integer>> htmlRanges = new ArrayList<Pair<Integer,Integer>>();
+					prunedSource = getEmbeddedJavaScript(file, scopeResetPoints, htmlRanges);
+					HTMLRedefinable htmlRedefinable = new HTMLRedefinable(null, file, visitor);
+					htmlRedefinable.setHtmlRanges(htmlRanges);
+					fileRedefinable = htmlRedefinable;
 				}
 
 				// 1. Parse (JSDT)
@@ -666,9 +675,6 @@ public class JSODDSupport {
 				ASTNode ast = parser.createAST(new NullProgressMonitor());
 
 				// 2. Instrument
-				long fileId = assignFileId(filePath);
-				LineMap sourceLineMap = new LineMap(source);
-				DebugRewriteOperationVisitor visitor = new DebugRewriteOperationVisitor(sourceLineMap, fileId);
 				visitor.setFileRedefinable(fileRedefinable);
 				visitor.setScopeResetPoints(scopeResetPoints);
 				ast.accept(visitor);
@@ -706,7 +712,7 @@ public class JSODDSupport {
 	// Returns a string where everything that is not javascript is replace by
 	// spaces
 	private String getEmbeddedJavaScript(IFile file,
-			NavigableSet<Integer> scopeResetPoints) throws IOException,
+			NavigableSet<Integer> scopeResetPoints, ArrayList<Pair<Integer, Integer>> htmlRanges) throws IOException,
 			CoreException, InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(1);
 		IModelManager modelManager = StructuredModelManager.getModelManager();
@@ -728,6 +734,12 @@ public class JSODDSupport {
 				.getHtmlLocations();
 		for (org.eclipse.jface.text.Position htmlLocation : htmlLocations) {
 			scopeResetPoints.add(htmlLocation.offset);
+		}
+		org.eclipse.jface.text.Position[] ranges = translator.getHtmlLocations();
+		for (int i = 0; i <= ranges.length; i++) {
+			int start = i == 0 ? 0 : ranges[i-1].offset + ranges[i-1].length;
+			int end = i == ranges.length ? doc.getLength() : ranges[i].offset;
+			htmlRanges.add(new Pair<Integer, Integer>(start, end));
 		}
 		return translator.getJsText();
 	}

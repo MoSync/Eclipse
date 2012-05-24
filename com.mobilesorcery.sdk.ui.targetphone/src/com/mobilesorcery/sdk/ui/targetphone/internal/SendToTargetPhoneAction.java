@@ -57,6 +57,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 			super("");
 			this.project = project;
 			this.phone = phone;
+			setRule(project.getWrappedProject());
 			setName(createProgressMessage(project, phone));
 		}
 

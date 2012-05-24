@@ -43,9 +43,7 @@ public class HTMLRedefinable extends FileRedefinable {
 		for (int i = 0; i < htmlRanges.size(); i++) {
 			Pair<Integer, Integer> htmlRange = htmlRanges.get(i);
 			Pair<Integer, Integer> otherRange = otherRanges.get(i);
-			if (!htmlRange.equals(otherRange)) {
-				return false;
-			}
+			
 			String htmlSegment = getSourceRange(htmlRange.first,
 					htmlRange.second);
 			String otherSegment = redefinable.getSourceRange(otherRange.first,

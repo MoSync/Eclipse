@@ -15,6 +15,7 @@ import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FileRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FunctionRedefinable;
+import com.mobilesorcery.sdk.html5.debug.hotreplace.HTMLRedefinable;
 
 public class ReloadRedefiner implements IRedefiner {
 
@@ -108,6 +109,11 @@ public class ReloadRedefiner implements IRedefiner {
 		if (redefinable != replacement) {
 			fileUpdates.add(redefinable.getFile());			
 		}
+		if (redefinable instanceof HTMLRedefinable && replacement instanceof HTMLRedefinable) {
+			if (!((HTMLRedefinable) redefinable).areHtmlRangesEqual((HTMLRedefinable) replacement)) {
+				return new RedefinitionResult(RedefinitionResult.SHOULD_RELOAD | RedefinitionResult.REDEFINE_OK, "HTML has changed, must reload");
+			}
+		}
 		return RedefinitionResult.ok();
 	}
 
@@ -126,14 +132,14 @@ public class ReloadRedefiner implements IRedefiner {
 			vm.refreshBreakpoints();
 		}
 		
-		if (reloadHint) {
+		if (reloadHint || redefineResult.isFlagSet(RedefinitionResult.SHOULD_RELOAD)) {
 			vm.reload();
 		} else if (!reloadOnly) {
 			for (FunctionRedefinable functionUpdate : functionUpdates) {
 				vm.updateFunction(functionUpdate.key(), functionUpdate.getFunctionSource());
 			}
 			
-			if (dropToFrame >= 0) {
+			if (vm.mainThread().isSuspended() && dropToFrame >= 0) {
 				try {
 					vm.dropToFrame(dropToFrame);
 				} catch (DebugException e) {

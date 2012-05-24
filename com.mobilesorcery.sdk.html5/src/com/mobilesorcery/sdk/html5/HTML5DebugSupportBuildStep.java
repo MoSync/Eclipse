@@ -6,7 +6,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -43,7 +42,6 @@ import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FileRedefinable;
 import com.mobilesorcery.sdk.internal.builder.IncrementalBuilderVisitor;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
-import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
@@ -149,6 +147,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				if (monitor.isCanceled()) {
 					return;
 				}
+				dependencies.addDependency(instrumentThis, getResourceBundleLocation(project));
 				long start = System.currentTimeMillis();
 				boolean wasDeleted = deleted.contains(instrumentThis);
 				int memoryConsumption = rewriter.rewrite(instrumentThis, wasDeleted);
@@ -224,6 +223,10 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 		setName(prototype.getName());
 	}
 
+	public IResource getResourceBundleLocation(IProject project) {
+		return project.findMember(new Path("Resources/LocalFiles.bin"));
+	}
+
 	@Override
 	public int incrementalBuild(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult result,
@@ -232,6 +235,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 		IPath inputRootPath = Html5Plugin.getHTML5Folder(wrappedProject);
 		IFolder inputRoot = wrappedProject.getFolder(inputRootPath);
 		if (inputRoot.exists()) {
+			File outputResource = getResourceBundleLocation(wrappedProject).getLocation().toFile();
 			IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project,
 					variant.getConfigurationId());
 			if (PropertyUtil.getBoolean(properties,
@@ -250,18 +254,16 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				visitor.setDiff(diff);
 				DependencyManager<IResource> deps = getBuildState()
 						.getDependencyManager();
+
 				visitor.instrument(new SubProgressMonitor(monitor, 7), deps,
 						getConsole());
 
 				// TODO -- would prefer it not to always output there... Since
 				// we'll get build problems for sure!
-				BundleBuildStep.bundle(outputRoot, wrappedProject.getLocation()
-						.append("Resources/LocalFiles.bin").toFile());
+				BundleBuildStep.bundle(outputRoot, outputResource);
 			} else {
 				BundleBuildStep.bundle(
-						inputRoot.getLocation().toFile(),
-						wrappedProject.getLocation()
-								.append("Resources/LocalFiles.bin").toFile());
+						inputRoot.getLocation().toFile(), outputResource);
 			}
 		}
 		monitor.done();
