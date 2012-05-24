@@ -44,7 +44,7 @@
     	    replacement-folder="${replacement-root}/org.eclipse.cdt.ui" />-->
 
 		<!-- Another hack before rezipping: let's put the console version of eclipse in there -->
-		<copy file="${target-platform}/eclipse/eclipsec.exe" tofile="${built-rcp-unzipped}/mosync/mosyncc.exe"/>
+		<!-- <copy file="${target-platform}/eclipse/eclipsec.exe" tofile="${built-rcp-unzipped}/mosync/mosyncc.exe"/> -->
 
     	<!-- Time to RE-zip it all... -->
     	<zip basedir="${built-rcp-unzipped}" destfile="${built-rcp-rezipped}" />
