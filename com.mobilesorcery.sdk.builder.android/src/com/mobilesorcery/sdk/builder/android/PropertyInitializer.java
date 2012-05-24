@@ -75,7 +75,7 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
     public void initializeDefaultPreferences() {
         IPreferenceStore store = Activator.getDefault().getPreferenceStore();
         try {
-        	store.setDefault(ADB_DEBUG_LOG, true);
+        	store.setDefault(ADB_DEBUG_LOG, false);
         	store.setDefault(ADB_LOGCAT_ARGS, "-v tag *:W");
 			KeystoreCertificateInfo.createDefault().store(ANDROID_KEYSTORE_CERT_INFO,
 					new PreferenceStorePropertyOwner(store, true),
