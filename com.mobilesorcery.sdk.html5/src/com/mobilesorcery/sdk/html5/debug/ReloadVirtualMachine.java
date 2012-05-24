@@ -45,23 +45,24 @@ import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadReference;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadUndefinedValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.SimpleScriptReference;
 import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
-import com.mobilesorcery.sdk.html5.live.LiveServer;
+import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
 public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener {
 
-	private final LiveServer server;
+	private final JSODDServer server;
 	private List threads = new ArrayList();
 	private final ReloadEventRequestManager requestMgr;
 	private ReloadEventQueue eventQueue;
 	private final NullValue nullValue;
 	private final ReloadUndefinedValue undefValue;
-	private int currentSessionId = LiveServer.NO_SESSION;
+	private int currentSessionId = JSODDServer.NO_SESSION;
 	private IProject project;
 	private ReloadThreadReference mainThread;
 	private boolean isTerminated = false;
-	private ProjectRedefinable snapshot;
+	private ProjectRedefinable baseline;
 	private ILaunch launch;
 	private IJavaScriptDebugTarget debugTarget;
+	private String remoteAddr;
 
 	public ReloadVirtualMachine(int port) throws Exception {
 		// TODO: PORT
@@ -119,14 +120,15 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		server.suspend(currentSessionId);
 	}
 
-	public void reset(int newSessionId, MoSyncProject project) {
+	public void reset(int newSessionId, MoSyncProject project, String remoteAddr) {
 		resetThreads();
-		if (currentSessionId != LiveServer.NO_SESSION) {
+		if (currentSessionId != JSODDServer.NO_SESSION) {
 			server.reset(currentSessionId);
 			resetEventQueue();
 		}
 		setCurrentSessionId(newSessionId);
 		this.project = project.getWrappedProject();
+		this.remoteAddr = remoteAddr;
 	}
 
 	@Override
@@ -261,6 +263,14 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	}
 	
 	/**
+	 * Clears and resets all breakpoints on target.
+	 */
+	public void refreshBreakpoints() {
+		// TODO: Clear per file instead.
+		server.refreshBreakpoints(currentSessionId);
+	}
+	
+	/**
 	 * Issues a reload request to the client.
 	 * @param resourcePath The resource to reload.
 	 * A {@code null} value will cause a full reload of the app.
@@ -280,6 +290,13 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	
 	public void reload() {
 		server.reload(currentSessionId);
+		if (debugTarget.isSuspended()) {
+			try {
+				debugTarget.resume();
+			} catch (DebugException e) {
+				CoreMoSyncPlugin.getDefault().log(e);
+			}
+		}
 	}
 	
 	/**
@@ -366,12 +383,18 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		return debugTarget;
 	}
 
-	public ProjectRedefinable getSnapshot() {
-		return snapshot;
+	public ProjectRedefinable getBaseline() {
+		if (baseline == null) {
+			JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project);
+			if (jsoddSupport != null) {
+				setBaseline(jsoddSupport.getBaseline());
+			}
+		}
+		return baseline;
 	}
 
-	public void setSnapshot(ProjectRedefinable snapshot) {
-		this.snapshot = snapshot;
+	public void setBaseline(ProjectRedefinable baseline) {
+		this.baseline = baseline;
 	}
 
 	public void setLaunch(ILaunch launch) {
@@ -385,6 +408,10 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	@Override
 	public void timeout(ReloadVirtualMachine vm) {
 		// Ignore.
+	}
+
+	public String getRemoteAddr() {
+		return remoteAddr;
 	}
 
 }

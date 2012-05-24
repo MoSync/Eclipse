@@ -105,7 +105,7 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 		IAndroidEmulatorProcess process = runningEmulators.size() > 0 ? runningEmulators.get(0) : null;
 		if (process == null) {
 			process = emulator.start(avd, true);
-			//startLogCat(adb);
+			startLogCat(adb);
 		}
 
 		// We need to wait until we're started.

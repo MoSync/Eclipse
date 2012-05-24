@@ -6,6 +6,7 @@ import java.util.HashMap;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.debug.core.DebugException;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.debug.IRedefinable;
 import com.mobilesorcery.sdk.html5.debug.IRedefiner;
@@ -34,24 +35,40 @@ public class ReloadRedefiner implements IRedefiner {
 	}
 	
 	@Override
-	public void collect(IRedefinable redefinable, IRedefinable replacement) {
+	public void changed(IRedefinable redefinable, IRedefinable replacement) {
 		if (redefinable instanceof FileRedefinable) {
 			redefineResult = redefineResult.merge(collectFile((FileRedefinable) redefinable, (FileRedefinable) replacement));
 		} else if (!reloadOnly && redefinable instanceof FunctionRedefinable) {
 			redefineResult = redefineResult.merge(collectFunction((FunctionRedefinable) redefinable, (FunctionRedefinable) replacement));
 		}
 	}
+	
+	@Override
+	public void added(IRedefinable added) {
+		cannotAddOrRemove(added);
+	}
+
+	@Override
+	public void deleted(IRedefinable deleted) {
+		cannotAddOrRemove(deleted);
+	}
+
+	private void cannotAddOrRemove(IRedefinable redefinable) {
+		if (redefinable instanceof FileRedefinable || (!reloadOnly && redefinable instanceof FunctionRedefinable)) {
+			redefineResult = redefineResult.merge(RedefinitionResult.fail("Cannot add or delete files and functions"));
+		}
+	}
 
 	private RedefinitionResult collectFunction(FunctionRedefinable redefinable,
 			FunctionRedefinable replacement) {
+		if (Util.equals(replacement.getFunctionSource(), redefinable.getFunctionSource())) {
+			return RedefinitionResult.ok();
+		}
 		RedefinitionResult result = redefinable.canRedefine(replacement);
 		if (!RedefinitionResult.isOk(result)) {
 			return result;
 		}
-		FunctionRedefinable replacementFunction = (FunctionRedefinable) replacement;
-		if (Util.equals(replacementFunction.getFunctionSource(), redefinable.getFunctionSource())) {
-			return RedefinitionResult.ok();
-		}
+		
 		functionUpdates.add(replacement);
 		ReloadThreadReference mainThread = vm.mainThread();
 		if (mainThread.isSuspended()) {
@@ -87,19 +104,26 @@ public class ReloadRedefiner implements IRedefiner {
 
 	private RedefinitionResult collectFile(FileRedefinable redefinable,
 			FileRedefinable replacement) {
-		fileUpdates.add(redefinable.getFile());
+		// Reference equality, since we made a shallow copy of the project redefinable!
+		if (redefinable != replacement) {
+			fileUpdates.add(redefinable.getFile());			
+		}
 		return RedefinitionResult.ok();
 	}
 
 	@Override
 	public void commit(boolean reloadHint) throws RedefineException {
-		boolean isOk = RedefinitionResult.isOk(redefineResult) || (reloadHint && !redefineResult.isFlagSet(RedefinitionResult.CANNOT_RESTART));
+		boolean isOk = RedefinitionResult.isOk(redefineResult) || (reloadHint && !redefineResult.isFlagSet(RedefinitionResult.CANNOT_RELOAD));
 		if (!isOk) {
 			throw new RedefineException(redefineResult);
 		}
 		
 		for (IFile fileUpdate : fileUpdates) {
 			vm.update(fileUpdate);
+		}
+		
+		if (!fileUpdates.isEmpty()) {
+			vm.refreshBreakpoints();
 		}
 		
 		if (reloadHint) {
@@ -117,8 +141,10 @@ public class ReloadRedefiner implements IRedefiner {
 				}
 			}
 		}
+		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+			CoreMoSyncPlugin.trace("Committed redefinables. Files: {0}. Functions: {1}", fileUpdates, functionUpdates);
+		}
 	}
-
 	
 
 }

@@ -5,6 +5,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -20,7 +21,7 @@ import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
-import com.mobilesorcery.sdk.html5.live.LiveServer;
+import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
 public class ReloadEventQueue implements EventQueue {
 
@@ -91,8 +92,9 @@ public class ReloadEventQueue implements EventQueue {
 							.getFile(new Path(fileName));
 					Location location = new SimpleLocation(vm, file,
 							line.intValue());
-					IJavaScriptLineBreakpoint bp = LiveServer.findBreakPoint(
-							new Path(fileName), line);
+					IProject project = file.getProject();
+					IJavaScriptLineBreakpoint bp = Html5Plugin.getDefault().getJSODDSupport(project).findBreakPoint(
+							new Path(fileName), line.intValue());
 					for (Object bpRequestObj : bpRequests) {
 						ReloadBreakpointRequest bpRequest = (ReloadBreakpointRequest) bpRequestObj;
 						Location bpLocation = bpRequest.location();
@@ -147,7 +149,7 @@ public class ReloadEventQueue implements EventQueue {
 
 	private ReloadVirtualMachine extractVM(Object commandObj) {
 		if (commandObj instanceof JSONObject) {
-			Integer sessionId = LiveServer
+			Integer sessionId = JSODDServer
 					.extractSessionId((JSONObject) commandObj);
 			if (sessionId != null) {
 				return Html5Plugin.getDefault().getReloadServer()

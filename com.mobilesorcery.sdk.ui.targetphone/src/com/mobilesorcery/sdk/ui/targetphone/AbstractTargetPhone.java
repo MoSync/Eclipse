@@ -51,6 +51,9 @@ public abstract class AbstractTargetPhone implements ITargetPhone {
 
 	@Override
 	public void setPreferredProfile(IProfile preferredProfile) {
+		if (preferredProfile == null) {
+			return;
+		}
 		this.preferredProfile.put(preferredProfile.getProfileType(), preferredProfile);
 	}
 

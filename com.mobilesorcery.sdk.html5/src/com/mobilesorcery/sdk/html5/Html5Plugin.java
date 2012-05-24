@@ -17,13 +17,17 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.jface.util.Policy;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IStartup;
 import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.wst.jsdt.core.IJavaScriptProject;
 import org.eclipse.wst.jsdt.core.JavaScriptCore;
 import org.eclipse.wst.jsdt.core.LibrarySuperType;
 import org.eclipse.wst.jsdt.internal.core.JavaProject;
+import org.json.simple.JSONObject;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -39,12 +43,16 @@ import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 import com.mobilesorcery.sdk.html5.debug.JSODDLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
-import com.mobilesorcery.sdk.html5.live.LiveServer;
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
+import com.mobilesorcery.sdk.html5.live.JSODDServer;
 import com.mobilesorcery.sdk.html5.live.ReloadManager;
+import com.mobilesorcery.sdk.html5.ui.JSODDTimeoutDialog;
 import com.mobilesorcery.sdk.profiles.ITargetProfileProvider;
 import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 import com.mobilesorcery.sdk.ui.IWorkbenchStartupListener;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
+import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransportListener;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
@@ -72,7 +80,9 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 	public static final String TIMEOUT_PREF = "timeout";
 
-	public static final int DEFAULT_TIMEOUT = 3;
+	public static final int DEFAULT_TIMEOUT = 5;
+	
+	public static final int MINIMUM_TIMEOUT = 2;
 
 	public static final int DO_NOTHING = 0;
 	
@@ -85,7 +95,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 	private ReloadManager reloadManager;
 
-	private LiveServer server;
+	private JSODDServer server;
 
 	private final HashMap<IProject, JSODDSupport> jsOddSupport = new HashMap<IProject, JSODDSupport>();
 
@@ -135,9 +145,29 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		disposeReloadManager();
 	}
 
-	public LiveServer getReloadServer() {
+	public JSODDServer getReloadServer() {
 		if (server == null) {
-			server = new LiveServer();
+			server = new JSODDServer();
+			// TODO:MOVE UI STUFF
+			server.addListener(new ILiveServerListener() {
+				@Override
+				public void timeout(final ReloadVirtualMachine vm) {
+					Display d = PlatformUI.getWorkbench().getDisplay();
+					UIUtils.onUiThread(d, new Runnable() {
+						@Override
+						public void run() {
+							Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+							JSODDTimeoutDialog.openIfNecessary(shell, vm);
+						}
+					}, false);
+				}
+				
+				@Override
+				public void received(String command, JSONObject json) {
+					// TODO Auto-generated method stub
+					
+				}
+			});
 		}
 		return server;
 	}
@@ -306,8 +336,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 	public int getTimeout() {
 		int result = getPreferenceStore().getInt(TIMEOUT_PREF);
-		if (result < 1) {
-			result = DEFAULT_TIMEOUT; // Default; regardless of store value
+		if (result < MINIMUM_TIMEOUT) {
+			result = MINIMUM_TIMEOUT; // Minimum; regardless of store value
 		}
 		return result;
 	}

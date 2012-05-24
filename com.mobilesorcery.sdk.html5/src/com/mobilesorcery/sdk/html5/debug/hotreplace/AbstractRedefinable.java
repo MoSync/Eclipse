@@ -44,6 +44,32 @@ public abstract class AbstractRedefinable implements IRedefinable {
 		childrenByKey = null;
 	}
 	
+	/**
+	 * Replaces a child with another. This method
+	 * uses the key of the replacement to find 
+	 * the child to replace.
+	 * If no such child exists, the replacement
+	 * is added.
+	 * @param replacement
+	 */
+	public void replaceChild(IRedefinable replacement) {
+		if (replacement == null) {
+			return;
+		}
+		boolean wasReplaced = false;
+		for (int i = 0; i < children.size(); i++) {
+			IRedefinable child = children.get(i);
+			if (replacement.key().equals(child.key())) {
+				children.set(i, replacement);
+				wasReplaced = true;
+			}
+		}
+		if (!wasReplaced) {
+			addChild(replacement);
+		}
+		childrenByKey = null;
+	}
+	
 	public IRedefinable getChild(String key) {
 		if (childrenByKey == null) {
 			childrenByKey = new HashMap<String, IRedefinable>();
@@ -56,7 +82,7 @@ public abstract class AbstractRedefinable implements IRedefinable {
 	
 	/**
 	 * The default implementation redefines all children as well,
-	 * delegating to the {@link #redefineAdded(IRedefinable, ReloadVirtualMachine)}
+	 * delegating to the {@link #redefineAdded(IRedefinable, IRedefiner)}
 	 * method if the replacement has a child not present in this
 	 * {@link IRedefinable}.
 	 */
@@ -66,32 +92,25 @@ public abstract class AbstractRedefinable implements IRedefinable {
 			throw new IllegalArgumentException("Internal error: key mismatch");
 		}
 		if (redefiner != null) {
-			redefiner.collect(this, replacement);
+			redefiner.changed(this, replacement);
 		}
 		HashSet<String> redefined = new HashSet();
-		for (IRedefinable child : getChildren()) {
-			String key = child.key();
+		for (IRedefinable originalChild : getChildren()) {
+			String key = originalChild.key();
 			IRedefinable replacementChild = replacement.getChild(key);
 			if (replacementChild != null) {
-				replacementChild.redefine(child, redefiner);
+				replacementChild.redefine(originalChild, redefiner);
 				redefined.add(key);
+			} else {
+				redefiner.deleted(originalChild);
 			}
 		}
 		
 		for (IRedefinable replaceChild : replacement.getChildren()) {
 			if (!redefined.contains(replaceChild.key())) {
-				redefineAdded(replaceChild, redefiner);
+				redefiner.added(replaceChild);
 			}
 		}
-	}
-
-	/**
-	 * Clients may override.
-	 * @param replaceChild
-	 * @param redefiner
-	 */
-	protected void redefineAdded(IRedefinable replaceChild, IRedefiner redefiner) {
-		
 	}
 
 	@Override

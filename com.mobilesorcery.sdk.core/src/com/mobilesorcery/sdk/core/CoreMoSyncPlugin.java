@@ -577,10 +577,11 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
      *     }
      * </code></blockquote>
      * </p>
+     * <p>Long messages will be truncated.</p>
      * @param msg
      */
 	public static void trace(Object msg) {
-		System.out.println(msg);
+		System.out.println(Util.truncate("" + msg, null, 1024));
 	}
 
     /**
