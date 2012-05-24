@@ -32,6 +32,7 @@ public class AskForRedefineResolutionDialog extends IconAndMessageDialog {
 	}
 		
 	public Control createDialogArea(Composite parent) {
+		getShell().setText("Hot code replace failed");
 		Composite contents = (Composite) super.createDialogArea(parent);
 		String errorMessage = error.getMessage();
 		contents.setLayout(new GridLayout(2, false));
@@ -48,7 +49,9 @@ public class AskForRedefineResolutionDialog extends IconAndMessageDialog {
 	
 	public void createButtonsForButtonBar(Composite parent) {
 		createButton(parent, RedefinitionResult.TERMINATE, "Terminate", false);
-		createButton(parent, RedefinitionResult.RELOAD, "Reload", false);
+		if (error == null || error.getRedefineResult() == null || !error.getRedefineResult().isFlagSet(RedefinitionResult.CANNOT_RELOAD)) {
+			createButton(parent, RedefinitionResult.RELOAD, "Reload", false);
+		}
 		createButton(parent, RedefinitionResult.CONTINUE, "Continue", true);
 	}
 	
@@ -56,6 +59,8 @@ public class AskForRedefineResolutionDialog extends IconAndMessageDialog {
 		if (rememberMyChoice.getSelection() && buttonId != -1) {
 			Html5Plugin.getDefault().setReloadStrategy(buttonId);
 		}
+		setReturnCode(buttonId);
+		close();
 	}
 
 	@Override

@@ -57,13 +57,15 @@ public class FunctionRedefinable extends ASTRedefinable {
 		return (FunctionDeclaration) getNode();
 	}
 
-	public RedefinitionResult canRedefine(IRedefinable replacement) {
-		if (isAnonymous()) {
-			// Is this the only anonymous function? That's a nice heurisitic for assuming it's the 'same' function.
-			List<IRedefinable> childrenToBeRedefined = replacement.getParent().getChildren();
-			List<IRedefinable> siblings = getParent().getChildren();
-			if (countAnonymousFunctions(childrenToBeRedefined)[0] > 1 || countAnonymousFunctions(siblings)[0] > 1) {
-				return RedefinitionResult.fail("Cannot replace anonymous functions if there is more than one anonymous function in the same scope.");
+	public RedefinitionResult canRedefine(FunctionRedefinable replacement) {
+		if (!replacement.getFunctionSource().equals(getFunctionSource())) {
+			if (isAnonymous()) {
+				// Is this the only anonymous function? That's a nice heurisitic for assuming it's the 'same' function.
+				List<IRedefinable> childrenToBeRedefined = replacement.getParent().getChildren();
+				List<IRedefinable> siblings = getParent().getChildren();
+				if (countAnonymousFunctions(childrenToBeRedefined)[0] > 1 || countAnonymousFunctions(siblings)[0] > 1) {
+					return RedefinitionResult.fail("Cannot replace anonymous functions if there is more than one anonymous function in the same scope.");
+				}
 			}
 		}
 		return RedefinitionResult.ok();
@@ -90,6 +92,10 @@ public class FunctionRedefinable extends ASTRedefinable {
 	public String getFunctionName() {
 		return isAnonymous() ? Html5Plugin.ANONYMOUS_FUNCTION :
 		getFunctionDeclaration().getName().getIdentifier();
+	}
+	
+	public String toString() {
+		return getFunctionName();
 	}
 
 }

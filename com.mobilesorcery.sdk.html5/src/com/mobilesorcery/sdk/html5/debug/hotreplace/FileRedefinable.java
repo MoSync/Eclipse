@@ -12,14 +12,24 @@ import com.mobilesorcery.sdk.html5.debug.IRedefinable;
 public class FileRedefinable extends AbstractRedefinable {
 
 	private IFile file;
+	private boolean deleted;
 
 	public FileRedefinable(IRedefinable parent, IFile file) {
+		this(parent, file, false);
+	}
+	
+	public FileRedefinable(IRedefinable parent, IFile file, boolean deleted) {
 		super(parent, null);
 		this.file = file;
+		this.deleted = deleted;
 	}
 
 	public IFile getFile() {
 		return file;
+	}
+	
+	public boolean isDeleted() {
+		return deleted;
 	}
 	
 	@Override

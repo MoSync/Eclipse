@@ -163,6 +163,8 @@ public abstract class IncrementalBuilderVisitor implements IResourceVisitor {
 	 * @throws CoreException
 	 */
 	public void setDiff(IFileTreeDiff diff) throws CoreException {
+		changedOrAddedResources.clear();
+		deletedResources.clear();
 		if (diff == null) {
 			project.accept(this);
 		} else {

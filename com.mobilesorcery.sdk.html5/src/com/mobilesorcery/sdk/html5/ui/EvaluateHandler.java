@@ -19,7 +19,7 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
-import com.mobilesorcery.sdk.html5.live.LiveServer;
+import com.mobilesorcery.sdk.html5.live.JSODDServer;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
 /**
@@ -49,7 +49,7 @@ public class EvaluateHandler extends AbstractHandler {
 				public void run() {
 					// NOT THE BUILDER CONSOLE!?
 					IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(MoSyncBuilder.CONSOLE_ID);
-					LiveServer server = Html5Plugin.getDefault().getReloadServer();
+					JSODDServer server = Html5Plugin.getDefault().getReloadServer();
 					Set<Integer> sessionIds = server.getSessions();
 					for (Integer sessionId : sessionIds) {
 						try {

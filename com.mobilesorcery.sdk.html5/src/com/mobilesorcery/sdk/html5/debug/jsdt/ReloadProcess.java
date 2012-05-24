@@ -8,7 +8,7 @@ import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.IStreamsProxy;
 
 import com.mobilesorcery.sdk.html5.Html5Plugin;
-import com.mobilesorcery.sdk.html5.live.LiveServer;
+import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
 public class ReloadProcess extends PlatformObject implements IProcess {
 
@@ -84,7 +84,7 @@ public class ReloadProcess extends PlatformObject implements IProcess {
 		return 0;
 	}
 
-	public LiveServer getReloadServer() {
+	public JSODDServer getReloadServer() {
 		return Html5Plugin.getDefault().getReloadServer();
 	}
 

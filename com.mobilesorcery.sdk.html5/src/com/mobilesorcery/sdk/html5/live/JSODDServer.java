@@ -32,11 +32,11 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
+import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
@@ -47,7 +47,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
@@ -65,6 +65,7 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.IRedefinable;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.RedefineException;
 import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
@@ -72,10 +73,11 @@ import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
 import com.mobilesorcery.sdk.html5.debug.jsdt.JavaScriptBreakpointDesc;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadRedefiner;
-import com.mobilesorcery.sdk.html5.live.LiveServer.InternalQueues.ITimeoutListener;
+import com.mobilesorcery.sdk.html5.live.JSODDServer.InternalQueues.ITimeoutListener;
 import com.mobilesorcery.sdk.html5.ui.AskForRedefineResolutionDialog;
+import com.mobilesorcery.sdk.ui.UIUtils;
 
-public class LiveServer implements IResourceChangeListener {
+public class JSODDServer implements IResourceChangeListener {
 
 	static class DebuggerMessage {
 		static AtomicInteger idCounter = new AtomicInteger(0);
@@ -177,7 +179,7 @@ public class LiveServer implements IResourceChangeListener {
 			DebuggerMessage result = consumer.take();
 
 			synchronized (queueLock) {
-				takeTimestamps.remove(sessionId);
+				//takeTimestamps.remove(sessionId);
 			}
 
 			if (result.type == PING) {
@@ -287,6 +289,7 @@ public class LiveServer implements IResourceChangeListener {
 			synchronized (queueLock) {
 				LinkedBlockingQueue<DebuggerMessage> sessionQueue = consumers
 						.remove(sessionId);
+				takeTimestamps.remove(sessionId);
 				if (sessionQueue != null) {
 					sessionQueue.offer(poison());
 				}
@@ -359,9 +362,13 @@ public class LiveServer implements IResourceChangeListener {
 					Long lastHeartbeat = lastHeartbeats.get(sessionId);
 					boolean timeoutOccured = lastHeartbeat != null && now - lastHeartbeat > 2 * PING_INTERVAL;
 					if (timeoutOccured && timeoutListener != null) {
-						//timeoutListener.timeoutOccurred(sessionId);
+						killSession(sessionId);
+						timeoutListener.timeoutOccurred(sessionId);
 					}
 					if (needsPing) {
+						if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+							CoreMoSyncPlugin.trace("Ping will be sent to {0}", sessionId);
+						}
 						pendingPings.add(sessionId);
 						offer(sessionId, ping());
 					}
@@ -390,6 +397,8 @@ public class LiveServer implements IResourceChangeListener {
 
 	private static final int BREAKPOINT = 10;
 
+	private static final int REFRESH_BREAKPOINTS = 12;
+	
 	private static final int RESUME = 20;
 
 	private static final int DROP_TO_FRAME = 25;
@@ -408,9 +417,7 @@ public class LiveServer implements IResourceChangeListener {
 
 	public static final String SESSION_ID_ATTR = "sessionId";
 
-	private class LiveServerHandler extends AbstractHandler {
-
-		private static final String SUSPEND_ATTR = "suspend";
+	private class JSODDServerHandler extends AbstractHandler {
 
 		private final HashMap<Object, Thread> waitThreads = new HashMap<Object, Thread>();
 
@@ -506,10 +513,9 @@ public class LiveServer implements IResourceChangeListener {
 			}
 
 			// We use a zero-length breakpoint list as 'ping'
-			JSONObject result = createBreakpointJSON(new Object[0], true);
+			JSONObject result = createBreakpointJSON(new Object[0], true, false);
 
 			try {
-				ArrayList bps = new ArrayList();
 				DebuggerMessage queuedElement = queues.take(session);
 
 				Object queuedObject = queuedElement == null ? null
@@ -519,18 +525,18 @@ public class LiveServer implements IResourceChangeListener {
 				if (queuedType == BREAKPOINT) {
 					Pair<Boolean, Object> bp = (Pair<Boolean, Object>) queuedObject;
 					result = createBreakpointJSON(new Object[] { bp.second },
-							bp.first);
+							bp.first, false);
 				} else if (queuedType == RESUME) {
 					result = newCommand("breakpoint-continue");
 				} else if (queuedType == STEP) {
 					result = newCommand(getStepCommand((Integer) queuedElement.data));
 				} else if (queuedType == RELOAD) {
-					String command = queuedObject == null ? "restart"
+					String command = queuedObject == null ? "reload"
 							: "update";
 					result = newCommand(command);
 					if (queuedObject != null) {
 						IFile resource = (IFile) queuedObject;
-						result.put("resource", getLocalPath(resource));
+						result.put("resource", getLocalPath(resource).toOSString());
 					}
 				} else if (queuedType == SUSPEND) {
 					result = newCommand("suspend");
@@ -545,6 +551,11 @@ public class LiveServer implements IResourceChangeListener {
 					} else {
 						result.put("noStack", true);
 					}
+				} else if (queuedType == REFRESH_BREAKPOINTS) {
+					IBreakpoint[] bps = DebugPlugin.getDefault()
+							.getBreakpointManager()
+							.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
+					result = createBreakpointJSON(bps, true, true);
 				} else if (queuedType == REDEFINE) {
 					Pair<String, String> data = (Pair<String, String>) queuedObject;
 					result = newCommand("update-function");
@@ -563,7 +574,7 @@ public class LiveServer implements IResourceChangeListener {
 				}
 				result.put("id", queuedElement.getMessageId());
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 					CoreMoSyncPlugin
 							.trace("Dropped connection (often temporarily).");
@@ -637,7 +648,7 @@ public class LiveServer implements IResourceChangeListener {
 				IBreakpoint[] bps = DebugPlugin.getDefault()
 						.getBreakpointManager()
 						.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
-				JSONObject jsonBps = createBreakpointJSON(bps, true);
+				JSONObject jsonBps = createBreakpointJSON(bps, true, true);
 				if (command != null) {
 					int newSessionId = newSessionId();
 					jsonBps.put(SESSION_ID_ATTR, newSessionId);
@@ -700,10 +711,13 @@ public class LiveServer implements IResourceChangeListener {
 			return (String) command.get("command");
 		}
 
-		private JSONObject createBreakpointJSON(Object[] bps, boolean enabled) {
+		private JSONObject createBreakpointJSON(Object[] bps, boolean enabled, boolean reset) {
 			JSONObject command = new JSONObject();
 			command.put("command", enabled ? "set-breakpoints"
 					: "clear-breakpoints");
+			if (reset) {
+				command.put("reset", true);
+			}
 			JSONArray jsonBps = new JSONArray();
 			for (Object bp : bps) {
 				try {
@@ -722,6 +736,13 @@ public class LiveServer implements IResourceChangeListener {
 
 						JSONObject jsonBp = new JSONObject();
 						jsonBp.put("file", file);
+						JSODDSupport jsoddSupport = resource.getType() == IResource.FILE ? 
+								Html5Plugin.getDefault().getJSODDSupport(resource.getProject()) :
+								null;
+						int instrumentedLine = jsoddSupport == null ? lineNo : jsoddSupport.findClosestBreakpointLine(resource.getFullPath(), lineNo);
+						if (instrumentedLine >= 0) {
+							lineNo = instrumentedLine;
+						}
 						jsonBp.put("line", lineNo);
 						if (!Util.isEmpty(condition)) {
 							jsonBp.put("condition", condition);
@@ -786,7 +807,7 @@ public class LiveServer implements IResourceChangeListener {
 					IResourceChangeEvent.POST_CHANGE);
 			server = new Server(getPort());
 			server.setThreadPool(new QueuedThreadPool(5));
-			server.setHandler(new LiveServerHandler());
+			server.setHandler(new JSODDServerHandler());
 			Connector connector = new SelectChannelConnector();
 			connector.setPort(getPort());
 			connector.setMaxIdleTime(120000);
@@ -880,7 +901,7 @@ public class LiveServer implements IResourceChangeListener {
 		} else {
 			int oldSessionId = vm.getCurrentSessionId();
 		}
-		vm.reset(newSessionId, project);
+		vm.reset(newSessionId, project, remoteIp);
 
 		vmsByHost.put(remoteIp, vm);
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
@@ -891,7 +912,8 @@ public class LiveServer implements IResourceChangeListener {
 	}
 
 	public int newSessionId() {
-		return sessionId.incrementAndGet();
+		int traceMask = CoreMoSyncPlugin.getDefault().isDebugging() ? 0xffff : 0;
+		return traceMask + sessionId.incrementAndGet();
 	}
 
 	private Object awaitEvalResult(int sessionId, String expression,
@@ -920,26 +942,6 @@ public class LiveServer implements IResourceChangeListener {
 		for (ILiveServerListener listener : listeners) {
 			listener.timeout(vm);
 		}
-	}
-
-	public static IJavaScriptLineBreakpoint findBreakPoint(IPath file, long line) {
-		IBreakpoint[] bps = DebugPlugin.getDefault().getBreakpointManager()
-				.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
-		for (IBreakpoint bp : bps) {
-			if (bp instanceof IJavaScriptLineBreakpoint) {
-				IJavaScriptLineBreakpoint lineBp = (IJavaScriptLineBreakpoint) bp;
-				try {
-					if (line == lineBp.getLineNumber()
-							&& Util.equals(file,
-									new Path(lineBp.getScriptPath()))) {
-						return lineBp;
-					}
-				} catch (CoreException e) {
-					// Just IGNORE!
-				}
-			}
-		}
-		return null;
 	}
 
 	public synchronized void stopServer(Object ref) throws CoreException {
@@ -1053,6 +1055,10 @@ public class LiveServer implements IResourceChangeListener {
 		}
 	}
 
+	public void refreshBreakpoints(int sessionId) {
+		queues.offer(sessionId, new DebuggerMessage(REFRESH_BREAKPOINTS));
+	}
+
 	private int getTimeout(int sessionId) {
 		// TODO: Use launch config/prefs. Hm. Prefs easier. And user-friendlier
 		// :)
@@ -1079,16 +1085,18 @@ public class LiveServer implements IResourceChangeListener {
 		}
 		
 		List<ReloadVirtualMachine> vms = getVMs(false);
-		final HashMap<IProject, ProjectRedefinable> projectsToReload = new HashMap<IProject, ProjectRedefinable>();
+		final HashMap<IProject, ProjectRedefinable> replacements = new HashMap<IProject, ProjectRedefinable>();
 		for (ReloadVirtualMachine vm : vms) {
 			IProject project = vm.getProject();
-			if (!projectsToReload.containsKey(project)) {
-				projectsToReload.put(project, new ProjectRedefinable(project));
+			if (!replacements.containsKey(project)) {
+				ProjectRedefinable replacement = vm.getBaseline().shallowCopy();
+				replacements.put(project, replacement);
 			}
 		}
 
 		IResourceDelta delta = event.getDelta();
 
+		// This code seems to be repeated elsewhere; refactor! TODO!
 		if (delta != null) {
 			try {
 				delta.accept(new IResourceDeltaVisitor() {
@@ -1101,15 +1109,16 @@ public class LiveServer implements IResourceChangeListener {
 							IProject project = resource.getProject();
 							if (project != null
 									&& resource.getType() == IResource.FILE) {
-								ProjectRedefinable projectRedefinable = projectsToReload
-										.get(project);
-								if (projectRedefinable == null) {
+								ProjectRedefinable replacement = replacements.get(project);
+								if (replacement == null) {
 									return false;
 								}
-								JSODDSupport jsoddSupport = Html5Plugin
-										.getDefault().getJSODDSupport(project);
-								projectRedefinable.addChild(jsoddSupport
-										.rewrite(resource.getFullPath(), null));
+								JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project);
+								if (delta.getKind() == IResourceDelta.REMOVED) {
+									jsoddSupport.delete(resource.getFullPath(), replacement);
+								} else {
+									jsoddSupport.rewrite(resource.getFullPath(), null, replacement);
+								}
 							}
 						}
 						return true;
@@ -1123,19 +1132,18 @@ public class LiveServer implements IResourceChangeListener {
 		int failedRedefineResolution = 0;
 		for (ReloadVirtualMachine vm : vms) {
 			IProject project = vm.getProject();
-			ProjectRedefinable projectRedefinable = projectsToReload.get(project);
+			ProjectRedefinable replacement = replacements.get(project);
 			boolean tryToRelad = Html5Plugin.getDefault().getSourceChangeStrategy() == Html5Plugin.RELOAD;
 			ReloadRedefiner redefiner = new ReloadRedefiner(vm, tryToRelad);
-			ProjectRedefinable snapshot = vm.getSnapshot();
-			if (snapshot == null) {
-				snapshot = new ProjectRedefinable(project);
-			}
-			
-			snapshot.redefine(projectRedefinable, redefiner);
-			boolean storeSnapshot = false;
+			ProjectRedefinable baseline = vm.getBaseline();
+			boolean updateBaseline = false;
 			try {
+				if (baseline == null) {
+					throw new RedefineException(RedefinitionResult.unrecoverable("Client out of sync"));
+				}
+				baseline.redefine(replacement, redefiner);
 				redefiner.commit(tryToRelad);
-				storeSnapshot = true;
+				updateBaseline = true;
 			} catch (RedefineException e) {
 				if (failedRedefineResolution == 0) {
 					failedRedefineResolution = askForRedefineResolution(e);
@@ -1144,29 +1152,37 @@ public class LiveServer implements IResourceChangeListener {
 				case RedefinitionResult.RELOAD:
 					try {
 						redefiner.commit(true);
-						storeSnapshot = true;
+						updateBaseline = true;
 					} catch (RedefineException nestedException) {
 						// Ignore.
 					}
+					break;
 				case RedefinitionResult.TERMINATE:
 					vm.terminate();
+					break;
 				default:
 					// Continue/cancel; do nothing.
 				}
 			}
-			if (storeSnapshot) {
-				vm.setSnapshot(projectRedefinable);
+			if (updateBaseline) {
+				vm.setBaseline(replacement);
 			}
 		}
 	}
 
-	private int askForRedefineResolution(RedefineException e) {
-		int reloadStrategy = Html5Plugin.getDefault().getReloadStrategy();
-		if (reloadStrategy == RedefinitionResult.UNDETERMINED) {
-			Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-			reloadStrategy = AskForRedefineResolutionDialog.open(shell, e);
+	private int askForRedefineResolution(final RedefineException e) {
+		final int[] reloadStrategy = new int[] { Html5Plugin.getDefault().getReloadStrategy() };
+		if (reloadStrategy[0] == RedefinitionResult.UNDETERMINED) {
+			Display d = PlatformUI.getWorkbench().getDisplay();
+			UIUtils.onUiThread(d, new Runnable() {
+				@Override
+				public void run() {
+					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+					reloadStrategy[0] = AskForRedefineResolutionDialog.open(shell, e);
+				}
+			}, false);
 		}
-		return reloadStrategy;
+		return reloadStrategy[0];
 	}
 
 	public Set<Integer> getSessions() {
@@ -1175,5 +1191,6 @@ public class LiveServer implements IResourceChangeListener {
 			return new HashSet<Integer>(this.queues.consumers.keySet());
 		}
 	}
+
 
 }

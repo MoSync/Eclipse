@@ -27,6 +27,8 @@ window.MoSyncDebugProtocol = new (function() {
     var clientSuspend = 0;
     var step = false;
     
+    var debugTrace = false;
+    
     var suppressStepCount;
     
     var inUpdatePosition = false;
@@ -65,6 +67,8 @@ window.MoSyncDebugProtocol = new (function() {
                 }
             };
             asyncXHR.open('GET', serverUrl + '/mobile/incoming/' + timestamp(), true);
+            asyncXHR.timeout = timeoutInMs;
+            asyncXHR.ontimeout = function() { disconnect("Could not connect to server"); }
             asyncXHR.send(null);
         } catch (ex) {
             disconnect(ex);
@@ -152,6 +156,9 @@ window.MoSyncDebugProtocol = new (function() {
         switch (cmd.command) {
             case 'set-breakpoints':
             case 'clear-breakpoints':
+                if (cmd.reset) {
+                    breakpoints = {};
+                }
                 cmd.data.forEach(function(bp) {
                     var file = bp.file;
                     var line = bp.line;
@@ -239,6 +246,12 @@ window.MoSyncDebugProtocol = new (function() {
                 disconnect("Disconnected by debugger");
                 return false;
                 
+            case 'reload':
+                step = false;
+                shouldBreak = function() { return false; };
+                performReload();
+                return false;
+                
             case 'update':
                 update(cmd);
                 return true;
@@ -258,31 +271,52 @@ window.MoSyncDebugProtocol = new (function() {
                  var registeredFunction = registeredFunctions[redefineKey];
                  // Will trigger a reload of the function
                  registeredFunction.____yaloid = null;
+                 trace("Redefined function " + redefineKey);
              }                 
          });
     }
-        
+    
+    function trace(msg) {
+        if (debugTrace) {
+            console.log(msg);
+        }
+    } 
     function update(cmd) {
-    // TODO TODO TODO
         var reply = sendToServer('/fetch', { 
             resource: cmd.resource
         });
         var source = reply.source;
         var reload = cmd.reload;
         
-        var errorCallback = function() {
-            // TODO.
+        var errorCallback = function(error) {
+            trace("Could not update file. Error code: " + error.code);
         };
         
         var fsCallback = function(fs) {
-           console.log("TODO");
+           fs.root.getFile("readme.txt", {create: true}, gotFileEntry, errorCallback);
         };
         
-        if (!fileSystem) {
-            window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, fsCallback, errorCallback);
+        var gotFileEntry = function(fe) {
+            fe.createWriter(gotFileWriter, errorCallback);
         }
         
+        var gotFileWriter = function(writer) {
+            writer.onwrite = function(evt) {
+                trace("Updated file: " + cmd.resource);
+                if (reload) {
+                    performReload();
+                }
+            }
+            writer.write(source);
+        }
+        
+        window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, fsCallback, errorCallback);
+        
         return !reload;
+    }
+    
+    function performReload() {
+        window.location.reload();
     }
     
     function doEval(evalScopeFunc, cmd) {
@@ -353,21 +387,12 @@ window.MoSyncDebugProtocol = new (function() {
         
         if (cmd) {
             sessionId = cmd.sessionId;
+            debugTrace = (sessionId >= 0xffff);
             processCommand(cmd);
         }
 
         listenToServer();
     };
-    
-    this.loadScript = function(fileId, segment) {
-        var cmd = sendToServer('/load-script', {
-            file: fileId,
-            segment: segment
-        });
-        if (cmd) {
-            processCommand(cmd);
-        }
-    }
     
     var shouldDropToFrame = -1;
     

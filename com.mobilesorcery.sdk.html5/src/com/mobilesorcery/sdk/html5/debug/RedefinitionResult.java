@@ -10,7 +10,7 @@ public class RedefinitionResult {
 	
 	public static final int REDEFINE_OK = 0;
 	public static final int CANNOT_REDEFINE = 1 << 2;
-	public static final int CANNOT_RESTART = 1 << 1;
+	public static final int CANNOT_RELOAD = 1 << 1;
 	
 	private static final RedefinitionResult OK_INSTANCE = new RedefinitionResult(REDEFINE_OK, "OK");
 
@@ -43,7 +43,11 @@ public class RedefinitionResult {
 	}
 
 	public static RedefinitionResult fail(String msg) {
-		return new RedefinitionResult(CANNOT_REDEFINE | CANNOT_RESTART, msg);
+		return new RedefinitionResult(CANNOT_REDEFINE, msg);
+	}
+	
+	public static RedefinitionResult unrecoverable(String msg) {
+		return new RedefinitionResult(CANNOT_REDEFINE | CANNOT_RELOAD, msg);
 	}
 	
 	public RedefinitionResult merge(RedefinitionResult other) {

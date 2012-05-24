@@ -52,12 +52,18 @@
          point="org.eclipse.ui.preferencePages">
       <page
             category="com.mobilesorcery.sdk.preferences.main"
-            class="com.mobilesorcery.sdk.builder.android.ui.preferences.AndroidSigningPreferencePage"
+            class="com.mobilesorcery.sdk.builder.android.ui.preferences.AndroidPreferencePage"
             id="com.mobilesorcery.sdk.builder.android.preferences"
+            name="Android">
+      </page>      
+      <page
+            category="com.mobilesorcery.sdk.builder.android.preferences"
+            class="com.mobilesorcery.sdk.builder.android.ui.preferences.AndroidSigningPreferencePage"
+            id="com.mobilesorcery.sdk.builder.android.preferences.signing"
             name="Android Signing">
       </page>
             <page
-            category="com.mobilesorcery.sdk.preferences.main"
+            category="com.mobilesorcery.sdk.builder.android.preferences"
             class="com.mobilesorcery.sdk.builder.android.ui.preferences.AndroidSDKPreferencePage"
             id="com.mobilesorcery.sdk.builder.android.preferences.sdk"
             name="Android SDK">

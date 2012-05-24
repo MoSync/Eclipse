@@ -1,10 +1,10 @@
 package com.mobilesorcery.sdk.html5.debug.hotreplace;
 
+import java.util.List;
+
 import org.eclipse.core.resources.IProject;
 
 import com.mobilesorcery.sdk.html5.debug.IRedefinable;
-import com.mobilesorcery.sdk.html5.debug.IRedefiner;
-import com.mobilesorcery.sdk.html5.debug.RedefineException;
 
 public class ProjectRedefinable extends AbstractRedefinable {
 
@@ -15,6 +15,19 @@ public class ProjectRedefinable extends AbstractRedefinable {
 		this.project = project;
 	}
 
+	public ProjectRedefinable shallowCopy() {
+		// NOTE! Do not modify the file redefinables...
+		ProjectRedefinable result = new ProjectRedefinable(project);
+		result.addChildren(getChildren());
+		return result;
+	}
+	
+	private void addChildren(List<IRedefinable> children) {
+		for (IRedefinable child : children) {
+			addChild(child);
+		}
+	}
+
 	@Override
 	public String key() {
 		return constructKey(getProject().getName());
@@ -23,5 +36,6 @@ public class ProjectRedefinable extends AbstractRedefinable {
 	public IProject getProject() {
 		return project;
 	}
+
 
 }
