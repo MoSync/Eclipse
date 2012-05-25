@@ -35,6 +35,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.model.IBreakpoint;
+import org.eclipse.jface.text.BadPositionCategoryException;
 import org.eclipse.wst.jsdt.core.IJavaScriptUnit;
 import org.eclipse.wst.jsdt.core.dom.AST;
 import org.eclipse.wst.jsdt.core.dom.ASTNode;
@@ -66,6 +67,7 @@ import org.eclipse.wst.jsdt.web.core.javascript.JsTranslator;
 import org.eclipse.wst.sse.core.StructuredModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
+import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocumentRegion;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
@@ -104,6 +106,7 @@ public class JSODDSupport {
 		private static final int INSTRUMENTATION_DISALLOWED = 0;
 		private static final int INSTRUMENTATION_ALLOWED = 1;
 		private static final int FORCE_INSTRUMENTATION = 2;
+		private static final int INSTRUMENTATION_BLACKLISTED = 3;
 		
 		private JavaScriptUnit unit;
 		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
@@ -185,6 +188,7 @@ public class JSODDSupport {
 			}
 
 			checkForExclusion(node);
+			checkBlacklist(node);
 
 			if (node instanceof JavaScriptUnit) {
 				unit = (JavaScriptUnit) node;
@@ -244,6 +248,9 @@ public class JSODDSupport {
 				ForInStatement forInStatement = (ForInStatement) node;
 				addToExclusionList(forInStatement.getIterationVariable());
 			}
+		}
+		
+		private void checkBlacklist(ASTNode node) {
 		}
 
 		private ASTNode startOfFunction(FunctionDeclaration fd) {
@@ -410,6 +417,7 @@ public class JSODDSupport {
 			if (exclusions.contains(node)) {
 				return INSTRUMENTATION_DISALLOWED;
 			}
+			
 			boolean isStatement = node instanceof Statement;
 			boolean isBlock = node instanceof Block;
 			// We should be able to break in empty function blocks.
@@ -709,7 +717,7 @@ public class JSODDSupport {
 		
 	}
 
-	// Returns a string where everything that is not javascript is replace by
+	// Returns a string where everything that is not javascript is replaced by
 	// spaces
 	private String getEmbeddedJavaScript(IFile file,
 			NavigableSet<Integer> scopeResetPoints, ArrayList<Pair<Integer, Integer>> htmlRanges) throws IOException,
@@ -741,7 +749,20 @@ public class JSODDSupport {
 			int end = i == ranges.length ? doc.getLength() : ranges[i].offset;
 			htmlRanges.add(new Pair<Integer, Integer>(start, end));
 		}
+		
+		String[] imports = translator.getRawImports();
+		boolean wormholeIsFirstImport = imports.length > 0 && isWormholeLib(new Path(imports[0]));
+		if (!htmlRanges.isEmpty() && !wormholeIsFirstImport) {
+			// TODO: Is this really necessary - we could take care of it in some other way?
+			throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, 
+					MessageFormat.format("{0}: Java On-Device Debug requires each file that contains JavaScript to have wormhole (typically js/wormhole.js) as its first import.", file.getProjectRelativePath())));
+		}
+
 		return translator.getJsText();
+	}
+	
+	public static boolean isWormholeLib(IPath path) {
+		return path != null && path.lastSegment().equalsIgnoreCase("wormhole.js");
 	}
 
 	public static boolean isValidJavaScriptFile(IPath file) {

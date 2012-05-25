@@ -70,8 +70,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 					try {
 						output = new FileWriter(outputFile);
 						// TODO! Not require wormhole!
-						boolean addBoilerPlate = resourcePath.lastSegment()
-								.equalsIgnoreCase("wormhole.js");
+						boolean addBoilerPlate = JSODDSupport.isWormholeLib(resourcePath);
 						if (addBoilerPlate) {
 							op.generateBoilerplate(
 									MoSyncProject.create(getProject()), output);
