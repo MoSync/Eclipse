@@ -4,18 +4,11 @@ import java.io.IOException;
 
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jface.bindings.keys.KeyStroke;
-import org.eclipse.jface.bindings.keys.ParseException;
-import org.eclipse.jface.fieldassist.ContentProposalAdapter;
-import org.eclipse.jface.fieldassist.SimpleContentProposalProvider;
-import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.util.Policy;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 
-import com.mobilesorcery.sdk.core.DefaultParameterResolver;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
-import com.mobilesorcery.sdk.core.MoSyncProjectParameterResolver;
 import com.mobilesorcery.sdk.core.PrivilegedAccess;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
 import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
@@ -25,7 +18,7 @@ import com.mobilesorcery.sdk.ui.SimpleListEditor;
 public class BuildStepsPropertyPage extends MoSyncPropertyPage {
 
 	public BuildStepsPropertyPage() {
-		super(true);
+		super(false);
 	}
 
 	private BuildStepListEditor steps;

@@ -15,6 +15,7 @@ import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FileRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FunctionRedefinable;
+import com.mobilesorcery.sdk.html5.debug.hotreplace.HTMLRedefinable;
 
 public class ReloadRedefiner implements IRedefiner {
 
@@ -104,11 +105,23 @@ public class ReloadRedefiner implements IRedefiner {
 
 	private RedefinitionResult collectFile(FileRedefinable redefinable,
 			FileRedefinable replacement) {
+		RedefinitionResult result = RedefinitionResult.ok();
+		boolean needsRedefine = false;
 		// Reference equality, since we made a shallow copy of the project redefinable!
 		if (redefinable != replacement) {
-			fileUpdates.add(redefinable.getFile());			
+			fileUpdates.add(redefinable.getFile());
+			needsRedefine = true;
 		}
-		return RedefinitionResult.ok();
+		if (redefinable instanceof HTMLRedefinable && replacement instanceof HTMLRedefinable) {
+			if (!((HTMLRedefinable) redefinable).areHtmlRangesEqual((HTMLRedefinable) replacement)) {
+				needsRedefine = true;
+				result = new RedefinitionResult(RedefinitionResult.SHOULD_RELOAD | RedefinitionResult.REDEFINE_OK, "HTML has changed, must reload");
+			}
+		}
+		if (needsRedefine && !vm.canRedefine(redefinable)) {
+			return RedefinitionResult.unrecoverable("Client does not support hot code replace");
+		}
+		return result;
 	}
 
 	@Override
@@ -126,14 +139,14 @@ public class ReloadRedefiner implements IRedefiner {
 			vm.refreshBreakpoints();
 		}
 		
-		if (reloadHint) {
+		if (reloadHint || redefineResult.isFlagSet(RedefinitionResult.SHOULD_RELOAD)) {
 			vm.reload();
 		} else if (!reloadOnly) {
 			for (FunctionRedefinable functionUpdate : functionUpdates) {
 				vm.updateFunction(functionUpdate.key(), functionUpdate.getFunctionSource());
 			}
 			
-			if (dropToFrame >= 0) {
+			if (vm.mainThread().isSuspended() && dropToFrame >= 0) {
 				try {
 					vm.dropToFrame(dropToFrame);
 				} catch (DebugException e) {

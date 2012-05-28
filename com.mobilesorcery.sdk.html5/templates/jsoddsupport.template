@@ -282,7 +282,8 @@ window.MoSyncDebugProtocol = new (function() {
         }
     } 
     function update(cmd) {
-        var reply = sendToServer('/fetch', { 
+        mosync.bridge.send(["fetchResource", serverHost, serverPort, project, cmd.resource]);
+        /*var reply = sendToServer('/fetch', { 
             resource: cmd.resource
         });
         var source = reply.source;
@@ -293,30 +294,52 @@ window.MoSyncDebugProtocol = new (function() {
         };
         
         var fsCallback = function(fs) {
-           fs.root.getFile("readme.txt", {create: true}, gotFileEntry, errorCallback);
+           fs.root.getFile(cmd.resource, {create: true}, gotFileEntry, errorCallback);
         };
         
         var gotFileEntry = function(fe) {
+            trace("Updating file " + fe.name);
             fe.createWriter(gotFileWriter, errorCallback);
         }
         
         var gotFileWriter = function(writer) {
-            writer.onwrite = function(evt) {
-                trace("Updated file: " + cmd.resource);
-                if (reload) {
+            var remaining = source.length;
+            var start = 0;
+            var end = 0;
+
+            writer.onwriteend = function(evt) {
+                // Ok, how to write a for loop with async calls.
+                // Ugly, but really not my fault.
+                // It seems we have to chunk our writes.
+                end = start + 1024; // Chunks!
+                if (end > source.length) {
+                    end = source.length;
+                }
+                if (end > start) {
+            	    writer.write(source.substring(start, end));
+            	    start = end;
+            	} else if (reload) {
                     performReload();
                 }
             }
-            writer.write(source);
+            end = Math.min(source.length, 1024); // Initial chunk!
+        	writer.write(source.substring(start, end));
         }
         
+        //var location = getLocation();
+        // Ok, this assumes we've got the HTML file in the root!! FIXME!!!
+        //var lastSlash = location.lastIndexOf("/");
+        //var root = lastSlash == -1 ? "" : location.substring(0, lastSlash);
+        //var fileToUpdate = root + "/" + cmd.resource;
+        //window.resolveLocalFileSystemURI(fileToUpdate, getFileEntry, errorCallback);
         window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, fsCallback, errorCallback);
         
-        return !reload;
+        return !reload;*/
     }
     
     function performReload() {
-        window.location.reload();
+        //window.location.reload();
+        mosync.bridge.send(["reload", serverHost, serverPort]);
     }
     
     function doEval(evalScopeFunc, cmd) {
@@ -375,10 +398,14 @@ window.MoSyncDebugProtocol = new (function() {
         }
     }
     
+    function getLocation() {
+        return window ? window.document.location.href : "<unknown>";
+    }
+    
     this.init = function() {
         %INIT_FILE_IDS%
         replaceConsole();
-        var location = window ? window.document.location.href : "<unknown>";
+        var location = getLocation();
         var cmd = sendToServer('/init', {
             command: 'mobile-connected',
             project: project,

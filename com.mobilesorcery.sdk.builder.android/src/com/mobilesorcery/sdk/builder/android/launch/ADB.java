@@ -189,14 +189,29 @@ public class ADB extends AbstractTool {
 		return result;
 	}
 
-	public void install(File packageToInstall, String serialNumberOfDevice)
+	public void uninstall(String packageName, String serialNumberOfDevice) throws CoreException {
+		runAndCollectError(new String[] { getToolPath().getAbsolutePath(), "-s",
+				serialNumberOfDevice, "uninstall", packageName });
+	}
+	
+	public void install(File packageToInstall, String packageName, String serialNumberOfDevice) throws CoreException {
+		if (packageName != null && Activator.getDefault().getPreferenceStore().getBoolean(PropertyInitializer.ADB_UNINSTALL_FIRST)) {
+			try {
+				uninstall(packageName, serialNumberOfDevice);
+			} catch (CoreException e) {
+				// Ignore -- the apk might not exist.
+			}
+		}
+		runAndCollectError(new String[] { getToolPath().getAbsolutePath(), "-s",
+						serialNumberOfDevice, "install", "-r",
+						packageToInstall.getAbsolutePath() });
+	}
+	
+	private void runAndCollectError(String[] commandLine)
 			throws CoreException {
 		CollectingLineHandler collectingLineHandler = new CollectingLineHandler();
 		CollectingLineHandler errorLineHandler = new CollectingLineHandler();
-		int errorCode = execute(
-				new String[] { getToolPath().getAbsolutePath(), "-s",
-						serialNumberOfDevice, "install", "-r",
-						packageToInstall.getAbsolutePath() },
+		int errorCode = execute(commandLine,
 				collectingLineHandler, errorLineHandler, false);
 
 		String errorMsg = null;

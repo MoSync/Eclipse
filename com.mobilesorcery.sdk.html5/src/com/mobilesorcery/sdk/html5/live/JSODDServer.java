@@ -445,9 +445,9 @@ public class JSODDServer implements IResourceChangeListener {
 
 			// COMMANDS
 			JSONObject command = preflight
-					|| targetMatches(target, "/mobile/incoming") ? null
+					|| targetMatches(target, "/mobile/incoming") || targetMatches(target, "/fetch") ? null
 					: parseCommand(req);
-			JSONObject result = handleCommand(target, command, req, res,
+			Object result = handleCommand(target, command, req, res,
 					preflight);
 			if (result == null) {
 				result = waitForClient(target, command, req, res, preflight);
@@ -457,7 +457,7 @@ public class JSODDServer implements IResourceChangeListener {
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 					CoreMoSyncPlugin.trace("SEND ({0}): {1}", target, result);
 				}
-				String output = result.toJSONString();
+				String output = result instanceof JSONObject ? ((JSONObject)result).toJSONString() : result.toString();
 				res.setStatus(HttpServletResponse.SC_OK);
 				res.setContentType("application/json;charset=utf-8");
 				res.setContentLength(output.getBytes(UTF8).length);
@@ -640,7 +640,7 @@ public class JSODDServer implements IResourceChangeListener {
 			return null;
 		}
 
-		private JSONObject handleCommand(String target, JSONObject command,
+		private Object handleCommand(String target, JSONObject command,
 				HttpServletRequest req, HttpServletResponse res,
 				boolean preflight) {
 			if (targetMatches(target, "/mobile/init")) {
@@ -681,22 +681,20 @@ public class JSODDServer implements IResourceChangeListener {
 					}
 				}
 				return new JSONObject();
-			} else if (targetMatches(target, "/mobile/fetch")) {
-				if (command != null) {
-					String localPath = (String) command.get("resource");
-					Integer sessionId = extractSessionId(command);
-					if (sessionId != null && localPath != null) {
-						ReloadVirtualMachine vm = getVM(sessionId);
-						IProject project = vm.getProject();
+			} else if (targetMatches(target, "/fetch/")) {
+				String[] parts = target.substring("/fetch/".length()).split("/", 2);
+				if (parts.length == 2) {
+					String projectName = parts[0];
+					String resource = parts[1];
+					IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
+					if (project != null) {
 						JSODDSupport jsoddSupport = Html5Plugin.getDefault()
 								.getJSODDSupport(project);
 						IFile file = project.getFile(Html5Plugin
-								.getHTML5Folder(project).append(localPath));
+								.getHTML5Folder(project).append(resource));
 						String source = jsoddSupport
 								.getInstrumentedSource(file);
-						JSONObject result = new JSONObject();
-						result.put("source", source);
-						return result;
+						return source;
 					}
 				}
 			}
@@ -1158,7 +1156,11 @@ public class JSODDServer implements IResourceChangeListener {
 					}
 					break;
 				case RedefinitionResult.TERMINATE:
-					vm.terminate();
+					try {
+						vm.getJavaScriptDebugTarget().terminate();
+					} catch (DebugException debugException) {
+						CoreMoSyncPlugin.getDefault().log(debugException);
+					}
 					break;
 				default:
 					// Continue/cancel; do nothing.
