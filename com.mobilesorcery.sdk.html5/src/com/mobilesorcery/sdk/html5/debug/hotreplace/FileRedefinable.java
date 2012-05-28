@@ -6,7 +6,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.wst.jsdt.core.dom.ASTNode;
 import org.eclipse.wst.jsdt.core.dom.JavaScriptUnit;
 
-import com.mobilesorcery.sdk.core.IProvider;
 import com.mobilesorcery.sdk.html5.debug.IRedefinable;
 
 public class FileRedefinable extends AbstractRedefinable {

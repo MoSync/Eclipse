@@ -21,6 +21,7 @@ import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.AndroidPackager;
+import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 import com.mobilesorcery.sdk.builder.android.launch.Emulator.IAndroidEmulatorProcess;
 import com.mobilesorcery.sdk.builder.android.ui.dialogs.ConfigureAndroidSDKDialog;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -116,7 +117,7 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
     	File packageToInstall = getPackageToInstall(launchConfig, mode);
     	if (packageToInstall != null) {
     		String serialNumberOfDevice = process.getEmulatorId();
-    		adb.install(packageToInstall, serialNumberOfDevice);
+    		adb.install(packageToInstall, MoSyncProject.create(project).getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME), serialNumberOfDevice);
     		adb.launch(Activator.getAndroidComponentName(MoSyncProject.create(project)), serialNumberOfDevice);
         } else {
         	throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Project not built or build failed"));

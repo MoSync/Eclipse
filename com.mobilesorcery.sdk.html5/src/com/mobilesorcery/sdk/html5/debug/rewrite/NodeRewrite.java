@@ -24,6 +24,8 @@ public class NodeRewrite {
 	private ArrayList<NodeRewrite> rewrites = new ArrayList<NodeRewrite>();
 	private HashMap<ASTNode, NodeRewrite> rewritesByNode = new HashMap<ASTNode, NodeRewrite>();
 
+	private String blacklistReason = null;
+
 	public NodeRewrite(ISourceSupport source, ASTNode node) {
 		this.rewriter = source;
 		this.node = node;
@@ -135,15 +137,19 @@ public class NodeRewrite {
 		return result.toString();*/
 	}
 
-	private String getSource(ASTNode node) {
+	protected String getSource(ASTNode node) {
 		Assert.isNotNull(node);
 		int start = getPosition(node, true).getPosition();
 		int end = getPosition(node, false).getPosition();
 		return rewriter.getSource(start, end);
 	}
 	
-	private String getSource() {
+	protected String getSource() {
 		return rewriter.getSource();
+	}
+	
+	protected void setBlacklisted(String reason) {
+		this.blacklistReason = reason;
 	}
 
 	public static IFilter<String> include(final String... features) {

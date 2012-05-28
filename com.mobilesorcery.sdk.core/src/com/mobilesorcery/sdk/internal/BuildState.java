@@ -73,6 +73,18 @@ public class BuildState implements IBuildState {
 		public List<IPath> getRemoved() {
             return removed;
         }
+        
+		public void markChanged(IPath changed) {
+			this.changed.add(changed);
+		}
+
+		public void markRemoved(IPath removed) {
+			this.removed.add(removed);
+		}
+
+		public void markAdded(IPath added) {
+			this.added.add(added);
+		}
 
         @Override
 		public String toString() {
@@ -85,6 +97,7 @@ public class BuildState implements IBuildState {
 		public boolean isEmpty() {
 			return added.isEmpty() && changed.isEmpty() && removed.isEmpty();
 		}
+
     }
 
     class FileInfoTree implements IResourceVisitor {

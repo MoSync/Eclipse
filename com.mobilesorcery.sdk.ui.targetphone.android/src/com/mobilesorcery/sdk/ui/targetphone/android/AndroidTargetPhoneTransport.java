@@ -125,7 +125,7 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 			if (PropertyUtil.getBoolean(project, "adb.log.cat")) {
 				ADB.getDefault().startLogCat();
 			}
-			ADB.getDefault().install(packageToSend, serialNumberOfDevice);
+			ADB.getDefault().install(packageToSend, project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME), serialNumberOfDevice);
 			String androidComponent = Activator.getAndroidComponentName(project);
 			ADB.getDefault().launch(androidComponent, serialNumberOfDevice);
 			ADB.getDefault().startLogCat();

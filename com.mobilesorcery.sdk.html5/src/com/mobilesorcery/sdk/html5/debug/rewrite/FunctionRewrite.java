@@ -49,6 +49,8 @@ public class FunctionRewrite extends NodeRewrite {
 		}
 	}
 
+	private static final String END_OF_BODY_BUG = "JSDT internals makes it impossible to add breakpoints to this piece of code (Reason: 'end of body bug')";
+
 	private long fileId;
 	private Map<ASTNode, String> nodeRedefinables;
 	private Block body;
@@ -73,6 +75,7 @@ public class FunctionRewrite extends NodeRewrite {
 		}
 		List statements = body.statements();
 		if (hasEndOfBodyBug(body, statements)) {
+			setBlacklisted(END_OF_BODY_BUG);
 			return;
 		}
 		Position startOfBody = getPosition(body, true);
