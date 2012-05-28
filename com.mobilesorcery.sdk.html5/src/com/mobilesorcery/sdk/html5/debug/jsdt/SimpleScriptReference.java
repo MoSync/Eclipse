@@ -60,11 +60,7 @@ public class SimpleScriptReference implements ScriptReference {
 
 	@Override
 	public URI sourceURI() {
-		try {
-			return new URI("file://" + path.toOSString());
-		} catch (URISyntaxException e) {
-			return null;
-		}
+		return path.toFile().toURI();
 	}
 
 	public IPath sourcePath() {
