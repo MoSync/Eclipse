@@ -49,6 +49,8 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
     
     public static final String ADB_LOGCAT_ARGS = PREFIX + "adb.logcat.args";
 
+	public static final String ADB_UNINSTALL_FIRST = PREFIX + "uninstall.first";
+
     private static Random rnd = new Random(System.currentTimeMillis());
     
     public PropertyInitializer() {
@@ -76,6 +78,7 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
         IPreferenceStore store = Activator.getDefault().getPreferenceStore();
         try {
         	store.setDefault(ADB_DEBUG_LOG, false);
+        	store.setDefault(ADB_UNINSTALL_FIRST, false);
         	store.setDefault(ADB_LOGCAT_ARGS, "-v tag *:W");
 			KeystoreCertificateInfo.createDefault().store(ANDROID_KEYSTORE_CERT_INFO,
 					new PreferenceStorePropertyOwner(store, true),

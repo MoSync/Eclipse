@@ -1156,7 +1156,11 @@ public class JSODDServer implements IResourceChangeListener {
 					}
 					break;
 				case RedefinitionResult.TERMINATE:
-					vm.terminate();
+					try {
+						vm.getJavaScriptDebugTarget().terminate();
+					} catch (DebugException debugException) {
+						CoreMoSyncPlugin.getDefault().log(debugException);
+					}
 					break;
 				default:
 					// Continue/cancel; do nothing.

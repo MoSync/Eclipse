@@ -54,8 +54,15 @@ public class RedefinitionResult {
 	
 	public RedefinitionResult merge(RedefinitionResult other) {
 		RedefinitionResult result = new RedefinitionResult();
-		// We may need to change this logic once we get more flags!
-		result.flags = this.flags | other.flags;
+		boolean ok = isOk(this) && isOk(other);
+		boolean cannotReload = isFlagSet(CANNOT_RELOAD) || other.isFlagSet(CANNOT_RELOAD);
+		boolean cannotRedefine = isFlagSet(CANNOT_REDEFINE) || other.isFlagSet(CANNOT_REDEFINE);
+		boolean shouldReload = isFlagSet(SHOULD_RELOAD) || other.isFlagSet(SHOULD_RELOAD);
+		
+		result.flags = (ok ? REDEFINE_OK : 0) |
+				(cannotReload ? CANNOT_RELOAD : 0) | 
+				(cannotRedefine ? CANNOT_REDEFINE : 0) |
+				(shouldReload ? SHOULD_RELOAD : 0);
 		result.msg = this.flags > other.flags ? this.msg : other.msg;
 		return result;
 	}

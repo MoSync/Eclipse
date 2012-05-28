@@ -105,16 +105,23 @@ public class ReloadRedefiner implements IRedefiner {
 
 	private RedefinitionResult collectFile(FileRedefinable redefinable,
 			FileRedefinable replacement) {
+		RedefinitionResult result = RedefinitionResult.ok();
+		boolean needsRedefine = false;
 		// Reference equality, since we made a shallow copy of the project redefinable!
 		if (redefinable != replacement) {
-			fileUpdates.add(redefinable.getFile());			
+			fileUpdates.add(redefinable.getFile());
+			needsRedefine = true;
 		}
 		if (redefinable instanceof HTMLRedefinable && replacement instanceof HTMLRedefinable) {
 			if (!((HTMLRedefinable) redefinable).areHtmlRangesEqual((HTMLRedefinable) replacement)) {
-				return new RedefinitionResult(RedefinitionResult.SHOULD_RELOAD | RedefinitionResult.REDEFINE_OK, "HTML has changed, must reload");
+				needsRedefine = true;
+				result = new RedefinitionResult(RedefinitionResult.SHOULD_RELOAD | RedefinitionResult.REDEFINE_OK, "HTML has changed, must reload");
 			}
 		}
-		return RedefinitionResult.ok();
+		if (needsRedefine && !vm.canRedefine(redefinable)) {
+			return RedefinitionResult.unrecoverable("Client does not support hot code replace");
+		}
+		return result;
 	}
 
 	@Override
