@@ -26,8 +26,10 @@ public class AndroidPreferencePage extends FieldEditorPreferencePage implements
 	protected void createFieldEditors() {
 		BooleanFieldEditor adbDebugEditor = new BooleanFieldEditor(PropertyInitializer.ADB_DEBUG_LOG, "Dump logcat in console when executing Android apps", getFieldEditorParent());
 		StringFieldEditor logcatFormatEditor = new StringFieldEditor(PropertyInitializer.ADB_LOGCAT_ARGS, "Logcat arguments:", getFieldEditorParent());
+		BooleanFieldEditor adbUninstallFirst = new BooleanFieldEditor(PropertyInitializer.ADB_UNINSTALL_FIRST, "Try to uninstall app with same package name before installing", getFieldEditorParent());
 		addField(adbDebugEditor);
 		addField(logcatFormatEditor);
+		addField(adbUninstallFirst);
 	}
 
 	

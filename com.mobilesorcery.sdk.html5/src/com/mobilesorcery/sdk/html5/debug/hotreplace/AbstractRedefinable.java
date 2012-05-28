@@ -29,6 +29,10 @@ public abstract class AbstractRedefinable implements IRedefinable {
 		}
 	}
 	
+	protected void setSource(ISourceSupport source) {
+		this.source = source;
+	}
+	
 	/**
 	 * Returns the <b>instrumented</b> source of this node.
 	 * @param node 
@@ -36,6 +40,10 @@ public abstract class AbstractRedefinable implements IRedefinable {
 	 */
 	protected String getInstrumentedSource(IFilter<String> features, ASTNode node) {
 		return source.getInstrumentedSource(features, node);
+	}
+	
+	protected String getSourceRange(int start, int end) {
+		return source.getSource().substring(start, end);
 	}
 	
 	public void addChild(IRedefinable child) {

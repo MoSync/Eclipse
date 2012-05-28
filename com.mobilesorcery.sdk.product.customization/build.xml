@@ -39,9 +39,9 @@
     	<unzip src="${built-rcp-zip}" dest="${built-rcp-unzipped}" />
     	
     	<!-- Explicit version numbers by design; way too easy to inadvertently destroy the entire build otherwise... -->
-        <!-- <replace-plugin-xml-of-jar
-    	    plugin-jar="${built-rcp-plugin-dir}/org.eclipse.cdt.ui_5.3.0.201106081058.jar"
-    	    replacement-folder="${replacement-root}/org.eclipse.cdt.ui" />-->
+        <replace-plugin-xml-of-jar
+    	    plugin-jar="${built-rcp-plugin-dir}/org.eclipse.cdt.ui_5.4.0.201203210002.jar"
+    	    replacement-folder="${replacement-root}/org.eclipse.cdt.ui" />
 
 		<!-- Another hack before rezipping: let's put the console version of eclipse in there -->
 		<!-- <copy file="${target-platform}/eclipse/eclipsec.exe" tofile="${built-rcp-unzipped}/mosync/mosyncc.exe"/> -->

@@ -2,7 +2,9 @@ package com.mobilesorcery.sdk.html5.debug;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
@@ -21,7 +23,6 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.StringValue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.UndefinedValue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.EventQueue;
-import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequest;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequestManager;
 import org.eclipse.wst.jsdt.debug.core.model.IJavaScriptDebugTarget;
 import org.json.simple.JSONArray;
@@ -31,6 +32,7 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.hotreplace.FunctionRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadBooleanValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadDropToFrame;
@@ -40,14 +42,14 @@ import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadNullValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadNumberValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadStackFrame;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadStringValue;
-import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadExitEvent;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadReference;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadUndefinedValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.SimpleScriptReference;
 import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
-public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener {
+public class ReloadVirtualMachine implements VirtualMachine,
+		ILiveServerListener {
 
 	private final JSODDServer server;
 	private List threads = new ArrayList();
@@ -63,6 +65,7 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	private ILaunch launch;
 	private IJavaScriptDebugTarget debugTarget;
 	private String remoteAddr;
+	private HashMap<Class, Boolean> redefineSupport = new HashMap<Class, Boolean>();
 
 	public ReloadVirtualMachine(int port) throws Exception {
 		// TODO: PORT
@@ -72,9 +75,12 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		threads.add(mainThread);
 		resetThreads();
 
+		// By default we support function redefines.
+		redefineSupport.put(FunctionRedefinable.class, Boolean.TRUE);
+
 		requestMgr = new ReloadEventRequestManager(this);
 		eventQueue = new ReloadEventQueue(this, requestMgr);
-		
+
 		nullValue = new ReloadNullValue(this);
 		undefValue = new ReloadUndefinedValue(this);
 
@@ -86,14 +92,16 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	private void resetThreads() {
 		mainThread.markSuspended(false, false);
 	}
-	
+
 	private void resetEventQueue() {
 		if (eventQueue != null) {
 			eventQueue.close();
 			List exitRequests = requestMgr.threadExitRequests();
 			for (Object exitRequest : exitRequests) {
 				// Don't reactivate this yet!
-				//eventQueue.received(ReloadEventQueue.CUSTOM_EVENT, new ReloadThreadExitEvent(this, mainThread, null, (EventRequest) exitRequest));
+				// eventQueue.received(ReloadEventQueue.CUSTOM_EVENT, new
+				// ReloadThreadExitEvent(this, mainThread, null, (EventRequest)
+				// exitRequest));
 			}
 		}
 	}
@@ -157,7 +165,8 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	@Override
 	public String version() {
-		return MoSyncTool.getDefault().getVersionInfo(MoSyncTool.BINARY_VERSION);
+		return MoSyncTool.getDefault()
+				.getVersionInfo(MoSyncTool.BINARY_VERSION);
 	}
 
 	@Override
@@ -168,27 +177,31 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 	@Override
 	public List allScripts() {
 		ArrayList<ScriptReference> result = new ArrayList<ScriptReference>();
-		// Before the project has been initialized, we just send all the scripts in the workspace...
+		// Before the project has been initialized, we just send all the scripts
+		// in the workspace...
 		ArrayList<IProject> projects = new ArrayList<IProject>();
 		if (project != null) {
 			projects.add(project);
 		} else {
-			projects.addAll(Arrays.asList(ResourcesPlugin.getWorkspace().getRoot().getProjects()));
+			projects.addAll(Arrays.asList(ResourcesPlugin.getWorkspace()
+					.getRoot().getProjects()));
 		}
 
 		for (IProject project : projects) {
-			JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project);
+			JSODDSupport jsoddSupport = Html5Plugin.getDefault()
+					.getJSODDSupport(project);
 			if (jsoddSupport != null) {
 				Set<IPath> allFiles = jsoddSupport.getAllFiles();
 				for (IPath file : allFiles) {
-					SimpleScriptReference ref = new SimpleScriptReference(this, file);
+					SimpleScriptReference ref = new SimpleScriptReference(this,
+							file);
 					result.add(ref);
 				}
 			}
 		}
 		return result;
 	}
-	
+
 	public IProject getProject() {
 		return project;
 	}
@@ -235,33 +248,41 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	/**
 	 * Evaluates an expression in the current scope.
-	 * @param expression The JavaScript expression to evaluate
+	 * 
+	 * @param expression
+	 *            The JavaScript expression to evaluate
 	 * @return The result of the evaluation
-	 * @throws InterruptedException If the waiting thread was interrupted,
-	 * for example by a terminate request.
-	 * @throws TimeoutException If the client failed to respond within
-	 * a specified timeout.
+	 * @throws InterruptedException
+	 *             If the waiting thread was interrupted, for example by a
+	 *             terminate request.
+	 * @throws TimeoutException
+	 *             If the client failed to respond within a specified timeout.
 	 */
-	public Object evaluate(String expression) throws InterruptedException, TimeoutException {
+	public Object evaluate(String expression) throws InterruptedException,
+			TimeoutException {
 		return evaluate(expression, null);
 	}
 
-
 	/**
 	 * Evaluates an expression at a specified stack depth
-	 * @param expression The JavaScript expression to evaluate
-	 * @param stackDepth The stackdepth to perform the evaluation, or {@code null} to
-	 * use the current scope.
+	 * 
+	 * @param expression
+	 *            The JavaScript expression to evaluate
+	 * @param stackDepth
+	 *            The stackdepth to perform the evaluation, or {@code null} to
+	 *            use the current scope.
 	 * @return The result of the evaluation
-	 * @throws InterruptedException If the waiting thread was interrupted,
-	 * for example by a terminate request.
-	 * @throws TimeoutException If the client failed to respond within
-	 * a specified timeout.
+	 * @throws InterruptedException
+	 *             If the waiting thread was interrupted, for example by a
+	 *             terminate request.
+	 * @throws TimeoutException
+	 *             If the client failed to respond within a specified timeout.
 	 */
-	public Object evaluate(String expression, Integer stackDepth) throws InterruptedException, TimeoutException {
+	public Object evaluate(String expression, Integer stackDepth)
+			throws InterruptedException, TimeoutException {
 		return server.evaluate(currentSessionId, expression, stackDepth);
 	}
-	
+
 	/**
 	 * Clears and resets all breakpoints on target.
 	 */
@@ -269,25 +290,30 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		// TODO: Clear per file instead.
 		server.refreshBreakpoints(currentSessionId);
 	}
-	
+
 	/**
 	 * Issues a reload request to the client.
-	 * @param resourcePath The resource to reload.
-	 * A {@code null} value will cause a full reload of the app.
-	 * @param resourcePath The resource to upload, relative
-	 * to the project's HTML5 location
-	 * @param reloadHint If applicable; whether to reload the page
-	 * @return {@code true} If this virtual machine accepted the
-	 * file for updating.
+	 * 
+	 * @param resourcePath
+	 *            The resource to reload. A {@code null} value will cause a full
+	 *            reload of the app.
+	 * @param resourcePath
+	 *            The resource to upload, relative to the project's HTML5
+	 *            location
+	 * @param reloadHint
+	 *            If applicable; whether to reload the page
+	 * @return {@code true} If this virtual machine accepted the file for
+	 *         updating.
 	 */
 	public boolean update(IFile resource) {
-		boolean doUpdate = resource != null && resource.getProject().equals(project);
+		boolean doUpdate = resource != null
+				&& resource.getProject().equals(project);
 		if (doUpdate) {
 			server.update(currentSessionId, resource);
 		}
 		return doUpdate;
 	}
-	
+
 	public void reload() {
 		server.reload(currentSessionId);
 		if (debugTarget.isSuspended()) {
@@ -298,16 +324,16 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 			}
 		}
 	}
-	
+
 	/**
 	 * Updates a function reference on the client.
+	 * 
 	 * @param key
 	 * @param source
 	 */
 	public void updateFunction(String key, String source) {
 		server.updateFunction(currentSessionId, key, source);
 	}
-
 
 	@Override
 	public void received(String command, JSONObject json) {
@@ -316,7 +342,8 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 		// MAIN THREAD
 		ReloadThreadReference thread = (ReloadThreadReference) threads.get(0);
-		boolean isClientSuspend = Boolean.parseBoolean("" + json.get("suspended"));
+		boolean isClientSuspend = Boolean.parseBoolean(""
+				+ json.get("suspended"));
 		if (thread.isSuspended() && !isClientSuspend) {
 			return;
 		}
@@ -333,15 +360,17 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 			frames[0] = new ReloadStackFrame(this, json, -1);
 		}
 		thread.setFrames(frames);
-		//suspend();
+		// suspend();
 		eventQueue.received(command, json);
 	}
 
-	public LocalVariableScope getLocalVariableScope(ScriptReference ref, int line) {
+	public LocalVariableScope getLocalVariableScope(ScriptReference ref,
+			int line) {
 		// TODO: Faster?
 		if (ref instanceof SimpleScriptReference) {
 			IFile file = ((SimpleScriptReference) ref).getFile();
-			JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(file.getProject());
+			JSODDSupport jsoddSupport = Html5Plugin.getDefault()
+					.getJSODDSupport(file.getProject());
 			LocalVariableScope scope = jsoddSupport.getScope(file, line);
 			if (scope != null) {
 				return scope;
@@ -356,7 +385,8 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	@Override
 	public String toString() {
-		return "JavaScript On-Device Debug VM, session id #" + getCurrentSessionId();
+		return "JavaScript On-Device Debug VM, session id #"
+				+ getCurrentSessionId();
 	}
 
 	public void setCurrentLocation(String location) {
@@ -385,7 +415,8 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 
 	public ProjectRedefinable getBaseline() {
 		if (baseline == null) {
-			JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project);
+			JSODDSupport jsoddSupport = Html5Plugin.getDefault()
+					.getJSODDSupport(project);
 			if (jsoddSupport != null) {
 				setBaseline(jsoddSupport.getBaseline());
 			}
@@ -414,4 +445,21 @@ public class ReloadVirtualMachine implements VirtualMachine, ILiveServerListener
 		return remoteAddr;
 	}
 
+	public boolean canRedefine(IRedefinable redefinable) {
+		synchronized (redefineSupport) {
+			for (Map.Entry<Class, Boolean> supportsThis : redefineSupport.entrySet()) {
+				if (redefinable != null
+						&& supportsThis.getValue()
+						&& supportsThis.getKey().isAssignableFrom(
+								redefinable.getClass())) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public void setRedefineSupport(Class redefinables, boolean hasSupport) {
+		redefineSupport.put(redefinables, hasSupport);
+	}
 }

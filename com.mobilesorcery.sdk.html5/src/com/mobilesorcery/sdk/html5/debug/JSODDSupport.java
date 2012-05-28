@@ -35,6 +35,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.model.IBreakpoint;
+import org.eclipse.jface.text.BadPositionCategoryException;
 import org.eclipse.wst.jsdt.core.IJavaScriptUnit;
 import org.eclipse.wst.jsdt.core.dom.AST;
 import org.eclipse.wst.jsdt.core.dom.ASTNode;
@@ -66,6 +67,7 @@ import org.eclipse.wst.jsdt.web.core.javascript.JsTranslator;
 import org.eclipse.wst.sse.core.StructuredModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
+import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocumentRegion;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
@@ -79,6 +81,7 @@ import com.mobilesorcery.sdk.core.templates.Template;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FileRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FunctionRedefinable;
+import com.mobilesorcery.sdk.html5.debug.hotreplace.HTMLRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
 import com.mobilesorcery.sdk.html5.debug.rewrite.FunctionRewrite;
 import com.mobilesorcery.sdk.html5.debug.rewrite.ISourceSupport;
@@ -103,6 +106,7 @@ public class JSODDSupport {
 		private static final int INSTRUMENTATION_DISALLOWED = 0;
 		private static final int INSTRUMENTATION_ALLOWED = 1;
 		private static final int FORCE_INSTRUMENTATION = 2;
+		private static final int INSTRUMENTATION_BLACKLISTED = 3;
 		
 		private JavaScriptUnit unit;
 		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
@@ -184,6 +188,7 @@ public class JSODDSupport {
 			}
 
 			checkForExclusion(node);
+			checkBlacklist(node);
 
 			if (node instanceof JavaScriptUnit) {
 				unit = (JavaScriptUnit) node;
@@ -243,6 +248,9 @@ public class JSODDSupport {
 				ForInStatement forInStatement = (ForInStatement) node;
 				addToExclusionList(forInStatement.getIterationVariable());
 			}
+		}
+		
+		private void checkBlacklist(ASTNode node) {
 		}
 
 		private ASTNode startOfFunction(FunctionDeclaration fd) {
@@ -409,6 +417,7 @@ public class JSODDSupport {
 			if (exclusions.contains(node)) {
 				return INSTRUMENTATION_DISALLOWED;
 			}
+			
 			boolean isStatement = node instanceof Statement;
 			boolean isBlock = node instanceof Block;
 			// We should be able to break in empty function blocks.
@@ -636,7 +645,7 @@ public class JSODDSupport {
 		initProjectRedefinable();
 		IFile file = (IFile) ResourcesPlugin.getWorkspace().getRoot()
 				.findMember(filePath);
-		FileRedefinable fileRedefinable = new FileRedefinable(projectRedefinable, file, true);
+		FileRedefinable fileRedefinable = new FileRedefinable(null, file, true);
 		if (baseline != null) {
 			baseline.replaceChild(fileRedefinable);
 		}
@@ -656,9 +665,17 @@ public class JSODDSupport {
 				String source = Util.readFile(absoluteFile.getAbsolutePath());
 				String prunedSource = source;
 				TreeSet<Integer> scopeResetPoints = new TreeSet<Integer>();
-
+				
+				long fileId = assignFileId(filePath);
+				LineMap sourceLineMap = new LineMap(source);
+				DebugRewriteOperationVisitor visitor = new DebugRewriteOperationVisitor(sourceLineMap, fileId);
+				
 				if (isEmbeddedJavaScriptFile(filePath)) {
-					prunedSource = getEmbeddedJavaScript(file, scopeResetPoints);
+					ArrayList<Pair<Integer, Integer>> htmlRanges = new ArrayList<Pair<Integer,Integer>>();
+					prunedSource = getEmbeddedJavaScript(file, scopeResetPoints, htmlRanges);
+					HTMLRedefinable htmlRedefinable = new HTMLRedefinable(null, file, visitor);
+					htmlRedefinable.setHtmlRanges(htmlRanges);
+					fileRedefinable = htmlRedefinable;
 				}
 
 				// 1. Parse (JSDT)
@@ -666,9 +683,6 @@ public class JSODDSupport {
 				ASTNode ast = parser.createAST(new NullProgressMonitor());
 
 				// 2. Instrument
-				long fileId = assignFileId(filePath);
-				LineMap sourceLineMap = new LineMap(source);
-				DebugRewriteOperationVisitor visitor = new DebugRewriteOperationVisitor(sourceLineMap, fileId);
 				visitor.setFileRedefinable(fileRedefinable);
 				visitor.setScopeResetPoints(scopeResetPoints);
 				ast.accept(visitor);
@@ -703,10 +717,10 @@ public class JSODDSupport {
 		
 	}
 
-	// Returns a string where everything that is not javascript is replace by
+	// Returns a string where everything that is not javascript is replaced by
 	// spaces
 	private String getEmbeddedJavaScript(IFile file,
-			NavigableSet<Integer> scopeResetPoints) throws IOException,
+			NavigableSet<Integer> scopeResetPoints, ArrayList<Pair<Integer, Integer>> htmlRanges) throws IOException,
 			CoreException, InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(1);
 		IModelManager modelManager = StructuredModelManager.getModelManager();
@@ -729,7 +743,26 @@ public class JSODDSupport {
 		for (org.eclipse.jface.text.Position htmlLocation : htmlLocations) {
 			scopeResetPoints.add(htmlLocation.offset);
 		}
+		org.eclipse.jface.text.Position[] ranges = translator.getHtmlLocations();
+		for (int i = 0; i <= ranges.length; i++) {
+			int start = i == 0 ? 0 : ranges[i-1].offset + ranges[i-1].length;
+			int end = i == ranges.length ? doc.getLength() : ranges[i].offset;
+			htmlRanges.add(new Pair<Integer, Integer>(start, end));
+		}
+		
+		String[] imports = translator.getRawImports();
+		boolean wormholeIsFirstImport = imports.length > 0 && isWormholeLib(new Path(imports[0]));
+		if (!htmlRanges.isEmpty() && !wormholeIsFirstImport) {
+			// TODO: Is this really necessary - we could take care of it in some other way?
+			throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, 
+					MessageFormat.format("{0}: Java On-Device Debug requires each file that contains JavaScript to have wormhole (typically js/wormhole.js) as its first import.", file.getProjectRelativePath())));
+		}
+
 		return translator.getJsText();
+	}
+	
+	public static boolean isWormholeLib(IPath path) {
+		return path != null && path.lastSegment().equalsIgnoreCase("wormhole.js");
 	}
 
 	public static boolean isValidJavaScriptFile(IPath file) {
