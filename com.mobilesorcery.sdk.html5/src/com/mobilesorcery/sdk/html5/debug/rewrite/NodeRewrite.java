@@ -15,6 +15,11 @@ import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.IProvider;
 import com.mobilesorcery.sdk.html5.debug.Position;
 
+/**
+ * The base class for instrumenting JavaScript AST nodes
+ * @author Mattias Bybro, mattias.bybro@mosync.com
+ *
+ */
 public class NodeRewrite {
 
 	private static final NodeRewrite NULL = new NodeRewrite(null, null);
@@ -150,6 +155,10 @@ public class NodeRewrite {
 	
 	protected void setBlacklisted(String reason) {
 		this.blacklistReason = reason;
+	}
+	
+	public String isBlacklisted() {
+		return blacklistReason;
 	}
 
 	public static IFilter<String> include(final String... features) {

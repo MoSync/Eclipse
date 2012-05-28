@@ -29,7 +29,12 @@ public class SourceRewrite implements IRewrite {
 
 	@Override
 	public void seek(Position position) {
-		this.currentPosition = position.getPosition();
+		seek(position.getPosition());
+	}
+	
+	@Override
+	public void seek(int position) {
+		this.currentPosition = position;
 	}
 
 	@Override
