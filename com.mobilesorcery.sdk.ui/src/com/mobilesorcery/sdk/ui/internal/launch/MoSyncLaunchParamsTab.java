@@ -331,7 +331,7 @@ public class MoSyncLaunchParamsTab extends AbstractLaunchConfigurationTab implem
 				if (availability == IEmulatorLauncher.AVAILABLE || availability == IEmulatorLauncher.REQUIRES_CONFIGURATION) {
 					result.add(id);
 				}*/
-				if (!isDebugMode() || MoReLauncher.ID.equals(id)) {
+				if (launcher.supportsLaunchMode(mode) || MoReLauncher.ID.equals(id)) {
 					result.add(id);
 				}
 			}

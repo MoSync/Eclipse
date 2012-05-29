@@ -453,7 +453,7 @@ public class JSODDServer implements IResourceChangeListener {
 
 				// COMMANDS
 				JSONObject command = preflight
-						|| !targetMatches(target, "/mobile/") || targetMatches(target, "mobile/incoming") ? null
+						|| !targetMatches(target, "/mobile/") || targetMatches(target, "/mobile/incoming") ? null
 						: parseCommand(req);
 				Object result = handleFetch(target, req, res);
 				if (result == null) {

@@ -80,11 +80,15 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 
 	/**
 	 * The default behaviour is to make this emulator launcher available in
-	 * non-debug modes
+	 * all modes that {@link #supportsLaunchMode(String)} returns {@code true} for.
 	 */
 	@Override
 	public int isLaunchable(ILaunchConfiguration launchConfiguration, String mode) {
-		return EmulatorLaunchConfigurationDelegate.isDebugMode(mode) ? UNLAUNCHABLE : LAUNCHABLE;
+		return supportsLaunchMode(mode) ? LAUNCHABLE : UNLAUNCHABLE;
+	}
+	
+	public boolean supportsLaunchMode(String mode) {
+		return true;
 	}
 
 	/**

@@ -125,7 +125,7 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
      */
     protected ILaunchConfigurationType getConfigType() {
         ILaunchManager lm = DebugPlugin.getDefault().getLaunchManager();
-        ILaunchConfigurationType configType = lm.getLaunchConfigurationType("com.mobilesorcery.launchconfigurationtype");
+        ILaunchConfigurationType configType = lm.getLaunchConfigurationType(EmulatorLaunchConfigurationDelegate.ID);
         return configType;
     }
 

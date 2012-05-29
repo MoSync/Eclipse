@@ -130,7 +130,7 @@ public class JSODDLaunchConfigurationDelegate implements
 		return true;
 	}
 
-	public static boolean launchDefault(TargetPhoneTransportEvent event) throws CoreException {
+	public static boolean launchDefault() throws CoreException {
 		ILaunchManager manager = DebugPlugin.getDefault().getLaunchManager();
 		// TODO: Kill old ones.
 

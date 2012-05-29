@@ -7,6 +7,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 
 import com.mobilesorcery.sdk.core.IFilter;
+import com.mobilesorcery.sdk.core.MoSyncNatureTester;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 
 public class IsExcludableFromBuildTester extends MoSyncNatureTester {
