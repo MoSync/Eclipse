@@ -1,9 +1,14 @@
 package com.mobilesorcery.sdk.html5.live;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.net.URLConnection;
 import java.nio.charset.Charset;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -22,6 +27,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -32,10 +38,8 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
-import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
@@ -65,7 +69,6 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
-import com.mobilesorcery.sdk.html5.debug.IRedefinable;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.RedefineException;
 import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
@@ -127,7 +130,7 @@ public class JSODDServer implements IResourceChangeListener {
 
 			public int getSessionId();
 		}
-		
+
 		interface ITimeoutListener {
 			public void timeoutOccurred(int sessionId);
 		}
@@ -140,7 +143,7 @@ public class JSODDServer implements IResourceChangeListener {
 		private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> consumers = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
 
 		private final HashMap<Integer, IMessageListener> messageListeners = new HashMap<Integer, IMessageListener>();
-		
+
 		private ITimeoutListener timeoutListener = null;
 
 		private final HashMap<Integer, Long> lastHeartbeats = new HashMap<Integer, Long>();
@@ -179,7 +182,7 @@ public class JSODDServer implements IResourceChangeListener {
 			DebuggerMessage result = consumer.take();
 
 			synchronized (queueLock) {
-				//takeTimestamps.remove(sessionId);
+				// takeTimestamps.remove(sessionId);
 			}
 
 			if (result.type == PING) {
@@ -254,7 +257,7 @@ public class JSODDServer implements IResourceChangeListener {
 		public void setTimeoutListener(ITimeoutListener timeoutListener) {
 			this.timeoutListener = timeoutListener;
 		}
-		
+
 		private synchronized void setMessageListener(int sessionId, int id,
 				IMessageListener listener) {
 			synchronized (queueLock) {
@@ -347,7 +350,8 @@ public class JSODDServer implements IResourceChangeListener {
 		}
 
 		protected void pingAll() {
-			// This ping is there to make sure that long polling does not timeout
+			// This ping is there to make sure that long polling does not
+			// timeout
 			// on the client side.
 			// And if the client is disconnected/does not respond we need to
 			// handle that too.
@@ -360,14 +364,16 @@ public class JSODDServer implements IResourceChangeListener {
 							&& timeOfLastTake != null
 							&& now - timeOfLastTake > PING_INTERVAL;
 					Long lastHeartbeat = lastHeartbeats.get(sessionId);
-					boolean timeoutOccured = lastHeartbeat != null && now - lastHeartbeat > 2 * PING_INTERVAL;
+					boolean timeoutOccured = lastHeartbeat != null
+							&& now - lastHeartbeat > 2 * PING_INTERVAL;
 					if (timeoutOccured && timeoutListener != null) {
 						killSession(sessionId);
 						timeoutListener.timeoutOccurred(sessionId);
 					}
 					if (needsPing) {
 						if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-							CoreMoSyncPlugin.trace("Ping will be sent to {0}", sessionId);
+							CoreMoSyncPlugin.trace("Ping will be sent to {0}",
+									sessionId);
 						}
 						pendingPings.add(sessionId);
 						offer(sessionId, ping());
@@ -375,7 +381,7 @@ public class JSODDServer implements IResourceChangeListener {
 				}
 			}
 		}
-		
+
 		public void heartbeat(int sessionId) {
 			lastHeartbeats.put(sessionId, System.currentTimeMillis());
 		}
@@ -398,7 +404,7 @@ public class JSODDServer implements IResourceChangeListener {
 	private static final int BREAKPOINT = 10;
 
 	private static final int REFRESH_BREAKPOINTS = 12;
-	
+
 	private static final int RESUME = 20;
 
 	private static final int DROP_TO_FRAME = 25;
@@ -425,53 +431,110 @@ public class JSODDServer implements IResourceChangeListener {
 		public void handle(String target, Request baseRequest,
 				HttpServletRequest req, HttpServletResponse res)
 				throws IOException {
-			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-				CoreMoSyncPlugin.trace(
-						"{3}: STARTED {0} REQUEST {1} ON THREAD {2}", req
-								.getMethod(), target, Thread.currentThread()
-								.getName(), new Date().toString());
+			try {
+				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+					CoreMoSyncPlugin.trace(
+							"{3}: STARTED {0} REQUEST {1} ON THREAD {2}", req
+									.getMethod(), target, Thread
+									.currentThread().getName(), new Date()
+									.toString());
+				}
+
+				boolean preflight = "OPTIONS".equals(req.getMethod());
+
+				// Heartbeat.
+				ReloadVirtualMachine vm = getVM(req.getRemoteAddr());
+				if (vm != null && vm.getCurrentSessionId() != NO_SESSION) {
+					queues.heartbeat(vm.getCurrentSessionId());
+				}
+
+				// Preflight.
+				configureForPreflight(req, res);
+
+				// COMMANDS
+				JSONObject command = preflight
+						|| !targetMatches(target, "/mobile/") || targetMatches(target, "mobile/incoming") ? null
+						: parseCommand(req);
+				Object result = handleFetch(target, req, res);
+				if (result == null) {
+					result = handleCommand(target, command, req, res,
+						preflight);
+				}
+				if (result == null) {
+					result = waitForClient(target, command, req, res, preflight);
+				}
+
+				if (result != null) {
+					if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+						CoreMoSyncPlugin.trace("SEND ({0}): {1}", target,
+								result);
+					}
+					writeResponse(result, res);
+				}
+
+				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+					CoreMoSyncPlugin.trace(
+							"{3}: FINISHED {0} REQUEST {1} ON THREAD {2}", req
+									.getMethod(), target, Thread
+									.currentThread().getName(), new Date()
+									.toString());
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new IOException(e);
 			}
+		}
 
-			boolean preflight = "OPTIONS".equals(req.getMethod());
-
-			// Heartbeat.
-			ReloadVirtualMachine vm = getVM(req.getRemoteAddr());
-			if (vm != null && vm.getCurrentSessionId() != NO_SESSION) {
-				queues.heartbeat(vm.getCurrentSessionId());
+		private void writeResponse(Object obj, HttpServletResponse res) throws CoreException, IOException {
+			int length = 0;
+			int status = HttpServletResponse.SC_OK;
+			InputStream contents = null;
+			String fallbackContentType = null;
+			
+			if (obj instanceof JSONObject) {
+				obj = ((JSONObject) obj).toJSONString();
+				fallbackContentType = "application/json;charset=utf-8";
+			}
+			if (obj instanceof String) {
+				byte[] data = ((String) obj).getBytes(UTF8);
+				contents = new ByteArrayInputStream(data);
+				length = data.length;
+			} else if (obj instanceof IFile) {
+				// We put large files in memory too.
+				IFile file = (IFile) obj;
+				if (!file.exists()) {
+					// Then we fake an empty file
+					contents = new ByteArrayInputStream(new byte[0]);
+					length = 0;
+				} else {
+					contents = file.getContents(true);
+					length = (int) file.getLocation().toFile().length();
+				}
+			} else {
+				String errorMsg;
+				fallbackContentType = "text/plain";
+				if (obj instanceof Exception) {
+					errorMsg = ((Exception) obj).getMessage();
+					status = HttpServletResponse.SC_NOT_FOUND;
+				} else {
+					errorMsg = "Internal error: wrong type of response object: " + obj;
+					status = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+				}
+				contents = new ByteArrayInputStream(errorMsg.getBytes());
+				length = errorMsg.getBytes().length;
 			}
 			
-			// Preflight.
-			configureForPreflight(req, res);
-
-			// COMMANDS
-			JSONObject command = preflight
-					|| targetMatches(target, "/mobile/incoming") || targetMatches(target, "/fetch") ? null
-					: parseCommand(req);
-			Object result = handleCommand(target, command, req, res,
-					preflight);
-			if (result == null) {
-				result = waitForClient(target, command, req, res, preflight);
+			res.setStatus(status);
+			if (fallbackContentType != null) {
+				res.setContentType(fallbackContentType);
 			}
+			res.setContentLength(length);
+			ServletOutputStream output = res.getOutputStream();
+			Util.transfer(contents, output);
+			output.flush();
+			Util.safeClose(output);
+			Util.safeClose(contents);
 
-			if (result != null) {
-				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-					CoreMoSyncPlugin.trace("SEND ({0}): {1}", target, result);
-				}
-				String output = result instanceof JSONObject ? ((JSONObject)result).toJSONString() : result.toString();
-				res.setStatus(HttpServletResponse.SC_OK);
-				res.setContentType("application/json;charset=utf-8");
-				res.setContentLength(output.getBytes(UTF8).length);
-				res.getWriter().print(result);
-				res.getWriter().flush();
-				res.getWriter().close();
-			}
-
-			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-				CoreMoSyncPlugin.trace(
-						"{3}: FINISHED {0} REQUEST {1} ON THREAD {2}", req
-								.getMethod(), target, Thread.currentThread()
-								.getName(), new Date().toString());
-			}
 		}
 
 		private JSONObject waitForClient(String target, JSONObject command,
@@ -531,12 +594,12 @@ public class JSODDServer implements IResourceChangeListener {
 				} else if (queuedType == STEP) {
 					result = newCommand(getStepCommand((Integer) queuedElement.data));
 				} else if (queuedType == RELOAD) {
-					String command = queuedObject == null ? "reload"
-							: "update";
+					String command = queuedObject == null ? "reload" : "update";
 					result = newCommand(command);
 					if (queuedObject != null) {
 						IFile resource = (IFile) queuedObject;
-						result.put("resource", getLocalPath(resource).toOSString());
+						result.put("resource", Html5Plugin.getDefault().getLocalPath(resource)
+								.toOSString());
 					}
 				} else if (queuedType == SUSPEND) {
 					result = newCommand("suspend");
@@ -574,7 +637,7 @@ public class JSODDServer implements IResourceChangeListener {
 				}
 				result.put("id", queuedElement.getMessageId());
 			} catch (InterruptedException e) {
-				//e.printStackTrace();
+				// e.printStackTrace();
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 					CoreMoSyncPlugin
 							.trace("Dropped connection (often temporarily).");
@@ -640,6 +703,86 @@ public class JSODDServer implements IResourceChangeListener {
 			return null;
 		}
 
+		private Object handleFetch(String target, HttpServletRequest req, HttpServletResponse res) throws IOException {
+			if (targetMatches(target, "/mobile/")) {
+				return null;
+			}
+			
+			Object source = null;
+			String resource = null;
+			IProject project = null;
+			ReloadVirtualMachine vm = getVM(req.getRemoteAddr());
+			
+			// Hm, the baseurl may be either relative to the url or to the full path...
+			// Anyway, we must init the vm at first fetch, and at that point
+			// we also need the project name. Subsequent requests may or may not
+			// have the fetch/%PROJECT_NAME% prefix.
+			if (targetMatches(target, "/fetch/")) {
+				String[] parts = target.substring("/fetch/".length()).split(
+						"/", 2);
+				if (parts.length == 2) {
+					String projectName = parts[0];
+					resource = parts[1];
+					project = ResourcesPlugin.getWorkspace().getRoot()
+							.getProject(projectName);
+					if (project != null) {
+						if (vm == null) {
+							// The session id will be assigned soon.
+							resetVM(req, MoSyncProject.create(project), -1);
+						}
+					}
+				}
+			} else {
+				if (vm != null) {
+					resource = target;
+					project = vm.getProject();	
+				}
+				
+			}
+			
+			if (resource == null) {
+				return new IOException("Could not find resource " + target);
+			}
+			source = doFetch(project, resource);
+			
+			// No caching!
+			res.setHeader("Pragma", "no-cache");
+			res.setHeader("Cache-Control", "no-cache");
+			res.setContentType(guessContentTypeFromName(resource));
+			return source;
+		}
+		
+		private String guessContentTypeFromName(String name) {
+			String contentType = URLConnection.guessContentTypeFromName(name);
+			File file = new File(name);
+			if ("js".equals(Util.getExtension(file))) {
+				contentType = "text/javascript";
+			} else if ("css".equals(Util.getExtension(file))) {
+				contentType = "text/css";
+			} else if ("html".equals(Util.getExtension(file))) {
+				contentType = "text/html";
+			}
+			if (contentType == null) {
+				contentType = "text/plain";
+			}
+			return contentType;
+		}
+		
+		private Object doFetch(IProject project, String localPath) throws IOException {
+			JSODDSupport jsoddSupport = Html5Plugin.getDefault()
+					.getJSODDSupport(project);
+			IFile file = project.getFile(Html5Plugin
+					.getHTML5Folder(project).append(localPath));
+			if (jsoddSupport.requiresFullBuild()) {
+				return new IOException(MessageFormat.format("Project not built. Please build project {0}.", project.getName()));
+			}
+			String source = jsoddSupport.getInstrumentedSource(file);
+			if (source == null) {
+				return file;
+			}
+			return source;
+		}
+
 		private Object handleCommand(String target, JSONObject command,
 				HttpServletRequest req, HttpServletResponse res,
 				boolean preflight) {
@@ -681,22 +824,6 @@ public class JSODDServer implements IResourceChangeListener {
 					}
 				}
 				return new JSONObject();
-			} else if (targetMatches(target, "/fetch/")) {
-				String[] parts = target.substring("/fetch/".length()).split("/", 2);
-				if (parts.length == 2) {
-					String projectName = parts[0];
-					String resource = parts[1];
-					IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
-					if (project != null) {
-						JSODDSupport jsoddSupport = Html5Plugin.getDefault()
-								.getJSODDSupport(project);
-						IFile file = project.getFile(Html5Plugin
-								.getHTML5Folder(project).append(resource));
-						String source = jsoddSupport
-								.getInstrumentedSource(file);
-						return source;
-					}
-				}
 			}
 			return null;
 		}
@@ -709,7 +836,8 @@ public class JSODDServer implements IResourceChangeListener {
 			return (String) command.get("command");
 		}
 
-		private JSONObject createBreakpointJSON(Object[] bps, boolean enabled, boolean reset) {
+		private JSONObject createBreakpointJSON(Object[] bps, boolean enabled,
+				boolean reset) {
 			JSONObject command = new JSONObject();
 			command.put("command", enabled ? "set-breakpoints"
 					: "clear-breakpoints");
@@ -734,10 +862,12 @@ public class JSODDServer implements IResourceChangeListener {
 
 						JSONObject jsonBp = new JSONObject();
 						jsonBp.put("file", file);
-						JSODDSupport jsoddSupport = resource.getType() == IResource.FILE ? 
-								Html5Plugin.getDefault().getJSODDSupport(resource.getProject()) :
-								null;
-						int instrumentedLine = jsoddSupport == null ? lineNo : jsoddSupport.findClosestBreakpointLine(resource.getFullPath(), lineNo);
+						JSODDSupport jsoddSupport = resource.getType() == IResource.FILE ? Html5Plugin
+								.getDefault().getJSODDSupport(
+										resource.getProject()) : null;
+						int instrumentedLine = jsoddSupport == null ? lineNo
+								: jsoddSupport.findClosestBreakpointLine(
+										resource.getFullPath(), lineNo);
 						if (instrumentedLine >= 0) {
 							lineNo = instrumentedLine;
 						}
@@ -814,10 +944,11 @@ public class JSODDServer implements IResourceChangeListener {
 			queues.startPingDeamon();
 			queues.setTimeoutListener(new ITimeoutListener() {
 				@Override
-				public void timeoutOccurred(int sessionId) {					
+				public void timeoutOccurred(int sessionId) {
 					ReloadVirtualMachine vm = getVM(sessionId);
 					if (vm != null) {
-						IJavaScriptDebugTarget debugTarget = vm.getJavaScriptDebugTarget();
+						IJavaScriptDebugTarget debugTarget = vm
+								.getJavaScriptDebugTarget();
 						if (debugTarget != null) {
 							try {
 								debugTarget.terminate();
@@ -840,14 +971,6 @@ public class JSODDServer implements IResourceChangeListener {
 			throw new CoreException(new Status(IStatus.ERROR,
 					Html5Plugin.PLUGIN_ID, e.getMessage(), e));
 		}
-	}
-
-	public IPath getLocalPath(IFile file) {
-		IPath root = file.getProject().getFolder(Html5Plugin.getHTML5Folder(file.getProject())).getFullPath();
-		if (root.isPrefixOf(file.getFullPath())) {
-			return file.getFullPath().removeFirstSegments(root.segmentCount());
-		}
-		return null;
 	}
 
 	public static Integer extractSessionId(JSONObject command) {
@@ -910,7 +1033,8 @@ public class JSODDServer implements IResourceChangeListener {
 	}
 
 	public int newSessionId() {
-		int traceMask = CoreMoSyncPlugin.getDefault().isDebugging() ? 0xffff : 0;
+		int traceMask = CoreMoSyncPlugin.getDefault().isDebugging() ? 0xffff
+				: 0;
 		return traceMask + sessionId.incrementAndGet();
 	}
 
@@ -935,7 +1059,7 @@ public class JSODDServer implements IResourceChangeListener {
 			listener.received(commandName, command);
 		}
 	}
-	
+
 	private void notifyTimeoutListeners(ReloadVirtualMachine vm) {
 		for (ILiveServerListener listener : listeners) {
 			listener.timeout(vm);
@@ -1079,9 +1203,9 @@ public class JSODDServer implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 		if (Html5Plugin.getDefault().getSourceChangeStrategy() == Html5Plugin.DO_NOTHING) {
 			// Just return!
-			return;
+			//return;
 		}
-		
+
 		List<ReloadVirtualMachine> vms = getVMs(false);
 		final HashMap<IProject, ProjectRedefinable> replacements = new HashMap<IProject, ProjectRedefinable>();
 		for (ReloadVirtualMachine vm : vms) {
@@ -1107,15 +1231,20 @@ public class JSODDServer implements IResourceChangeListener {
 							IProject project = resource.getProject();
 							if (project != null
 									&& resource.getType() == IResource.FILE) {
-								ProjectRedefinable replacement = replacements.get(project);
+								ProjectRedefinable replacement = replacements
+										.get(project);
 								if (replacement == null) {
 									return false;
 								}
-								JSODDSupport jsoddSupport = Html5Plugin.getDefault().getJSODDSupport(project);
+								JSODDSupport jsoddSupport = Html5Plugin
+										.getDefault().getJSODDSupport(project);
 								if (delta.getKind() == IResourceDelta.REMOVED) {
-									jsoddSupport.delete(resource.getFullPath(), replacement);
+									jsoddSupport.delete(resource.getFullPath(),
+											replacement);
 								} else {
-									jsoddSupport.rewrite(resource.getFullPath(), null, replacement);
+									jsoddSupport.rewrite(
+											resource.getFullPath(), null,
+											replacement);
 								}
 							}
 						}
@@ -1131,16 +1260,19 @@ public class JSODDServer implements IResourceChangeListener {
 		for (ReloadVirtualMachine vm : vms) {
 			IProject project = vm.getProject();
 			ProjectRedefinable replacement = replacements.get(project);
-			boolean tryToRelad = Html5Plugin.getDefault().getSourceChangeStrategy() == Html5Plugin.RELOAD;
-			ReloadRedefiner redefiner = new ReloadRedefiner(vm, tryToRelad);
+			boolean forceReload = Html5Plugin.getDefault()
+					.getSourceChangeStrategy() == Html5Plugin.RELOAD;
+			ReloadRedefiner redefiner = new ReloadRedefiner(vm, forceReload);
 			ProjectRedefinable baseline = vm.getBaseline();
 			boolean updateBaseline = false;
 			try {
 				if (baseline == null) {
-					throw new RedefineException(RedefinitionResult.unrecoverable("Client out of sync"));
+					throw new RedefineException(
+							RedefinitionResult
+									.unrecoverable("Client out of sync"));
 				}
 				baseline.redefine(replacement, redefiner);
-				redefiner.commit(tryToRelad);
+				redefiner.commit(forceReload);
 				updateBaseline = true;
 			} catch (RedefineException e) {
 				if (failedRedefineResolution == 0) {
@@ -1173,14 +1305,17 @@ public class JSODDServer implements IResourceChangeListener {
 	}
 
 	private int askForRedefineResolution(final RedefineException e) {
-		final int[] reloadStrategy = new int[] { Html5Plugin.getDefault().getReloadStrategy() };
+		final int[] reloadStrategy = new int[] { Html5Plugin.getDefault()
+				.getReloadStrategy() };
 		if (reloadStrategy[0] == RedefinitionResult.UNDETERMINED) {
 			Display d = PlatformUI.getWorkbench().getDisplay();
 			UIUtils.onUiThread(d, new Runnable() {
 				@Override
 				public void run() {
-					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-					reloadStrategy[0] = AskForRedefineResolutionDialog.open(shell, e);
+					Shell shell = PlatformUI.getWorkbench()
+							.getActiveWorkbenchWindow().getShell();
+					reloadStrategy[0] = AskForRedefineResolutionDialog.open(
+							shell, e);
 				}
 			}, false);
 		}
@@ -1193,6 +1328,5 @@ public class JSODDServer implements IResourceChangeListener {
 			return new HashSet<Integer>(this.queues.consumers.keySet());
 		}
 	}
-
 
 }

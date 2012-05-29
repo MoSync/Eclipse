@@ -2,6 +2,7 @@ package com.mobilesorcery.sdk.html5.debug;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.net.InetAddress;
 import java.text.MessageFormat;
@@ -191,7 +192,7 @@ public class JSODDSupport {
 				// Already nested!
 				nest = false;
 			}
-			
+
 			if (node instanceof CatchClause) {
 				rewrites.put(node, new CatchRewrite(this, node));
 			}
@@ -460,9 +461,9 @@ public class JSODDSupport {
 			insert(position, "\n" + (start ? '{' : '}') + "\n");
 		}
 
-		public void rewrite(long fileId, String originalSource, Writer output,
+		public void rewrite(long fileId, String originalSource, boolean addBoilerPlate, Writer output,
 				NavigableMap<Integer, LocalVariableScope> scopeMap,
-				NavigableSet<Integer> instrumentedLines) throws IOException {
+				NavigableSet<Integer> instrumentedLines) throws IOException, CoreException {
 			// TODO: I guess there are some better AST rewrite methods around.
 			// Or... never mind, I've invested way too much time in this :)
 			LineMap lineByLineOriginalSource = new LineMap(originalSource);
@@ -487,6 +488,10 @@ public class JSODDSupport {
 			}
 
 			SourceRewrite doc = new SourceRewrite(originalSource);
+			if (addBoilerPlate) {
+				doc.seek(0);
+				doc.insert(generateBoilerplate(MoSyncProject.create(project)));
+			}
 			rootRewrite.rewrite(null, doc);
 			instrumented = doc.rewrite();
 
@@ -617,11 +622,6 @@ public class JSODDSupport {
 		parser = ASTParser.newParser(AST.JLS3);
 	}
 
-	public boolean supports(String feature) {
-		// TODO: Prefs!?
-		return true;
-	}
-
 	public boolean applyDiff(IFileTreeDiff diff) {
 		final boolean[] result = new boolean[1];
 		if (diff == null) {
@@ -708,7 +708,9 @@ public class JSODDSupport {
 				ast.accept(visitor);
 				TreeMap<Integer, LocalVariableScope> scopeMap = new TreeMap<Integer, LocalVariableScope>();
 				TreeSet<Integer> instrumentedLines = new TreeSet<Integer>();
-				visitor.rewrite(fileId, source, output, scopeMap,
+				boolean addBoilerPlate = JSODDSupport
+						.isWormholeLib(filePath);
+				visitor.rewrite(fileId, source, addBoilerPlate, output, scopeMap,
 						instrumentedLines);
 
 				// 3. Update state and notify listeners
@@ -860,11 +862,33 @@ public class JSODDSupport {
 		return LocalVariableScope.EMPTY;
 	}
 
-	public void generateBoilerplate(MoSyncProject project,
-			Writer boilerplateOutput) throws CoreException {
-		Template template = new Template(getClass().getResource(
-				"/templates/jsoddsupport.template"));
-		// TODO! Use Reload instead!
+	public String generateBoilerplate(MoSyncProject project) throws CoreException {
+		StringWriter boilerplateOutput = new StringWriter();
+		writeTemplate(project, "/templates/jsoddsupport.template",
+				boilerplateOutput);
+		return boilerplateOutput.getBuffer().toString();
+	}
+
+	public void generateRemoteFetch(MoSyncProject project,
+			Writer remoteFetchOutput) throws CoreException {
+		writeTemplate(project, "/templates/hcr.template", remoteFetchOutput);
+	}
+
+	private void writeTemplate(MoSyncProject project, String templatePath,
+			Writer output) throws CoreException {
+		Template template = new Template(getClass().getResource(templatePath));
+		Map<String, String> properties = getTemplateProperties(project);
+		try {
+			String contents = template.resolve(properties);
+			output.write(contents);
+		} catch (IOException e) {
+			throw new CoreException(new Status(IStatus.ERROR,
+					Html5Plugin.PLUGIN_ID, e.getMessage(), e));
+		}
+	}
+
+	private Map<String, String> getTemplateProperties(MoSyncProject project)
+			throws CoreException {
 		Map<String, String> properties = getDefaultProperties();
 		properties.putAll(project.getProperties());
 
@@ -872,14 +896,7 @@ public class JSODDSupport {
 		properties.put("PROJECT_NAME", project.getName());
 		properties.put("TIMEOUT_IN_MS",
 				Integer.toString(1000 * Html5Plugin.getDefault().getTimeout()));
-
-		try {
-			String contents = template.resolve(properties);
-			boilerplateOutput.write(contents);
-		} catch (IOException e) {
-			throw new CoreException(new Status(IStatus.ERROR,
-					Html5Plugin.PLUGIN_ID, e.getMessage(), e));
-		}
+		return properties;
 	}
 
 	public Map<String, String> getDefaultProperties() throws CoreException {
@@ -968,6 +985,9 @@ public class JSODDSupport {
 	 * @return {@code -1} if no match is found.
 	 */
 	public int findClosestBreakpointLine(IPath file, int line) {
+		if (line < 0) {
+			return line;
+		}
 		Long fileId = fileIds.get(file);
 		if (fileId != null) {
 			NavigableSet<Integer> lineMap = lineMaps.get(fileId);

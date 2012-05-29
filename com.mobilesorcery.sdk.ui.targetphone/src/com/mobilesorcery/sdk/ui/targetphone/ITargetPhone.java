@@ -13,6 +13,12 @@
  */
 package com.mobilesorcery.sdk.ui.targetphone;
 
+import java.io.File;
+
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jface.window.IShellProvider;
+
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 public interface ITargetPhone {

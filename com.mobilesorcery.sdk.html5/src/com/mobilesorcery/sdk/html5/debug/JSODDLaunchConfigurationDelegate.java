@@ -1,6 +1,7 @@
 package com.mobilesorcery.sdk.html5.debug;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,19 +19,21 @@ import org.eclipse.debug.core.Launch;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate2;
 import org.eclipse.debug.core.model.IPersistableSourceLocator;
 import org.eclipse.debug.core.model.IStreamsProxy;
-import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupDirector;
-import org.eclipse.debug.core.sourcelookup.ISourcePathComputer;
 import org.eclipse.debug.ui.DebugUITools;
-import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.eclipse.wst.jsdt.debug.internal.core.launching.JavaScriptProcess;
 import org.eclipse.wst.jsdt.debug.internal.core.model.JavaScriptDebugTarget;
 
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadListeningConnector;
+import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
+import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransport;
+import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
 
 public class JSODDLaunchConfigurationDelegate implements
 		ILaunchConfigurationDelegate2 {
 
+	private static HashMap<ITargetPhone, ILaunch> associatedLaunches = new HashMap<ITargetPhone, ILaunch>();
+	
 	private final class JSODDProcess extends JavaScriptProcess {
 		private IStreamsProxy streams = null;
 		private final ReloadVirtualMachine vm;
@@ -127,14 +130,9 @@ public class JSODDLaunchConfigurationDelegate implements
 		return true;
 	}
 
-	public static boolean launchDefault() throws CoreException {
+	public static boolean launchDefault(TargetPhoneTransportEvent event) throws CoreException {
 		ILaunchManager manager = DebugPlugin.getDefault().getLaunchManager();
-		ILaunch[] launches = manager.getLaunches();
-		for (ILaunch launch : launches) {
-			if (isDefaultLaunch(launch) && !launch.isTerminated()) {
-				return true;
-			}
-		}
+		// TODO: Kill old ones.
 
 		ILaunchConfigurationType type = manager.getLaunchConfigurationType(LAUNCH_CONFIG_TYPE);
 		ILaunchConfiguration cfg = null;

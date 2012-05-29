@@ -1,8 +1,10 @@
 package com.mobilesorcery.sdk.html5.ui.internal.preferences;
 
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
@@ -24,9 +26,11 @@ import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
 import com.mobilesorcery.sdk.ui.UIUtils;
+import com.mobilesorcery.sdk.ui.UpdateListener;
+import com.mobilesorcery.sdk.ui.UpdateListener.IUpdatableControl;
 
 public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
-		implements IWorkbenchPreferencePage {
+		implements IWorkbenchPreferencePage, IUpdatableControl {
 
 	private LinkedHashMap<String, Integer> reloadStrategyMap;
 	private LinkedHashMap<String, Integer> sourceChangeStrategyMap;
@@ -35,19 +39,22 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 	private ComboViewer sourceChangeStrategyCombo;
 	private ComboViewer reloadStrategyCombo;
 	private Text timeoutInSecsText;
+	private Label reloadStrategyLabel;
 
 	public JavaScriptOnDeviceDebugPreferencePage() {
 		super("JavaScript On-Device Debug");
 		this.reloadStrategyMap = new LinkedHashMap<String, Integer>();
 		reloadStrategyMap.put("Ask me", RedefinitionResult.UNDETERMINED);
 		reloadStrategyMap.put("Do nothing", RedefinitionResult.CONTINUE);
-		reloadStrategyMap.put("Reload", RedefinitionResult.RELOAD);
+		// Disabled until 3.1.1
+		//reloadStrategyMap.put("Reload", RedefinitionResult.RELOAD);
 		reloadStrategyMap.put("Terminate", RedefinitionResult.TERMINATE);
 		reverseReloadStrategyMap = Util.reverseMap(reloadStrategyMap);
 		this.sourceChangeStrategyMap = new LinkedHashMap<String, Integer>();
 		sourceChangeStrategyMap.put("Do nothing", Html5Plugin.DO_NOTHING);
 		sourceChangeStrategyMap.put("Reload", Html5Plugin.RELOAD);
-		sourceChangeStrategyMap.put("Hot code replace", Html5Plugin.HOT_CODE_REPLACE);
+		// Disabled until 3.1.1
+		//sourceChangeStrategyMap.put("Hot code replace", Html5Plugin.HOT_CODE_REPLACE);
 		reverseSourceChangeStrategyMap = Util.reverseMap(sourceChangeStrategyMap);
 	}
 
@@ -91,8 +98,7 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		}
 		sourceChangeStrategyCombo.getCombo().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		
-		Label reloadStrategyLabel = new Label(executionGroup, SWT.NONE);
-		reloadStrategyLabel.setText("When hot code replace fails:");
+		reloadStrategyLabel = new Label(executionGroup, SWT.NONE);
 		reloadStrategyLabel.setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT));
 		
 		reloadStrategyCombo = new ComboViewer(executionGroup, SWT.READ_ONLY);
@@ -106,19 +112,49 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		}
 		reloadStrategyCombo.getCombo().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		
+		UpdateListener listener = new UpdateListener(this);
+		reloadStrategyCombo.getCombo().addListener(SWT.Selection, listener);
+		sourceChangeStrategyCombo.getCombo().addListener(SWT.Selection, listener);
+		updateUI();
+		
 		return main;
 	}
 	
-	public boolean performOk() {
+	@Override
+	public void updateUI() {
+		boolean requiresRemoteFetch = Util.equals(getSourceChangeStrategy(), Html5Plugin.RELOAD) || Util.equals(getSourceChangeStrategy(), Html5Plugin.HOT_CODE_REPLACE);
+		String op = sourceChangeStrategyCombo.getCombo().getText();
+		// For 3.1.1: update with hot code replace as well
+		reloadStrategyLabel.setText(MessageFormat.format("When reload fails:", op));
+		
+		if (requiresRemoteFetch) {
+			setMessage("This will cause the client to fetch files from the debug server.", IMessageProvider.INFORMATION);
+		} else {
+			setMessage(null, IMessageProvider.NONE);
+		}
+	}
+	
+	private Integer getReloadStrategy() {
 		IStructuredSelection reloadStrategySelection = (IStructuredSelection) reloadStrategyCombo.getSelection();
 		String reloadStrategySelectionStr = (String) reloadStrategySelection.getFirstElement();
 		Integer reloadStrategy = reloadStrategyMap.get(reloadStrategySelectionStr);
-		if (reloadStrategy != null) {
-			Html5Plugin.getDefault().setReloadStrategy(reloadStrategy);
-		}
+		return reloadStrategy;
+	}
+	
+	private Integer getSourceChangeStrategy() {
 		IStructuredSelection sourceChangeStrategySelection = (IStructuredSelection) sourceChangeStrategyCombo.getSelection();
 		String sourceChangeStrategySelectionStr = (String) sourceChangeStrategySelection.getFirstElement();
 		Integer sourceChangeStrategy = sourceChangeStrategyMap.get(sourceChangeStrategySelectionStr);
+		return sourceChangeStrategy;
+	}
+	
+	public boolean performOk() {
+		Integer reloadStrategy = getReloadStrategy();
+		if (reloadStrategy != null) {
+			Html5Plugin.getDefault().setReloadStrategy(reloadStrategy);
+		}
+		
+		Integer sourceChangeStrategy = getSourceChangeStrategy();
 		if (sourceChangeStrategy != null) {
 			Html5Plugin.getDefault().setSourceChangeStrategy(sourceChangeStrategy);
 		}
