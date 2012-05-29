@@ -289,6 +289,7 @@ public class JSODDServer implements IResourceChangeListener {
 		}
 
 		public void killSession(int sessionId) {
+			Set<Integer> messageListenerIds = new TreeSet<Integer>();
 			synchronized (queueLock) {
 				LinkedBlockingQueue<DebuggerMessage> sessionQueue = consumers
 						.remove(sessionId);
@@ -297,27 +298,29 @@ public class JSODDServer implements IResourceChangeListener {
 					sessionQueue.offer(poison());
 				}
 
-				Set<Integer> messageListenerIds = new TreeSet<Integer>(
-						messageListeners.keySet());
-				for (Integer messageListenerId : messageListenerIds) {
-					IMessageListener listener = messageListeners
-							.get(messageListenerId);
-					if (listener.getSessionId() == sessionId) {
-						setResult(messageListenerId, null);
-						clearMessageListener(messageListenerId);
-					}
+				
+				messageListenerIds.addAll(messageListeners.keySet());
+			}
+			
+			for (Integer messageListenerId : messageListenerIds) {
+				IMessageListener listener = messageListeners
+						.get(messageListenerId);
+				if (listener != null && listener.getSessionId() == sessionId) {
+					setResult(messageListenerId, null);
+					clearMessageListener(messageListenerId);
 				}
 			}
 		}
 
 		public void killAllSessions() {
+			Set<Integer> consumerIds = new TreeSet<Integer>();
 			synchronized (queueLock) {
-				Set<Integer> consumerIds = new TreeSet<Integer>(
-						consumers.keySet());
-				for (Integer sessionId : consumerIds) {
-					killSession(sessionId);
-				}
+				 consumerIds.addAll(consumers.keySet());
 			}
+			for (Integer sessionId : consumerIds) {
+				killSession(sessionId);
+			}
+			
 		}
 
 		@Override
@@ -355,29 +358,31 @@ public class JSODDServer implements IResourceChangeListener {
 			// on the client side.
 			// And if the client is disconnected/does not respond we need to
 			// handle that too.
+			HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> consumersCopy = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
 			synchronized (queueLock) {
-				for (Integer sessionId : consumers.keySet()) {
-					Long timeOfLastTake = takeTimestamps.get(sessionId);
-					boolean isWaitingForPing = pendingPings.contains(sessionId);
-					long now = System.currentTimeMillis();
-					boolean needsPing = !isWaitingForPing
-							&& timeOfLastTake != null
-							&& now - timeOfLastTake > PING_INTERVAL;
-					Long lastHeartbeat = lastHeartbeats.get(sessionId);
-					boolean timeoutOccured = lastHeartbeat != null
-							&& now - lastHeartbeat > 2 * PING_INTERVAL;
-					if (timeoutOccured && timeoutListener != null) {
-						killSession(sessionId);
-						timeoutListener.timeoutOccurred(sessionId);
+				 consumersCopy.putAll(consumers);
+			}
+			for (Integer sessionId : consumersCopy.keySet()) {
+				Long timeOfLastTake = takeTimestamps.get(sessionId);
+				boolean isWaitingForPing = pendingPings.contains(sessionId);
+				long now = System.currentTimeMillis();
+				boolean needsPing = !isWaitingForPing
+						&& timeOfLastTake != null
+						&& now - timeOfLastTake > PING_INTERVAL;
+				Long lastHeartbeat = lastHeartbeats.get(sessionId);
+				boolean timeoutOccured = lastHeartbeat != null
+						&& now - lastHeartbeat > 2 * PING_INTERVAL;
+				if (timeoutOccured && timeoutListener != null) {
+					killSession(sessionId);
+					timeoutListener.timeoutOccurred(sessionId);
+				}
+				if (needsPing) {
+					if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+						CoreMoSyncPlugin.trace("Ping will be sent to {0}",
+								sessionId);
 					}
-					if (needsPing) {
-						if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-							CoreMoSyncPlugin.trace("Ping will be sent to {0}",
-									sessionId);
-						}
-						pendingPings.add(sessionId);
-						offer(sessionId, ping());
-					}
+					pendingPings.add(sessionId);
+					offer(sessionId, ping());
 				}
 			}
 		}
