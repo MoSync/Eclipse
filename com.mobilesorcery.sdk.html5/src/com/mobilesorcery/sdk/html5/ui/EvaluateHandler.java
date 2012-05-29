@@ -65,10 +65,9 @@ public class EvaluateHandler extends AbstractHandler {
 				}
 
 			});
-			t.start();;
+			t.start();
 
 		}
-		System.err.println(selection);
 		return null;
 	}
 
