@@ -32,6 +32,7 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.hotreplace.FileRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FunctionRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadBooleanValue;
@@ -77,6 +78,7 @@ public class ReloadVirtualMachine implements VirtualMachine,
 
 		// By default we support function redefines.
 		redefineSupport.put(FunctionRedefinable.class, Boolean.TRUE);
+		redefineSupport.put(FileRedefinable.class, Html5Plugin.getDefault().shouldFetchRemotely());
 
 		requestMgr = new ReloadEventRequestManager(this);
 		eventQueue = new ReloadEventQueue(this, requestMgr);

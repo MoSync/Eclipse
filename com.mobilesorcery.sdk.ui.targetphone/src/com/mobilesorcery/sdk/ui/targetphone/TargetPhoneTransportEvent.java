@@ -12,13 +12,14 @@ public class TargetPhoneTransportEvent {
 
 	public final Object type;
 	public final ITargetPhoneTransport transport;
+	public final ITargetPhone phone;
 	public final MoSyncProject project;
 	public final IBuildVariant variant;
 
-
-	public TargetPhoneTransportEvent(Object type, ITargetPhoneTransport transport,
+	public TargetPhoneTransportEvent(Object type, ITargetPhone phone, ITargetPhoneTransport transport,
 			MoSyncProject project, IBuildVariant variant) {
 		this.type = type;
+		this.phone = phone;
 		this.transport = transport;
 		this.project = project;
 		this.variant = variant;

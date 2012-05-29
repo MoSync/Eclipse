@@ -6,10 +6,12 @@ import java.util.NavigableMap;
 import java.util.Set;
 
 import org.eclipse.wst.jsdt.core.dom.ASTNode;
+import org.eclipse.wst.jsdt.core.dom.Block;
 import org.eclipse.wst.jsdt.core.dom.EmptyStatement;
 import org.eclipse.wst.jsdt.core.dom.Expression;
 import org.eclipse.wst.jsdt.core.dom.ExpressionStatement;
 import org.eclipse.wst.jsdt.core.dom.SimpleName;
+import org.eclipse.wst.jsdt.core.dom.TryStatement;
 
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
@@ -70,14 +72,17 @@ public class StatementRewrite extends NodeRewrite {
 		NodeRewrite instrumentor = instrumentedLines.get(lineNo);
 		boolean canInstrumentThisLine = instrumentor == null || instrumentor == this;
 		boolean doInstrument = forceInstrumentation || isDebuggerStatement || (isInstrumentationSupported && canInstrumentThisLine);
-
 		if (doInstrument) {
+			String statementPreamble =
+			    " MoSyncDebugProtocol.updatePosition(" + fileId
+				+ "," + lineNo + "," + isDebuggerStatement
+				+ "," + JSODDSupport.EVAL_FUNC_SNIPPET + ");";
+		
 			// Max one instrumentation per line! Except for debugger statements.
-			String addThisBefore = scopeDesc
-					+ " MoSyncDebugProtocol.updatePosition(" + fileId
-					+ "," + lineNo + "," + isDebuggerStatement
-					+ "," + JSODDSupport.EVAL_FUNC_SNIPPET + ");" + "\n";
 			instrumentedLines.put(lineNo, this);
+			String addThisBefore = scopeDesc
+					+ statementPreamble + "\n";
+			
 			
 			if (shouldBlockify()) {
 				rewrite.insert("{");
