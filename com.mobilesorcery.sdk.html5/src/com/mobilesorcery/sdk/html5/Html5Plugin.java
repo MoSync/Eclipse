@@ -7,8 +7,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
@@ -315,7 +317,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 			IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
 			if (hasHTML5Support(project) && PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
 				try {
-					JSODDLaunchConfigurationDelegate.launchDefault();
+					JSODDLaunchConfigurationDelegate.launchDefault(event);
 				} catch (CoreException e) {
 					Policy.getStatusHandler().show(e.getStatus(), "Could not launch JavaScript On-Device Debug Server");
 				}
@@ -329,9 +331,29 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	 * @param wrappedProject
 	 * @return
 	 */
-	public static IPath getHTML5Folder(IProject wrappedProject) {
+	public static IPath getHTML5Folder(IProject project) {
 		// I guess this might always be constant...
 		return new Path("LocalFiles");
+	}
+	
+	/**
+	 * Returns the 'local path' of a file, i e where it is located
+	 * related to its LocalFiles directory.
+	 * @param file
+	 * @return
+	 */
+	public IPath getLocalPath(IFile file) {
+		IPath root = file.getProject()
+				.getFolder(Html5Plugin.getHTML5Folder(file.getProject()))
+				.getFullPath();
+		if (root.isPrefixOf(file.getFullPath())) {
+			return file.getFullPath().removeFirstSegments(root.segmentCount());
+		}
+		return null;
+	}
+	
+	public IResource getLocalFile(IProject project, IPath path) {
+		return project.getFolder(getHTML5Folder(project)).findMember(path);
 	}
 
 	public int getTimeout() {
@@ -361,6 +383,11 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	
 	public int getSourceChangeStrategy() {
 		return getPreferenceStore().getInt(SOURCE_CHANGE_STRATEGY_PREF);
+	}
+
+	public boolean shouldFetchRemotely() {
+		int sourceChangeStrategy = getSourceChangeStrategy();
+		return sourceChangeStrategy == RELOAD || sourceChangeStrategy == HOT_CODE_REPLACE;
 	}
 
 

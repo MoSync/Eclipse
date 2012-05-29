@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<!--
+* @file index.html
+* @author Mattias Bybro
+*
+* Just a simple template for remote fetching of resources
+-->
+<html>
+	<head>
+		<meta name="viewport" content="width=320, user-scalable=no">
+		<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+		<title>Bootstrap index.html</title>
+		<script type="text/javascript">
+		    window.document.location.href = 'http://%SERVER_HOST%:%SERVER_PORT%/fetch/%PROJECT_NAME%/index.html'
+		</script>
+</html>

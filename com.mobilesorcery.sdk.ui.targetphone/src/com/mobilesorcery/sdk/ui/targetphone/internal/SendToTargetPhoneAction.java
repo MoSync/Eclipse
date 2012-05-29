@@ -102,7 +102,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 
 					IBuildVariant variant = MoSyncBuilder.createVariant(project, targetProfile);
 					ITargetPhoneTransport transport = phone.getTransport();
-					TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.PRE_SEND, transport, project, variant));
+					TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.PRE_SEND, phone, transport, project, variant));
 					File packageToSend = buildBeforeSend(variant, monitor);
 					transport.send(window, project, phone,
 							packageToSend, new SubProgressMonitor(monitor, 4));
