@@ -13,8 +13,14 @@ import org.eclipse.wst.jsdt.core.dom.rewrite.ASTRewrite;
 
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.IProvider;
+import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.Position;
 
+/**
+ * The base class for instrumenting JavaScript AST nodes
+ * @author Mattias Bybro, mattias.bybro@mosync.com
+ *
+ */
 public class NodeRewrite {
 
 	private static final NodeRewrite NULL = new NodeRewrite(null, null);
@@ -61,12 +67,18 @@ public class NodeRewrite {
 	}
 
 	public boolean supports(IFilter<String> features, String feature) {
+		// We are disabling true hot code replace until
+		// we have resolved some issues:
+		// 1. var self = this; will not work, for example
+		// Will fix this for 3.1.1.
+		if (feature == JSODDSupport.EDIT_AND_CONTINUE) {
+			return false;
+		}
 		if (features == null) {
 			return true;
 		} else {
 			return features.accept(feature);	
 		}
-		
 	}
 
 	public Position getPosition(ASTNode node, boolean before) {
@@ -150,6 +162,10 @@ public class NodeRewrite {
 	
 	protected void setBlacklisted(String reason) {
 		this.blacklistReason = reason;
+	}
+	
+	public String isBlacklisted() {
+		return blacklistReason;
 	}
 
 	public static IFilter<String> include(final String... features) {

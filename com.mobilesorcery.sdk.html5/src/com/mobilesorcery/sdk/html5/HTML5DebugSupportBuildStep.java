@@ -48,13 +48,16 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 	private final class InstrumentationBuilderVisitor extends
 			IncrementalBuilderVisitor {
 		private final class Rewriter {
+			// TODO: Refactor this class into JSODDSupport; makes
+			// it much easier.
 			private final JSODDSupport op;
 
 			private Rewriter(JSODDSupport op) {
 				this.op = op;
 			}
 
-			public int rewrite(IResource resourceToInstrument, boolean delete)
+			public int rewrite(IResource resourceToInstrument,
+					boolean persistToFile, boolean fetchRemotely, boolean delete)
 					throws CoreException {
 				IPath resourcePath = resourceToInstrument.getFullPath();
 				resourcePath = resourcePath.removeFirstSegments(inputRoot
@@ -63,21 +66,24 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 						resourcePath.toOSString());
 				FileRedefinable result = null;
 				if (delete) {
-					result = op.delete(resourceToInstrument.getFullPath(), op.getBaseline());
+					result = op.delete(resourceToInstrument.getFullPath(),
+							op.getBaseline());
 				} else {
 					outputFile.getParentFile().mkdirs();
 					FileWriter output = null;
 					try {
-						output = new FileWriter(outputFile);
-						// TODO! Not require wormhole!
-						boolean addBoilerPlate = JSODDSupport.isWormholeLib(resourcePath);
-						if (addBoilerPlate) {
-							op.generateBoilerplate(
-									MoSyncProject.create(getProject()), output);
+						output = persistToFile ? new FileWriter(outputFile)
+								: null;
+						MoSyncProject mosyncProject = MoSyncProject
+								.create(getProject());
+						if (fetchRemotely) {
+							op.generateRemoteFetch(mosyncProject, output);
+						} else {
+							// This is a *build* op, so update the baseline.
+							result = op.rewrite(
+									resourceToInstrument.getFullPath(), output,
+									op.getBaseline());
 						}
-						// This is a *build* op, so update the baseline.
-						result = op.rewrite(resourceToInstrument.getFullPath(),
-								output, op.getBaseline());
 					} catch (IOException e) {
 						throw new CoreException(
 								new Status(
@@ -89,7 +95,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 						Util.safeClose(output);
 					}
 				}
-				return result.getMemSize();
+				return result == null ? 0 : result.getMemSize();
 			}
 		}
 
@@ -139,23 +145,39 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 			op.applyDiff(diff);
 			Set<IResource> instrumentThese = computeResourcesToRebuild(dependencies);
-			Set<IResource> deleted = new HashSet<IResource>(Arrays.asList(getDeletedResources()));
+			Set<IResource> deleted = new HashSet<IResource>(
+					Arrays.asList(getDeletedResources()));
 			instrumentThese.addAll(deleted);
+			boolean fetchRemotely = Html5Plugin.getDefault().shouldFetchRemotely();
 			Rewriter rewriter = new Rewriter(op);
+
+			if (!instrumentThese.isEmpty() && fetchRemotely) {
+				IResource indexHtml = Html5Plugin.getDefault().getLocalFile(
+						project, new Path("index.html"));
+				if (indexHtml.getType() != IResource.FILE
+						|| !indexHtml.exists()) {
+					throw new CoreException(new Status(IStatus.ERROR,
+							Html5Plugin.PLUGIN_ID,
+							"Missing index.html, cannot build for debugging"));
+				}
+				rewriter.rewrite(indexHtml, true, true, false);
+			}
 			for (IResource instrumentThis : instrumentThese) {
 				if (monitor.isCanceled()) {
 					return;
 				}
-				dependencies.addDependency(instrumentThis, getResourceBundleLocation(project));
+				dependencies.addDependency(instrumentThis,
+						getResourceBundleLocation(project));
 				long start = System.currentTimeMillis();
 				boolean wasDeleted = deleted.contains(instrumentThis);
-				int memoryConsumption = rewriter.rewrite(instrumentThis, wasDeleted);
+				int memoryConsumption = rewriter.rewrite(instrumentThis,
+						!fetchRemotely, false, wasDeleted);
 				long elapsed = System.currentTimeMillis() - start;
 				console.addMessage(MessageFormat.format(
-						"Instrumented {0} [{1}, {2}].",
-						instrumentThis.getFullPath(),
-						Util.elapsedTime((int) elapsed),
-						wasDeleted ? "deleted" : Util.dataSize(memoryConsumption)));
+						"Instrumented {0} [{1}, {2}].", instrumentThis
+								.getFullPath(),
+						Util.elapsedTime((int) elapsed), wasDeleted ? "deleted"
+								: Util.dataSize(memoryConsumption)));
 			}
 		}
 
@@ -234,7 +256,8 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 		IPath inputRootPath = Html5Plugin.getHTML5Folder(wrappedProject);
 		IFolder inputRoot = wrappedProject.getFolder(inputRootPath);
 		if (inputRoot.exists()) {
-			File outputResource = getResourceBundleLocation(wrappedProject).getLocation().toFile();
+			File outputResource = getResourceBundleLocation(wrappedProject)
+					.getLocation().toFile();
 			IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project,
 					variant.getConfigurationId());
 			if (PropertyUtil.getBoolean(properties,
@@ -244,8 +267,13 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 						.getOutputPath(wrappedProject, variant)
 						.append(inputRootPath).toFile();
 				// Ok, do NOT copy files that we may want to instrument
-				copyUninstrumentedFiles(monitor, inputRoot.getLocation()
-						.toFile(), outputRoot);
+				// Do not uncomment this until we have a strategy --
+				// for various reasons (fixed file systems for example)
+				// we keep a conservative view at this point.
+				//if (!Html5Plugin.getDefault().shouldFetchRemotely()) {
+					copyUninstrumentedFiles(monitor, inputRoot.getLocation()
+							.toFile(), outputRoot);
+				//}
 
 				InstrumentationBuilderVisitor visitor = new InstrumentationBuilderVisitor(
 						inputRoot, outputRoot);
@@ -261,8 +289,8 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				// we'll get build problems for sure!
 				BundleBuildStep.bundle(outputRoot, outputResource);
 			} else {
-				BundleBuildStep.bundle(
-						inputRoot.getLocation().toFile(), outputResource);
+				BundleBuildStep.bundle(inputRoot.getLocation().toFile(),
+						outputResource);
 			}
 		}
 		monitor.done();
