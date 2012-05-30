@@ -76,6 +76,7 @@ import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
 import com.mobilesorcery.sdk.html5.debug.jsdt.JavaScriptBreakpointDesc;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadRedefiner;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadValue;
 import com.mobilesorcery.sdk.html5.live.JSODDServer.InternalQueues.ITimeoutListener;
 import com.mobilesorcery.sdk.html5.ui.AskForRedefineResolutionDialog;
 import com.mobilesorcery.sdk.ui.UIUtils;
@@ -272,11 +273,12 @@ public class JSODDServer implements IResourceChangeListener {
 		}
 
 		public void setResult(int id, Object result) {
-			synchronized (messageListeners) {
-				IMessageListener listener = messageListeners.get(id);
-				if (listener != null) {
-					listener.received(id, result);
-				}
+			IMessageListener listener;
+			synchronized (queueLock) {
+				listener = messageListeners.get(id);
+			}
+			if (listener != null) {
+				listener.received(id, result);
 			}
 		}
 
@@ -824,6 +826,9 @@ public class JSODDServer implements IResourceChangeListener {
 						}
 					} else if ("print-eval-result".equals(getCommand(command))) {
 						Object result = command.get("result");
+						if (!command.containsKey("result")) {
+							result = ReloadValue.UNDEFINED;
+						}
 						int id = ((Long) command.get("id")).intValue();
 						queues.setResult(id, result);
 					}

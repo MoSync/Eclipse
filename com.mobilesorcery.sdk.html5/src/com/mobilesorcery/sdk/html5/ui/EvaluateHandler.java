@@ -19,6 +19,7 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 
@@ -55,9 +56,12 @@ public class EvaluateHandler extends AbstractHandler {
 						try {
 							// JSODDSTREAMSPROXY!?
 							Object result = server.evaluate(sessionId, expression, null);
-							if (result != null) {
-								console.addMessage("" + result);
+							String sessionIdStr = "";
+							if (sessionIds.size() > 1) {
+								ReloadVirtualMachine vm = server.getVM(sessionId);
+								sessionIdStr = "IP: " + vm.getRemoteAddr();
 							}
+							console.addMessage(sessionIdStr + ">" + result);
 						} catch (Exception e) {
 							// IGNORE!
 						}
