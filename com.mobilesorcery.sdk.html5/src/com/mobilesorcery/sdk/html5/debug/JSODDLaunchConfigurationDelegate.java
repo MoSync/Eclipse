@@ -20,6 +20,7 @@ import org.eclipse.debug.core.model.ILaunchConfigurationDelegate2;
 import org.eclipse.debug.core.model.IPersistableSourceLocator;
 import org.eclipse.debug.core.model.IStreamsProxy;
 import org.eclipse.debug.ui.DebugUITools;
+import org.eclipse.debug.ui.IDebugUIConstants;
 import org.eclipse.wst.jsdt.debug.internal.core.launching.JavaScriptProcess;
 import org.eclipse.wst.jsdt.debug.internal.core.model.JavaScriptDebugTarget;
 
@@ -130,7 +131,7 @@ public class JSODDLaunchConfigurationDelegate implements
 		return true;
 	}
 
-	public static boolean launchDefault(TargetPhoneTransportEvent event) throws CoreException {
+	public static boolean launchDefault() throws CoreException {
 		ILaunchManager manager = DebugPlugin.getDefault().getLaunchManager();
 		// TODO: Kill old ones.
 
@@ -148,6 +149,7 @@ public class JSODDLaunchConfigurationDelegate implements
 			if (cfg == null) {
 				ILaunchConfigurationWorkingCopy wc = type.newInstance(null, "Default JavaScript On-Device Debug");
 				wc.setAttribute(DEFAULT_LAUNCH_CONFIG, true);
+				wc.setAttribute(IDebugUIConstants.ATTR_PRIVATE, true);
 				wc.doSave();
 				cfg = wc;
 			}

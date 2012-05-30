@@ -151,7 +151,7 @@ public class ReloadStackFrame implements StackFrame {
 				"    ____keys.push(____key);" +
 				"  }" +
 				"  ____info.properties = ____keys;" +
-				"  ____info.class = ____info.constructor ? ____info.constructor.toString() : null;" +
+				"  ____info.clazz = ____info.constructor ? ____info.constructor.toString() : null;" +
 				"  ____info.repr = %s.toString();" +
 				"} else if (____typeOf == \"function\") {" +
 				"  ____info.repr = ____typeOf;" +
@@ -168,7 +168,7 @@ public class ReloadStackFrame implements StackFrame {
 				String repr = "" + metaObject.get("repr");
 				if ("object".equals(type) || "function".equals(type)) {
 					Number oid = (Number) metaObject.get("oid");
-					String className = (String) metaObject.get("class");
+					String className = (String) metaObject.get("clazz");
 					JSONArray properties = (JSONArray) metaObject.get("properties");
 					ArrayList<ReloadProperty> generatedProperties = new ArrayList<ReloadProperty>();
 					boolean hasArrayProperty = false;

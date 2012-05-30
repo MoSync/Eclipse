@@ -227,11 +227,9 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	 *
 	 * @see MoSyncProject#getFormatVersion()
 	 */
-	public static final Version CURRENT_VERSION = new Version("1.4");
+	public static final Version CURRENT_VERSION = new Version("1.5");
 
 	private static final Version VERSION_1_0 = new Version("1");
-
-	private static final Version VERSION_1_3 = new Version("1.3");
 
 	/**
 	 * The name of the file where this project's <b>shared</b> meta data is
