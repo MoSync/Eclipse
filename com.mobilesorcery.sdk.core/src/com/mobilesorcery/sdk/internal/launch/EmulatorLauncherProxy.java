@@ -85,4 +85,10 @@ public class EmulatorLauncherProxy implements IEmulatorLauncher {
 		initDelegate();
 		return delegate.getLaunchType(packager);
 	}
+
+	@Override
+	public boolean supportsLaunchMode(String mode) {
+		initDelegate();
+		return delegate.supportsLaunchMode(mode);
+	}
 }

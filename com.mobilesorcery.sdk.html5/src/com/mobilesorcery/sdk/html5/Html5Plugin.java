@@ -18,6 +18,9 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchesListener2;
 import org.eclipse.jface.util.Policy;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -34,6 +37,7 @@ import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.ILaunchConstants;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -50,11 +54,13 @@ import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 import com.mobilesorcery.sdk.html5.live.ReloadManager;
 import com.mobilesorcery.sdk.html5.ui.JSODDTimeoutDialog;
+import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.profiles.ITargetProfileProvider;
 import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 import com.mobilesorcery.sdk.ui.IWorkbenchStartupListener;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.UIUtils;
+import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransportListener;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
@@ -62,7 +68,7 @@ import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
 /**
  * The activator class controls the plug-in life cycle
  */
-public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPhoneTransportListener {
+public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPhoneTransportListener, ILaunchesListener2 {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.html5"; //$NON-NLS-1$
@@ -128,7 +134,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 		// Since we are an IStartup, this will work.
 		TargetPhonePlugin.getDefault().addTargetPhoneTransportListener(this);
-
+		DebugPlugin.getDefault().getLaunchManager().addLaunchListener(this);
+		
 		initReloadManager();
 	}
 
@@ -144,6 +151,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		plugin = null;
 		super.stop(context);
 		TargetPhonePlugin.getDefault().removeTargetPhoneTransportListener(this);
+		DebugPlugin.getDefault().getLaunchManager().removeLaunchListener(this);
 		disposeReloadManager();
 	}
 
@@ -272,7 +280,19 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	}
 
 	public boolean hasHTML5Support(MoSyncProject project) {
-		return project != null && PropertyUtil.getBoolean(project, JS_PROJECT_SUPPORT_PROP);
+		if (project == null) {
+			return false;
+		}
+		
+		boolean hasSupport = PropertyUtil.getBoolean(project, JS_PROJECT_SUPPORT_PROP)
+				|| DeviceCapabilitiesFilter.extractFilterFromProject(project).getRequiredCapabilities().contains("HTML5");
+		
+		return hasSupport;
+	}
+	
+	public boolean hasHTML5PackagerBuildStep(MoSyncProject project) {
+		BuildSequence seq = BuildSequence.getCached(project);
+		return !seq.getBuildStepFactories(HTML5DebugSupportBuildStep.Factory.class).isEmpty();
 	}
 
 	private IBuildStepFactory createHTML5PackagerBuildStep() {
@@ -298,6 +318,10 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		}
 		return result;
 	}
+	
+	public boolean hasJSODDSupport(IProject project) {
+		return getJSODDSupport(project) != null;
+	}
 
 	@Override
 	public void earlyStartup() {
@@ -306,23 +330,6 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 	public Collection<IProject> getProjectsWithJSODDSupport() {
 		return Collections.unmodifiableCollection(jsOddSupport.keySet());
-	}
-
-	@Override
-	public void handleEvent(TargetPhoneTransportEvent event) {
-		// Launch the debug server if sending package in debug mode
-		if (TargetPhoneTransportEvent.isType(TargetPhoneTransportEvent.PRE_SEND, event)) {
-			MoSyncProject project = event.project;
-			IBuildVariant variant = event.variant;
-			IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
-			if (hasHTML5Support(project) && PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
-				try {
-					JSODDLaunchConfigurationDelegate.launchDefault(event);
-				} catch (CoreException e) {
-					Policy.getStatusHandler().show(e.getStatus(), "Could not launch JavaScript On-Device Debug Server");
-				}
-			}
-		}
 	}
 
 	/**
@@ -390,5 +397,61 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		return sourceChangeStrategy == RELOAD || sourceChangeStrategy == HOT_CODE_REPLACE;
 	}
 
+	@Override
+	public void launchesRemoved(ILaunch[] launches) {
+		// We don't care.
+	}
+
+	@Override
+	public void launchesAdded(ILaunch[] launches) {
+		// We do care :)
+		for (ILaunch launch : launches) {
+			ILaunchConfiguration cfg = launch.getLaunchConfiguration();
+			if (cfg != null) {
+				try {
+					String cfgId = cfg.getType().getIdentifier();
+					if (EmulatorLaunchConfigurationDelegate.ID.equals(cfgId)) {
+						IProject project = EmulatorLaunchConfigurationDelegate.getProject(cfg);
+						IBuildVariant variant = EmulatorLaunchConfigurationDelegate.getVariant(cfg, launch.getLaunchMode());
+						launchJSODD(MoSyncProject.create(project), variant, null);
+					}
+				} catch (Exception e) {
+					// Who cares?
+					CoreMoSyncPlugin.getDefault().log(e);
+				}
+			}
+		}
+	}
+
+	@Override
+	public void launchesChanged(ILaunch[] launches) {
+		// We don't care
+	}
+
+	@Override
+	public void launchesTerminated(ILaunch[] launches) {
+		
+	}
+
+	@Override
+	public void handleEvent(TargetPhoneTransportEvent event) {
+		// Launch the debug server if sending package in debug mode
+		if (TargetPhoneTransportEvent.isType(TargetPhoneTransportEvent.PRE_SEND, event)) {
+			MoSyncProject project = event.project;
+			IBuildVariant variant = event.variant;
+			launchJSODD(project, variant, event.phone);
+		}
+	}
+
+	private void launchJSODD(MoSyncProject project, IBuildVariant variant, Object terminateToken) {
+		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
+		if (hasHTML5Support(project) && PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
+			try {
+				JSODDLaunchConfigurationDelegate.launchDefault();
+			} catch (CoreException e) {
+				Policy.getStatusHandler().show(e.getStatus(), "Could not launch JavaScript On-Device Debug Server");
+			}
+		}
+	}
 
 }

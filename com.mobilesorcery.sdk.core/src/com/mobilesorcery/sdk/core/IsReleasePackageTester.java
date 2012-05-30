@@ -2,15 +2,12 @@ package com.mobilesorcery.sdk.core;
 
 import java.util.List;
 
-import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 
 import com.mobilesorcery.sdk.core.build.BuildSequence;
 import com.mobilesorcery.sdk.core.build.CopyBuildResultBuildStep;
-import com.mobilesorcery.sdk.core.build.CopyBuildResultBuildStep.Factory;
-import com.mobilesorcery.sdk.internal.MoSyncNatureTester;
 
 public class IsReleasePackageTester extends MoSyncNatureTester {
 

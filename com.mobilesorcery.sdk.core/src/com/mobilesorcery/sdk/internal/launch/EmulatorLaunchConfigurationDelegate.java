@@ -62,6 +62,8 @@ import com.mobilesorcery.sdk.internal.BuildSession;
 public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDelegate implements ILaunchConfigurationDelegate2 {
 
     private static int GLOBAL_ID = 1;
+    
+    public static String ID = "com.mobilesorcery.launchconfigurationtype";
 
     private static HashMap<ILaunchConfiguration, Map<String, Object>> overriddenAttributes = new HashMap<ILaunchConfiguration, Map<String, Object>>();
 

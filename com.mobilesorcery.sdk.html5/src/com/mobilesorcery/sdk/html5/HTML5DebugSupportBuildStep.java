@@ -245,7 +245,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 	}
 
 	public IResource getResourceBundleLocation(IProject project) {
-		return project.findMember(new Path("Resources/LocalFiles.bin"));
+		return project.getFile(new Path("Resources/LocalFiles.bin"));
 	}
 
 	@Override
@@ -256,8 +256,8 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 		IPath inputRootPath = Html5Plugin.getHTML5Folder(wrappedProject);
 		IFolder inputRoot = wrappedProject.getFolder(inputRootPath);
 		if (inputRoot.exists()) {
-			File outputResource = getResourceBundleLocation(wrappedProject)
-					.getLocation().toFile();
+			IResource outputFile = getResourceBundleLocation(wrappedProject);
+			File outputResource = outputFile.getLocation().toFile();
 			IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project,
 					variant.getConfigurationId());
 			if (PropertyUtil.getBoolean(properties,

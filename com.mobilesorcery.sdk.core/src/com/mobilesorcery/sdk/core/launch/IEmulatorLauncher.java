@@ -104,6 +104,13 @@ public interface IEmulatorLauncher {
 	public int isLaunchable(ILaunchConfiguration launchConfig, String mode);
 
 	/**
+	 * Returns {@code true} if this launcher supports a certain launch mode.
+	 * @param mode
+	 * @return
+	 */
+	public boolean supportsLaunchMode(String mode);
+	
+	/**
 	 * Returns the variant to use for this launcher.
 	 * @param launchConfig
 	 * @param mode

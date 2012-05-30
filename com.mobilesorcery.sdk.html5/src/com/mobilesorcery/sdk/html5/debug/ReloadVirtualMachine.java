@@ -346,7 +346,7 @@ public class ReloadVirtualMachine implements VirtualMachine,
 		ReloadThreadReference thread = (ReloadThreadReference) threads.get(0);
 		boolean isClientSuspend = Boolean.parseBoolean(""
 				+ json.get("suspended"));
-		if (thread.isSuspended() && !isClientSuspend) {
+		if (debugTarget.isSuspended() && thread.isSuspended() && !isClientSuspend) {
 			return;
 		}
 		thread.markSuspended(true);

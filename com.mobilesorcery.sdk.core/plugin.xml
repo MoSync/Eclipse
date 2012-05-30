@@ -51,7 +51,7 @@
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
       <propertyTester
-            class="com.mobilesorcery.sdk.internal.MoSyncNatureTester"
+            class="com.mobilesorcery.sdk.core.MoSyncNatureTester"
             id="com.mobilesorcery.sdk.testers.hasMoreNature"
             namespace="com.mobilesorcery.sdk.testers"
             properties="hasMoreNature"

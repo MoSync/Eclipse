@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.internal;
 
+import com.mobilesorcery.sdk.core.MoSyncNatureTester;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 
 public class SupportsBuildConfigurationTester extends MoSyncNatureTester {
