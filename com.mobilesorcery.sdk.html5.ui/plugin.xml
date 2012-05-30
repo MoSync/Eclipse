@@ -34,4 +34,27 @@
                name="JavaScript On-Device Debug">
          </page>
          </extension>
+         
+              
+        <extension
+         point="org.eclipse.ui.activities">
+     <!-- We have our own evaluate action -->
+     <activityPatternBinding
+            activityId="com.mobilesorcery.sdk.ui.html5.activity"
+            isEqualityPattern="true"
+            pattern="org.eclipse.wst.jsdt.debug.ui/org.eclipse.wst.jsdt.debug.ui.jsunit.popup.evaluate">
+      </activityPatternBinding>
+           <category
+            id="com.mobilesorcery.sdk.ui.html5.category"
+            name="MoSync-disabled JavaScript UI elements">
+      </category>
+      <activity
+            id="com.mobilesorcery.sdk.ui.html5.activity"
+            name="MoSync-disabled JavaScript UI elements">
+      </activity>
+      <categoryActivityBinding
+            activityId="com.mobilesorcery.sdk.ui.html5.activity"
+            categoryId="com.mobilesorcery.sdk.ui.html5.category">
+      </categoryActivityBinding>
+      </extension>
 </plugin>
