@@ -106,8 +106,8 @@ public class JSODDStreamsProxy implements IStreamsProxy {
 		try {
 			int endIndex = input.charAt(input.length() - 1) == '\n' ? input.length() - 1 : input.length();
 			input = input.substring(0, endIndex);
-			Object result = vm.evaluate(input);
-			if (result != null) {
+			if (input.length() > 0) {
+				Object result = vm.evaluate(input);
 				outMonitor.newLine("> " + result);
 			}
 		} catch (Exception e) {
