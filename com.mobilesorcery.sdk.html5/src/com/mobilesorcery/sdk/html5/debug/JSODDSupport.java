@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.InetAddress;
+import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -942,17 +943,21 @@ public class JSODDSupport {
 		return properties;
 	}
 
-	public Map<String, String> getDefaultProperties() throws CoreException {
-		HashMap<String, String> properties = new HashMap<String, String>();
+	public static Map<String, String> getDefaultProperties() throws CoreException {
+		URL serverURL;
 		try {
-			InetAddress localHost = InetAddress.getLocalHost();
-			properties.put(SERVER_HOST_PROP, localHost.getHostAddress());
-		} catch (IOException e) {
+			serverURL = Html5Plugin.getDefault().getServerURL();
+		} catch (Exception e) {
 			throw new CoreException(new Status(IStatus.ERROR,
 					Html5Plugin.PLUGIN_ID,
 					"Could not determine localhost address"));
 		}
-		properties.put(SERVER_PORT_PROP, "8511");
+
+		HashMap<String, String> properties = new HashMap<String, String>();
+		
+		properties.put(SERVER_HOST_PROP, serverURL.getHost());
+		properties.put(SERVER_PORT_PROP, Integer.toString(serverURL.getPort()));
+		
 		return properties;
 	}
 

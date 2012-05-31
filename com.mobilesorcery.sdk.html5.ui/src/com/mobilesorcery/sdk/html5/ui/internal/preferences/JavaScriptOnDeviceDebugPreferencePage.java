@@ -1,5 +1,8 @@
 package com.mobilesorcery.sdk.html5.ui.internal.preferences;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -17,8 +20,10 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
@@ -42,6 +47,8 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 	private Button shouldFetchRemotely;
 	private Text timeoutInSecsText;
 	private Label reloadStrategyLabel;
+	private Text serverAddress;
+	private Button useDefaultServerAddress;
 
 	public JavaScriptOnDeviceDebugPreferencePage() {
 		super("JavaScript On-Device Debug");
@@ -117,10 +124,46 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		shouldFetchRemotely = new Button(executionGroup, SWT.CHECK);
 		shouldFetchRemotely.setText("Load source code and resources from debug server");
 		shouldFetchRemotely.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false, 2, 1));
+		shouldFetchRemotely.setSelection(Html5Plugin.getDefault().shouldFetchRemotely());
+		
+		Group serverGroup = new Group(main, SWT.NONE);
+		serverGroup.setText("Debug Server");
+		serverGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		serverGroup.setLayout(new GridLayout(2, false));
+		
+		Label serverAddressLabel = new Label(serverGroup, SWT.NONE);
+		serverAddressLabel.setText("Server address:");
+		serverAddressLabel.setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT));
+		
+		serverAddress = new Text(serverGroup, SWT.SINGLE | SWT.BORDER);
+		serverAddress.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		
+		Label spacer = new Label(serverGroup, SWT.NONE);
+		useDefaultServerAddress = new Button(serverGroup, SWT.CHECK);
+		useDefaultServerAddress.setText("Default");
+		useDefaultServerAddress.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				try {
+					serverAddress.setText(Html5Plugin.getDefault().getDefaultServerURL().toExternalForm());
+				} catch (IOException e) {
+					serverAddress.setText(e.getMessage());
+				}
+			}
+		});
+		
+		try {
+			serverAddress.setText(Html5Plugin.getDefault().getServerURL().toExternalForm());
+			useDefaultServerAddress.setSelection(Html5Plugin.getDefault().getServerURL().equals(Html5Plugin.getDefault().getDefaultServerURL()));
+		} catch (IOException e) {
+			serverAddress.setText(e.getMessage());
+		}
 		
 		UpdateListener listener = new UpdateListener(this);
 		reloadStrategyCombo.getCombo().addListener(SWT.Selection, listener);
 		sourceChangeStrategyCombo.getCombo().addListener(SWT.Selection, listener);
+		serverAddress.addListener(SWT.Modify, listener);
+		useDefaultServerAddress.addListener(SWT.Selection, listener);
 		updateUI();
 		
 		return main;
@@ -137,8 +180,26 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 			shouldFetchRemotely.setSelection(true);
 		}
 		shouldFetchRemotely.setEnabled(!requiresRemoteFetch);
+		
+		serverAddress.setEnabled(!useDefaultServerAddress.getSelection());
+		
+		validate();
 	}
 	
+	private void validate() {
+		String errorMessage = null;
+		try {
+			// Validate.
+			URL serverURL = new URL(serverAddress.getText());
+			if (!"http".equals(serverURL.getProtocol())) {
+				errorMessage = "Server address must use 'http' protocol";
+			}
+		} catch (MalformedURLException e) {
+			errorMessage = "Invalid server address";
+		}
+		setErrorMessage(errorMessage);
+	}
+
 	private Integer getReloadStrategy() {
 		IStructuredSelection reloadStrategySelection = (IStructuredSelection) reloadStrategyCombo.getSelection();
 		String reloadStrategySelectionStr = (String) reloadStrategySelection.getFirstElement();
@@ -168,6 +229,13 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		} catch (Exception e) {
 			Html5Plugin.getDefault().setTimeout(Html5Plugin.DEFAULT_TIMEOUT);
 		}
+		
+		try {
+			Html5Plugin.getDefault().setServerURL(serverAddress.getText() , useDefaultServerAddress.getSelection());
+		} catch (IOException e) {
+			return false;
+		}
+		
 		return super.performOk();
 	}
 

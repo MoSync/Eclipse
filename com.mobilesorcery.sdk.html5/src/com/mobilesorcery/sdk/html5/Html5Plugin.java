@@ -1,5 +1,10 @@
 package com.mobilesorcery.sdk.html5;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -87,6 +92,10 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	static final String SOURCE_CHANGE_STRATEGY_PREF = "source.change.strategy";
 	
 	static final String SHOULD_FETCH_REMOTELY_PREF = "fetch.remotely";
+	
+	static final String USE_DEFAULT_SERVER_URL_PREF = "use.default.server";
+	
+	static final String SERVER_URL_PREF = "server";
 
 	public static final String TIMEOUT_PREF = "timeout";
 
@@ -458,6 +467,27 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 				Policy.getStatusHandler().show(e.getStatus(), "Could not launch JavaScript On-Device Debug Server");
 			}
 		}
+	}
+
+	public URL getServerURL() throws IOException {
+		if (getPreferenceStore().getBoolean(USE_DEFAULT_SERVER_URL_PREF)) {
+			return getDefaultServerURL();
+		} else {
+			return new URL(getPreferenceStore().getString(SERVER_URL_PREF));
+		}
+	}
+	
+	public void setServerURL(String addr, boolean useDefault) throws IOException {
+		// Just to get an exception.
+		URL url = new URL(addr);
+		getPreferenceStore().setValue(USE_DEFAULT_SERVER_URL_PREF, useDefault);
+		getPreferenceStore().setValue(SERVER_URL_PREF, addr);
+	}
+	
+	public URL getDefaultServerURL() throws IOException {
+		InetAddress localHost = InetAddress.getLocalHost();
+		String host = localHost.getHostAddress();
+		return new URL("http", host, 8511, "");
 	}
 
 }
