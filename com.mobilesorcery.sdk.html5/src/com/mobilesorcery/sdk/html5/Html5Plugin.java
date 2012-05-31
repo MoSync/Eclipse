@@ -85,6 +85,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	static final String RELOAD_STRATEGY_PREF = "reload.strategy";
 	
 	static final String SOURCE_CHANGE_STRATEGY_PREF = "source.change.strategy";
+	
+	static final String SHOULD_FETCH_REMOTELY_PREF = "fetch.remotely";
 
 	public static final String TIMEOUT_PREF = "timeout";
 
@@ -393,8 +395,12 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	}
 
 	public boolean shouldFetchRemotely() {
-		int sourceChangeStrategy = getSourceChangeStrategy();
-		return sourceChangeStrategy == RELOAD || sourceChangeStrategy == HOT_CODE_REPLACE;
+		boolean shouldFetchRemotely = getPreferenceStore().getBoolean(SHOULD_FETCH_REMOTELY_PREF);
+		return shouldFetchRemotely || getSourceChangeStrategy() != DO_NOTHING;
+	}
+	
+	public void setShouldFetchRemotely(boolean shouldFetchRemotely) {
+		getPreferenceStore().setValue(SHOULD_FETCH_REMOTELY_PREF, shouldFetchRemotely);
 	}
 
 	@Override

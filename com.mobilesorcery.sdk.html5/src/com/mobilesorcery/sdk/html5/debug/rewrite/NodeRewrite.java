@@ -35,6 +35,11 @@ public class NodeRewrite {
 	public NodeRewrite(ISourceSupport source, ASTNode node) {
 		this.rewriter = source;
 		this.node = node;
+		// There is code that is ok that gets flagged MALFORMED, so we can't
+		// really throw an exception here.
+		//if (node != null && (node.getFlags() & ASTNode.MALFORMED) != 0) {
+		//	System.err.println("MALFORMED!" + node);//throw new IllegalArgumentException();
+		//}
 	}
 	
 	public void addChild(NodeRewrite rewrite) {
