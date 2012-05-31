@@ -11,7 +11,9 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IThread;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.wst.jsdt.debug.core.model.IJavaScriptDebugTarget;
 
@@ -30,6 +32,10 @@ public class ReloadHandler extends AbstractHandler {
 	
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
+		if (!Html5Plugin.getDefault().shouldFetchRemotely()) {
+			IWorkbenchWindow window = HandlerUtil.getActiveWorkbenchWindow(event);
+			MessageDialog.openInformation(window.getShell(), "Cannot refresh", "Cannot reload on-device contents.\nTo enable this feature, go to \"Preferences > MoSync Tool > JavaScript On-Device Debug\" and activate \"Load source code and resources from debug server\".");
+		}
 		ArrayList<ReloadVirtualMachine> vms = new ArrayList<ReloadVirtualMachine>();
 		extractVMs(HandlerUtil.getCurrentSelection(event), vms);
 		for (ReloadVirtualMachine vm : vms) {

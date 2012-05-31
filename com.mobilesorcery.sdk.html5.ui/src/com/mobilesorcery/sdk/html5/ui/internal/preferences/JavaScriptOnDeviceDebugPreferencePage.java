@@ -14,6 +14,7 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
@@ -38,6 +39,7 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 	private HashMap<Integer, String> reverseSourceChangeStrategyMap;
 	private ComboViewer sourceChangeStrategyCombo;
 	private ComboViewer reloadStrategyCombo;
+	private Button shouldFetchRemotely;
 	private Text timeoutInSecsText;
 	private Label reloadStrategyLabel;
 
@@ -97,7 +99,7 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 			sourceChangeStrategyCombo.setSelection(new StructuredSelection(sourceChangeStrategyStr));	
 		}
 		sourceChangeStrategyCombo.getCombo().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-		
+				
 		reloadStrategyLabel = new Label(executionGroup, SWT.NONE);
 		reloadStrategyLabel.setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT));
 		
@@ -111,6 +113,10 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 			reloadStrategyCombo.setSelection(new StructuredSelection(strategyStr));	
 		}
 		reloadStrategyCombo.getCombo().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		
+		shouldFetchRemotely = new Button(executionGroup, SWT.CHECK);
+		shouldFetchRemotely.setText("Load source code and resources from debug server");
+		shouldFetchRemotely.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false, 2, 1));
 		
 		UpdateListener listener = new UpdateListener(this);
 		reloadStrategyCombo.getCombo().addListener(SWT.Selection, listener);
@@ -128,10 +134,9 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		reloadStrategyLabel.setText(MessageFormat.format("When reload fails:", op));
 		
 		if (requiresRemoteFetch) {
-			setMessage("This will cause the client to fetch files from the debug server.", IMessageProvider.INFORMATION);
-		} else {
-			setMessage(null, IMessageProvider.NONE);
+			shouldFetchRemotely.setSelection(true);
 		}
+		shouldFetchRemotely.setEnabled(!requiresRemoteFetch);
 	}
 	
 	private Integer getReloadStrategy() {
