@@ -822,7 +822,7 @@ public class JSODDSupport {
 		String[] imports = translator.getRawImports();
 		boolean wormholeIsFirstImport = imports.length > 0
 				&& isWormholeLib(new Path(imports[0]));
-		if (!htmlRanges.isEmpty() && !wormholeIsFirstImport) {
+		if (htmlRanges.size() > 1 && !wormholeIsFirstImport) {
 			// TODO: Is this really necessary - we could take care of it in some
 			// other way?
 			throw new CoreException(
