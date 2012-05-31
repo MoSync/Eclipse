@@ -318,13 +318,12 @@ public class ReloadVirtualMachine implements VirtualMachine,
 
 	public void reload() {
 		server.reload(currentSessionId);
-		if (debugTarget.isSuspended()) {
-			try {
-				debugTarget.resume();
-			} catch (DebugException e) {
-				CoreMoSyncPlugin.getDefault().log(e);
-			}
+		try {
+			debugTarget.resume();
+		} catch (DebugException e) {
+			CoreMoSyncPlugin.getDefault().log(e);
 		}
+
 	}
 
 	/**
