@@ -35,6 +35,9 @@ public class NodeRewrite {
 	public NodeRewrite(ISourceSupport source, ASTNode node) {
 		this.rewriter = source;
 		this.node = node;
+		if (node != null && (node.getFlags() & ASTNode.MALFORMED) != 0) {
+			setBlacklisted("Unknown syntactical error.");	
+		}
 		// There is code that is ok that gets flagged MALFORMED, so we can't
 		// really throw an exception here.
 		//if (node != null && (node.getFlags() & ASTNode.MALFORMED) != 0) {
@@ -110,7 +113,9 @@ public class NodeRewrite {
 		
 		for (Map.Entry<Integer, NodeRewrite> rewriteEntry : sortedByPosition.entrySet()) {
 			NodeRewrite nodeRewrite = rewriteEntry.getValue();
-			nodeRewrite.rewrite(features, rewrite);
+			if (nodeRewrite.isBlacklisted() == null) {
+				nodeRewrite.rewrite(features, rewrite);
+			}
 		}
 
 		/*if (rewrites.isEmpty()) {

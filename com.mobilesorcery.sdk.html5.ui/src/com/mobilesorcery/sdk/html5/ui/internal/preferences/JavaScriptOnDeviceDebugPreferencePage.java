@@ -224,6 +224,9 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		if (sourceChangeStrategy != null) {
 			Html5Plugin.getDefault().setSourceChangeStrategy(sourceChangeStrategy);
 		}
+		
+		Html5Plugin.getDefault().setShouldFetchRemotely(shouldFetchRemotely.getSelection());
+		
 		try {
 			Html5Plugin.getDefault().setTimeout(Integer.parseInt(timeoutInSecsText.getText()));
 		} catch (Exception e) {
