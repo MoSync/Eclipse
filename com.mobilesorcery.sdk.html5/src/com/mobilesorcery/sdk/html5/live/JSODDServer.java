@@ -1103,8 +1103,8 @@ public class JSODDServer implements IResourceChangeListener {
 				new Pair<Boolean, Object>(enabled, bp)));
 	}
 
-	private int getPort() {
-		return 8511;
+	private int getPort() throws IOException {
+		return Html5Plugin.getDefault().getServerURL().getPort();
 	}
 
 	public void setDirty(Set<IProject> dirtyProjects) {

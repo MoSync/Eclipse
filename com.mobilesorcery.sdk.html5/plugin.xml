@@ -119,45 +119,47 @@
                id="com.mobilesorcery.sdk.html5.enable.debugger"
                name="Enable JavaScript Debugging">
          </command>
+         <command
+               id="com.mobilesorcery.sdk.html5.reload"
+               name="Refresh On-Device JavaScript">
+         </command>
+         
       </extension>
-      <extension
-            point="org.eclipse.ui.menus">
-             <menuContribution
-               locationURI="popup:org.eclipse.ui.popup.any?after=additions">
-            <command
-                  commandId="com.mobilesorcery.sdk.html5.evaluate"
-                  label="Evaluate JavaScript"
-                  style="push"
-                  tooltip="Evalutate selected JavaScript">
-               <visibleWhen
-                     checkEnabled="true">
-                     <test property="com.mobilesorcery.sdk.html5.canEvaluate"/>
-                                      </visibleWhen>
-            </command>
-            </menuContribution>
-                         <menuContribution
-               locationURI="popup:org.eclipse.ui.popup.any?after=additions">
-            <command
-                  commandId="com.mobilesorcery.sdk.html5.enable.debugger"
-                  label="Enable JavaScript Debugging"
-                  style="push"
-                  tooltip="Enables JavaScript Debugging for this project">
-               <visibleWhen
-                     checkEnabled="true">
-                     <test property="com.mobilesorcery.sdk.html5.canEnableDebugging"/>
-                                      </visibleWhen>
-            </command>
-            </menuContribution>
-      </extension>
-            <extension point="org.eclipse.ui.bindings">
-  <key
-        commandId="com.mobilesorcery.sdk.html5.evaluate"
-        schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-        sequence="M1+M3+E">
-  </key>
-</extension>
+
       <extension
             point="org.eclipse.ui.handlers">
+            <handler
+                  commandId="com.mobilesorcery.sdk.html5.reload"
+                  class="com.mobilesorcery.sdk.html5.ui.ReloadHandler">
+                            <activeWhen>
+                      <with 
+            variable="selection"> 
+         <iterate ifEmpty="false"
+               operator="and">
+            <and>
+            <or>
+            <adapt
+                  type="org.eclipse.debug.core.ILaunch">
+            </adapt>
+            <adapt
+                  type="org.eclipse.debug.core.model.IProcess">
+            </adapt>
+            <adapt
+                  type="org.eclipse.debug.core.model.IThread">
+            </adapt>
+            <adapt
+                  type="org.eclipse.debug.core.model.IStackFrame">
+            </adapt>
+            <adapt
+                  type="org.eclipse.debug.core.model.IDebugTarget">
+            </adapt>
+            </or>
+            <test property="com.mobilesorcery.sdk.html5.isJsoddLaunch"/>
+            </and>
+         </iterate> 
+      </with>                     
+               </activeWhen>
+                           </handler>
       </extension>
                      <extension
          point="org.eclipse.core.runtime.preferences">
@@ -179,6 +181,18 @@
             id="com.mobilesorcery.sdk.html5.canEnableDebugging"
             namespace="com.mobilesorcery.sdk.html5"
             properties="canEnableDebugging"
+            type="java.lang.Object"/>
+         <propertyTester
+            class="com.mobilesorcery.sdk.html5.ui.ActiveDebugSessionsTester"
+            id="com.mobilesorcery.sdk.html5.hasActiveSessions"
+            namespace="com.mobilesorcery.sdk.html5"
+            properties="hasActiveSessions"
+            type="java.lang.Object"/>
+         <propertyTester
+            class="com.mobilesorcery.sdk.html5.ui.IsJSODDLaunchTester"
+            id="com.mobilesorcery.sdk.html5.isJsoddLaunch"
+            namespace="com.mobilesorcery.sdk.html5"
+            properties="isJsoddLaunch"
             type="java.lang.Object"/>
       </extension>
 </plugin>

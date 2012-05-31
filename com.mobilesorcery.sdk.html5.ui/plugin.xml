@@ -34,8 +34,77 @@
                name="JavaScript On-Device Debug">
          </page>
          </extension>
-         
-              
+      <extension
+            point="org.eclipse.ui.menus">
+             <menuContribution
+               locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+            <command
+                  commandId="com.mobilesorcery.sdk.html5.evaluate"
+                  label="Evaluate JavaScript"
+                  style="push"
+                  tooltip="Evalutate selected JavaScript">
+               <visibleWhen
+                     checkEnabled="true">
+                     <test property="com.mobilesorcery.sdk.html5.canEvaluate"/>
+                                      </visibleWhen>
+            </command>
+            </menuContribution>
+                         <menuContribution
+               locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+            <command
+                  commandId="com.mobilesorcery.sdk.html5.enable.debugger"
+                  label="Enable JavaScript Debugging"
+                  style="push"
+                  tooltip="Enables JavaScript Debugging for this project">
+               <visibleWhen
+                     checkEnabled="true">
+                     <test property="com.mobilesorcery.sdk.html5.canEnableDebugging"/>
+                                      </visibleWhen>
+            </command>
+            </menuContribution>
+            
+                         <menuContribution
+               locationURI="toolbar:org.eclipse.debug.ui.main.toolbar?after=threadGroup">
+            <command
+                  commandId="com.mobilesorcery.sdk.html5.reload"
+                  label="Refresh On-Device JavaScript"
+                  style="push"
+                  tooltip="Refreshes and Restarts the currently running On-Device JavaScript"
+                  icon="icons/refresh.gif">
+               <visibleWhen
+                     checkEnabled="false">
+               <with variable="activeWorkbenchWindow.activePerspective">
+                  <equals value="org.eclipse.debug.ui.DebugPerspective"/>
+               </with>
+                </visibleWhen>
+            </command>
+            </menuContribution>
+                                    <menuContribution
+               locationURI="org.eclipse.ui.popup.any?after=additions">
+            <command
+                  commandId="com.mobilesorcery.sdk.html5.reload"
+                  label="Refresh On-Device JavaScript"
+                  style="push"
+                  tooltip="Refreshes and Restarts the currently running On-Device JavaScript"
+                  icon="icons/refresh.gif">
+               <visibleWhen
+                     checkEnabled="true">
+                </visibleWhen>
+            </command>
+            </menuContribution>
+      </extension>
+            <extension point="org.eclipse.ui.bindings">
+  <key
+        commandId="com.mobilesorcery.sdk.html5.evaluate"
+        schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+        sequence="M1+M3+E">
+  </key>
+    <key
+        commandId="com.mobilesorcery.sdk.html5.reload"
+        schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+        sequence="M1+M2+R">
+  </key>
+</extension>
         <extension
          point="org.eclipse.ui.activities">
      <!-- We have our own evaluate action -->
