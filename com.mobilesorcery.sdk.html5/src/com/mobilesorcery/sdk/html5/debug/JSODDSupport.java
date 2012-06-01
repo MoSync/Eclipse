@@ -5,9 +5,10 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.InetAddress;
+import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,8 +37,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.model.IBreakpoint;
-import org.eclipse.jface.text.BadPositionCategoryException;
-import org.eclipse.wst.jsdt.core.IJavaScriptUnit;
+import org.eclipse.wst.jsdt.core.compiler.IProblem;
 import org.eclipse.wst.jsdt.core.dom.AST;
 import org.eclipse.wst.jsdt.core.dom.ASTNode;
 import org.eclipse.wst.jsdt.core.dom.ASTParser;
@@ -60,7 +60,6 @@ import org.eclipse.wst.jsdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.wst.jsdt.core.dom.Statement;
 import org.eclipse.wst.jsdt.core.dom.SwitchCase;
 import org.eclipse.wst.jsdt.core.dom.SwitchStatement;
-import org.eclipse.wst.jsdt.core.dom.TryStatement;
 import org.eclipse.wst.jsdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.wst.jsdt.core.dom.WhileStatement;
 import org.eclipse.wst.jsdt.core.dom.WithStatement;
@@ -70,12 +69,10 @@ import org.eclipse.wst.jsdt.web.core.javascript.JsTranslator;
 import org.eclipse.wst.sse.core.StructuredModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
-import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocumentRegion;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IFilter;
-import com.mobilesorcery.sdk.core.IProvider;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Pair;
@@ -86,14 +83,22 @@ import com.mobilesorcery.sdk.html5.debug.hotreplace.FileRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FunctionRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.HTMLRedefinable;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
+import com.mobilesorcery.sdk.html5.debug.rewrite.CatchRewrite;
 import com.mobilesorcery.sdk.html5.debug.rewrite.FunctionRewrite;
 import com.mobilesorcery.sdk.html5.debug.rewrite.ISourceSupport;
 import com.mobilesorcery.sdk.html5.debug.rewrite.NodeRewrite;
 import com.mobilesorcery.sdk.html5.debug.rewrite.SourceRewrite;
 import com.mobilesorcery.sdk.html5.debug.rewrite.StatementRewrite;
-import com.mobilesorcery.sdk.html5.debug.rewrite.CatchRewrite;
 
 public class JSODDSupport {
+
+	public class InvalidASTException extends RuntimeException {
+
+		public InvalidASTException(String msg) {
+			super(msg);
+		}
+
+	}
 
 	public static final String DROP_TO_FRAME = "drop.to.frame";
 	public static final String EDIT_AND_CONTINUE = "edit.continue";
@@ -111,6 +116,7 @@ public class JSODDSupport {
 		private static final int INSTRUMENTATION_ALLOWED = 1;
 		private static final int FORCE_INSTRUMENTATION = 2;
 		private static final int INSTRUMENTATION_BLACKLISTED = 3;
+		private static final int ERROR_COUNT_THRESHOLD = 10;
 
 		private JavaScriptUnit unit;
 		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
@@ -135,6 +141,7 @@ public class JSODDSupport {
 		private long fileId;
 		private HashMap<Integer, NodeRewrite> instrumentedLines = new HashMap<Integer, NodeRewrite>();
 		private LineMap lineMap;
+		private Position currentPosition;
 
 		public DebugRewriteOperationVisitor(LineMap lineMap, long fileId) {
 			this.lineMap = lineMap;
@@ -143,6 +150,8 @@ public class JSODDSupport {
 
 		@Override
 		public void preVisit(ASTNode node) {
+			currentPosition = getPosition(node, true);
+			
 			int start = getStartPosition(node);
 			int startLine = unit == null ? -1 : unit.getLineNumber(start);
 
@@ -202,6 +211,7 @@ public class JSODDSupport {
 
 			if (node instanceof JavaScriptUnit) {
 				unit = (JavaScriptUnit) node;
+				validateAST(unit.getProblems());
 			}
 
 			if (node instanceof Statement) {
@@ -296,6 +306,8 @@ public class JSODDSupport {
 
 		@Override
 		public void postVisit(ASTNode node) {
+			currentPosition = getPosition(node, false);
+			
 			LocalVariableScope startScope = currentScope;
 			boolean unnest = isNestStatement(node);
 
@@ -590,6 +602,27 @@ public class JSODDSupport {
 		public String getSource() {
 			return originalSource;
 		}
+		
+		public void validateAST(IProblem[] problems) {
+			int errorCount = 0;
+			StringBuffer errorMsg = new StringBuffer();
+			for (IProblem problem : problems) {
+				if (problem.isError()) {
+					errorMsg.append('\n' + problem.getMessage());
+				}
+			}
+			if (errorCount > 0) {
+				String truncateMsg = errorCount > ERROR_COUNT_THRESHOLD ? 
+						MessageFormat.format(" (Showing the {0} first errors.)", ERROR_COUNT_THRESHOLD) : "";
+				// Throw unchecked exception.
+				throw new InvalidASTException( 
+						MessageFormat.format("Invalid JavaScript; found {0} errors{1}:{2}", errorCount, truncateMsg, errorMsg));
+			}
+		}
+		
+		public Position getCurrentPosition() {
+			return currentPosition;
+		}
 
 	}
 
@@ -671,6 +704,8 @@ public class JSODDSupport {
 
 	public FileRedefinable rewrite(IPath filePath, Writer output,
 			ProjectRedefinable baseline) throws CoreException {
+		DebugRewriteOperationVisitor visitor = null;
+		
 		try {
 			initProjectRedefinable();
 			IFile file = (IFile) ResourcesPlugin.getWorkspace().getRoot()
@@ -685,7 +720,7 @@ public class JSODDSupport {
 
 				long fileId = assignFileId(filePath);
 				LineMap sourceLineMap = new LineMap(source);
-				DebugRewriteOperationVisitor visitor = new DebugRewriteOperationVisitor(
+				visitor = new DebugRewriteOperationVisitor(
 						sourceLineMap, fileId);
 
 				if (isEmbeddedJavaScriptFile(filePath)) {
@@ -727,8 +762,17 @@ public class JSODDSupport {
 		} catch (CoreException e) {
 			throw e;
 		} catch (Exception e) {
+			String positionHint = "";
+			Position currentPosition = null;
+			if (visitor != null) {
+				currentPosition = visitor.getCurrentPosition();
+			}
+			if (currentPosition != null) {
+				positionHint = ", near line " + currentPosition.getLine();
+			}
+			String locationHintMsg = MessageFormat.format("In file {0}{1}: {2}", filePath.toOSString(), positionHint, e.getMessage());
 			throw new CoreException(new Status(IStatus.ERROR,
-					Html5Plugin.PLUGIN_ID, e.getMessage(), e));
+					Html5Plugin.PLUGIN_ID, locationHintMsg, e));
 		}
 	}
 
@@ -779,7 +823,7 @@ public class JSODDSupport {
 		String[] imports = translator.getRawImports();
 		boolean wormholeIsFirstImport = imports.length > 0
 				&& isWormholeLib(new Path(imports[0]));
-		if (!htmlRanges.isEmpty() && !wormholeIsFirstImport) {
+		if (htmlRanges.size() > 1 && !wormholeIsFirstImport) {
 			// TODO: Is this really necessary - we could take care of it in some
 			// other way?
 			throw new CoreException(
@@ -899,17 +943,21 @@ public class JSODDSupport {
 		return properties;
 	}
 
-	public Map<String, String> getDefaultProperties() throws CoreException {
-		HashMap<String, String> properties = new HashMap<String, String>();
+	public static Map<String, String> getDefaultProperties() throws CoreException {
+		URL serverURL;
 		try {
-			InetAddress localHost = InetAddress.getLocalHost();
-			properties.put(SERVER_HOST_PROP, localHost.getHostAddress());
-		} catch (IOException e) {
+			serverURL = Html5Plugin.getDefault().getServerURL();
+		} catch (Exception e) {
 			throw new CoreException(new Status(IStatus.ERROR,
 					Html5Plugin.PLUGIN_ID,
 					"Could not determine localhost address"));
 		}
-		properties.put(SERVER_PORT_PROP, "8511");
+
+		HashMap<String, String> properties = new HashMap<String, String>();
+		
+		properties.put(SERVER_HOST_PROP, serverURL.getHost());
+		properties.put(SERVER_PORT_PROP, Integer.toString(serverURL.getPort()));
+		
 		return properties;
 	}
 
