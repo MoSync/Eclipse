@@ -291,14 +291,24 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	}
 
 	public boolean hasHTML5Support(MoSyncProject project) {
-		if (project == null) {
-			return false;
+		boolean hasSupport;
+		try{
+			if (project == null) {
+				return false;
+			}
+			hasSupport = PropertyUtil.getBoolean(project, JS_PROJECT_SUPPORT_PROP)
+					|| DeviceCapabilitiesFilter.extractFilterFromProject(project).getRequiredCapabilities().contains("HTML5");			
+			return hasSupport;
+		}
+		catch(NullPointerException ex)
+		{
+			if (project == null) {
+				return false;
+			}
+			hasSupport = PropertyUtil.getBoolean(project, JS_PROJECT_SUPPORT_PROP);
+			return hasSupport;
 		}
 		
-		boolean hasSupport = PropertyUtil.getBoolean(project, JS_PROJECT_SUPPORT_PROP)
-				|| DeviceCapabilitiesFilter.extractFilterFromProject(project).getRequiredCapabilities().contains("HTML5");
-		
-		return hasSupport;
 	}
 	
 	public boolean hasHTML5PackagerBuildStep(MoSyncProject project) {
