@@ -1100,7 +1100,7 @@ public class MoSyncBuilder extends ACBuilder {
 		// Ehm, I think I've seen this code elsewhere...
 		ArrayList<IPath> result = new ArrayList<IPath>();
 
-		// MOSYNC-1564: we must add that rescompiler.lib
+/*		// MOSYNC-1564: we must add that rescompiler.lib
 		if (!isLib(project)) {
 			IBuildConfiguration cfg = project.getBuildConfiguration(variant
 					.getConfigurationId());
@@ -1108,7 +1108,7 @@ public class MoSyncBuilder extends ACBuilder {
 					&& cfg.isType(IBuildConfiguration.DEBUG_TYPE);
 			result.add(debug ? new Path("rescompilerD.lib") : new Path(
 					"rescompiler.lib"));
-		}
+		}*/
 		if (!PropertyUtil.getBoolean(buildProperties, IGNORE_DEFAULT_LIBRARIES)) {
 			result.addAll(Arrays.asList(PropertyUtil.getPaths(buildProperties,
 					DEFAULT_LIBRARIES)));
