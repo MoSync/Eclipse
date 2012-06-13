@@ -28,9 +28,22 @@
        </extension>
        
                  <extension
-             point="org.eclipse.ui.propertyPages">         
-          <page
+             point="org.eclipse.ui.propertyPages">
+           <page
                 category="com.mobilesorcery.sdk.ui.properties.project"
+                class="com.mobilesorcery.sdk.builder.iphoneos.ui.properties.IPhoneOSPropertyPage"
+                id="com.mobilesorcery.sdk.builder.iphoneos"
+                objectClass="org.eclipse.core.resources.IProject"
+                name="IPhone OS">
+                                <enabledWhen>
+                                   <test
+                                         forcePluginActivation="true"
+                                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                                   </test>
+                                </enabledWhen>                
+          </page>         
+          <page
+                category="com.mobilesorcery.sdk.builder.iphoneos"
                 class="com.mobilesorcery.sdk.builder.iphoneos.ui.properties.IPhoneOSSigningPropertyPage"
                 id="com.mobilesorcery.sdk.builder.iphoneos.signing"
                 objectClass="org.eclipse.core.resources.IProject"
@@ -43,7 +56,7 @@
                                 </enabledWhen>                
           </page> 
           <page
-                category="com.mobilesorcery.sdk.ui.properties.project"
+                category="com.mobilesorcery.sdk.builder.iphoneos"
                 class="com.mobilesorcery.sdk.builder.iphoneos.ui.properties.IPhoneOSSSDKPropertyPage"
                 id="com.mobilesorcery.sdk.builder.iphoneos.sdks"
                 objectClass="org.eclipse.core.resources.IProject"
@@ -54,7 +67,20 @@
                                          property="com.mobilesorcery.sdk.testers.hasMoreNature">
                                    </test>
                                 </enabledWhen>                
-          </page>           
+          </page>  
+                   <page
+                category="com.mobilesorcery.sdk.builder.iphoneos"
+                class="com.mobilesorcery.sdk.builder.iphoneos.ui.properties.IPhoneOSProvisioningPropertyPage"
+                id="com.mobilesorcery.sdk.builder.iphoneos.provisioning"
+                objectClass="org.eclipse.core.resources.IProject"
+                name="Provisioning">
+                                <enabledWhen>
+                                   <test
+                                         forcePluginActivation="true"
+                                         property="com.mobilesorcery.sdk.testers.hasMoreNature">
+                                   </test>
+                                </enabledWhen>                
+          </page>          
        </extension>
                  <extension
          point="org.eclipse.ui.preferencePages">
