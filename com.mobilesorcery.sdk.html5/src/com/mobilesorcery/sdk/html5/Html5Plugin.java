@@ -40,6 +40,7 @@ import org.eclipse.wst.jsdt.internal.core.JavaProject;
 import org.json.simple.JSONObject;
 import org.osgi.framework.BundleContext;
 
+import com.mobilesorcery.sdk.core.BuildVariant;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.ILaunchConstants;
@@ -58,6 +59,7 @@ import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 import com.mobilesorcery.sdk.html5.live.ReloadManager;
+import com.mobilesorcery.sdk.html5.ui.DebuggingEnableTester;
 import com.mobilesorcery.sdk.html5.ui.JSODDTimeoutDialog;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.profiles.ITargetProfileProvider;
@@ -109,6 +111,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	
 	public static final int HOT_CODE_REPLACE = 2;
 
+	public static final String TERMINATE_TOKEN_LAUNCH_ATTR = PLUGIN_ID + "t.t";
+
 	// The shared instance
 	private static Html5Plugin plugin;
 
@@ -117,6 +121,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	private JSODDServer server;
 
 	private final HashMap<IProject, JSODDSupport> jsOddSupport = new HashMap<IProject, JSODDSupport>();
+
+	private HashSet<Object> timeoutSuppressions = new HashSet<Object>();
 
 	/**
 	 * The constructor
@@ -173,14 +179,22 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 			server.addListener(new ILiveServerListener() {
 				@Override
 				public void timeout(final ReloadVirtualMachine vm) {
-					Display d = PlatformUI.getWorkbench().getDisplay();
-					UIUtils.onUiThread(d, new Runnable() {
-						@Override
-						public void run() {
-							Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-							JSODDTimeoutDialog.openIfNecessary(shell, vm);
+					ILaunch launch = vm.getJavaScriptDebugTarget().getLaunch();
+					String terminateToken = launch == null ? null : launch.getAttribute(TERMINATE_TOKEN_LAUNCH_ATTR);
+					if (!timeoutSuppressions.remove(terminateToken)) {
+						Display d = PlatformUI.getWorkbench().getDisplay();
+						UIUtils.onUiThread(d, new Runnable() {
+							@Override
+							public void run() {
+								Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+								JSODDTimeoutDialog.openIfNecessary(shell, vm);
+							}
+						}, false);
+					} else {
+						if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+							CoreMoSyncPlugin.trace("Suppressed timeout dialog for {0}.", terminateToken);
 						}
-					}, false);
+					}
 				}
 				
 				@Override
@@ -318,7 +332,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	}
 
 	public synchronized JSODDSupport getJSODDSupport(IProject project) {
-		if (!hasHTML5Support(MoSyncProject.create(project))) {
+		if (!DebuggingEnableTester.hasDebugSupport(MoSyncProject.create(project))) {
 			return null;
 		}
 		JSODDSupport result = jsOddSupport.get(project);
@@ -427,7 +441,11 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 					if (EmulatorLaunchConfigurationDelegate.ID.equals(cfgId)) {
 						IProject project = EmulatorLaunchConfigurationDelegate.getProject(cfg);
 						IBuildVariant variant = EmulatorLaunchConfigurationDelegate.getVariant(cfg, launch.getLaunchMode());
-						launchJSODD(MoSyncProject.create(project), variant, null);
+						launchJSODD(MoSyncProject.create(project), variant, BuildVariant.toString(variant));
+					}
+					if (JSODDLaunchConfigurationDelegate.ID.equals(cfgId)) {
+						String terminateToken = launch.getAttribute(TERMINATE_TOKEN_LAUNCH_ATTR);
+						setTimeoutSuppression(terminateToken, false);
 					}
 				} catch (Exception e) {
 					// Who cares?
@@ -453,18 +471,31 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		if (TargetPhoneTransportEvent.isType(TargetPhoneTransportEvent.PRE_SEND, event)) {
 			MoSyncProject project = event.project;
 			IBuildVariant variant = event.variant;
-			launchJSODD(project, variant, event.phone);
+			launchJSODD(project, variant, event.phone.getName());
 		}
 	}
 
-	private void launchJSODD(MoSyncProject project, IBuildVariant variant, Object terminateToken) {
+	private void launchJSODD(MoSyncProject project, IBuildVariant variant, String terminateToken) {
 		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
-		if (hasHTML5Support(project) && PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
+		if (DebuggingEnableTester.hasDebugSupport(project) && PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
 			try {
-				JSODDLaunchConfigurationDelegate.launchDefault();
+				boolean wasLaunched = JSODDLaunchConfigurationDelegate.launchDefault(terminateToken);
+				setTimeoutSuppression(terminateToken, wasLaunched);
 			} catch (CoreException e) {
 				Policy.getStatusHandler().show(e.getStatus(), "Could not launch JavaScript On-Device Debug Server");
 			}
+		}
+	}
+
+	private void setTimeoutSuppression(Object terminateToken, boolean doSuppress) {
+		// We don't scare users with timeouts if we just
+		// started another session for potentially the same
+		// device / app (since a timeout is expected
+		// and not an error condition.
+		if (doSuppress) {
+			timeoutSuppressions.add(terminateToken);
+		} else {
+			timeoutSuppressions.remove(terminateToken);
 		}
 	}
 

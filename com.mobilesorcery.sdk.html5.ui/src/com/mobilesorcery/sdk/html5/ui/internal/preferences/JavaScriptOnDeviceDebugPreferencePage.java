@@ -52,6 +52,7 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 
 	public JavaScriptOnDeviceDebugPreferencePage() {
 		super("JavaScript On-Device Debug");
+		noDefaultAndApplyButton();
 		this.reloadStrategyMap = new LinkedHashMap<String, Integer>();
 		reloadStrategyMap.put("Ask me", RedefinitionResult.UNDETERMINED);
 		reloadStrategyMap.put("Do nothing", RedefinitionResult.CONTINUE);

@@ -10,6 +10,7 @@ import org.eclipse.wst.jsdt.debug.core.model.IJavaScriptThread;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
+import com.mobilesorcery.sdk.html5.ui.DebuggingEnableTester;
 
 public class ReloadBreakpointParticipant implements
 		IJavaScriptBreakpointParticipant {
@@ -44,7 +45,7 @@ public class ReloadBreakpointParticipant implements
 		}
 
 		IProject project = resource.getProject();
-		return Html5Plugin.getDefault().hasHTML5Support(MoSyncProject.create(project));
+		return DebuggingEnableTester.hasDebugSupport(MoSyncProject.create(project));
 	}
 
 }

@@ -43,7 +43,7 @@ public class IPhoneSimulator extends AbstractTool {
 			cmd.add("--family");
 			cmd.add(family);
 		}
-		execute(cmd.toArray(new String[0]), null, null, false);
+		execute(cmd.toArray(new String[0]), null, null, true);
 	}
 
 	@Override

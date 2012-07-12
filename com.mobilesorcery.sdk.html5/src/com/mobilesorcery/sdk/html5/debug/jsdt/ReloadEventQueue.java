@@ -49,7 +49,9 @@ public class ReloadEventQueue implements EventQueue {
 			// TODO: EVENTS SHOULD BE PURE JSON!?
 			Pair<String, Object> event = timeout > 0 ? internalQueue.poll(
 					timeout, TimeUnit.MILLISECONDS) : internalQueue.take();
-			if (event.first != null) {
+			if (event.first == null) {
+				internalQueue.clear();
+			} else {
 				return handleEvent(event.first, event.second);
 			}
 		} catch (Exception e) {
@@ -186,7 +188,7 @@ public class ReloadEventQueue implements EventQueue {
 
 	public void close() {
 		internalQueue.offer(new Pair<String, Object>(null, null));
-		internalQueue.clear();
+		//internalQueue.clear();
 	}
 
 }
