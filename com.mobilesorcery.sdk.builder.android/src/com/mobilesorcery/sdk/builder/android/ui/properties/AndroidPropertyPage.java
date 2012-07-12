@@ -4,6 +4,7 @@ import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
@@ -24,6 +25,7 @@ public class AndroidPropertyPage extends MoSyncPropertyPage {
 
 	private Text packageText;
     private Text versionNumberText;
+	private Combo installLocationCombo;
 
     @Override
 	protected Control createContents(Composite parent) {
@@ -31,20 +33,27 @@ public class AndroidPropertyPage extends MoSyncPropertyPage {
         main.setLayout(new GridLayout(2, false));
 
         Label packageLabel = new Label(main, SWT.NONE);
-        packageLabel.setText("Android Package name");
+        packageLabel.setText("Android Package name:");
         packageText = new Text(main, SWT.SINGLE | SWT.BORDER);
         packageText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
         Label versionNumberLabel = new Label(main, SWT.NONE);
-        versionNumberLabel.setText("Android Version code");
+        versionNumberLabel.setText("Android Version code:");
 
         versionNumberText = new Text(main, SWT.SINGLE | SWT.BORDER);
         versionNumberText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
+        // Uncomment once we have API level 8 support.
+        /*Label installLocationLabel = new Label(main, SWT.NONE);
+        installLocationLabel.setText("Android Install Location:");
+        
+        installLocationCombo = new Combo(main, SWT.READ_ONLY);
+        installLocationCombo.setItems(PropertyInitializer.ANDROID_INSTALL_LOCATIONS);*/
+
         UpdateListener listener = new UpdateListener(this);
         versionNumberText.addListener(SWT.Modify, listener);
         packageText.addListener(SWT.Modify, listener);
-
+        
         initUI();
         return main;
     }
@@ -52,18 +61,21 @@ public class AndroidPropertyPage extends MoSyncPropertyPage {
     private void initUI() {
         setText(packageText, getProject().getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME));
         setText(versionNumberText, Integer.toString(PropertyUtil.getInteger(getProject(), PropertyInitializer.ANDROID_VERSION_CODE)));
+        installLocationCombo.setText(getProject().getProperty(PropertyInitializer.ANDROID_INSTALL_LOCATION));
     }
 
     @Override
 	public boolean performOk() {
         getProject().setProperty(PropertyInitializer.ANDROID_PACKAGE_NAME, packageText.getText());
         PropertyUtil.setInteger(getProject(), PropertyInitializer.ANDROID_VERSION_CODE, Integer.parseInt(versionNumberText.getText()));
+        getProject().setProperty(PropertyInitializer.ANDROID_INSTALL_LOCATION, installLocationCombo.getText());
         return true;
     }
 
     @Override
 	public void performDefaults() {
     	setText(packageText, getProject().getDefaultProperty(PropertyInitializer.ANDROID_PACKAGE_NAME));
+    	installLocationCombo.setText(PropertyInitializer.ANDROID_INSTALL_LOCATION_DEFAULT);
     	// We do not set the version #
     }
 

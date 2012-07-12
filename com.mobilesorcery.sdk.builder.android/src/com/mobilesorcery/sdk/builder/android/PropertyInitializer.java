@@ -51,6 +51,12 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
 
 	public static final String ADB_UNINSTALL_FIRST = PREFIX + "uninstall.first";
 
+	public static final String ANDROID_INSTALL_LOCATION = PREFIX + "install.location";
+
+	public static final String ANDROID_INSTALL_LOCATION_DEFAULT = "internalOnly";
+
+	public static final String[] ANDROID_INSTALL_LOCATIONS = new String[] { ANDROID_INSTALL_LOCATION_DEFAULT, "auto", "preferExternal" };
+
     private static Random rnd = new Random(System.currentTimeMillis());
     
     public PropertyInitializer() {
@@ -80,6 +86,7 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
         	store.setDefault(ADB_DEBUG_LOG, false);
         	store.setDefault(ADB_UNINSTALL_FIRST, false);
         	store.setDefault(ADB_LOGCAT_ARGS, "-v tag *:W");
+        	store.setDefault(ANDROID_INSTALL_LOCATION, PropertyInitializer.ANDROID_INSTALL_LOCATION_DEFAULT);
 			KeystoreCertificateInfo.createDefault().store(ANDROID_KEYSTORE_CERT_INFO,
 					new PreferenceStorePropertyOwner(store, true),
 					null);
