@@ -27,6 +27,7 @@ import org.eclipse.wst.jsdt.debug.internal.core.launching.JavaScriptProcess;
 import org.eclipse.wst.jsdt.debug.internal.core.model.JavaScriptDebugTarget;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadListeningConnector;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
@@ -181,6 +182,15 @@ public class JSODDLaunchConfigurationDelegate implements
 			launch = DebugUITools.buildAndLaunch(cfg, ILaunchManager.DEBUG_MODE, new NullProgressMonitor());
 			if (launch != null) {
 				launch.setAttribute(Html5Plugin.TERMINATE_TOKEN_LAUNCH_ATTR, terminateToken);
+			}
+			ILaunch[] previousLaunches = manager.getLaunches();
+			for (ILaunch previousLaunch : previousLaunches) {
+				// To avoid spamming the user with spurious timeout messages...
+				if (previousLaunch != launch && 
+					previousLaunch.getLaunchConfiguration().getType().getIdentifier().equals(LAUNCH_CONFIG_TYPE) &&
+					Util.equals(previousLaunch.getAttribute(Html5Plugin.TERMINATE_TOKEN_LAUNCH_ATTR), terminateToken)) {
+					previousLaunch.setAttribute(Html5Plugin.SUPPRESS_TIMEOUT_LAUNCH_ATTR, Boolean.TRUE.toString());
+				}
 			}
 		}
 

@@ -2,15 +2,14 @@ package com.mobilesorcery.sdk.html5;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -43,7 +42,6 @@ import org.osgi.framework.BundleContext;
 import com.mobilesorcery.sdk.core.BuildVariant;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildVariant;
-import com.mobilesorcery.sdk.core.ILaunchConstants;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -54,7 +52,6 @@ import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 import com.mobilesorcery.sdk.html5.debug.JSODDLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
-import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
@@ -62,12 +59,10 @@ import com.mobilesorcery.sdk.html5.live.ReloadManager;
 import com.mobilesorcery.sdk.html5.ui.DebuggingEnableTester;
 import com.mobilesorcery.sdk.html5.ui.JSODDTimeoutDialog;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
-import com.mobilesorcery.sdk.profiles.ITargetProfileProvider;
 import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 import com.mobilesorcery.sdk.ui.IWorkbenchStartupListener;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.UIUtils;
-import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransportListener;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
@@ -113,6 +108,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 	public static final String TERMINATE_TOKEN_LAUNCH_ATTR = PLUGIN_ID + "t.t";
 
+	public static final String SUPPRESS_TIMEOUT_LAUNCH_ATTR = PLUGIN_ID + "s.t";
+
 	// The shared instance
 	private static Html5Plugin plugin;
 
@@ -122,7 +119,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 	private final HashMap<IProject, JSODDSupport> jsOddSupport = new HashMap<IProject, JSODDSupport>();
 
-	private HashSet<Object> timeoutSuppressions = new HashSet<Object>();
+	//private HashMap<Object, AtomicInteger> timeoutSuppressions = new HashMap<Object, AtomicInteger>();
 
 	/**
 	 * The constructor
@@ -181,7 +178,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 				public void timeout(final ReloadVirtualMachine vm) {
 					ILaunch launch = vm.getJavaScriptDebugTarget().getLaunch();
 					String terminateToken = launch == null ? null : launch.getAttribute(TERMINATE_TOKEN_LAUNCH_ATTR);
-					if (!timeoutSuppressions.remove(terminateToken)) {
+					if (!Boolean.parseBoolean(launch.getAttribute(SUPPRESS_TIMEOUT_LAUNCH_ATTR))) {
 						Display d = PlatformUI.getWorkbench().getDisplay();
 						UIUtils.onUiThread(d, new Runnable() {
 							@Override
@@ -443,10 +440,6 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 						IBuildVariant variant = EmulatorLaunchConfigurationDelegate.getVariant(cfg, launch.getLaunchMode());
 						launchJSODD(MoSyncProject.create(project), variant, BuildVariant.toString(variant));
 					}
-					if (JSODDLaunchConfigurationDelegate.ID.equals(cfgId)) {
-						String terminateToken = launch.getAttribute(TERMINATE_TOKEN_LAUNCH_ATTR);
-						setTimeoutSuppression(terminateToken, false);
-					}
 				} catch (Exception e) {
 					// Who cares?
 					CoreMoSyncPlugin.getDefault().log(e);
@@ -480,24 +473,29 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		if (DebuggingEnableTester.hasDebugSupport(project) && PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
 			try {
 				boolean wasLaunched = JSODDLaunchConfigurationDelegate.launchDefault(terminateToken);
-				setTimeoutSuppression(terminateToken, wasLaunched);
+				//incTimeoutSuppression(terminateToken, wasLaunched ? +1 : 0);
 			} catch (CoreException e) {
 				Policy.getStatusHandler().show(e.getStatus(), "Could not launch JavaScript On-Device Debug Server");
 			}
 		}
 	}
 
-	private void setTimeoutSuppression(Object terminateToken, boolean doSuppress) {
+	/*private int incTimeoutSuppression(Object terminateToken, int increment) {
 		// We don't scare users with timeouts if we just
 		// started another session for potentially the same
 		// device / app (since a timeout is expected
 		// and not an error condition.
-		if (doSuppress) {
-			timeoutSuppressions.add(terminateToken);
-		} else {
+		AtomicInteger suppressionCount = timeoutSuppressions.get(terminateToken);
+		if (suppressionCount == null) {
+			suppressionCount = new AtomicInteger();
+			timeoutSuppressions.put(terminateToken, suppressionCount);
+		}
+		int result = suppressionCount.addAndGet(increment);
+		if (result == 0) {
 			timeoutSuppressions.remove(terminateToken);
 		}
-	}
+		return result;
+	}*/
 
 	public URL getServerURL() throws IOException {
 		if (getPreferenceStore().getBoolean(USE_DEFAULT_SERVER_URL_PREF)) {

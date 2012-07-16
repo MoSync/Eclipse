@@ -422,7 +422,9 @@ public class JSODDServer implements IResourceChangeListener {
 
 	private static final int DISCONNECT = 500;
 
-	private static final int TERMINATE = 12000;
+	public static final int TERMINATE = 12000;
+	
+	public static final int TIMEOUT = -800;
 
 	public static final String TIMEOUT_ATTR = "live.timeout";
 
@@ -966,7 +968,7 @@ public class JSODDServer implements IResourceChangeListener {
 								CoreMoSyncPlugin.getDefault().log(e);
 							}
 						}
-						notifyTimeoutListeners(vm);
+						notifyTerminateListeners(vm);
 					}
 				}
 			});
@@ -1070,7 +1072,7 @@ public class JSODDServer implements IResourceChangeListener {
 		}
 	}
 
-	private void notifyTimeoutListeners(ReloadVirtualMachine vm) {
+	private void notifyTerminateListeners(ReloadVirtualMachine vm) {
 		for (ILiveServerListener listener : listeners) {
 			listener.timeout(vm);
 		}
