@@ -11,6 +11,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
@@ -108,6 +109,8 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 			process = emulator.start(avd, true);
 			startLogCat(adb);
 		}
+		
+		DebugPlugin.newProcess(launch, process.getNativeProcess(), MessageFormat.format("Android Emulator ''{0}''", avd));
 
 		// We need to wait until we're started.
 		process.awaitEmulatorStarted(2, TimeUnit.MINUTES);

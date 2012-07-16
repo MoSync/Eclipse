@@ -1,11 +1,13 @@
 package com.mobilesorcery.sdk.builder.iphoneos.launch;
 
 import java.io.File;
+import java.text.MessageFormat;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jface.util.Util;
@@ -75,7 +77,9 @@ public class IPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 		Version sdkVersion = sdk == null ? null : sdk.getVersion();
 		File pathToApp = getPackageToInstall(launchConfig, mode);
 		String family = getFamily(getVariant(launchConfig, mode));
-		sim.runApp(new Path(pathToApp.getAbsolutePath()), sdkVersion == null ? null : sdkVersion.toString(), family);
+		Process process = sim.runApp(new Path(pathToApp.getAbsolutePath()), sdkVersion == null ? null : sdkVersion.toString(), family);
+		
+		DebugPlugin.newProcess(launch, process, MessageFormat.format("iPhone Simulator {0}", sdk.getVersion()));
 	}
 
 	private String getFamily(IBuildVariant variant) {

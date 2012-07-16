@@ -232,6 +232,10 @@ public class CommandLineExecutor {
 			currentProcess.destroy();
 		}
 	}
+	
+	public Process getCurrentProcess() {
+		return currentProcess;
+	}
 
 	public static String replace(String originalString, CascadingProperties parameters) {
 		int tries = 0;
