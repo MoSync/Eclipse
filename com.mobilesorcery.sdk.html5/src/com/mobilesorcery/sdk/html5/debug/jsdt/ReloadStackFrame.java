@@ -138,8 +138,9 @@ public class ReloadStackFrame implements StackFrame {
 
 	public Value getValue(String name) {
 		// TODO: Put on client so it may be precompiled!
-		String metaExpr = String.format(
-				"var ____info = {};" +
+		String metaFn = "this".equals(name) ? "evalThis" : "evalVar";
+		String metaExpr = String.format("MoSyncDebugProtocol.%s(%s);", metaFn, name);
+	/*			"var ____info = {};" +
 				"var ____keys = [];" +
 				"var ____typeOf = typeof(%s);" +
 				"if (____typeOf == \"object\" && %s != null) {" +
@@ -159,7 +160,7 @@ public class ReloadStackFrame implements StackFrame {
 				"  ____info.repr = %s;" +
 				"}" +
 				"____info.type = ____typeOf; ____info;"
-				, name, name, name, name, name, name, name, name, name);
+				, name, name, name, name, name, name, name, name, name);*/
 		String metaEvaluation = internalEvaluate(metaExpr, stackDepth);
 		try {
 			if (metaEvaluation != null) {

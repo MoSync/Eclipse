@@ -15,6 +15,7 @@ window.MoSyncDebugProtocol = new (function() {
     var lastFileId = -1;
     var lastLine = '';
     var lastEvalScopeFunc = null;
+    var lastThisRef = null;
     
     var idToFile = [];
     var fileToId = {};
@@ -456,7 +457,7 @@ window.MoSyncDebugProtocol = new (function() {
         throw exception;
     }
     
-    this.updatePosition = function(fileId, line, isDebuggerStatement, evalScopeFunc) {
+    this.updatePosition = function(fileId, line, thisRef, isDebuggerStatement, evalScopeFunc) {
         if (inUpdatePosition || terminating || disconnected) {
             return;
         }
@@ -466,6 +467,7 @@ window.MoSyncDebugProtocol = new (function() {
            so we keep track of this manually for exception reporting purposes. */
         lastFileId = fileId;
         lastLine = line;
+        lastThisRef = thisRef;
         lastEvalScopeFunc = evalScopeFunc;
         
         try {
@@ -611,6 +613,34 @@ window.MoSyncDebugProtocol = new (function() {
     
     this.obsoleteStackTop = function() {
         stack[stack.length - 1].obsolete = true;
+    };
+    
+    this.evalThis = function() {
+        return MoSyncDebugProtocol.evalVar(lastThisRef == null ? this : lastThisRef);
+    };
+    
+    this.evalVar = function(varToEval) {
+        var ____info = {};
+        var ____keys = [];
+        var ____typeOf = typeof(varToEval);
+        if (____typeOf == "object" && varToEval != null) {
+            if (!varToEval.____oid) {
+                MoSyncDebugProtocol.assignOID(varToEval);
+            }
+            ____info.oid = varToEval.____oid;
+            for (var ____key in varToEval) {
+                ____keys.push(____key);
+            }
+            ____info.properties = ____keys;
+            ____info.clazz = ____info.constructor ? ____info.constructor.toString() : null;
+            ____info.repr = varToEval.toString();
+        } else if (____typeOf == "function") {
+            ____info.repr = ____typeOf;
+        } else {
+            ____info.repr = varToEval;
+        }
+        ____info.type = ____typeOf; ____info;
+		return ____info;
     };
     
 })();

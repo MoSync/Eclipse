@@ -60,6 +60,7 @@ import org.eclipse.wst.jsdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.wst.jsdt.core.dom.Statement;
 import org.eclipse.wst.jsdt.core.dom.SwitchCase;
 import org.eclipse.wst.jsdt.core.dom.SwitchStatement;
+import org.eclipse.wst.jsdt.core.dom.ThisExpression;
 import org.eclipse.wst.jsdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.wst.jsdt.core.dom.WhileStatement;
 import org.eclipse.wst.jsdt.core.dom.WithStatement;
@@ -89,6 +90,7 @@ import com.mobilesorcery.sdk.html5.debug.rewrite.ISourceSupport;
 import com.mobilesorcery.sdk.html5.debug.rewrite.NodeRewrite;
 import com.mobilesorcery.sdk.html5.debug.rewrite.SourceRewrite;
 import com.mobilesorcery.sdk.html5.debug.rewrite.StatementRewrite;
+import com.mobilesorcery.sdk.html5.debug.rewrite.ThisRewrite;
 
 public class JSODDSupport {
 
@@ -119,12 +121,11 @@ public class JSODDSupport {
 		private static final int ERROR_COUNT_THRESHOLD = 10;
 
 		private JavaScriptUnit unit;
-		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
 		private LocalVariableScope currentScope = new LocalVariableScope()
 				.nestScope();
+		private final Stack<FunctionRewrite> functionRewriteStack = new Stack<FunctionRewrite>();
 		private final Stack<IRedefinable> redefinableStack = new Stack<IRedefinable>();
 		private final TreeMap<Integer, LocalVariableScope> localVariables = new TreeMap<Integer, LocalVariableScope>();
-		private final HashSet<Integer> debuggerStatements = new HashSet<Integer>();
 		private final HashSet<ASTNode> exclusions = new HashSet<ASTNode>();
 		private final HashSet<ASTNode> blockifiables = new HashSet<ASTNode>();
 		private final TreeMap<Integer, List<String>> insertions = new TreeMap<Integer, List<String>>();
@@ -182,8 +183,9 @@ public class JSODDSupport {
 				String functionIdentifier = isAnonymous ? Html5Plugin.ANONYMOUS_FUNCTION
 						: functionName.getIdentifier();
 
-				rewrites.put(fd, new FunctionRewrite(this, fd, fileId,
-						nodeRedefinables));
+				FunctionRewrite functionRewrite = new FunctionRewrite(this, fd, fileId,nodeRedefinables);
+				rewrites.put(fd, functionRewrite);
+				functionRewriteStack.push(functionRewrite);
 
 				Block body = fd.getBody();
 
@@ -214,27 +216,16 @@ public class JSODDSupport {
 				validateAST(unit.getProblems());
 			}
 
-			if (node instanceof Statement) {
-				statementStack.push(node);
-			}
-
-			if (node instanceof ExpressionStatement) {
-				Expression expression = ((ExpressionStatement) node)
-						.getExpression();
-				if (expression instanceof SimpleName) {
-					boolean isDebuggerStatement = "debugger"
-							.equals(((SimpleName) expression).getIdentifier());
-					if (isDebuggerStatement) {
-						debuggerStatements.add(startLine);
-					}
-				}
-			}
-
 			int instrumentable = isInstrumentableStatement(node);
 			if (instrumentable != INSTRUMENTATION_DISALLOWED) {
 				rewrites.put(node, new StatementRewrite(this, node, fileId,
 						localVariables, blockifiables, instrumentedLines,
 						instrumentable == FORCE_INSTRUMENTATION));
+			}
+			
+			if (node instanceof ThisExpression && !functionRewriteStack.isEmpty()) {
+				rewrites.put(node, new ThisRewrite(this, node));
+				functionRewriteStack.peek().useEscapedThis(true);
 			}
 
 			if (nest) {
@@ -313,6 +304,7 @@ public class JSODDSupport {
 
 			if (node instanceof FunctionDeclaration) {
 				popRedefinable();
+				functionRewriteStack.pop();
 			}
 
 			if (node instanceof VariableDeclarationFragment) {
@@ -323,10 +315,6 @@ public class JSODDSupport {
 
 			if (node instanceof JavaScriptUnit) {
 				unit = null;
-			}
-
-			if (node instanceof Statement) {
-				statementStack.pop();
 			}
 
 			if (unnest) {
@@ -1052,6 +1040,7 @@ public class JSODDSupport {
 	}
 
 	public ProjectRedefinable getBaseline() {
+		initProjectRedefinable();
 		return projectRedefinable;
 	}
 

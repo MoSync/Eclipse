@@ -55,6 +55,8 @@ public class FunctionRewrite extends NodeRewrite {
 	private Map<ASTNode, String> nodeRedefinables;
 	private Block body;
 
+	private boolean useEscapedThis;
+
 	public FunctionRewrite(ISourceSupport rewriter, ASTNode node, long fileId, Map<ASTNode, String> nodeRedefinables) {
 		super(rewriter, node);
 		if (!(node instanceof FunctionDeclaration)) {
@@ -89,6 +91,7 @@ public class FunctionRewrite extends NodeRewrite {
 		boolean isAnonymous = isAnonymous(fd);
 		String functionIdentifier = isAnonymous ? Html5Plugin.ANONYMOUS_FUNCTION
 				: functionName.getIdentifier();
+
 		/*
 		AST ast = rewrite.getAST();
 		ASTNode fdCopy = rewrite.createCopyTarget(fd);
@@ -189,6 +192,9 @@ public class FunctionRewrite extends NodeRewrite {
 		if (supports(features, JSODDSupport.ARTIFICIAL_STACK)) {
 			rewrite.insert(functionStart);
 		}
+		if (useEscapedThis && supports(features, JSODDSupport.EDIT_AND_CONTINUE)) {
+			rewrite.insert("var ____this = this;\n");
+		}
 		rewrite.insert(editAndContinuePreamble);
 		for (Object statementObj : statements) {
 			ASTNode statement = (ASTNode) statementObj;
@@ -279,5 +285,9 @@ public class FunctionRewrite extends NodeRewrite {
 		HasReturnASTVisitor visitor = new HasReturnASTVisitor();
 		statements.accept(visitor);
 		return visitor.hasReturn;
+	}
+
+	public void useEscapedThis(boolean useEscapedThis) {
+		this.useEscapedThis = useEscapedThis;
 	}
 }

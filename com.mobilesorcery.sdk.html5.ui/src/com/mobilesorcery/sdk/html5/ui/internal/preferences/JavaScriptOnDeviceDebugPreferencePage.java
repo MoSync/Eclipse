@@ -49,6 +49,7 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 	private Label reloadStrategyLabel;
 	private Text serverAddress;
 	private Button useDefaultServerAddress;
+	private Label sourceChangeStrategyLabel;
 
 	public JavaScriptOnDeviceDebugPreferencePage() {
 		super("JavaScript On-Device Debug");
@@ -56,15 +57,13 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		this.reloadStrategyMap = new LinkedHashMap<String, Integer>();
 		reloadStrategyMap.put("Ask me", RedefinitionResult.UNDETERMINED);
 		reloadStrategyMap.put("Do nothing", RedefinitionResult.CONTINUE);
-		// Disabled until 3.1.1
-		//reloadStrategyMap.put("Reload", RedefinitionResult.RELOAD);
+		reloadStrategyMap.put("Reload", RedefinitionResult.RELOAD);
 		reloadStrategyMap.put("Terminate", RedefinitionResult.TERMINATE);
 		reverseReloadStrategyMap = Util.reverseMap(reloadStrategyMap);
 		this.sourceChangeStrategyMap = new LinkedHashMap<String, Integer>();
 		sourceChangeStrategyMap.put("Do nothing", Html5Plugin.DO_NOTHING);
 		sourceChangeStrategyMap.put("Reload", Html5Plugin.RELOAD);
-		// Disabled until 3.1.1
-		//sourceChangeStrategyMap.put("Hot code replace", Html5Plugin.HOT_CODE_REPLACE);
+		sourceChangeStrategyMap.put("Hot code replace", Html5Plugin.HOT_CODE_REPLACE);
 		reverseSourceChangeStrategyMap = Util.reverseMap(sourceChangeStrategyMap);
 	}
 
@@ -94,7 +93,7 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		executionGroup.setText("Execution");
 		executionGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		
-		Label sourceChangeStrategyLabel = new Label(executionGroup, SWT.NONE);
+		sourceChangeStrategyLabel = new Label(executionGroup, SWT.NONE);
 		sourceChangeStrategyLabel.setText("When source changes:");
 		sourceChangeStrategyLabel.setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT));
 		sourceChangeStrategyCombo = new ComboViewer(executionGroup, SWT.READ_ONLY);
@@ -173,9 +172,13 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 	@Override
 	public void updateUI() {
 		boolean requiresRemoteFetch = Util.equals(getSourceChangeStrategy(), Html5Plugin.RELOAD) || Util.equals(getSourceChangeStrategy(), Html5Plugin.HOT_CODE_REPLACE);
-		String op = sourceChangeStrategyCombo.getCombo().getText();
-		// For 3.1.1: update with hot code replace as well
-		reloadStrategyLabel.setText(MessageFormat.format("When reload fails:", op));
+		String op = requiresRemoteFetch ? 
+				sourceChangeStrategyCombo.getCombo().getText().toLowerCase() :
+				"this";
+
+		reloadStrategyLabel.setText(MessageFormat.format("When {0} fails:", op));
+		reloadStrategyCombo.getCombo().setEnabled(requiresRemoteFetch);
+		reloadStrategyLabel.setEnabled(requiresRemoteFetch);
 		
 		if (requiresRemoteFetch) {
 			shouldFetchRemotely.setSelection(true);
@@ -198,7 +201,12 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		} catch (MalformedURLException e) {
 			errorMessage = "Invalid server address";
 		}
+		if (Util.equals(getSourceChangeStrategy(), Html5Plugin.RELOAD) &&
+			Util.equals(getReloadStrategy(), RedefinitionResult.RELOAD)) {
+			errorMessage = "Circular choice; please select other reload strategy.";
+		}
 		setErrorMessage(errorMessage);
+		setValid(errorMessage == null);
 	}
 
 	private Integer getReloadStrategy() {

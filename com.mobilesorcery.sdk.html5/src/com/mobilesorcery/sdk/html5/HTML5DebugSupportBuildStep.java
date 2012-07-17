@@ -138,7 +138,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 			IFileTreeDiff diff = this.diff;
 			// If we've changed the IP addr, then rebuild it all...
-			if (updateServerProps(op) || op.requiresFullBuild()) {
+			if (updateHTML5SpecificProps(op) || op.requiresFullBuild()) {
 				diff = null;
 				setDiff(diff);
 			}
@@ -181,7 +181,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			}
 		}
 
-		private boolean updateServerProps(JSODDSupport op) throws CoreException {
+		private boolean updateHTML5SpecificProps(JSODDSupport op) throws CoreException {
 			try {
 				IPath jsoddMetaData = getBuildState().getLocation().append(
 						".jsodd");
@@ -201,6 +201,11 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				String port = op.getDefaultProperties().get(
 						JSODDSupport.SERVER_PORT_PROP);
 
+				String reloadStrategy = Integer.toString(Html5Plugin.getDefault().getReloadStrategy());
+				String sourceChangeStartegy = Integer.toString(Html5Plugin.getDefault().getSourceChangeStrategy());
+				
+				String oldReloadStrategy = jsoddProps.get(Html5Plugin.RELOAD_STRATEGY_PREF);
+				String oldSourceChangeStartegy = jsoddProps.get(Html5Plugin.SOURCE_CHANGE_STRATEGY_PREF);
 				String oldHost = jsoddProps.get(JSODDSupport.SERVER_HOST_PROP);
 				String oldPort = jsoddProps.get(JSODDSupport.SERVER_PORT_PROP);
 
@@ -208,11 +213,15 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				defaultSection.getEntries().clear();
 				defaultSection.addEntry(JSODDSupport.SERVER_HOST_PROP, host);
 				defaultSection.addEntry(JSODDSupport.SERVER_PORT_PROP, port);
+				defaultSection.addEntry(Html5Plugin.RELOAD_STRATEGY_PREF, reloadStrategy);
+				defaultSection.addEntry(Html5Plugin.SOURCE_CHANGE_STRATEGY_PREF, sourceChangeStartegy);
 
 				jsoddPropsFile.write(jsoddMetaData.toFile());
 
-				return !Util.equals(host, oldHost)
-						|| !Util.equals(port, oldPort);
+				return !Util.equals(host, oldHost) ||
+						!Util.equals(port, oldPort) ||
+						!Util.equals(reloadStrategy, oldReloadStrategy) ||
+						!Util.equals(sourceChangeStartegy, oldSourceChangeStartegy);
 			} catch (IOException e) {
 				CoreMoSyncPlugin.getDefault().log(e);
 				return false;
