@@ -293,7 +293,6 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 				visitor.instrument(new SubProgressMonitor(monitor, 7), deps,
 						getConsole());
-
 				// TODO -- would prefer it not to always output there... Since
 				// we'll get build problems for sure!
 				BundleBuildStep.bundle(outputRoot, outputResource);
