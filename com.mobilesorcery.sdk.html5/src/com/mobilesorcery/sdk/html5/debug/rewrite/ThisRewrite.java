@@ -18,7 +18,7 @@ public class ThisRewrite extends NodeRewrite {
 		Position start = getPosition(node, true);
 		rewrite.seek(start);
 		// If applicable, prepend this with the special prefix: ____
-		if (supports(features, JSODDSupport.EDIT_AND_CONTINUE)) {
+		if (supports(null, JSODDSupport.EDIT_AND_CONTINUE)) {
 			rewrite.insert("____");
 		}
 	}

@@ -1067,6 +1067,7 @@ public class JSODDServer implements IResourceChangeListener {
 	}
 
 	private void notifyCommandListeners(String commandName, JSONObject command) {
+		// TODO: Send directly to the proper VM instead!!
 		for (ILiveServerListener listener : listeners) {
 			listener.received(commandName, command);
 		}
