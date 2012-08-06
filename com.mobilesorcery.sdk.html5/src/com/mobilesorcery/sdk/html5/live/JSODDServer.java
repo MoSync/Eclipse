@@ -65,6 +65,7 @@ import org.json.simple.parser.JSONParser;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
@@ -1243,7 +1244,8 @@ public class JSODDServer implements IResourceChangeListener {
 								&& (delta.getFlags() & IResourceDelta.CONTENT) != 0) {
 							IProject project = resource.getProject();
 							if (project != null
-									&& resource.getType() == IResource.FILE) {
+									&& resource.getType() == IResource.FILE
+									&& !MoSyncBuilder.isInOutput(project, resource)) {
 								ProjectRedefinable replacement = replacements
 										.get(project);
 								if (replacement == null) {

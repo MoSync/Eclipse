@@ -191,6 +191,9 @@ public class JSODDSupport {
 
 				ASTNode firstStatement = startOfFunction(fd);
 				ASTNode lastStatement = endOfFunction(fd);
+				
+				// TODO: If both first and last statement null, then we have a problem
+				// and should blacklist that node.
 
 				if (firstStatement instanceof Block
 						&& lastStatement instanceof Block) {
@@ -268,6 +271,9 @@ public class JSODDSupport {
 
 		private ASTNode startOfFunction(FunctionDeclaration fd) {
 			Block body = fd.getBody();
+			if (body == null) {
+				return null;
+			}
 			List statements = body.statements();
 			boolean useBody = statements.isEmpty();
 			return (ASTNode) (useBody ? body : statements.get(0));
@@ -275,6 +281,9 @@ public class JSODDSupport {
 
 		private ASTNode endOfFunction(FunctionDeclaration fd) {
 			Block body = fd.getBody();
+			if (body == null) {
+				return null;
+			}
 			List statements = body.statements();
 			boolean useBody = statements.isEmpty();
 			return (ASTNode) (useBody ? body : statements

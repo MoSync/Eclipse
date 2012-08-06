@@ -339,7 +339,7 @@ window.MoSyncDebugProtocol = new (function() {
     }
     
     function performReload() {
-        //window.location.reload();
+        window.location.reload();
         mosync.bridge.send(["reload", serverHost, serverPort]);
     }
     

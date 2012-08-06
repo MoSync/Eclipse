@@ -55,6 +55,6 @@ public class FileRedefinable extends AbstractRedefinable {
 	}
 
 	public String toString() {
-		return file.getFullPath().toPortableString();
+		return key();
 	}
 }
