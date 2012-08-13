@@ -170,6 +170,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	private HashMap<String, IBuildStepFactoryExtension> buildStepExtensions = null;
 
+	private List<String> buildStepFactoryIds;
+
     /**
      * The constructor
      */
@@ -716,6 +718,14 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 			return new CopyBuildResultBuildStep.Factory();
 		}
 
+		IBuildStepFactoryExtension extension = getBuildStepFactoryExtension(id);
+		if (extension != null) {
+			return extension.createFactory();
+		}
+		return null;
+	}
+	
+	public IBuildStepFactoryExtension getBuildStepFactoryExtension(String id) {
 		if (buildStepExtensions == null) {
 			buildStepExtensions = new HashMap<String, IBuildStepFactoryExtension>();
 			IExtensionRegistry registry = Platform.getExtensionRegistry();
@@ -731,11 +741,28 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 				}
 			}
 		}
-		IBuildStepFactoryExtension extension = buildStepExtensions.get(id);
-		if (extension != null) {
-			return extension.createFactory();
+		return buildStepExtensions.get(id);
+	}
+	
+	/**
+	 * Returns a mutable list of all build step factories.
+	 * @return
+	 */
+	public List<String> getBuildStepFactories() {
+		if (buildStepFactoryIds == null) {
+			ArrayList<String> result = new ArrayList<String>();
+			result.add(CompileBuildStep.ID);
+			result.add(ResourceBuildStep.ID);
+			result.add(LinkBuildStep.ID);
+			result.add(PackBuildStep.ID);
+			result.add(CommandLineBuildStep.ID);
+			result.add(BundleBuildStep.ID);
+			result.add(CopyBuildResultBuildStep.ID);
+			getBuildStepFactoryExtension(""); // Just to init.
+			result.addAll(buildStepExtensions.keySet());
+			buildStepFactoryIds = Collections.unmodifiableList(result);
 		}
-		return null;
+		return buildStepFactoryIds;
 	}
 
 	public IUpdater getUpdater() {

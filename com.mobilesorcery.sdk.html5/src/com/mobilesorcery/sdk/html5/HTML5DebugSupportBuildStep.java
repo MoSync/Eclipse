@@ -246,6 +246,11 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 		public String getName() {
 			return "HTML5/JavaScript bundling";
 		}
+		
+		public boolean isDefault() {
+			// Always false!
+			return false;
+		}
 
 	}
 
