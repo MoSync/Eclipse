@@ -274,6 +274,12 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			File outputResource = outputFile.getLocation().toFile();
 			IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project,
 					variant.getConfigurationId());
+			DependencyManager<IResource> deps = getBuildState()
+					.getDependencyManager();
+			
+			// MOSYNC-2326 & MOSYNC-2327
+			deps.addDependency(outputFile, inputRoot);
+			
 			if (PropertyUtil.getBoolean(properties,
 					MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
 				monitor.beginTask("Instrumenting JavaScript source files", 10);
@@ -293,8 +299,6 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 						inputRoot, outputRoot);
 				visitor.setProject(wrappedProject);
 				visitor.setDiff(diff);
-				DependencyManager<IResource> deps = getBuildState()
-						.getDependencyManager();
 
 				visitor.instrument(new SubProgressMonitor(monitor, 7), deps,
 						getConsole());

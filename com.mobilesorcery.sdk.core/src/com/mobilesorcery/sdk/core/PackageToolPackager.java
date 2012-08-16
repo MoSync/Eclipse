@@ -3,6 +3,7 @@ package com.mobilesorcery.sdk.core;
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,7 +11,6 @@ import java.util.Map;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.apisupport.nfc.NFCSupport;
@@ -72,7 +72,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			return true;
 		}
 
-		List<IPath> changeSet = diff.getChanged();
+		Collection<IPath> changeSet = diff.getChanged();
 		for (IPath changed : changeSet) {
 			if (!changed.lastSegment().startsWith(".")) {
 				return true;
