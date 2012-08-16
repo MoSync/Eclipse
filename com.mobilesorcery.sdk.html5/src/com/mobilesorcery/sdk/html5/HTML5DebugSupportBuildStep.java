@@ -31,6 +31,7 @@ import com.mobilesorcery.sdk.core.build.BundleBuildStep;
 import com.mobilesorcery.sdk.core.build.IBuildStep;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.internal.builder.IncrementalBuilderVisitor;
+import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 
 public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
@@ -119,6 +120,10 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 		IFolder inputRoot = wrappedProject.getFolder(inputRootPath);
 		if (inputRoot.exists()) {
 			IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
+			// MOSYNC-2326 & MOSYNC-2327
+			IFile outputFile = wrappedProject.getFile("Resources/LocalFiles.bin");
+			DependencyManager<IResource> deps = getBuildState().getDependencyManager();
+			deps.addDependency(outputFile, inputRoot);
 			/*if (PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
 				monitor.beginTask("Instrumenting JavaScript source files", 10);
 				File outputRoot = MoSyncBuilder.getOutputPath(wrappedProject, variant).append(inputRootPath).toFile();

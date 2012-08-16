@@ -57,7 +57,7 @@ public class NameSpacePropertyOwnerTest {
             throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
         }
         
-        MoSyncProject.addNatureToProject(project);
+        MoSyncNature.addNatureToProject(project, true);
         return MoSyncProject.create(project);
     }
 
