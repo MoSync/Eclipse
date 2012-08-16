@@ -55,6 +55,7 @@ import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -230,6 +231,7 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 			awaitWorkbenchStartup(new IWorkbenchStartupListener() {
 				@Override
 				public void started(IWorkbench wb) {
+					checkConfig(wb);
 					initializeCustomActivities();
 					askForUsageStatistics(wb);
 				}
@@ -246,6 +248,24 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 
 		// Explicitly invoke updates
 		CoreMoSyncPlugin.getDefault().checkAutoUpdate();
+	}
+
+	protected void checkConfig(final IWorkbench wb) {
+		if (!MoSyncTool.getDefault().isValid()) {
+			wb.getDisplay().syncExec(new Runnable() {
+				public void run() {
+					MessageDialog dialog = new MessageDialog(wb.getModalDialogShellProvider().getShell(),
+							"Fatal error", null,
+							"The environment variable MOSYNCDIR has not been properly set.\n\nMoSync will not work properly. Press Ok to quit, or Cancel to continue anyway.",
+							MessageDialog.ERROR,
+							new String[] { IDialogConstants.OK_LABEL, IDialogConstants.CANCEL_LABEL },
+							0);
+					if (dialog.open() == IDialogConstants.OK_ID) {
+						wb.close();
+					}
+				}
+			});
+		}
 	}
 
 	private void initializeLauncherParts() {
