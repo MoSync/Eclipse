@@ -1348,4 +1348,20 @@ public class MoSyncBuilder extends ACBuilder {
 		return PROJECT_TYPE_LIBRARY.equals(mosyncProject
 				.getProperty(PROJECT_TYPE));
 	}
+	
+	public static boolean isResourceFile(IResource resource) {
+		if (resource.getType() == IResource.FILE) {
+			IFile file = (IFile) resource;
+			String name = file.getName();
+			return ((name.endsWith(".lst") || name.endsWith(".lstx")) && !name.startsWith("stabs.") && !name.startsWith("~tmpres."));
+		}
+
+		return false;
+	}
+	
+	public static File getResourcesDirectory(IProject project) {
+		File resDir = project.getLocation().append("Resources").toFile();
+		return resDir.exists() && resDir.isDirectory() ? resDir : null;
+	}
+	
 }
