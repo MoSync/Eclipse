@@ -42,5 +42,10 @@ public class JavaScriptBreakpointDesc {
 		return conditionSuspend;
 	}
 
+	public String toString() {
+		String hitCountStr = hitCount > 0 ? " Hit count: " + Integer.toString(hitCount) : "";
+		String conditionStr = condition != null ? " Condition: " + condition : "";
+		return resource.getFullPath().toPortableString() + ": " + lineNumber + hitCountStr + conditionStr;
+	}
 
 }

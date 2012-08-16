@@ -12,10 +12,13 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
 import com.mobilesorcery.sdk.core.build.BundleBuildStep;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.html5.HTML5DebugSupportBuildStep;
+import com.mobilesorcery.sdk.html5.HTML5DebugSupportBuildStepExtension;
+import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.ui.MoSyncCommandHandler;
 
 public class DebuggingEnableHandler extends MoSyncCommandHandler {
@@ -29,11 +32,12 @@ public class DebuggingEnableHandler extends MoSyncCommandHandler {
 		List<IBuildStepFactory> newSteps = new ArrayList<IBuildStepFactory>();
 		newSteps.add(new HTML5DebugSupportBuildStep.Factory());
 		for (IBuildStepFactory step : steps) {
-			if (!isLegacyHTML5BundleStep(step)) {
+			if (!isLegacyHTML5BundleStep(step) && !step.getId().equals(HTML5DebugSupportBuildStepExtension.ID)) {
 				newSteps.add(step);
 			}
 		}
 		try {
+			PropertyUtil.setBoolean(MoSyncProject.create(project), Html5Plugin.JS_PROJECT_SUPPORT_PROP, true);
 			seq.apply(newSteps);
 		} catch (IOException e) {
 			throw new ExecutionException(MessageFormat.format(

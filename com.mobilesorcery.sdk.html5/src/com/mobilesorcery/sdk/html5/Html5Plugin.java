@@ -75,7 +75,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.html5"; //$NON-NLS-1$
 
-	private static final String JS_PROJECT_SUPPORT_PROP = PLUGIN_ID
+	public static final String JS_PROJECT_SUPPORT_PROP = PLUGIN_ID
 			+ ".support";
 
 	public static final String HTML5_TEMPLATE_TYPE = "html5";
