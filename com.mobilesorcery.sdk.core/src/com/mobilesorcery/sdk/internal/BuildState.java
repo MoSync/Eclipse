@@ -54,22 +54,22 @@ import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 public class BuildState implements IBuildState {
 
     public static class Diff implements IFileTreeDiff {
-        private final ArrayList<IPath> added = new ArrayList<IPath>();
-        private final ArrayList<IPath> changed = new ArrayList<IPath>();
-        private final ArrayList<IPath> removed = new ArrayList<IPath>();
+        private final HashSet<IPath> added = new HashSet<IPath>();
+        private final HashSet<IPath> changed = new HashSet<IPath>();
+        private final HashSet<IPath> removed = new HashSet<IPath>();
 
         @Override
-		public List<IPath> getAdded() {
+		public Set<IPath> getAdded() {
             return added;
         }
 
         @Override
-		public List<IPath> getChanged() {
+		public Set<IPath> getChanged() {
             return changed;
         }
 
         @Override
-		public List<IPath> getRemoved() {
+		public Set<IPath> getRemoved() {
             return removed;
         }
 
@@ -101,9 +101,9 @@ public class BuildState implements IBuildState {
             for (IPath path : timestampMap.keySet()) {
                 Long otherTimestamp = other.timestampMap.get(path);
                 if (otherTimestamp == null) {
-                    diff.added.add(path);
+                	recursiveAdd(diff.added, path);
                 } else if (otherTimestamp.compareTo(timestampMap.get(path)) != 0) {
-                    diff.changed.add(path);
+                	recursiveAdd(diff.changed, path);
                 }
 
                 if (CoreMoSyncPlugin.getDefault().isDebugging()) {
@@ -114,14 +114,21 @@ public class BuildState implements IBuildState {
 
             for (IPath path : other.timestampMap.keySet()) {
                 if (!timestampMap.containsKey(path)) {
-                    diff.removed.add(path);
+                	recursiveAdd(diff.removed, path);
                 }
             }
 
             return diff;
         }
 
-        @Override
+        private void recursiveAdd(HashSet<IPath> set, IPath path) {
+			while (!path.isEmpty()) {
+				set.add(path);
+				path = path.removeLastSegments(1);
+			}
+		}
+
+		@Override
 		public boolean visit(IResource resource) throws CoreException {
             internalUpdateResource(resource);
             return !resource.isDerived();
