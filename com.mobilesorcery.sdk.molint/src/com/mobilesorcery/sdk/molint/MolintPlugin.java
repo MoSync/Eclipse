@@ -7,6 +7,7 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.molint.rules.MAHeaderRule;
+import com.mobilesorcery.sdk.molint.rules.NFCRule;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -67,6 +68,7 @@ public class MolintPlugin extends AbstractUIPlugin {
 			// TODO: Extensions?
 			rules = new ArrayList<IMolintRule>();
 			rules.add(new MAHeaderRule());
+			rules.add(new NFCRule());
 		}
 		return rules;
 	}

@@ -12,6 +12,8 @@ Require-Bundle: org.eclipse.ui,
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Import-Package: com.mobilesorcery.sdk.core,
+ com.mobilesorcery.sdk.core.apisupport.nfc,
  com.mobilesorcery.sdk.core.build,
+ com.mobilesorcery.sdk.core.security,
  com.mobilesorcery.sdk.core.templates,
  com.mobilesorcery.sdk.ui
