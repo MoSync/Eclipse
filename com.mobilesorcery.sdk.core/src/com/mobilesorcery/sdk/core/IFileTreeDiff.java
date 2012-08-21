@@ -13,17 +13,17 @@
 */
 package com.mobilesorcery.sdk.core;
 
-import java.util.List;
+import java.util.Set;
 
 import org.eclipse.core.runtime.IPath;
 
 public interface IFileTreeDiff {
     
-    public List<IPath> getAdded();
+    public Set<IPath> getAdded();
     
-    public List<IPath> getChanged();
+    public Set<IPath> getChanged();
     
-    public List<IPath> getRemoved();
+    public Set<IPath> getRemoved();
     
     public boolean isEmpty();
 }

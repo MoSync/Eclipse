@@ -64,7 +64,7 @@ public class ResourceFileDependencyProvider implements
 		// is an aggregate of all resources in the project's .lst files.
 		HashMap<IResource, Collection<IResource>> result = new HashMap<IResource, Collection<IResource>>();
 		for (IFile resourceOutputFile : resourceOutputFiles) {
-			if (MoSyncResourceBuilderVisitor.isResourceFile(obj)) {
+			if (MoSyncBuilder.isResourceFile(obj)) {
 				result.put(obj, new ArrayList(Arrays.asList(resourceOutputFile)));
 			} else if (obj.equals(resourceOutputFile)) {
 				try {
