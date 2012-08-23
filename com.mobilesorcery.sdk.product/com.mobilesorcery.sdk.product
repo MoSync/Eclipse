@@ -6,7 +6,7 @@
    <aboutInfo>
       <image path="/com.mobilesorcery.sdk.product/about.png"/>
       <text>
-         http://www.mosync.com
+         %aboutText
       </text>
    </aboutInfo>
 
@@ -169,7 +169,7 @@ Creative Commons 3.0 Attribution License covers the Android Icon, a &quot;modifi
       <plugin id="com.mobilesorcery.sdk.core"/>
       <plugin id="com.mobilesorcery.sdk.core.templates.tests" fragment="true"/>
       <plugin id="com.mobilesorcery.sdk.core.tests" fragment="true"/>
-      <plugin id="com.mobilesorcery.sdk.docs" fragment=""/>
+      <plugin id="com.mobilesorcery.sdk.docs"/>
       <plugin id="com.mobilesorcery.sdk.finalizer.core"/>
       <plugin id="com.mobilesorcery.sdk.finalizer.ui"/>
       <plugin id="com.mobilesorcery.sdk.fontsupport"/>
