@@ -59,6 +59,8 @@ public interface ICommonPermissions {
 	public static final String NFC = "NFC";
 
 	public static final String PUSH_NOTIFICATIONS = "Push Notifications";
+	
+	public static final String INAPP_PURCHASE = "In-App Purchase";
 
     public final static String[] ALL_PERMISSIONS = new String[] {
         BLUETOOTH,
@@ -74,6 +76,7 @@ public interface ICommonPermissions {
 		HOMESCREEN,
 		AUTOSTART,
 		NFC,
-		PUSH_NOTIFICATIONS
+		PUSH_NOTIFICATIONS,
+		INAPP_PURCHASE
     };
 }

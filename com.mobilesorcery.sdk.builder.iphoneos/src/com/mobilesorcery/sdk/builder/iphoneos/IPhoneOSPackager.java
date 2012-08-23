@@ -63,7 +63,7 @@ public class IPhoneOSPackager extends PackageToolPackager
 
             super.createPackage(project, session, variant, diff, buildResult);
             
-            if (shouldUseProvisioning(project)) {
+            if (shouldUseProvisioning(project, variant)) {
             	executeProvisioning(intern, project, variant);
             }
             
@@ -123,7 +123,7 @@ public class IPhoneOSPackager extends PackageToolPackager
 		if (shouldBuildWithXcode(project, variant)) {
 			File outputAppFile = getAppFile(project, variant);
 			File appFile = null;
-			if (shouldUseProvisioning(project)) {
+			if (shouldUseProvisioning(project, variant)) {
 				appFile = outputAppFile;
 				outputAppFile = getIpaFile(project, variant);
 			}
@@ -161,8 +161,9 @@ public class IPhoneOSPackager extends PackageToolPackager
 		return xcodeProject;
 	}
 
-	private boolean shouldUseProvisioning(MoSyncProject project) {
-		return !Util.isEmpty(project.getProperty(PropertyInitializer.IOS_PROVISIONING_FILE));
+	private boolean shouldUseProvisioning(MoSyncProject project, IBuildVariant variant) {
+		return !isSimulatorBuild(variant) &&
+				!Util.isEmpty(project.getProperty(PropertyInitializer.IOS_PROVISIONING_FILE));
 	}
 
 	private String getXcodeTarget(MoSyncProject project, IBuildVariant variant) {
