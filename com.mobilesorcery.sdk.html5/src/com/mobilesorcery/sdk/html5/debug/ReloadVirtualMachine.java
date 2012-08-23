@@ -46,11 +46,11 @@ import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadStringValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadReference;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadUndefinedValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.SimpleScriptReference;
-import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
+import com.mobilesorcery.sdk.html5.live.ILiveServerCommandListener;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
 public class ReloadVirtualMachine implements VirtualMachine,
-		ILiveServerListener {
+		ILiveServerCommandListener {
 
 	private final JSODDServer server;
 	private List threads = new ArrayList();
@@ -435,11 +435,6 @@ public class ReloadVirtualMachine implements VirtualMachine,
 
 	public void setDebugTarget(IJavaScriptDebugTarget debugTarget) {
 		this.debugTarget = debugTarget;
-	}
-
-	@Override
-	public void timeout(ReloadVirtualMachine vm) {
-		// Ignore.
 	}
 
 	public String getRemoteAddr() {

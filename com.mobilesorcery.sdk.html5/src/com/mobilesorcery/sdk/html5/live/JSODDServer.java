@@ -931,7 +931,8 @@ public class JSODDServer implements IResourceChangeListener {
 
 	private final Object mutex = new Object();
 	private Server server;
-	private final CopyOnWriteArrayList<ILiveServerListener> listeners = new CopyOnWriteArrayList<ILiveServerListener>();
+	private final CopyOnWriteArrayList<ILiveServerListener> lifecycleListeners = new CopyOnWriteArrayList<ILiveServerListener>();
+	private final CopyOnWriteArrayList<ILiveServerCommandListener> commandListeners = new CopyOnWriteArrayList<ILiveServerCommandListener>();
 	private final CopyOnWriteArrayList<ILineHandler> consoleListeners = new CopyOnWriteArrayList<ILineHandler>();
 	private final AtomicInteger sessionId = new AtomicInteger(1);
 	private final IdentityHashMap<Object, Object> refs = new IdentityHashMap<Object, Object>();
@@ -1028,13 +1029,16 @@ public class JSODDServer implements IResourceChangeListener {
 			MoSyncProject project, int newSessionId) {
 		String remoteIp = req.getRemoteAddr();
 		ReloadVirtualMachine vm = getVM(remoteIp);
-		if (vm == null) {
+		boolean reset = vm != null;
+		if (!reset) {
 			if (!unassignedVMs.isEmpty()) {
 				vm = unassignedVMs.remove(0);
 			}
 		} else {
 			int oldSessionId = vm.getCurrentSessionId();
 		}
+		// TODO: What if vm == null here?
+		
 		vm.reset(newSessionId, project, remoteIp);
 
 		vmsByHost.put(remoteIp, vm);
@@ -1042,6 +1046,9 @@ public class JSODDServer implements IResourceChangeListener {
 			CoreMoSyncPlugin.trace("Assigned session {0} to address {1}",
 					newSessionId, remoteIp);
 		}
+		
+		notifyInitListeners(vm, reset);
+		
 		return vm;
 	}
 
@@ -1060,22 +1067,36 @@ public class JSODDServer implements IResourceChangeListener {
 	}
 
 	public void addListener(ILiveServerListener listener) {
-		this.listeners.add(listener);
+		this.lifecycleListeners.add(listener);
 	}
 
 	public void removeListener(ILiveServerListener listener) {
-		this.listeners.remove(listener);
+		this.lifecycleListeners.remove(listener);
+	}
+	
+	public void addListener(ILiveServerCommandListener listener) {
+		this.commandListeners.add(listener);
+	}
+
+	public void removeListener(ILiveServerCommandListener listener) {
+		this.commandListeners.remove(listener);
 	}
 
 	private void notifyCommandListeners(String commandName, JSONObject command) {
 		// TODO: Send directly to the proper VM instead!!
-		for (ILiveServerListener listener : listeners) {
+		for (ILiveServerCommandListener listener : commandListeners) {
 			listener.received(commandName, command);
+		}
+	}
+	
+	private void notifyInitListeners(ReloadVirtualMachine vm, boolean reset) {
+		for (ILiveServerListener listener : lifecycleListeners) {
+			listener.inited(vm, reset);
 		}
 	}
 
 	private void notifyTerminateListeners(ReloadVirtualMachine vm) {
-		for (ILiveServerListener listener : listeners) {
+		for (ILiveServerListener listener : lifecycleListeners) {
 			listener.timeout(vm);
 		}
 	}

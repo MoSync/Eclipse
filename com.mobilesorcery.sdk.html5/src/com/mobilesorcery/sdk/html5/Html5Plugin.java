@@ -57,6 +57,7 @@ import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 import com.mobilesorcery.sdk.html5.live.ReloadManager;
 import com.mobilesorcery.sdk.html5.ui.DebuggingEnableTester;
+import com.mobilesorcery.sdk.html5.ui.JSODDConnectDialog;
 import com.mobilesorcery.sdk.html5.ui.JSODDTimeoutDialog;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
@@ -89,6 +90,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	static final String SOURCE_CHANGE_STRATEGY_PREF = "source.change.strategy";
 	
 	static final String SHOULD_FETCH_REMOTELY_PREF = "fetch.remotely";
+	
+	static final String ODD_SUPPORT_PREF = "odd.support";
 	
 	static final String USE_DEFAULT_SERVER_URL_PREF = "use.default.server";
 	
@@ -193,10 +196,9 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 						}
 					}
 				}
-				
+
 				@Override
-				public void received(String command, JSONObject json) {
-					// TODO Auto-generated method stub
+				public void inited(ReloadVirtualMachine vm, boolean reset) {
 					
 				}
 			});
@@ -421,6 +423,14 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	public void setShouldFetchRemotely(boolean shouldFetchRemotely) {
 		getPreferenceStore().setValue(SHOULD_FETCH_REMOTELY_PREF, shouldFetchRemotely);
 	}
+	
+	public boolean isJSODDEnabled() {
+		return getPreferenceStore().getBoolean(ODD_SUPPORT_PREF);
+	}
+
+	public void setJSODDEnabled(boolean enabled) {
+		
+	}
 
 	@Override
 	public void launchesRemoved(ILaunch[] launches) {
@@ -438,7 +448,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 					if (EmulatorLaunchConfigurationDelegate.ID.equals(cfgId)) {
 						IProject project = EmulatorLaunchConfigurationDelegate.getProject(cfg);
 						IBuildVariant variant = EmulatorLaunchConfigurationDelegate.getVariant(cfg, launch.getLaunchMode());
-						launchJSODD(MoSyncProject.create(project), variant, BuildVariant.toString(variant));
+						launchJSODD(MoSyncProject.create(project), variant, false, BuildVariant.toString(variant));
 					}
 				} catch (Exception e) {
 					// Who cares?
@@ -464,15 +474,16 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		if (TargetPhoneTransportEvent.isType(TargetPhoneTransportEvent.PRE_SEND, event)) {
 			MoSyncProject project = event.project;
 			IBuildVariant variant = event.variant;
-			launchJSODD(project, variant, event.phone.getName());
+			launchJSODD(project, variant, true, event.phone.getName());
 		}
 	}
 
-	private void launchJSODD(MoSyncProject project, IBuildVariant variant, String terminateToken) {
+	private void launchJSODD(MoSyncProject project, IBuildVariant variant, boolean onDevice, String terminateToken) {
 		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
 		if (DebuggingEnableTester.hasDebugSupport(project) && PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
 			try {
 				boolean wasLaunched = JSODDLaunchConfigurationDelegate.launchDefault(terminateToken);
+				JSODDConnectDialog.show(project, variant, onDevice, null);
 				//incTimeoutSuppression(terminateToken, wasLaunched ? +1 : 0);
 			} catch (CoreException e) {
 				Policy.getStatusHandler().show(e.getStatus(), "Could not launch JavaScript On-Device Debug Server");
@@ -498,11 +509,15 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	}*/
 
 	public URL getServerURL() throws IOException {
-		if (getPreferenceStore().getBoolean(USE_DEFAULT_SERVER_URL_PREF)) {
+		if (useDefaultServerURL()) {
 			return getDefaultServerURL();
 		} else {
 			return new URL(getPreferenceStore().getString(SERVER_URL_PREF));
 		}
+	}
+	
+	public boolean useDefaultServerURL() {
+		return getPreferenceStore().getBoolean(USE_DEFAULT_SERVER_URL_PREF);
 	}
 	
 	public void setServerURL(String addr, boolean useDefault) throws IOException {

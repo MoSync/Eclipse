@@ -163,6 +163,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	public static final String IMG_FILTER = "filter"; //$NON-NLS-1$
 
 	public static final String IMG_LOOKUP = "lookup"; //$NON-NLS-1$
+	
+	public static final String IMG_BUILD_ONE = "build.one"; //$NON-NLS-1$
 
 	private final static Object NULL = new Object();
 
@@ -713,6 +715,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 				ImageDescriptor.createFromFile(getClass(), "/icons/filter.gif")); //$NON-NLS-1$
 		reg.put(IMG_LOOKUP,
 				ImageDescriptor.createFromFile(getClass(), "/icons/search.gif")); //$NON-NLS-1$
+		reg.put(IMG_BUILD_ONE,
+				ImageDescriptor.createFromFile(getClass(), "/icons/build_one.png")); //$NON-NLS-1$
 	}
 
 	public static Image resize(Image original, int width, int height,
