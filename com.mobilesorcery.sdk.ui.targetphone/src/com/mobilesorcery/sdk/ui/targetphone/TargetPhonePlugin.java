@@ -127,10 +127,12 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 					String legacyProfile = device
 							.getString(ITargetPhoneTransport.LEGACY_PROFILE_ATTR);
 					String platformProfile = device
-							.getString(ITargetPhoneTransport.LEGACY_PROFILE_ATTR);
+							.getString(ITargetPhoneTransport.DEFAULT_PROFILE_ATTR);
 					ITargetPhone targetPhone = transport.load(device, name);
-					targetPhone.setPreferredProfile(MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE)
+					targetPhone.setPreferredProfile(MoSyncTool.LEGACY_PROFILE_TYPE, MoSyncTool.getDefault().getProfileManager(MoSyncTool.LEGACY_PROFILE_TYPE)
 							.getProfile(legacyProfile));
+					targetPhone.setPreferredProfile(MoSyncTool.DEFAULT_PROFILE_TYPE, MoSyncTool.getDefault().getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE)
+							.getProfile(platformProfile));
 					history.addFirst(targetPhone);
 					if (Util.equals(ix, selected)) {
 						selectedPhone = targetPhone;
@@ -196,7 +198,7 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 						.getName());
 				deviceMemento.putString(ITargetPhoneTransport.LEGACY_PROFILE_ATTR,
 						MoSyncTool.toString(phone.getPreferredProfile(MoSyncTool.LEGACY_PROFILE_TYPE)));
-				deviceMemento.putString(ITargetPhoneTransport.LEGACY_PROFILE_ATTR,
+				deviceMemento.putString(ITargetPhoneTransport.DEFAULT_PROFILE_ATTR,
 						MoSyncTool.toString(phone.getPreferredProfile(MoSyncTool.DEFAULT_PROFILE_TYPE)));
 				transport.store(phone, deviceMemento);
 				if (selectedPhone == phone) {

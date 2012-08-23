@@ -279,7 +279,7 @@ public class EditDeviceListDialog extends Dialog {
     private void commitPendingChanges() {
         for (ITargetPhone phone : pendingChanges.keySet()) {
             IProfile newProfile = pendingChanges.get(phone);
-            phone.setPreferredProfile(newProfile);
+            phone.setPreferredProfile(getProfileManagerType(), newProfile);
         }
     }
 
