@@ -111,8 +111,8 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 						BTTargetPhone targetDevice = selectedDevice.getTargetPhone();
 						ITargetPhone correspondingDevice = findInHistory(targetDevice);
 						if (correspondingDevice != null) {
-							targetDevice.setPreferredProfile(correspondingDevice.getPreferredProfile(MoSyncTool.DEFAULT_PROFILE_TYPE));
-							targetDevice.setPreferredProfile(correspondingDevice.getPreferredProfile(MoSyncTool.LEGACY_PROFILE_TYPE));
+							targetDevice.setPreferredProfile(MoSyncTool.DEFAULT_PROFILE_TYPE, correspondingDevice.getPreferredProfile(MoSyncTool.DEFAULT_PROFILE_TYPE));
+							targetDevice.setPreferredProfile(MoSyncTool.LEGACY_PROFILE_TYPE, correspondingDevice.getPreferredProfile(MoSyncTool.LEGACY_PROFILE_TYPE));
 						}
 					    result.add(targetDevice);
 					}
