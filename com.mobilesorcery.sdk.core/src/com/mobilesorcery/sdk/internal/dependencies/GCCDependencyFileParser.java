@@ -122,9 +122,7 @@ public class GCCDependencyFileParser {
 				break;
 
 			case IN_DEP_LIST:
-				if (!potentialEscapeState || peek != ' ') {
-					doAppend = true;
-				}
+				doAppend = !potentialEscapeState || peek != ' ';
 				
 				if (!isInEscapeState && ch == ' ' && currentDependencies != null) {
 					addCurrentFileToDependencies(depFile);
