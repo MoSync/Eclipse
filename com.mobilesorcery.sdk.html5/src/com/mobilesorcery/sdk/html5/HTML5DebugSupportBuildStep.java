@@ -135,6 +135,11 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 			final JSODDSupport op = Html5Plugin.getDefault().getJSODDSupport(
 					project);
+			
+			if (op == null) {
+				throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID,
+						MessageFormat.format("The project {0} has no support for HTML5.", project.getName())));
+			}
 
 			IFileTreeDiff diff = this.diff;
 			// If we've changed the IP addr, then rebuild it all...
