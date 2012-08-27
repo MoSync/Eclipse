@@ -15,11 +15,12 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.dialogs.ListDialog;
 
+import com.mobilesorcery.sdk.core.AbstractTool;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
-import com.mobilesorcery.sdk.profiles.ui.Activator;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransport;
@@ -27,6 +28,18 @@ import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 
 public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 
+	private final static Version OSX_108 = new Version("10.8");
+	
+	private static void assertAvailability() throws CoreException {
+		if (AbstractTool.isMac()) {
+			Version version = new Version(System.getProperty("os.version"));
+			if (version.isValid() && !version.isOlder(OSX_108)) {
+				throw new CoreException(new Status(IStatus.ERROR, TargetPhonePlugin.PLUGIN_ID,
+						"BlueTooth is only supported for Mac OS X before 10.8"));
+			}
+		}
+	}
+	
 	@Override
 	public ITargetPhone load(IMemento memento, String name) {
 		String addr = memento.getString("addr");
@@ -155,6 +168,7 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 	public void send(IShellProvider shell, MoSyncProject project,
 			ITargetPhone phone, File packageToSend, IProgressMonitor monitor)
 			throws CoreException {
+		assertAvailability();
 		BTSendJob job = new BTSendJob(shell, (BTTargetPhone) phone,
 				packageToSend);
 		job.runSync(monitor);
@@ -163,6 +177,7 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 	@Override
 	public ITargetPhone scan(IShellProvider shell, IProgressMonitor monitor)
 			throws CoreException {
+		assertAvailability();
 		try {
 			BTTargetPhone phone = selectPhone( shell.getShell( ) );
 			if (phone != null) {
