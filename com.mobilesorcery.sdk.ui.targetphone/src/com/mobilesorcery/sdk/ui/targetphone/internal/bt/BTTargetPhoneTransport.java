@@ -35,7 +35,7 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 			Version version = new Version(System.getProperty("os.version"));
 			if (version.isValid() && !version.isOlder(OSX_108)) {
 				throw new CoreException(new Status(IStatus.ERROR, TargetPhonePlugin.PLUGIN_ID,
-						"BlueTooth is only supported for Mac OS X before 10.8"));
+						"Bluetooth is only supported for Mac OS X before 10.8"));
 			}
 		}
 	}
