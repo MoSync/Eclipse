@@ -99,7 +99,6 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			IBuildVariant variant, CommandLineBuilder commandLine)
 			throws Exception {
 		DefaultPackager internal = new DefaultPackager(project, variant);
-		internal.setParameters(getParameters());
 
 		IProfile profile = variant.getProfile();
 
@@ -145,7 +144,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			commandLine.flag("--permissions").with(permissionsStr);
 		}
 
-		if (shouldUseDebugRuntimes()) {
+		if (shouldUseDebugRuntimes(project, variant)) {
 			commandLine.flag("--debug");
 		}
 
