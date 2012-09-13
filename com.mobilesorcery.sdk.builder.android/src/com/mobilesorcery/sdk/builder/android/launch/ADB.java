@@ -46,7 +46,7 @@ import com.mobilesorcery.sdk.core.Util;
  */
 public class ADB extends AbstractTool {
 
-	private final class LogcatProcessHandler extends LineReader.LineAdapter {
+	private final class ProcessKiller extends LineReader.LineAdapter {
 		private Process process;
 
 		@Override
@@ -89,7 +89,7 @@ public class ADB extends AbstractTool {
 	private static ADB instance = new ADB();
 	private boolean logcatStarted;
 	private IPropertyChangeListener logCatListener = null;
-	private LogcatProcessHandler logcatProcessHandler;
+	private ProcessKiller logcatProcessHandler;
 
 	private ADB() {
 		this(MoSyncTool.getDefault().getBinary("android/adb"));
@@ -98,7 +98,7 @@ public class ADB extends AbstractTool {
 	public ADB(IPath pathToADB) {
 		super(pathToADB);
 		logCatListener = new LogcatListener(this);
-		logcatProcessHandler = new LogcatProcessHandler();
+		logcatProcessHandler = new ProcessKiller();
 	}
 
 	public static ADB getDefault() {

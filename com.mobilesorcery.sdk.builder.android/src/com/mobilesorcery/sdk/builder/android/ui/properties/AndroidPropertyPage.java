@@ -44,12 +44,11 @@ public class AndroidPropertyPage extends MoSyncPropertyPage {
         versionNumberText = new Text(main, SWT.SINGLE | SWT.BORDER);
         versionNumberText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-        // Uncomment once we have API level 8 support.
-        /*Label installLocationLabel = new Label(main, SWT.NONE);
+        Label installLocationLabel = new Label(main, SWT.NONE);
         installLocationLabel.setText("Android Install Location:");
         
         installLocationCombo = new Combo(main, SWT.READ_ONLY);
-        installLocationCombo.setItems(PropertyInitializer.ANDROID_INSTALL_LOCATIONS);*/
+        installLocationCombo.setItems(PropertyInitializer.ANDROID_INSTALL_LOCATIONS);
 
         UpdateListener listener = new UpdateListener(this);
         versionNumberText.addListener(SWT.Modify, listener);
