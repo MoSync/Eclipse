@@ -10,6 +10,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
@@ -195,6 +196,18 @@ public class JSODDLaunchConfigurationDelegate implements
 		}
 
 		return launch != null;
+	}
+	
+	public static void killLaunch(String terminateToken) throws CoreException {
+		ILaunchManager manager = DebugPlugin.getDefault().getLaunchManager();
+		ILaunch[] launches = manager.getLaunches();
+		for (ILaunch launch : launches) {
+			// To avoid spamming the user with spurious timeout messages...
+			if (launch.getLaunchConfiguration().getType().getIdentifier().equals(LAUNCH_CONFIG_TYPE) &&
+				Util.equals(launch.getAttribute(Html5Plugin.TERMINATE_TOKEN_LAUNCH_ATTR), terminateToken)) {
+				launch.terminate();
+			}
+		}
 	}
 
 	private static boolean isDefaultLaunch(ILaunch launch) throws CoreException {

@@ -30,8 +30,9 @@ import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
+import com.mobilesorcery.sdk.ui.ProgressAndStepDialog;
 
-public class JSODDConnectDialog extends ProgressMonitorDialog {
+public class JSODDConnectDialog extends ProgressAndStepDialog {
 
 	private static final class LiveServerListener implements
 			ILiveServerListener {
@@ -62,16 +63,15 @@ public class JSODDConnectDialog extends ProgressMonitorDialog {
 		}
 	}
 
-	private static final int RUN_IN_BKG = 1 << 16;
-
-	public static void show(final MoSyncProject project,
+	public static int show(final MoSyncProject project,
 			final IBuildVariant variant, final boolean onDevice,
 			final ReloadVirtualMachine vm) {
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+		final int[] result = new int[1];
+		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getModalDialogShellProvider().getShell();
-				JSODDConnectDialog dialog = new JSODDConnectDialog(shell,
+				final JSODDConnectDialog dialog = new JSODDConnectDialog(shell,
 						project, variant, onDevice, vm);
 				final LiveServerListener listener = new LiveServerListener(
 						project, variant);
@@ -89,7 +89,7 @@ public class JSODDConnectDialog extends ProgressMonitorDialog {
 								boolean waiting = true;
 								while (!monitor.isCanceled() && waiting) {
 									Thread.sleep(500);
-									waiting = !listener.isStarted();
+									waiting = !listener.isStarted() && !dialog.shouldWaitInBackground();
 								}
 							} finally {
 								Html5Plugin.getDefault().getReloadServer()
@@ -100,17 +100,17 @@ public class JSODDConnectDialog extends ProgressMonitorDialog {
 				} catch (Exception e) {
 					dialog.close();
 				}
+				result[0] = dialog.getReturnCode();
 			}
 		});
+		
+		return result[0];
 	}
 
 	private MoSyncProject project;
 	private IBuildVariant variant;
 	private boolean onDevice;
 	private ReloadVirtualMachine vm;
-
-	private ArrayList<Image> icons = new ArrayList<Image>();
-	private ArrayList<String> messages = new ArrayList<String>();
 
 	public JSODDConnectDialog(Shell shell, MoSyncProject project,
 			IBuildVariant variant, boolean onDevice, ReloadVirtualMachine vm) {
@@ -120,55 +120,9 @@ public class JSODDConnectDialog extends ProgressMonitorDialog {
 		this.onDevice = onDevice;
 		this.vm = vm;
 	}
-
-	protected Control createMessageArea(Composite parent) {
-		addMessages();
-
-		for (int i = 0; i < icons.size(); i++) {
-			Image icon = icons.get(i);
-			String message = messages.get(i);
-			Label iconLabel = new Label(parent, SWT.NONE);
-			iconLabel.setLayoutData(new GridData(SWT.DEFAULT, SWT.TOP, false,
-					false));
-			if (icon != null) {
-				iconLabel.setImage(icon);
-			}
-			Link messageLabel = new Link(parent, SWT.NONE);
-			messageLabel.setLayoutData(new GridData(SWT.DEFAULT, SWT.TOP, true,
-					false));
-			messageLabel.setText(message);
-			messageLabel.addListener(SWT.Selection, new Listener() {
-				@Override
-				public void handleEvent(Event event) {
-					performAction(event.text);
-				}
-			});
-
-			Label separator = new Label(parent, SWT.SEPARATOR | SWT.HORIZONTAL);
-			separator.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true,
-					false, 2, 1));
-		}
-
-		// Important addition:
-		super.createMessageArea(parent);
-
-		return parent;
-	}
-
-	public Image getImage() {
-		return PlatformUI.getWorkbench().getSharedImages()
-				.getImage(ISharedImages.IMG_OBJS_INFO_TSK);
-	}
-
-	protected void createButtonsForButtonBar(Composite parent) {
-		createButton(parent, RUN_IN_BKG, "Wait in Background", true);
-		createCancelButton(parent);
-	}
 	
 	protected void configureShell(final Shell shell) {
 		super.configureShell(shell);
-		// We don't want that wait cursor.
-		shell.setCursor(arrowCursor);
 		shell.setText("Waiting for device");
 	}
 
@@ -199,17 +153,12 @@ public class JSODDConnectDialog extends ProgressMonitorDialog {
 		// IOS?
 		boolean ios = variant.getProfile().getPackager().getId()
 				.equals("com.mobilesorcery.sdk.build.ios.packager");
-		if (ios /* && onDevice */) {
+		if (ios && onDevice) {
 			addMessage(
 					MosyncUIPlugin.getDefault().getImageRegistry()
 							.get(MosyncUIPlugin.IMG_BUILD_ONE),
-					"Install and start your iOS on device using iTunes.\nThe package to install is <a href=\"package\">here</a>.");
+					"Start the {0} app on your iOS device.\n(If you need to install the package manually, you can find it <a href=\"package\">here</a>.)", project.getName());
 		}
-	}
-
-	protected void addMessage(Image icon, String message) {
-		this.icons.add(icon);
-		this.messages.add(message);
 	}
 
 }

@@ -471,7 +471,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	@Override
 	public void handleEvent(TargetPhoneTransportEvent event) {
 		// Launch the debug server if sending package in debug mode
-		if (TargetPhoneTransportEvent.isType(TargetPhoneTransportEvent.PRE_SEND, event)) {
+		if (TargetPhoneTransportEvent.isType(TargetPhoneTransportEvent.ABOUT_TO_LAUNCH, event)) {
 			MoSyncProject project = event.project;
 			IBuildVariant variant = event.variant;
 			launchJSODD(project, variant, true, event.phone.getName());
@@ -483,7 +483,10 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		if (DebuggingEnableTester.hasDebugSupport(project) && PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
 			try {
 				boolean wasLaunched = JSODDLaunchConfigurationDelegate.launchDefault(terminateToken);
-				JSODDConnectDialog.show(project, variant, onDevice, null);
+				int result = JSODDConnectDialog.show(project, variant, onDevice, null);
+				if (result == JSODDConnectDialog.CANCEL) {
+					JSODDLaunchConfigurationDelegate.killLaunch(terminateToken);
+				}
 				//incTimeoutSuppression(terminateToken, wasLaunched ? +1 : 0);
 			} catch (CoreException e) {
 				Policy.getStatusHandler().show(e.getStatus(), "Could not launch JavaScript On-Device Debug Server");
