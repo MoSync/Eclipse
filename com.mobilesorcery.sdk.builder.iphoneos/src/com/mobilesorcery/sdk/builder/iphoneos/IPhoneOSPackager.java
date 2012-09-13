@@ -102,11 +102,11 @@ public class IPhoneOSPackager extends PackageToolPackager
     	return BUILD_GEN_CPP_MODE;
     }
 
-    private boolean shouldBuildWithXcodePref() {
+    private static boolean shouldBuildWithXcodePref() {
     	return !Activator.getDefault().getPreferenceStore().getBoolean(Activator.ONLY_GENERATE_XCODE_PROJECT);
     }
 
-	private boolean shouldBuildWithXcode(MoSyncProject project, IBuildVariant variant) throws CoreException {
+	private static boolean shouldBuildWithXcode(MoSyncProject project, IBuildVariant variant) throws CoreException {
 		boolean isSimulatorSDK = false;
 		boolean isValid = XCodeBuild.getDefault().isValid();
 		if (isValid) {
@@ -161,8 +161,10 @@ public class IPhoneOSPackager extends PackageToolPackager
 		return xcodeProject;
 	}
 
-	private boolean shouldUseProvisioning(MoSyncProject project, IBuildVariant variant) {
-		return !isSimulatorBuild(variant) &&
+	public static boolean shouldUseProvisioning(MoSyncProject project, IBuildVariant variant) throws CoreException {
+		return XCodeBuild.isMac() && 
+				shouldBuildWithXcode(project, variant) && 
+				!isSimulatorBuild(variant) &&
 				!Util.isEmpty(project.getProperty(PropertyInitializer.IOS_PROVISIONING_FILE));
 	}
 
@@ -175,11 +177,11 @@ public class IPhoneOSPackager extends PackageToolPackager
 		return target;
 	}
 
-	private boolean isSimulatorBuild(IBuildVariant variant) {
+	private static boolean isSimulatorBuild(IBuildVariant variant) {
 		return variant.getSpecifiers().containsKey(Activator.IOS_SIMULATOR_SPECIFIER);
 	}
 
-	private SDK getSDK(MoSyncProject project, IBuildVariant variant) throws CoreException {
+	private static SDK getSDK(MoSyncProject project, IBuildVariant variant) throws CoreException {
 		int sdkType = isSimulatorBuild(variant) ? XCodeBuild.IOS_SIMULATOR_SDKS : XCodeBuild.IOS_SDKS;
 		SDK sdk = Activator.getDefault().getSDK(project, sdkType);
 		if (sdk == null) {
