@@ -16,6 +16,7 @@ import org.eclipse.ui.IMemento;
 import org.eclipse.ui.dialogs.ListDialog;
 
 import com.mobilesorcery.sdk.core.AbstractTool;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
@@ -165,12 +166,12 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
         return null;
     }
 	@Override
-	public void send(IShellProvider shell, MoSyncProject project,
+	public void send(IShellProvider shell, MoSyncProject project, IBuildVariant variant,
 			ITargetPhone phone, File packageToSend, IProgressMonitor monitor)
 			throws CoreException {
 		assertAvailability();
 		BTSendJob job = new BTSendJob(shell, (BTTargetPhone) phone,
-				packageToSend);
+				packageToSend, project, variant);
 		job.runSync(monitor);
 	}
 
