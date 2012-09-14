@@ -30,6 +30,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
 import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.ui.UpdateListener;
@@ -57,14 +58,18 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		noDefaultAndApplyButton();
 		this.reloadStrategyMap = new LinkedHashMap<String, Integer>();
 		reloadStrategyMap.put("Ask me", RedefinitionResult.UNDETERMINED);
-		reloadStrategyMap.put("Do nothing", RedefinitionResult.CONTINUE);
-		reloadStrategyMap.put("Reload", RedefinitionResult.RELOAD);
 		reloadStrategyMap.put("Terminate", RedefinitionResult.TERMINATE);
-		reverseReloadStrategyMap = Util.reverseMap(reloadStrategyMap);
+		reloadStrategyMap.put("Do nothing", RedefinitionResult.CONTINUE);
 		this.sourceChangeStrategyMap = new LinkedHashMap<String, Integer>();
 		sourceChangeStrategyMap.put("Do nothing", Html5Plugin.DO_NOTHING);
 		sourceChangeStrategyMap.put("Reload", Html5Plugin.RELOAD);
-		sourceChangeStrategyMap.put("Hot code replace", Html5Plugin.HOT_CODE_REPLACE);
+
+		if (Html5Plugin.getDefault().isFeatureSupported(JSODDSupport.EDIT_AND_CONTINUE)) {
+			reloadStrategyMap.put("Reload", RedefinitionResult.RELOAD);
+			sourceChangeStrategyMap.put("Hot code replace", Html5Plugin.HOT_CODE_REPLACE);
+		}
+		
+		reverseReloadStrategyMap = Util.reverseMap(reloadStrategyMap);
 		reverseSourceChangeStrategyMap = Util.reverseMap(sourceChangeStrategyMap);
 	}
 

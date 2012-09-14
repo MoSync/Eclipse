@@ -78,7 +78,8 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 								.create(getProject());
 						if (fetchRemotely) {
 							op.generateRemoteFetch(mosyncProject, output);
-						} else {
+						}
+						if (!fetchRemotely || CoreMoSyncPlugin.getDefault().isDebugging()) {
 							// This is a *build* op, so update the baseline.
 							result = op.rewrite(
 									resourceToInstrument.getFullPath(), output,
@@ -208,11 +209,13 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 				String reloadStrategy = Integer.toString(Html5Plugin.getDefault().getReloadStrategy());
 				String sourceChangeStartegy = Integer.toString(Html5Plugin.getDefault().getSourceChangeStrategy());
+				String enabled = Boolean.toString(Html5Plugin.getDefault().isJSODDEnabled());
 				
 				String oldReloadStrategy = jsoddProps.get(Html5Plugin.RELOAD_STRATEGY_PREF);
 				String oldSourceChangeStartegy = jsoddProps.get(Html5Plugin.SOURCE_CHANGE_STRATEGY_PREF);
 				String oldHost = jsoddProps.get(JSODDSupport.SERVER_HOST_PROP);
 				String oldPort = jsoddProps.get(JSODDSupport.SERVER_PORT_PROP);
+				String oldEnabled = jsoddProps.get(Html5Plugin.ODD_SUPPORT_PREF);
 
 				Section defaultSection = jsoddPropsFile.getDefaultSection();
 				defaultSection.getEntries().clear();
@@ -220,13 +223,15 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				defaultSection.addEntry(JSODDSupport.SERVER_PORT_PROP, port);
 				defaultSection.addEntry(Html5Plugin.RELOAD_STRATEGY_PREF, reloadStrategy);
 				defaultSection.addEntry(Html5Plugin.SOURCE_CHANGE_STRATEGY_PREF, sourceChangeStartegy);
+				defaultSection.addEntry(Html5Plugin.ODD_SUPPORT_PREF, enabled);
 
 				jsoddPropsFile.write(jsoddMetaData.toFile());
 
 				return !Util.equals(host, oldHost) ||
 						!Util.equals(port, oldPort) ||
 						!Util.equals(reloadStrategy, oldReloadStrategy) ||
-						!Util.equals(sourceChangeStartegy, oldSourceChangeStartegy);
+						!Util.equals(sourceChangeStartegy, oldSourceChangeStartegy) ||
+						!Util.equals(enabled, oldEnabled);
 			} catch (IOException e) {
 				CoreMoSyncPlugin.getDefault().log(e);
 				return false;
