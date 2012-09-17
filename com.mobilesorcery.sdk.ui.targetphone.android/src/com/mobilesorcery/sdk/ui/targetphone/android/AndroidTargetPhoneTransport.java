@@ -31,6 +31,7 @@ import org.eclipse.ui.dialogs.ListDialog;
 import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 import com.mobilesorcery.sdk.builder.android.launch.ADB;
+import com.mobilesorcery.sdk.builder.android.launch.ADB.ProcessKiller;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
@@ -121,11 +122,15 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 		if (phone instanceof AndroidTargetPhone) {
 			AndroidTargetPhone androidPhone = (AndroidTargetPhone) phone;
 			String serialNumberOfDevice = androidPhone.getSerialNumber();
-			ADB.getDefault().install(packageToSend, project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME), serialNumberOfDevice);
+			ADB.getDefault().install(packageToSend, project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME), serialNumberOfDevice, new ProcessKiller(monitor));
 			String androidComponent = Activator.getAndroidComponentName(project);
-			TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.ABOUT_TO_LAUNCH, phone, project, variant));
-			ADB.getDefault().launch(androidComponent, serialNumberOfDevice);
-			ADB.getDefault().startLogCat();
+			if (!monitor.isCanceled()) {
+				TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.ABOUT_TO_LAUNCH, phone, project, variant));
+				ADB.getDefault().launch(androidComponent, serialNumberOfDevice, new ProcessKiller(monitor));
+			}
+			if (!monitor.isCanceled()) {
+				ADB.getDefault().startLogCat();
+			}
 		} else {
 			throw new CoreException(new Status(IStatus.ERROR, TargetPhonePlugin.PLUGIN_ID, "Can only send to android phones"));
 		}

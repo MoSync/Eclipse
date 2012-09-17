@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -37,6 +38,7 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.LineReader;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.LineReader.LineHandlerList;
 
 /**
  * A class representing the Android Debug Bridge.
@@ -46,8 +48,42 @@ import com.mobilesorcery.sdk.core.Util;
  */
 public class ADB extends AbstractTool {
 
-	private final class ProcessKiller extends LineReader.LineAdapter {
+	public static class ProcessKiller extends LineReader.LineAdapter {
 		private Process process;
+		private IProgressMonitor monitor;
+
+		public ProcessKiller() {
+			this(null);
+		}
+		
+		public ProcessKiller(IProgressMonitor monitor) {
+			this.monitor = monitor;
+			listenToMonitor();
+		}
+		
+		private void listenToMonitor() {
+			Thread listenThread = new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						IProgressMonitor monitorRef = monitor;
+						while (monitorRef != null && !monitorRef.isCanceled()) {
+							Thread.sleep(500);	
+						}
+						
+						if (monitorRef != null && monitorRef.isCanceled()) {
+							killProcess();
+						}
+						
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+					}
+				}
+			});
+			
+			listenThread.setDaemon(true);
+			listenThread.start();
+		}
 
 		@Override
 		public void stop(IOException e) {
@@ -61,9 +97,11 @@ public class ADB extends AbstractTool {
 
 		public void killProcess() {
 			if (process != null) {
+				monitor = null;
 				process.destroy();
 			}
 		}
+	
 	}
 
 	private final class LogcatListener implements IPropertyChangeListener {
@@ -189,30 +227,37 @@ public class ADB extends AbstractTool {
 		return result;
 	}
 
-	public void uninstall(String packageName, String serialNumberOfDevice) throws CoreException {
-		runAndCollectError(new String[] { getToolPath().getAbsolutePath(), "-s",
+	public void uninstall(String packageName, String serialNumberOfDevice, ProcessKiller processKiller) throws CoreException {
+		runAndCollectError(processKiller, new String[] { getToolPath().getAbsolutePath(), "-s",
 				serialNumberOfDevice, "uninstall", packageName });
 	}
 	
-	public void install(File packageToInstall, String packageName, String serialNumberOfDevice) throws CoreException {
+	public void install(File packageToInstall, String packageName, String serialNumberOfDevice, ProcessKiller processKiller) throws CoreException {
+		IProgressMonitor monitor = processKiller.monitor;
+		
 		if (packageName != null && Activator.getDefault().getPreferenceStore().getBoolean(PropertyInitializer.ADB_UNINSTALL_FIRST)) {
 			try {
-				uninstall(packageName, serialNumberOfDevice);
+				uninstall(packageName, serialNumberOfDevice, processKiller);
 			} catch (CoreException e) {
 				// Ignore -- the apk might not exist.
 			}
 		}
-		runAndCollectError(new String[] { getToolPath().getAbsolutePath(), "-s",
-						serialNumberOfDevice, "install", "-r",
-						packageToInstall.getAbsolutePath() });
+		if (monitor == null || !monitor.isCanceled()) {
+			runAndCollectError(processKiller, new String[] { getToolPath().getAbsolutePath(), "-s",
+							serialNumberOfDevice, "install", "-r",
+							packageToInstall.getAbsolutePath() });
+		}
 	}
 	
-	private void runAndCollectError(String[] commandLine)
+	private void runAndCollectError(ProcessKiller processKiller, String[] commandLine)
 			throws CoreException {
+		LineHandlerList stdout = new LineHandlerList();
 		CollectingLineHandler collectingLineHandler = new CollectingLineHandler();
+		stdout.addHandler(collectingLineHandler);
+		stdout.addHandler(processKiller);
 		CollectingLineHandler errorLineHandler = new CollectingLineHandler();
 		int errorCode = execute(commandLine,
-				collectingLineHandler, errorLineHandler, false);
+				stdout, errorLineHandler, false);
 
 		String errorMsg = null;
 		for (String line : collectingLineHandler.getLines()) {
@@ -237,7 +282,7 @@ public class ADB extends AbstractTool {
 		}
 	}
 
-	public void launch(String activityName, String serialNumberOfDevice)
+	public void launch(String activityName, String serialNumberOfDevice, ProcessKiller processKiller)
 			throws CoreException {
 		CollectingLineHandler collectingLineHandler = new CollectingLineHandler();
 		CollectingLineHandler errorLineHandler = new CollectingLineHandler();
