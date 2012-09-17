@@ -14,7 +14,7 @@
          </property>
          <property
                name="aboutText"
-               value="http://www.mosync.com">
+               value="http://www.mosync.com&#x0D;&#x0D;{0}&#x0D;{1}&#x0D;{2}&#x0D;{3}">
          </property>
          <property
                name="aboutImage"
