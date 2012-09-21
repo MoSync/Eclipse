@@ -45,6 +45,9 @@ import org.eclipse.wst.jsdt.core.dom.Block;
 import org.eclipse.wst.jsdt.core.dom.BodyDeclaration;
 import org.eclipse.wst.jsdt.core.dom.CatchClause;
 import org.eclipse.wst.jsdt.core.dom.DoStatement;
+import org.eclipse.wst.jsdt.core.dom.Expression;
+import org.eclipse.wst.jsdt.core.dom.ExpressionStatement;
+import org.eclipse.wst.jsdt.core.dom.FieldAccess;
 import org.eclipse.wst.jsdt.core.dom.ForInStatement;
 import org.eclipse.wst.jsdt.core.dom.ForStatement;
 import org.eclipse.wst.jsdt.core.dom.FunctionDeclaration;
@@ -168,6 +171,8 @@ public class JSODDSupport {
 			if (node instanceof FunctionDeclaration) {
 				FunctionDeclaration fd = (FunctionDeclaration) node;
 				currentScope = currentScope.nestScope();
+				// Special function var.
+				currentScope = currentScope.addLocalVariableDeclaration("arguments");
 				for (Object paramObj : fd.parameters()) {
 					SingleVariableDeclaration param = (SingleVariableDeclaration) paramObj;
 					String name = param.getName().getIdentifier();
@@ -226,7 +231,7 @@ public class JSODDSupport {
 			if (node instanceof ThisExpression && !functionRewriteStack.isEmpty()) {
 				rewrites.put(node, new ThisRewrite(this, node));
 				functionRewriteStack.peek().useEscapedThis(true);
-			}
+			}	
 
 			if (nest) {
 				currentScope = currentScope.nestScope();
@@ -626,6 +631,7 @@ public class JSODDSupport {
 
 	private static final Map<String, IRedefinable> EMPTY = Collections
 			.emptyMap();
+	
 
 	private final ASTParser parser;
 

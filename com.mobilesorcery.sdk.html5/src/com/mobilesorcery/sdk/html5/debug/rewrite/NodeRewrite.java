@@ -13,6 +13,7 @@ import org.eclipse.wst.jsdt.core.dom.rewrite.ASTRewrite;
 
 import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.IProvider;
+import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.Position;
 
@@ -75,6 +76,9 @@ public class NodeRewrite {
 	}
 
 	public boolean supports(IFilter<String> features, String feature) {
+		if (!Html5Plugin.getDefault().isFeatureSupported(feature)) {
+			return false;
+		}
 		if (features == null) {
 			// TODO: return whatever is enabled for this rewrite
 			return true;

@@ -158,15 +158,18 @@ public class FunctionRewrite extends NodeRewrite {
 
 		String editAndContinuePreamble = "";
 		String editAndContinuePostamble = "";
-		if (supports(features, JSODDSupport.EDIT_AND_CONTINUE) && !isAnonymous(fd)) {
+		
+		boolean addEditAndContinue = supports(features, JSODDSupport.EDIT_AND_CONTINUE) && !isAnonymous(fd);
+		if (addEditAndContinue) {
 			String functionRef = functionIdentifier + ".____yaloid";
 			String redefineKey = nodeRedefinables.get(fd);
+			String signaturePrefix = isAnonymous ? "" : "____";
 			editAndContinuePreamble = "if(!" + functionRef + ") { "
 					+ "var ____unevaled=MoSyncDebugProtocol.yaloid(\""
 					+ redefineKey + "\");\n" + "if (____unevaled){\n"
 					+ "eval(\"" + functionRef + "=\" + ____unevaled);}\n"
 					+ "if(typeof " + functionRef + " !== \'function\')\n" + "{"
-					+ functionRef + "= function " + getSignature(fd);
+					+ functionRef + "= function " + signaturePrefix + getSignature(fd);
 
 			List parameters = fd.parameters();
 			String[] parameterNames = new String[parameters.size()];
@@ -189,16 +192,36 @@ public class FunctionRewrite extends NodeRewrite {
 		}
 		
 		rewrite.insert(dropToFramePreamble);
+		
 		if (supports(features, JSODDSupport.ARTIFICIAL_STACK)) {
 			rewrite.insert(functionStart);
 		}
+		
 		if (useEscapedThis && supports(features, JSODDSupport.EDIT_AND_CONTINUE)) {
-			rewrite.insert("var ____this = this;\n");
+			if (useEscapedThis) {
+				rewrite.insert("var ____this = this;\n");
+			}
+		}
+			
+		if (addEditAndContinue) {
+			rewrite.insert("var ____arguments = arguments;\n");
 		}
 		rewrite.insert(editAndContinuePreamble);
+
+		if (addEditAndContinue) {
+		}
+		
+		boolean firstStatement = true;
 		for (Object statementObj : statements) {
 			ASTNode statement = (ASTNode) statementObj;
-			getRewrite(statement).rewrite(features, rewrite);
+			NodeRewrite stmtRewrite = getRewrite(statement);
+			if (firstStatement && addEditAndContinue) {
+				Position firstStmtPos = stmtRewrite.getPosition(statement, true);
+				rewrite.seek(firstStmtPos);
+				rewrite.insert("arguments = ____arguments;\n");			
+			}
+			stmtRewrite.rewrite(features, rewrite);
+			firstStatement = false;
 		}
 		rewrite.seek(endOfBody);
 		rewrite.insert(editAndContinuePostamble);

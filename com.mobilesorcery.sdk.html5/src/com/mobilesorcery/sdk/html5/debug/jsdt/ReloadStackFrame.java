@@ -3,6 +3,7 @@ package com.mobilesorcery.sdk.html5.debug.jsdt;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -137,40 +138,24 @@ public class ReloadStackFrame implements StackFrame {
 	}
 
 	public Value getValue(String name) {
-		// TODO: Put on client so it may be precompiled!
+		System.err.println("EVAL: " + name);
 		String metaFn = "this".equals(name) ? "evalThis" : "evalVar";
 		String metaExpr = String.format("MoSyncDebugProtocol.%s(%s);", metaFn, name);
-	/*			"var ____info = {};" +
-				"var ____keys = [];" +
-				"var ____typeOf = typeof(%s);" +
-				"if (____typeOf == \"object\" && %s != null) {" +
-				"  if (!%s.____oid) {" +
-				"    MoSyncDebugProtocol.assignOID(%s);" +
-				"  }" +
-				"  ____info.oid = %s.____oid;" +
-				"  for (var ____key in %s) {" +
-				"    ____keys.push(____key);" +
-				"  }" +
-				"  ____info.properties = ____keys;" +
-				"  ____info.clazz = ____info.constructor ? ____info.constructor.toString() : null;" +
-				"  ____info.repr = %s.toString();" +
-				"} else if (____typeOf == \"function\") {" +
-				"  ____info.repr = ____typeOf;" +
-				"} else {" +
-				"  ____info.repr = %s;" +
-				"}" +
-				"____info.type = ____typeOf; ____info;"
-				, name, name, name, name, name, name, name, name, name);*/
+
 		String metaEvaluation = internalEvaluate(metaExpr, stackDepth);
 		try {
 			if (metaEvaluation != null) {
 				JSONObject metaObject = (JSONObject) PARSER.parse(metaEvaluation);
 				String type = (String) metaObject.get("type");
 				String repr = "" + metaObject.get("repr");
+
 				if ("object".equals(type) || "function".equals(type)) {
 					Number oid = (Number) metaObject.get("oid");
 					String className = (String) metaObject.get("clazz");
 					JSONArray properties = (JSONArray) metaObject.get("properties");
+					
+					addSpecialProps(properties, name);
+					
 					ArrayList<ReloadProperty> generatedProperties = new ArrayList<ReloadProperty>();
 					boolean hasArrayProperty = false;
 					boolean hasLengthProperty = false;
@@ -181,12 +166,13 @@ public class ReloadStackFrame implements StackFrame {
 						boolean isArrayProperty = Character.isDigit(propertyName.charAt(0));
 						hasArrayProperty |= isArrayProperty;
 						String fullName = isArrayProperty ? name + "[" + propertyName + "]" : name + "." + propertyName;
-						boolean isSpecialProperty = "____oid".equals(propertyName);
-						if (!isSpecialProperty) {
+						boolean isInternalProperty = "____oid".equals(propertyName);
+						if (!isInternalProperty) {
 							generatedProperties.add(new ReloadProperty(vm, this, fullName, propertyName));
 						}
 					}
-					boolean isArray = hasArrayProperty; // && hasLengthProperty;
+					
+					boolean isArray = hasArrayProperty; //|| hasLengthProperty;
 					ReloadObjectReference ref = isArray ? new ReloadArrayReference(vm, repr, oid) : new ReloadObjectReference(vm, repr, className, oid);
 					for (ReloadProperty generatedProperty : generatedProperties) {
 						ref.addProperty(generatedProperty);
@@ -211,5 +197,20 @@ public class ReloadStackFrame implements StackFrame {
 			// IGNORE.
 		}
 		return vm.mirrorOfUndefined();
+	}
+
+	private void addSpecialProps(JSONArray properties, String name) throws InterruptedException, TimeoutException {
+		if ("arguments".equals(name)) {
+			properties.add("length");
+			properties.add("callee");
+			
+			Object result = vm.evaluate("arguments.length", stackDepth);
+			if (result instanceof Number) {
+				int intResult = ((Number) result).intValue();
+				for (int i = 0; i < intResult; i++) {
+					properties.add("" + i);
+				}
+			}
+		}
 	}
 }

@@ -2,8 +2,11 @@ package com.mobilesorcery.sdk.html5.ui;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.print.attribute.standard.MediaSize.ISO;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
@@ -29,6 +32,7 @@ import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
+import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.ProgressAndStepDialog;
 
@@ -85,7 +89,7 @@ public class JSODDConnectDialog extends ProgressAndStepDialog {
 								Html5Plugin.getDefault().getReloadServer()
 										.addListener(listener);
 								monitor.beginTask(
-										"Waiting for device to connect...", -1);
+										MessageFormat.format("Waiting for {0} to connect...", dialog.getTargetType()), -1);
 								boolean waiting = true;
 								while (!monitor.isCanceled() && waiting) {
 									Thread.sleep(500);
@@ -123,7 +127,7 @@ public class JSODDConnectDialog extends ProgressAndStepDialog {
 	
 	protected void configureShell(final Shell shell) {
 		super.configureShell(shell);
-		shell.setText("Waiting for device");
+		shell.setText(MessageFormat.format("Waiting for {0}", getTargetType()));
 	}
 
 	protected void performAction(String actionId) {
@@ -151,14 +155,29 @@ public class JSODDConnectDialog extends ProgressAndStepDialog {
 				connectMessage);
 
 		// IOS?
-		boolean ios = variant.getProfile().getPackager().getId()
-				.equals("com.mobilesorcery.sdk.build.ios.packager");
+		boolean ios = isIOS(variant.getProfile());
 		if (ios && onDevice) {
 			addMessage(
 					MosyncUIPlugin.getDefault().getImageRegistry()
 							.get(MosyncUIPlugin.IMG_BUILD_ONE),
 					"Start the {0} app on your iOS device.\n(If you need to install the package manually, you can find it <a href=\"package\">here</a>.)", project.getName());
 		}
+	}
+	
+	private String getTargetType() {
+		if (onDevice) {
+			return "device";
+		} else if (isIOS(variant.getProfile())) {
+			return "simulator";
+		} else {
+			return "emulator";
+		}
+		
+	}
+	
+	private static boolean isIOS(IProfile profile) {
+		 return profile != null && profile.getPackager().getId()
+			.equals("com.mobilesorcery.sdk.build.ios.packager"); 
 	}
 
 }
