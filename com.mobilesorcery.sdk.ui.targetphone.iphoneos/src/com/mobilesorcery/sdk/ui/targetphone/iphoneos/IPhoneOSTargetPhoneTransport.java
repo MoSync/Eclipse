@@ -69,9 +69,12 @@ public class IPhoneOSTargetPhoneTransport implements
 		
 		try {
 			IPhoneOSOTAServer.getDefault().offerProject(project, variant);
-			AwaitConnectionDialog.show(project, variant);
-			// We send the ABOUT_TO_RUN event here, after the dialog has been dismissed.
-			TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.ABOUT_TO_LAUNCH, phone, project, variant));
+			if (AwaitConnectionDialog.show(project, variant) == AwaitConnectionDialog.CANCEL) {
+				TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.LAUNCH_CANCELLED, phone, project, variant));
+			} else {
+				// We send the ABOUT_TO_RUN event here, after the dialog has been dismissed.
+				TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.ABOUT_TO_LAUNCH, phone, project, variant));
+			}
 		} catch (IOException e) {
 			throw new CoreException(new Status(IStatus.ERROR, IPhoneOSTransportPlugin.PLUGIN_ID,
 					"Unable to start local OTA server", e));

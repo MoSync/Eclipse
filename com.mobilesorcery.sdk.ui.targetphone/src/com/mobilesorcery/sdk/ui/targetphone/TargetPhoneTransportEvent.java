@@ -20,6 +20,11 @@ public class TargetPhoneTransportEvent {
 	 */
 	public final static String ABOUT_TO_LAUNCH = "launch";
 
+	/**
+	 * A constant for indicating when an app transport was cancelled.
+	 */
+	public final static String LAUNCH_CANCELLED = "cancelled";
+
 	public final Object type;
 	public final ITargetPhone phone;
 	public final MoSyncProject project;
