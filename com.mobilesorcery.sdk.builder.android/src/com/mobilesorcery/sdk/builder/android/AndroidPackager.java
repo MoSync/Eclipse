@@ -58,11 +58,15 @@ public class AndroidPackager extends PackageToolPackager {
         commandLine.flag("--android-alias").with(alias);
         commandLine.flag("--android-keypass", true).with(keypass);
         
-        // Uncomment once we get support for API levels >= 8.
-        /*String installLocation = project.getProperty(PropertyInitializer.ANDROID_INSTALL_LOCATION);
+        String installLocation = project.getProperty(PropertyInitializer.ANDROID_INSTALL_LOCATION);
         if (!Util.isEmpty(installLocation)) {
         	commandLine.flag("--android-install-location").with(installLocation);
-        }*/
+        }
+        
+        String manifestTemplate = project.getProperty(PropertyInitializer.ANDROID_MANIFEST_TEMPLATE);
+        if (!Util.isEmpty(manifestTemplate)) {
+        	commandLine.flag("--android-manifest-template").with(manifestTemplate);
+        }
 	}
 
 	@Override

@@ -54,6 +54,8 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
 	public static final String ANDROID_INSTALL_LOCATION = PREFIX + "install.location";
 
 	public static final String ANDROID_INSTALL_LOCATION_DEFAULT = "internalOnly";
+	
+	public static final String ANDROID_MANIFEST_TEMPLATE = PREFIX + "manifest.template";
 
 	public static final String[] ANDROID_INSTALL_LOCATIONS = new String[] { ANDROID_INSTALL_LOCATION_DEFAULT, "auto", "preferExternal" };
 

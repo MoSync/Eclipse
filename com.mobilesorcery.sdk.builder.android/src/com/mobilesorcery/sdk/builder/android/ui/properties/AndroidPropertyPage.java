@@ -1,6 +1,7 @@
 package com.mobilesorcery.sdk.builder.android.ui.properties;
 
 import org.eclipse.jface.dialogs.IMessageProvider;
+import org.eclipse.jface.preference.FileFieldEditor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -27,32 +28,36 @@ public class AndroidPropertyPage extends MoSyncPropertyPage {
 	private Text packageText;
     private Text versionNumberText;
 	private Combo installLocationCombo;
+	private FileFieldEditor manifestFile;
 
     @Override
 	protected Control createContents(Composite parent) {
         Composite main = new Composite(parent, SWT.NONE);
-        main.setLayout(new GridLayout(2, false));
+        main.setLayout(new GridLayout(3, false));
 
         Label packageLabel = new Label(main, SWT.NONE);
         packageLabel.setText("Android Package name:");
         packageText = new Text(main, SWT.SINGLE | SWT.BORDER);
-        packageText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        packageText.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false, 2, 1));
 
         Label versionNumberLabel = new Label(main, SWT.NONE);
         versionNumberLabel.setText("Android Version code:");
 
         versionNumberText = new Text(main, SWT.SINGLE | SWT.BORDER);
-        versionNumberText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        versionNumberText.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false, 2, 1));
 
         Label installLocationLabel = new Label(main, SWT.NONE);
         installLocationLabel.setText("Android Install Location:");
         
         installLocationCombo = new Combo(main, SWT.READ_ONLY);
         installLocationCombo.setItems(PropertyInitializer.ANDROID_INSTALL_LOCATIONS);
+        installLocationCombo.setLayoutData(new GridData(SWT.DEFAULT, SWT.DEFAULT, false, false, 2, 1));
 
         UpdateListener listener = new UpdateListener(this);
         versionNumberText.addListener(SWT.Modify, listener);
         packageText.addListener(SWT.Modify, listener);
+        
+        manifestFile = new FileFieldEditor("dummy.1", "Custom manifest template:", main);
         
         initUI();
         return main;
@@ -62,6 +67,7 @@ public class AndroidPropertyPage extends MoSyncPropertyPage {
         setText(packageText, getProject().getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME));
         setText(versionNumberText, Integer.toString(PropertyUtil.getInteger(getProject(), PropertyInitializer.ANDROID_VERSION_CODE)));
         installLocationCombo.setText(getProject().getProperty(PropertyInitializer.ANDROID_INSTALL_LOCATION));
+        manifestFile.setStringValue(getProject().getProperty(PropertyInitializer.ANDROID_MANIFEST_TEMPLATE));
     }
 
     @Override
@@ -69,6 +75,7 @@ public class AndroidPropertyPage extends MoSyncPropertyPage {
         getProject().setProperty(PropertyInitializer.ANDROID_PACKAGE_NAME, packageText.getText());
         PropertyUtil.setInteger(getProject(), PropertyInitializer.ANDROID_VERSION_CODE, Integer.parseInt(versionNumberText.getText()));
         getProject().setProperty(PropertyInitializer.ANDROID_INSTALL_LOCATION, installLocationCombo.getText());
+        getProject().setProperty(PropertyInitializer.ANDROID_MANIFEST_TEMPLATE, manifestFile.getStringValue());
         return true;
     }
 
