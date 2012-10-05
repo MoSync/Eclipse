@@ -181,4 +181,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		return result;
 	}
 
+	protected IProcessConsole getBuildConsole() {
+		return CoreMoSyncPlugin.getDefault().createConsole(MoSyncBuilder.CONSOLE_ID);
+	}
 }

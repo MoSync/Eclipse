@@ -19,7 +19,7 @@
 					<key>needs-shine</key>
 					<true/>
 					<key>url</key>
-					<string>%base-url%/%project-name%-image512x512.png</string>
+					<string>%base-url%/%project-name%/image512x512.png</string>
 				</dict>
 				<dict>
 					<key>kind</key>
@@ -27,7 +27,7 @@
 					<key>needs-shine</key>
 					<true/>
 					<key>url</key>
-					<string>%base-url%/%project-name%-icon57x57.png</string>
+					<string>%base-url%/%project-name%/icon57x57.png</string>
 				</dict>
 			</array>
 			<key>metadata</key>

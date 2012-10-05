@@ -10,9 +10,11 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.window.IShellProvider;
 import org.eclipse.ui.IMemento;
 
+import com.mobilesorcery.sdk.builder.iphoneos.Activator;
 import com.mobilesorcery.sdk.builder.iphoneos.IPhoneOSPackager;
 import com.mobilesorcery.sdk.builder.iphoneos.XCodeBuild;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -65,6 +67,12 @@ public class IPhoneOSTargetPhoneTransport implements
 		if (!IPhoneOSPackager.shouldUseProvisioning(project, variant)) {
 			throw new CoreException(new Status(IStatus.ERROR, IPhoneOSTransportPlugin.PLUGIN_ID,
 					"To send to an IPhone requires a provisioning profile to be set."));
+		}
+		
+		String cert = IPhoneOSPackager.getCertificate(project, variant);
+		if (Activator.IPHONE_DEV_CERT.equals(cert)) {
+			throw new CoreException(new Status(IStatus.ERROR, IPhoneOSTransportPlugin.PLUGIN_ID,
+					"To send to an IPhone requires a distribution (ad hoc) certificate to be used."));
 		}
 		
 		try {

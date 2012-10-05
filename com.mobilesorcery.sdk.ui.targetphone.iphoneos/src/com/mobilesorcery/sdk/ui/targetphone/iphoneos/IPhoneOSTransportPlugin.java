@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -16,6 +17,8 @@ public class IPhoneOSTransportPlugin extends AbstractUIPlugin {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.ui.targetphone.iphoneos"; //$NON-NLS-1$
+
+	public static final String PROV_IMAGE = "prov";
 
 	// The shared instance
 	private static IPhoneOSTransportPlugin plugin;
@@ -42,6 +45,10 @@ public class IPhoneOSTransportPlugin extends AbstractUIPlugin {
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
+	}
+	
+	public void initializeImageRegistry(ImageRegistry reg) {
+		reg.put(PROV_IMAGE, imageDescriptorFromPlugin(PLUGIN_ID, "$nl$/icons/prov.gif"));
 	}
 
 	/**

@@ -94,8 +94,10 @@ public class AwaitConnectionDialog extends ProgressAndStepDialog {
 	protected void addMessages() {
 		IVendor vendor = ProfileDBManager.getInstance().getVendor("ios");
 		Image vendorImage = MosyncUIPlugin.getDefault().getPlatformImage(vendor, new Point(16, 16));
+		Image provImage = IPhoneOSTransportPlugin.getDefault().getImageRegistry().get(IPhoneOSTransportPlugin.PROV_IMAGE);
 		try {
 			URL url = IPhoneOSTransportPlugin.getDefault().getServerURL();
+			addMessage(provImage, "Make sure that you have created an ad hoc provising profile that matches your device.\nIf not correct, the app will not install.");
 			addMessage(vendorImage,
 					MessageFormat.format("On your iPhone, go to this URL: {0}\nTip: you can add this as a bookmark.", url));
 		} catch (IOException e) {

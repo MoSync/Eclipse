@@ -41,7 +41,8 @@ public class ProgressAndStepDialog extends ProgressMonitorDialog {
 			Image icon = icons.get(i);
 			String message = messages.get(i);
 			Label iconLabel = new Label(parent, SWT.NONE);
-			iconLabel.setLayoutData(new GridData(SWT.DEFAULT, SWT.TOP, false,
+			iconLabel.setAlignment(SWT.CENTER);
+			iconLabel.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false,
 					false));
 			if (icon != null) {
 				iconLabel.setImage(icon);

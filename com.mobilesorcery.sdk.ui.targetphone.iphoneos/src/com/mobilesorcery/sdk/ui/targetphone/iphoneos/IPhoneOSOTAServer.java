@@ -2,12 +2,9 @@ package com.mobilesorcery.sdk.ui.targetphone.iphoneos;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.HttpRetryException;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -17,12 +14,13 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -110,8 +108,15 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 		if (target.startsWith("/")) {
 			target = target.substring(1);
 		}
+		
 		String ext = Util.getExtension(target);
-		String projectName = Util.getNameWithoutExtension(target);
+		String[] segments = target.split("/");
+		String projectName = Util.getNameWithoutExtension(segments[0]);
+		String fileName = segments[segments.length - 1];
+		
+		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+			CoreMoSyncPlugin.trace("Device requested {0} for project {1} (extension {2})", target, projectName, ext);
+		}
 		
 		if (Util.isEmpty(projectName)) {
 			generateIndex(response);
@@ -122,22 +127,19 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 				IBuildVariant variant = projects.get(mosyncProject);
 				if (variant != null) {
 					if ("plist".equals(ext)) {
-						generatePlist(response, mosyncProject);
-					}
-					if ("mobileprovisioning".equals(ext)) {
+						generatePlist(response, mosyncProject, variant);
+					} else if ("mobileprovisioning".equals(ext)) {
 						generateProvisioningFile(response, mosyncProject);
-					}
-					if ("ipa".equals(ext)) {
+					} else if ("ipa".equals(ext)) {
 						transferApp(response, mosyncProject, variant);
+					} else if (ext.equals("png") && fileName.startsWith("icon")) {
+						transferIcon(response, mosyncProject, variant);
 					}
 				}
 			} else {
 				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 			}
 		}
-		
-		response.flushBuffer();
-		Util.safeClose(response.getOutputStream());
 	}
 
 	private void transferApp(HttpServletResponse response,
@@ -146,21 +148,40 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 			listener.appRequested(mosyncProject);
 		}
 		
-		response.setContentType("application/octet-stream");
-		
 		IBuildState buildState = mosyncProject.getBuildState(variant);
 		List<File> ipaFile = buildState.getBuildResult().getBuildResult().get(IBuildResult.MAIN);
-		if (!ipaFile.isEmpty()) {
-			FileInputStream input = new FileInputStream(ipaFile.get(0));
+
+		transferFile(response, ipaFile.isEmpty() ? null : ipaFile.get(0));
+	}
+	
+	private void transferIcon(HttpServletResponse response,
+			MoSyncProject mosyncProject, IBuildVariant variant) throws IOException {
+		response.setContentType("application/octet-stream");
+		response.setStatus(HttpServletResponse.SC_OK);
+		
+		IPath output = MoSyncBuilder.getPackageOutputPath(mosyncProject.getWrappedProject(), variant);
+		// We make use of internal knowledge!
+		IPath iconFile = output.append(new Path("xcode-proj/Icon.png"));
+		transferFile(response, iconFile.toFile());
+	}
+	
+	private void transferFile(HttpServletResponse response, File file) throws IOException {
+		response.setContentType("application/octet-stream");
+		response.setStatus(HttpServletResponse.SC_OK);
+		
+		if (file != null && file.exists()) {
+			FileInputStream input = new FileInputStream(file);
 			Util.transfer(input, response.getOutputStream());
 		} else {
 			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 		}
+		Util.safeClose(response.getOutputStream());
 	}
 
 	private void generateProvisioningFile(HttpServletResponse response,
 			MoSyncProject project) throws IOException {
 		response.setContentType("application/octet-stream");
+		response.setStatus(HttpServletResponse.SC_OK);
 		
 		String provisioningFile = project.getProperty(PropertyInitializer.IOS_PROVISIONING_FILE);
 		File absoluteProvisioningFile = Util.relativeTo(project.getWrappedProject().getLocation().toFile(), provisioningFile);
@@ -169,24 +190,32 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 			Util.transfer(input, response.getOutputStream());
 		} finally {
 			Util.safeClose(input);
+			Util.safeClose(response.getOutputStream());
 		}
 	}
 
-	private void generatePlist(HttpServletResponse response, MoSyncProject mosyncProject) throws IOException {
+	private void generatePlist(HttpServletResponse response, MoSyncProject mosyncProject, IBuildVariant variant) throws IOException {
 		response.setContentType("text/xml");
+		response.setCharacterEncoding("UTF-8");
+		response.setStatus(HttpServletResponse.SC_OK);
 		
 		Template plistTemplate = new Template(getClass().getResource("/templates/dist.plist.template"));
 		Map<String, String> map = new HashMap<String, String>();
+		DefaultPackager dp = new DefaultPackager(mosyncProject, variant);
+		map.putAll(dp.getParameters().toMap());
 		map.put("base-url", getBaseURL());
 		map.put("project-name", mosyncProject.getName());
 		map.put(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP, mosyncProject.getProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP));
-		map.put("iphoneos:bundle.id", mosyncProject.getProperty("iphoneos:bundle.id"));
+		map.put("iphoneos:bundle.id", mosyncProject.getProperty("iphone:bundle.id"));
 		response.getWriter().write(plistTemplate.resolve(map));
+		
+		Util.safeClose(response.getWriter());
 	}
 
 	private void generateIndex(HttpServletResponse response) throws IOException {
 		response.setContentType("text/html");
 		response.setCharacterEncoding("UTF-8");
+		response.setStatus(HttpServletResponse.SC_OK);
 		PrintWriter output = response.getWriter();
 		Template indexTemplate = new Template(getClass().getResource(
 				"/templates/index.html.template"));
@@ -210,6 +239,8 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 		HashMap<String, String> map = new HashMap<String, String>();
 		map.put("project-list", projectList.toString());
 		output.write(indexTemplate.resolve(map));
+		
+		Util.safeClose(output);
 	}
 
 	private String getBaseURL() throws IOException {
