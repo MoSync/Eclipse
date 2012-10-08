@@ -291,7 +291,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			deps.addDependency(outputFile, inputRoot);
 			
 			if (PropertyUtil.getBoolean(properties,
-					MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
+					MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS) && Html5Plugin.getDefault().isJSODDEnabled()) {
 				monitor.beginTask("Instrumenting JavaScript source files", 10);
 				File outputRoot = MoSyncBuilder
 						.getOutputPath(wrappedProject, variant)

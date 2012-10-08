@@ -515,7 +515,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 				variant.getConfigurationId());
 		if (DebuggingEnableTester.hasDebugSupport(project)
 				&& PropertyUtil.getBoolean(properties,
-						MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
+						MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS) && isJSODDEnabled()) {
 
 			new Thread(new Runnable() {
 				public void run() {
