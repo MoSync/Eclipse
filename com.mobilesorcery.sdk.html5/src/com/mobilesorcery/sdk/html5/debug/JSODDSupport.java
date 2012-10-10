@@ -472,7 +472,7 @@ public class JSODDSupport {
 			insert(position, "\n" + (start ? '{' : '}') + "\n");
 		}
 
-		public void rewrite(long fileId, String originalSource, boolean addBoilerPlate, Writer output,
+		public void rewrite(long fileId, String originalSource, int fwImportLocation, Writer output,
 				NavigableMap<Integer, LocalVariableScope> scopeMap,
 				NavigableSet<Integer> instrumentedLines) throws IOException, CoreException {
 			// TODO: I guess there are some better AST rewrite methods around.
@@ -499,9 +499,9 @@ public class JSODDSupport {
 			}
 
 			SourceRewrite doc = new SourceRewrite(originalSource);
-			if (addBoilerPlate) {
-				doc.seek(0);
-				doc.insert(generateBoilerplate(MoSyncProject.create(project)));
+			if (fwImportLocation > 0) {
+				doc.seek(fwImportLocation);
+				doc.insert(generateFrameworkImport());
 			}
 			rootRewrite.rewrite(null, doc);
 			instrumented = doc.rewrite();
@@ -702,6 +702,20 @@ public class JSODDSupport {
 		return fileRedefinable;
 	}
 
+	public void writeFramework(Writer output) throws CoreException {
+		IFile frameworkFile = project.getFile(Html5Plugin
+				.getHTML5Folder(project).append(getFrameworkPath()));
+		String frameworkSource = generateFrameworkSource();
+		this.instrumentedSource.put(frameworkFile, frameworkSource);
+		if (output != null) {
+			try {
+				output.write(frameworkSource);
+			} catch (IOException e) {
+				throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, "Cannot write debug framework", e));
+			}
+		}
+	}
+	
 	public FileRedefinable rewrite(IPath filePath, Writer output,
 			ProjectRedefinable baseline) throws CoreException {
 		DebugRewriteOperationVisitor visitor = null;
@@ -723,14 +737,19 @@ public class JSODDSupport {
 				visitor = new DebugRewriteOperationVisitor(
 						sourceLineMap, fileId);
 
+				int fwImportLocation = -1;
 				if (isEmbeddedJavaScriptFile(filePath)) {
 					ArrayList<Pair<Integer, Integer>> htmlRanges = new ArrayList<Pair<Integer, Integer>>();
+					ArrayList<Pair<Integer, Integer>> htmlImportRanges = new ArrayList<Pair<Integer, Integer>>();
 					prunedSource = getEmbeddedJavaScript(file,
-							scopeResetPoints, htmlRanges);
+							scopeResetPoints, htmlRanges, htmlImportRanges);
 					HTMLRedefinable htmlRedefinable = new HTMLRedefinable(null,
 							file, visitor);
 					htmlRedefinable.setHtmlRanges(htmlRanges);
 					fileRedefinable = htmlRedefinable;
+					if (!htmlImportRanges.isEmpty()) {
+						fwImportLocation = htmlImportRanges.get(0).first;
+					}
 				}
 
 				// 1. Parse (JSDT)
@@ -743,9 +762,7 @@ public class JSODDSupport {
 				ast.accept(visitor);
 				TreeMap<Integer, LocalVariableScope> scopeMap = new TreeMap<Integer, LocalVariableScope>();
 				TreeSet<Integer> instrumentedLines = new TreeSet<Integer>();
-				boolean addBoilerPlate = JSODDSupport
-						.isWormholeLib(filePath);
-				visitor.rewrite(fileId, source, addBoilerPlate, output, scopeMap,
+				visitor.rewrite(fileId, source, fwImportLocation, output, scopeMap,
 						instrumentedLines);
 
 				// 3. Update state and notify listeners
@@ -788,7 +805,8 @@ public class JSODDSupport {
 	// spaces
 	private String getEmbeddedJavaScript(IFile file,
 			NavigableSet<Integer> scopeResetPoints,
-			ArrayList<Pair<Integer, Integer>> htmlRanges) throws IOException,
+			ArrayList<Pair<Integer, Integer>> htmlRanges,
+			ArrayList<Pair<Integer, Integer>> importHtmlRanges) throws IOException,
 			CoreException, InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(1);
 		IModelManager modelManager = StructuredModelManager.getModelManager();
@@ -819,28 +837,14 @@ public class JSODDSupport {
 			int end = i == ranges.length ? doc.getLength() : ranges[i].offset;
 			htmlRanges.add(new Pair<Integer, Integer>(start, end));
 		}
-
-		String[] imports = translator.getRawImports();
-		boolean wormholeIsFirstImport = imports.length > 0
-				&& isWormholeLib(new Path(imports[0]));
-		if (htmlRanges.size() > 1 && !wormholeIsFirstImport) {
-			// TODO: Is this really necessary - we could take care of it in some
-			// other way?
-			throw new CoreException(
-					new Status(
-							IStatus.ERROR,
-							Html5Plugin.PLUGIN_ID,
-							MessageFormat
-									.format("{0}: Java On-Device Debug requires each file that contains JavaScript to have wormhole (typically js/wormhole.js) as its first import.",
-											file.getProjectRelativePath())));
+		
+		org.eclipse.jface.text.Position[] importRanges = translator.getImportHtmlRanges();
+		for (int i = 0; i < importRanges.length; i++) {
+			org.eclipse.jface.text.Position importRange = importRanges[i];
+			importHtmlRanges.add(new Pair<Integer, Integer>(importRange.offset, importRange.offset + importRange.length));
 		}
 
 		return translator.getJsText();
-	}
-
-	public static boolean isWormholeLib(IPath path) {
-		return path != null
-				&& path.lastSegment().equalsIgnoreCase("wormhole.js");
 	}
 
 	public static boolean isValidJavaScriptFile(IPath file) {
@@ -906,7 +910,18 @@ public class JSODDSupport {
 		return LocalVariableScope.EMPTY;
 	}
 
-	public String generateBoilerplate(MoSyncProject project) throws CoreException {
+	public String generateFrameworkImport() throws CoreException {
+		return MessageFormat.format(
+				"<script type=\"text/javascript\" charset=\"utf-8\" src=\"{0}\"></script>",
+				getFrameworkPath());
+	}
+	
+	public static String getFrameworkPath() {
+		return "wormhole_dbg_fw.js";
+	}
+
+	public String generateFrameworkSource() throws CoreException {
+		MoSyncProject project = MoSyncProject.create(this.project);
 		StringWriter boilerplateOutput = new StringWriter();
 		writeTemplate(project, "/templates/jsoddsupport.template",
 				boilerplateOutput);

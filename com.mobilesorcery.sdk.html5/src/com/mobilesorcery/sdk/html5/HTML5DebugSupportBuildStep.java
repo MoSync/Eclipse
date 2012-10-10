@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -62,18 +63,14 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				IPath resourcePath = resourceToInstrument.getFullPath();
 				resourcePath = resourcePath.removeFirstSegments(inputRoot
 						.getFullPath().segmentCount());
-				File outputFile = new File(outputRoot,
-						resourcePath.toOSString());
 				FileRedefinable result = null;
 				if (delete) {
 					result = op.delete(resourceToInstrument.getFullPath(),
 							op.getBaseline());
 				} else {
-					outputFile.getParentFile().mkdirs();
-					FileWriter output = null;
+					Writer output = null;
 					try {
-						output = persistToFile ? new FileWriter(outputFile)
-								: null;
+						output = persistToFile ? createWriter(resourcePath) : null;
 						MoSyncProject mosyncProject = MoSyncProject
 								.create(getProject());
 						if (fetchRemotely) {
@@ -97,6 +94,25 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 					}
 				}
 				return result == null ? 0 : result.getMemSize();
+			}
+
+			public void writeFramework() throws CoreException {
+				Writer output = null;
+				try {
+					output = createWriter(new Path(JSODDSupport.getFrameworkPath()));
+					op.writeFramework(output);
+				} catch (IOException e) {
+					throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, "Could not create debug framework", e));
+				} finally {
+					Util.safeClose(output);
+				}
+			}
+			
+			private Writer createWriter(IPath localPath) throws IOException {
+				File outputFile = new File(outputRoot,
+						localPath.toOSString());
+				outputFile.getParentFile().mkdirs();
+				return new FileWriter(outputFile);
 			}
 		}
 
@@ -184,6 +200,9 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 								.getFullPath(),
 						Util.elapsedTime((int) elapsed), wasDeleted ? "deleted"
 								: Util.dataSize(memoryConsumption)));
+			}
+			if (diff == null) {
+				rewriter.writeFramework();
 			}
 		}
 
