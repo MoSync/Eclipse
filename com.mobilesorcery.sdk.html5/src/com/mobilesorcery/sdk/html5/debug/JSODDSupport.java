@@ -341,9 +341,8 @@ public class JSODDSupport {
 		}
 
 		private boolean isNestStatement(ASTNode node) {
-			return node instanceof FunctionDeclaration || node instanceof Block
-					|| node instanceof ForStatement
-					|| node instanceof ForInStatement;
+			// No block scope in JS.
+			return node instanceof FunctionDeclaration;
 		}
 
 		private int getStartPosition(ASTNode node) {
