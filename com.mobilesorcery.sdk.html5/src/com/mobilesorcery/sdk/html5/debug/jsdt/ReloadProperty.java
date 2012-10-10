@@ -7,14 +7,14 @@ import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 
 public class ReloadProperty extends ReloadMirror implements Property {
 
-	private final String name;
+	protected final String name;
 	private final ReloadStackFrame frame;
-	private final String symbolToEvaluate;
+	protected final ReloadProperty parent;
 
-	ReloadProperty(ReloadVirtualMachine vm, ReloadStackFrame frame, String symbolToEvaluate, String name) {
+	ReloadProperty(ReloadVirtualMachine vm, ReloadStackFrame frame, ReloadProperty parent, String name) {
 		super(vm);
 		this.frame = frame;
-		this.symbolToEvaluate = symbolToEvaluate;
+		this.parent = parent;
 		this.name = name;
 	}
 
@@ -25,7 +25,15 @@ public class ReloadProperty extends ReloadMirror implements Property {
 
 	@Override
 	public Value value() {
-		return frame.getValue(symbolToEvaluate);
+		return frame.getValue(this);
+	}
+	
+	protected String getSymbolToEvaluate() {
+		String evalName = "arguments".equals(name) ? "____arguments" : name;
+		if (parent != null) {
+			return parent.getSymbolToEvaluate() + "." + evalName;
+		}
+		return evalName;
 	}
 
 }

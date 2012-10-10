@@ -203,14 +203,11 @@ public class FunctionRewrite extends NodeRewrite {
 			}
 		}
 			
-		if (addEditAndContinue) {
+		//if (addEditAndContinue) {
 			rewrite.insert("var ____arguments = arguments;\n");
-		}
+		//}
 		rewrite.insert(editAndContinuePreamble);
 
-		if (addEditAndContinue) {
-		}
-		
 		boolean firstStatement = true;
 		for (Object statementObj : statements) {
 			ASTNode statement = (ASTNode) statementObj;

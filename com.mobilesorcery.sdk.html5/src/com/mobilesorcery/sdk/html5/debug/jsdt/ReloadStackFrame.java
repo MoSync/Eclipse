@@ -84,13 +84,13 @@ public class ReloadStackFrame implements StackFrame {
 	private void initVars() {
 		if (!inited) {
 			inited = true;
-			thisVar = new ReloadVariable(vm, this, "this", "this");
+			thisVar = new ReloadVariable(vm, this, "this");
 			localVars = new ArrayList<ReloadVariable>();
 			int scopeLine = catchLine == null ? location.lineNumber() : catchLine.intValue();
 			LocalVariableScope scope = vm.getLocalVariableScope(location.scriptReference(), scopeLine);
 			if (scope != null) {
 				for (String localVar : scope.getLocalVariables()) {
-					localVars.add(new ReloadVariable(vm, this, localVar, localVar));
+					localVars.add(new ReloadVariable(vm, this, localVar));
 				}
 			}
 		}
@@ -137,10 +137,11 @@ public class ReloadStackFrame implements StackFrame {
 		return MessageFormat.format("MoSyncDebugProtocol.doDropToFrame({0}, {1});", Integer.toString(frameToDropTo), expression);
 	}
 
-	public Value getValue(String name) {
-		System.err.println("EVAL: " + name);
-		String metaFn = "this".equals(name) ? "evalThis" : "evalVar";
-		String metaExpr = String.format("MoSyncDebugProtocol.%s(%s);", metaFn, name);
+	public Value getValue(ReloadProperty property) {
+		String symbolToEvaluate = property.getSymbolToEvaluate();
+		String name = property.name();
+		String metaFn = "this".equals(symbolToEvaluate) ? "evalThis" : "evalVar";
+		String metaExpr = String.format("MoSyncDebugProtocol.%s(%s);", metaFn, symbolToEvaluate);
 
 		String metaEvaluation = internalEvaluate(metaExpr, stackDepth);
 		try {
@@ -165,10 +166,11 @@ public class ReloadStackFrame implements StackFrame {
 						hasLengthProperty |= "length".equals(propertyName);
 						boolean isArrayProperty = Character.isDigit(propertyName.charAt(0));
 						hasArrayProperty |= isArrayProperty;
-						String fullName = isArrayProperty ? name + "[" + propertyName + "]" : name + "." + propertyName;
 						boolean isInternalProperty = "____oid".equals(propertyName);
 						if (!isInternalProperty) {
-							generatedProperties.add(new ReloadProperty(vm, this, fullName, propertyName));
+							generatedProperties.add(isArrayProperty ?
+									new ReloadArrayProperty(vm, this, property, propertyName) : 
+								    new ReloadProperty(vm, this, property, propertyName));
 						}
 					}
 					
@@ -202,15 +204,6 @@ public class ReloadStackFrame implements StackFrame {
 	private void addSpecialProps(JSONArray properties, String name) throws InterruptedException, TimeoutException {
 		if ("arguments".equals(name)) {
 			properties.add("length");
-			properties.add("callee");
-			
-			Object result = vm.evaluate("arguments.length", stackDepth);
-			if (result instanceof Number) {
-				int intResult = ((Number) result).intValue();
-				for (int i = 0; i < intResult; i++) {
-					properties.add("" + i);
-				}
-			}
 		}
 	}
 }
