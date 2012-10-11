@@ -150,8 +150,7 @@ public class JSODDConnectDialog extends ProgressAndStepDialog {
 			connectMessage += "\nThe simplest way to do this is often to connect to the same WiFi network.";
 		}
 		addMessage(
-				PlatformUI.getWorkbench().getSharedImages()
-						.getImage(ISharedImages.IMG_ELCL_SYNCED),
+				MosyncUIPlugin.getDefault().getImageRegistry().get(MosyncUIPlugin.IMG_WIFI),
 				connectMessage);
 
 		// IOS?

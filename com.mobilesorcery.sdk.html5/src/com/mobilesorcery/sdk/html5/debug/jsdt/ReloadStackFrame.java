@@ -2,6 +2,7 @@ package com.mobilesorcery.sdk.html5.debug.jsdt;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -155,19 +156,23 @@ public class ReloadStackFrame implements StackFrame {
 					String className = (String) metaObject.get("clazz");
 					JSONArray properties = (JSONArray) metaObject.get("properties");
 					
-					addSpecialProps(properties, name);
+					if (properties != null) {
+						properties.addAll(property.getIntrinsicProperties());
+					}
 					
 					ArrayList<ReloadProperty> generatedProperties = new ArrayList<ReloadProperty>();
 					boolean hasArrayProperty = false;
 					boolean hasLengthProperty = false;
 
+					HashSet<String> unDuplicateSet = new HashSet<String>();
 					for (int i = 0; properties != null && i < properties.size(); i++) {
 						String propertyName = (String) properties.get(i);
 						hasLengthProperty |= "length".equals(propertyName);
 						boolean isArrayProperty = Character.isDigit(propertyName.charAt(0));
 						hasArrayProperty |= isArrayProperty;
 						boolean isInternalProperty = "____oid".equals(propertyName);
-						if (!isInternalProperty) {
+						if (!isInternalProperty && !unDuplicateSet.contains(propertyName)) {
+							unDuplicateSet.add(propertyName);
 							generatedProperties.add(isArrayProperty ?
 									new ReloadArrayProperty(vm, this, property, propertyName) : 
 								    new ReloadProperty(vm, this, property, propertyName));
@@ -201,9 +206,4 @@ public class ReloadStackFrame implements StackFrame {
 		return vm.mirrorOfUndefined();
 	}
 
-	private void addSpecialProps(JSONArray properties, String name) throws InterruptedException, TimeoutException {
-		if ("arguments".equals(name)) {
-			properties.add("length");
-		}
-	}
 }

@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.URL;
+import java.text.DateFormat;
 import java.text.MessageFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -227,8 +229,12 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 			projectList.append("</b><br/>");
 			projectList.append("<ul>");
 			String url = getBaseURL();
+			IBuildVariant variant = this.projects.get(project);
+			IBuildState buildState = project.getBuildState(variant);
+			long buildTimestamp = buildState.getBuildResult().getTimestamp();
+			String buildTime = DateFormat.getTimeInstance(DateFormat.LONG).format(new Date(buildTimestamp));
 			projectList.append(MessageFormat.format(
-					"<li><a href=\"itms-services://?action=download-manifest&url={0}/{1}.plist\">App</a></li>", url, projectName));
+					"<li><a href=\"itms-services://?action=download-manifest&url={0}/{1}.plist\">App</a> ({2})</li>", url, projectName, buildTime));
 			projectList
 					.append(MessageFormat
 							.format("<li><a href=\"{0}/{1}.mobileprovisioning\">Provisioning file</a></li>",

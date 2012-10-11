@@ -64,15 +64,20 @@ public class IPhoneOSTargetPhoneTransport implements
 	public void send(IShellProvider shell, MoSyncProject project, IBuildVariant variant,
 			ITargetPhone phone, File packageToSend, IProgressMonitor monitor)
 			throws CoreException {
+		if (!XCodeBuild.getDefault().isValid()) {
+			throw new CoreException(new Status(IStatus.ERROR, IPhoneOSTransportPlugin.PLUGIN_ID,
+				"To send to an IPhone requires Xcode to be installed."));
+		}
+		
 		if (!IPhoneOSPackager.shouldUseProvisioning(project, variant)) {
 			throw new CoreException(new Status(IStatus.ERROR, IPhoneOSTransportPlugin.PLUGIN_ID,
-					"To send to an IPhone requires a provisioning profile to be set."));
+				"To send to an IPhone requires a provisioning profile to be set."));
 		}
 		
 		String cert = IPhoneOSPackager.getCertificate(project, variant);
 		if (Activator.IPHONE_DEV_CERT.equals(cert)) {
 			throw new CoreException(new Status(IStatus.ERROR, IPhoneOSTransportPlugin.PLUGIN_ID,
-					"To send to an IPhone requires a distribution (ad hoc) certificate to be used."));
+				"To send to an IPhone requires a distribution (ad hoc) certificate to be used."));
 		}
 		
 		try {
@@ -107,7 +112,7 @@ public class IPhoneOSTargetPhoneTransport implements
 
 	@Override
 	public boolean isAvailable() {
-		return XCodeBuild.getDefault().isValid();
+		return XCodeBuild.isMac();
 	}
 
 }

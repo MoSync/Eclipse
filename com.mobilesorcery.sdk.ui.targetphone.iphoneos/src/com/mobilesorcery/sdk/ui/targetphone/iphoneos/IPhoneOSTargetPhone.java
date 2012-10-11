@@ -11,5 +11,14 @@ public class IPhoneOSTargetPhone extends AbstractTargetPhone {
 	public String toString() {
 		return "IPhone OTA";
 	}
+	
+	public boolean equals(Object other) {
+		// We consider all to be equal.
+		return other instanceof IPhoneOSTargetPhone;
+	}
+	
+	public int hashCode() {
+		return 1;
+	}
 
 }

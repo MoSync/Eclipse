@@ -97,9 +97,10 @@ public class AwaitConnectionDialog extends ProgressAndStepDialog {
 		Image provImage = IPhoneOSTransportPlugin.getDefault().getImageRegistry().get(IPhoneOSTransportPlugin.PROV_IMAGE);
 		try {
 			URL url = IPhoneOSTransportPlugin.getDefault().getServerURL();
+			addMessage(MosyncUIPlugin.getDefault().getImageRegistry().get(MosyncUIPlugin.IMG_WIFI), "Make sure your device can connect to your computer.\nThe simplest way to do this is often to connect to the same WiFi network.");
 			addMessage(provImage, "Make sure that you have created an ad hoc provising profile that matches your device.\nIf not correct, the app will not install.");
 			addMessage(vendorImage,
-					MessageFormat.format("On your iPhone, go to this URL: {0}\nTip: you can add this as a bookmark.", url));
+					MessageFormat.format("On your iPhone, go to this URL: {0}", url));
 		} catch (IOException e) {
 			addMessage(vendorImage, "Invalid server URL");
 		}
