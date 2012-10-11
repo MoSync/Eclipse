@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.MessageFormat;
 import java.util.Date;
@@ -228,7 +229,7 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 			projectList.append(project.getName());
 			projectList.append("</b><br/>");
 			projectList.append("<ul>");
-			String url = getBaseURL();
+			String url = URLEncoder.encode(getBaseURL(), "UTF-8");
 			IBuildVariant variant = this.projects.get(project);
 			IBuildState buildState = project.getBuildState(variant);
 			long buildTimestamp = buildState.getBuildResult().getTimestamp();
