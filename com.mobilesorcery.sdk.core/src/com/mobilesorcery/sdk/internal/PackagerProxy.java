@@ -55,12 +55,6 @@ public class PackagerProxy implements IPackager {
     }
 
 	@Override
-	public void setParameter(String param, String value) throws CoreException {
-		initDelegate();
-		delegate.setParameter(param, value);
-	}
-
-	@Override
 	public String getGenerateMode(IProfile profile) throws CoreException {
 		initDelegate();
 		return delegate.getGenerateMode(profile);

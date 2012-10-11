@@ -20,13 +20,21 @@ import com.mobilesorcery.sdk.core.Cache;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.build.IBuildStepFactoryExtension.Position;
 
 public class BuildSequence implements IBuildSequence {
 
 	private final MoSyncProject project;
 	private ArrayList<IBuildStepFactory> buildStepFactories = new ArrayList<IBuildStepFactory>();
 	private ArrayList<IBuildStep> buildSteps;
+	
+	private final static String[] BASE_SEQUENCE = new String[] { 
+			ResourceBuildStep.ID, CompileBuildStep.ID,
+			LinkBuildStep.ID, PackBuildStep.ID,
+			CopyBuildResultBuildStep.ID
+		};
 
 	// Can leak max 8 prjs.
 	private static Cache<MoSyncProject, BuildSequence> cache = new Cache<MoSyncProject, BuildSequence> (8);
@@ -60,36 +68,70 @@ public class BuildSequence implements IBuildSequence {
 	}
 
 	private void initDefaultFactories() {
-		addStandardFactory(ResourceBuildStep.ID);
-		addStandardFactory(CompileBuildStep.ID);
-		addStandardFactory(LinkBuildStep.ID);
-		addStandardFactory(PackBuildStep.ID);
-		addStandardFactory(CopyBuildResultBuildStep.ID);
+		for (int i = 0; i < BASE_SEQUENCE.length; i++) {
+			addDefaultFactory(i, BASE_SEQUENCE[i]);
+		}
+		for (String factoryId : CoreMoSyncPlugin.getDefault().getBuildStepFactories()) {
+			IBuildStepFactoryExtension ext = 
+					CoreMoSyncPlugin.getDefault().getBuildStepFactoryExtension(factoryId);
+			if (ext != null) {
+				Pair<Position, String> pos = ext.getDefaultPosition();
+				if (pos.first != Position.NONE && pos.second != null) {
+					// We only allow positions relative to intrinsic factories.
+					int ix = getIndex(pos.second);
+					addDefaultFactory(ix + (pos.first == Position.BEFORE ? 0 : 1), 
+							factoryId);
+				}	
+			}
+		}
+	}
+	
+	private int getIndex(String id) {
+		for (int i = 0; i < buildStepFactories.size(); i++) {
+			if (buildStepFactories.get(i).getId().equals(id)) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	private boolean isDefaultSequence() {
-		// Note: if we add properties to these build steps
-		// we need to change this method
-		boolean result = buildStepFactories.size() == 5;
-		result &= isDefaultFactory(0, ResourceBuildStep.ID);
-		result &= isDefaultFactory(1, CompileBuildStep.ID);
-		result &= isDefaultFactory(2, LinkBuildStep.ID);
-		result &= isDefaultFactory(3, PackBuildStep.ID);
-		result &= isDefaultFactory(4, CopyBuildResultBuildStep.ID);
-		return result;
-	}
-
-	private boolean isDefaultFactory(int ix, String id) {
-		if (ix >= buildStepFactories.size()) {
-			return false;
+		int baseSequenceIx = 0;
+		for (IBuildStepFactory buildStepFactory : buildStepFactories) {
+			if (!buildStepFactory.isDefault()) {
+				return false;
+			}
+			String id = buildStepFactory.getId();
+			IBuildStepFactoryExtension ext = CoreMoSyncPlugin.getDefault().
+					getBuildStepFactoryExtension(id);
+			if (ext == null) {
+				// Then we'd better be at the proper base sequence position!
+				if (!BASE_SEQUENCE[baseSequenceIx].equals(id)) {
+					return false;
+				}
+				baseSequenceIx++;
+			} else {
+				Pair<Position, String> pos = ext.getDefaultPosition();
+				if (pos.first == Position.NONE || pos.second == null) {
+					return false;
+				}
+				boolean correctPositionBefore = pos.first == Position.BEFORE &&
+						pos.second.equals(BASE_SEQUENCE[baseSequenceIx]);
+				boolean correctPositionAfter = baseSequenceIx > 0 &&
+						pos.first == Position.AFTER &&
+						pos.second.equals(BASE_SEQUENCE[baseSequenceIx - 1]);
+				if (!correctPositionAfter && !correctPositionBefore) {
+					return false;
+				}
+			}
 		}
-		IBuildStepFactory factory = buildStepFactories.get(ix);
-		return (id.equals(factory.getId()) && factory.isDefault());
+		
+		return baseSequenceIx == BASE_SEQUENCE.length;
 	}
 
-	private void addStandardFactory(String id) {
+	private void addDefaultFactory(int ix, String id) {
 		IBuildStepFactory factory = CoreMoSyncPlugin.getDefault().createBuildStepFactory(id);
-		buildStepFactories.add(factory);
+		buildStepFactories.add(ix, factory);
 	}
 
 	private void load() {

@@ -37,17 +37,6 @@ public interface IPackagerDelegate {
      */
     void createPackage(MoSyncProject project, IBuildSession session, IBuildVariant targetProfile, IFileTreeDiff diff, IBuildResult buildResult) throws CoreException;
 
-    /**
-     * <p>Sets a parameter to be used by the packager.</p>
-     * <p>Typical examples include packager-specific parameters, such as
-     * Symbian UIDs, Java ME manifest entries, etc.</p>
-     * @param param The parameter to set
-     * @param value The value of the parameter, or <code>null</code>.
-     * @throws CoreException
-     */
-    void setParameter(String param, String value) throws CoreException;
-
-
 	/**
 	 * Returns the generate mode to be used during linking, as
 	 * per defined in the {@link IPackagerDelegate#BUILD_C_MODE},

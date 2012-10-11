@@ -70,9 +70,11 @@ public class ReloadManager implements IResourceChangeListener {
 
 	public void reload(IProject projectToReload) throws IOException {
 		URL reloadServerURL = new URL("http", "localhost", 8282, "/" + projectToReload.getName() + "/LocalFiles.html");
-		// Just ping & close.
+		// Just ping & close. TODO: Seperate thread, please.
+		// Activate if we ever want to support Reload in the IDE.
+		/*
 		URLConnection connection = reloadServerURL.openConnection();
 		connection.connect();
-		connection.getInputStream().close();
+		connection.getInputStream().close();*/
 	}
 }

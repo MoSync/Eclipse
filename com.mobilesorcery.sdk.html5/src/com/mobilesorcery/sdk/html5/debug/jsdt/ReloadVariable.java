@@ -10,8 +10,8 @@ import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 public class ReloadVariable extends ReloadProperty implements Variable {
 
 	public ReloadVariable(ReloadVirtualMachine vm,
-			ReloadStackFrame frame, String symbolToEvaluate, String name) {
-		super(vm, frame, symbolToEvaluate, name);
+			ReloadStackFrame frame, String name) {
+		super(vm, frame, null, name);
 	}
 
 	@Override

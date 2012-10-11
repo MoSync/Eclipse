@@ -9,6 +9,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 
 import com.mobilesorcery.sdk.core.AbstractTool;
+import com.mobilesorcery.sdk.core.CollectingLineHandler;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 
@@ -30,11 +31,13 @@ public class WindowsPhoneEmulator extends AbstractTool {
 		super(toolPath);
 	}
 
-	public void run(File binFile) throws CoreException {
+	public Process run(File binFile) throws CoreException {
+		CollectingLineHandler processHandler = new CollectingLineHandler();
 		execute(new String[] {
 			getToolPath().getAbsolutePath(),
 			binFile.getAbsolutePath()
-		}, null, null, true);
+		}, processHandler, null, true);
+		return processHandler.getProcess();
 	}
 
 	@Override

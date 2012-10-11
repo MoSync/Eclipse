@@ -116,7 +116,7 @@ public class CopyBuildResultBuildStep extends AbstractBuildStep {
 	public int incrementalBuild(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult result,
 			IProgressMonitor monitor) throws Exception {
-		if (!result.getDependencyDelta().getAllDependees().isEmpty()) {
+		if (diff == null || !diff.isEmpty()) {
 			if (prototype.isActive()) {
 				String cfgId = getReleasePackageCfgId(project);
 				if (configMatches(project, variant)) {

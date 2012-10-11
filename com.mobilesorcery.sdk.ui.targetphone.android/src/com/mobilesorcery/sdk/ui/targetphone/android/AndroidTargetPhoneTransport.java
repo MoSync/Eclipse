@@ -31,9 +31,9 @@ import org.eclipse.ui.dialogs.ListDialog;
 import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 import com.mobilesorcery.sdk.builder.android.launch.ADB;
+import com.mobilesorcery.sdk.builder.android.launch.ADB.ProcessKiller;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.MoSyncTool;
-import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.ProfileDBManager;
@@ -41,6 +41,7 @@ import com.mobilesorcery.sdk.profiles.filter.AbstractDeviceFilter;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransportDelegate;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
+import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
 
 public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegate {
 
@@ -116,19 +117,20 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 	}
 
 	@Override
-	public void send(IShellProvider shell, MoSyncProject project, ITargetPhone phone, File packageToSend, IProgressMonitor monitor)
+	public void send(IShellProvider shell, MoSyncProject project, IBuildVariant variant, ITargetPhone phone, File packageToSend, IProgressMonitor monitor)
 			throws CoreException {
 		if (phone instanceof AndroidTargetPhone) {
 			AndroidTargetPhone androidPhone = (AndroidTargetPhone) phone;
 			String serialNumberOfDevice = androidPhone.getSerialNumber();
-			// For internal debugging purposes.
-			if (PropertyUtil.getBoolean(project, "adb.log.cat")) {
+			ADB.getDefault().install(packageToSend, project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME), serialNumberOfDevice, new ProcessKiller(monitor));
+			String androidComponent = Activator.getAndroidComponentName(project);
+			if (!monitor.isCanceled()) {
+				TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.ABOUT_TO_LAUNCH, phone, project, variant));
+				ADB.getDefault().launch(androidComponent, serialNumberOfDevice, new ProcessKiller(monitor));
+			}
+			if (!monitor.isCanceled()) {
 				ADB.getDefault().startLogCat();
 			}
-			ADB.getDefault().install(packageToSend, project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME), serialNumberOfDevice);
-			String androidComponent = Activator.getAndroidComponentName(project);
-			ADB.getDefault().launch(androidComponent, serialNumberOfDevice);
-			ADB.getDefault().startLogCat();
 		} else {
 			throw new CoreException(new Status(IStatus.ERROR, TargetPhonePlugin.PLUGIN_ID, "Can only send to android phones"));
 		}

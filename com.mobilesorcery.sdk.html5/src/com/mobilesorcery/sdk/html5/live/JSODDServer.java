@@ -65,6 +65,7 @@ import org.json.simple.parser.JSONParser;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
@@ -422,7 +423,9 @@ public class JSODDServer implements IResourceChangeListener {
 
 	private static final int DISCONNECT = 500;
 
-	private static final int TERMINATE = 12000;
+	public static final int TERMINATE = 12000;
+	
+	public static final int TIMEOUT = -800;
 
 	public static final String TIMEOUT_ATTR = "live.timeout";
 
@@ -928,7 +931,8 @@ public class JSODDServer implements IResourceChangeListener {
 
 	private final Object mutex = new Object();
 	private Server server;
-	private final CopyOnWriteArrayList<ILiveServerListener> listeners = new CopyOnWriteArrayList<ILiveServerListener>();
+	private final CopyOnWriteArrayList<ILiveServerListener> lifecycleListeners = new CopyOnWriteArrayList<ILiveServerListener>();
+	private final CopyOnWriteArrayList<ILiveServerCommandListener> commandListeners = new CopyOnWriteArrayList<ILiveServerCommandListener>();
 	private final CopyOnWriteArrayList<ILineHandler> consoleListeners = new CopyOnWriteArrayList<ILineHandler>();
 	private final AtomicInteger sessionId = new AtomicInteger(1);
 	private final IdentityHashMap<Object, Object> refs = new IdentityHashMap<Object, Object>();
@@ -966,7 +970,7 @@ public class JSODDServer implements IResourceChangeListener {
 								CoreMoSyncPlugin.getDefault().log(e);
 							}
 						}
-						notifyTimeoutListeners(vm);
+						notifyTerminateListeners(vm);
 					}
 				}
 			});
@@ -1025,13 +1029,16 @@ public class JSODDServer implements IResourceChangeListener {
 			MoSyncProject project, int newSessionId) {
 		String remoteIp = req.getRemoteAddr();
 		ReloadVirtualMachine vm = getVM(remoteIp);
-		if (vm == null) {
+		boolean reset = vm != null;
+		if (!reset) {
 			if (!unassignedVMs.isEmpty()) {
 				vm = unassignedVMs.remove(0);
 			}
 		} else {
 			int oldSessionId = vm.getCurrentSessionId();
 		}
+		// TODO: What if vm == null here?
+		
 		vm.reset(newSessionId, project, remoteIp);
 
 		vmsByHost.put(remoteIp, vm);
@@ -1039,6 +1046,9 @@ public class JSODDServer implements IResourceChangeListener {
 			CoreMoSyncPlugin.trace("Assigned session {0} to address {1}",
 					newSessionId, remoteIp);
 		}
+		
+		notifyInitListeners(vm, reset);
+		
 		return vm;
 	}
 
@@ -1057,21 +1067,36 @@ public class JSODDServer implements IResourceChangeListener {
 	}
 
 	public void addListener(ILiveServerListener listener) {
-		this.listeners.add(listener);
+		this.lifecycleListeners.add(listener);
 	}
 
 	public void removeListener(ILiveServerListener listener) {
-		this.listeners.remove(listener);
+		this.lifecycleListeners.remove(listener);
+	}
+	
+	public void addListener(ILiveServerCommandListener listener) {
+		this.commandListeners.add(listener);
+	}
+
+	public void removeListener(ILiveServerCommandListener listener) {
+		this.commandListeners.remove(listener);
 	}
 
 	private void notifyCommandListeners(String commandName, JSONObject command) {
-		for (ILiveServerListener listener : listeners) {
+		// TODO: Send directly to the proper VM instead!!
+		for (ILiveServerCommandListener listener : commandListeners) {
 			listener.received(commandName, command);
 		}
 	}
+	
+	private void notifyInitListeners(ReloadVirtualMachine vm, boolean reset) {
+		for (ILiveServerListener listener : lifecycleListeners) {
+			listener.inited(vm, reset);
+		}
+	}
 
-	private void notifyTimeoutListeners(ReloadVirtualMachine vm) {
-		for (ILiveServerListener listener : listeners) {
+	private void notifyTerminateListeners(ReloadVirtualMachine vm) {
+		for (ILiveServerListener listener : lifecycleListeners) {
 			listener.timeout(vm);
 		}
 	}
@@ -1240,7 +1265,8 @@ public class JSODDServer implements IResourceChangeListener {
 								&& (delta.getFlags() & IResourceDelta.CONTENT) != 0) {
 							IProject project = resource.getProject();
 							if (project != null
-									&& resource.getType() == IResource.FILE) {
+									&& resource.getType() == IResource.FILE
+									&& !MoSyncBuilder.isInOutput(project, resource)) {
 								ProjectRedefinable replacement = replacements
 										.get(project);
 								if (replacement == null) {

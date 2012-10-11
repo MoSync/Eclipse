@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<style type="text/css">
+body: {
+	font-size: 1em;
+}
+a: {
+    font-size: 1em;
+}
+</style>
+</head>
+<body>
+%project-list%
+</body>
+</html>

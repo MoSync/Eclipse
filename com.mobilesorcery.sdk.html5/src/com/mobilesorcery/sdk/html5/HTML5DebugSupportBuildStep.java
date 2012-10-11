@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -62,23 +63,20 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				IPath resourcePath = resourceToInstrument.getFullPath();
 				resourcePath = resourcePath.removeFirstSegments(inputRoot
 						.getFullPath().segmentCount());
-				File outputFile = new File(outputRoot,
-						resourcePath.toOSString());
 				FileRedefinable result = null;
 				if (delete) {
 					result = op.delete(resourceToInstrument.getFullPath(),
 							op.getBaseline());
 				} else {
-					outputFile.getParentFile().mkdirs();
-					FileWriter output = null;
+					Writer output = null;
 					try {
-						output = persistToFile ? new FileWriter(outputFile)
-								: null;
+						output = persistToFile ? createWriter(resourcePath) : null;
 						MoSyncProject mosyncProject = MoSyncProject
 								.create(getProject());
 						if (fetchRemotely) {
 							op.generateRemoteFetch(mosyncProject, output);
-						} else {
+						}
+						if (!fetchRemotely || CoreMoSyncPlugin.getDefault().isDebugging()) {
 							// This is a *build* op, so update the baseline.
 							result = op.rewrite(
 									resourceToInstrument.getFullPath(), output,
@@ -96,6 +94,25 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 					}
 				}
 				return result == null ? 0 : result.getMemSize();
+			}
+
+			public void writeFramework() throws CoreException {
+				Writer output = null;
+				try {
+					output = createWriter(new Path(JSODDSupport.getFrameworkPath()));
+					op.writeFramework(output);
+				} catch (IOException e) {
+					throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, "Could not create debug framework", e));
+				} finally {
+					Util.safeClose(output);
+				}
+			}
+			
+			private Writer createWriter(IPath localPath) throws IOException {
+				File outputFile = new File(outputRoot,
+						localPath.toOSString());
+				outputFile.getParentFile().mkdirs();
+				return new FileWriter(outputFile);
 			}
 		}
 
@@ -135,10 +152,15 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 			final JSODDSupport op = Html5Plugin.getDefault().getJSODDSupport(
 					project);
+			
+			if (op == null) {
+				throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID,
+						MessageFormat.format("The project {0} has no support for HTML5.", project.getName())));
+			}
 
 			IFileTreeDiff diff = this.diff;
 			// If we've changed the IP addr, then rebuild it all...
-			if (updateServerProps(op) || op.requiresFullBuild()) {
+			if (updateHTML5SpecificProps(op) || op.requiresFullBuild()) {
 				diff = null;
 				setDiff(diff);
 			}
@@ -179,9 +201,12 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 						Util.elapsedTime((int) elapsed), wasDeleted ? "deleted"
 								: Util.dataSize(memoryConsumption)));
 			}
+			if (diff == null) {
+				rewriter.writeFramework();
+			}
 		}
 
-		private boolean updateServerProps(JSODDSupport op) throws CoreException {
+		private boolean updateHTML5SpecificProps(JSODDSupport op) throws CoreException {
 			try {
 				IPath jsoddMetaData = getBuildState().getLocation().append(
 						".jsodd");
@@ -201,18 +226,31 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				String port = op.getDefaultProperties().get(
 						JSODDSupport.SERVER_PORT_PROP);
 
+				String reloadStrategy = Integer.toString(Html5Plugin.getDefault().getReloadStrategy());
+				String sourceChangeStartegy = Integer.toString(Html5Plugin.getDefault().getSourceChangeStrategy());
+				String enabled = Boolean.toString(Html5Plugin.getDefault().isJSODDEnabled());
+				
+				String oldReloadStrategy = jsoddProps.get(Html5Plugin.RELOAD_STRATEGY_PREF);
+				String oldSourceChangeStartegy = jsoddProps.get(Html5Plugin.SOURCE_CHANGE_STRATEGY_PREF);
 				String oldHost = jsoddProps.get(JSODDSupport.SERVER_HOST_PROP);
 				String oldPort = jsoddProps.get(JSODDSupport.SERVER_PORT_PROP);
+				String oldEnabled = jsoddProps.get(Html5Plugin.ODD_SUPPORT_PREF);
 
 				Section defaultSection = jsoddPropsFile.getDefaultSection();
 				defaultSection.getEntries().clear();
 				defaultSection.addEntry(JSODDSupport.SERVER_HOST_PROP, host);
 				defaultSection.addEntry(JSODDSupport.SERVER_PORT_PROP, port);
+				defaultSection.addEntry(Html5Plugin.RELOAD_STRATEGY_PREF, reloadStrategy);
+				defaultSection.addEntry(Html5Plugin.SOURCE_CHANGE_STRATEGY_PREF, sourceChangeStartegy);
+				defaultSection.addEntry(Html5Plugin.ODD_SUPPORT_PREF, enabled);
 
 				jsoddPropsFile.write(jsoddMetaData.toFile());
 
-				return !Util.equals(host, oldHost)
-						|| !Util.equals(port, oldPort);
+				return !Util.equals(host, oldHost) ||
+						!Util.equals(port, oldPort) ||
+						!Util.equals(reloadStrategy, oldReloadStrategy) ||
+						!Util.equals(sourceChangeStartegy, oldSourceChangeStartegy) ||
+						!Util.equals(enabled, oldEnabled);
 			} catch (IOException e) {
 				CoreMoSyncPlugin.getDefault().log(e);
 				return false;
@@ -237,6 +275,11 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 		public String getName() {
 			return "HTML5/JavaScript bundling";
 		}
+		
+		public boolean isDefault() {
+			// Always false!
+			return false;
+		}
 
 	}
 
@@ -260,8 +303,14 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			File outputResource = outputFile.getLocation().toFile();
 			IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project,
 					variant.getConfigurationId());
+			DependencyManager<IResource> deps = getBuildState()
+					.getDependencyManager();
+			
+			// MOSYNC-2326 & MOSYNC-2327
+			deps.addDependency(outputFile, inputRoot);
+			
 			if (PropertyUtil.getBoolean(properties,
-					MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
+					MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS) && Html5Plugin.getDefault().isJSODDEnabled()) {
 				monitor.beginTask("Instrumenting JavaScript source files", 10);
 				File outputRoot = MoSyncBuilder
 						.getOutputPath(wrappedProject, variant)
@@ -279,12 +328,9 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 						inputRoot, outputRoot);
 				visitor.setProject(wrappedProject);
 				visitor.setDiff(diff);
-				DependencyManager<IResource> deps = getBuildState()
-						.getDependencyManager();
 
 				visitor.instrument(new SubProgressMonitor(monitor, 7), deps,
 						getConsole());
-
 				// TODO -- would prefer it not to always output there... Since
 				// we'll get build problems for sure!
 				BundleBuildStep.bundle(outputRoot, outputResource);

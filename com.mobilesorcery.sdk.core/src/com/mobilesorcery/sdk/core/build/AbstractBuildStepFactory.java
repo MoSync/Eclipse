@@ -25,4 +25,8 @@ public abstract class AbstractBuildStepFactory implements IBuildStepFactory {
 	public boolean isDefault() {
 		return true;
 	}
+	
+	public String toString() {
+		return getId();
+	}
 }

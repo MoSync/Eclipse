@@ -151,6 +151,11 @@ public class DefaultPackager extends ParameterResolver {
 		return executor;
 	}
 
+	public int runCommandLine(HashMap<String, String> env, String[] commandLine,
+			String consoleMsg) throws IOException {
+		return getExecutor().runCommandLine(env, commandLine, consoleMsg);	
+	}
+	
     public int runCommandLine(String... commandLine) throws IOException {
         return getExecutor().runCommandLine(commandLine);
     }
@@ -210,5 +215,6 @@ public class DefaultPackager extends ParameterResolver {
 	public List<String> listPrefixes() {
 		return new ArrayList<String>(parameters.keySet());
 	}
+
 
 }

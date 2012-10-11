@@ -8,6 +8,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
+import com.mobilesorcery.sdk.builder.iphoneos.Activator;
+
 public class IPhoneOSCertSelector extends Composite {
 
 	private Combo certFieldWithHints;
@@ -25,8 +27,8 @@ public class IPhoneOSCertSelector extends Composite {
 		
 		certFieldWithHints = new Combo(this, SWT.NONE);
 		// The two most common cert names:
-		certFieldWithHints.add("iPhone Developer");
-		certFieldWithHints.add("iPhone Distribution");
+		certFieldWithHints.add(Activator.IPHONE_DEV_CERT);
+		certFieldWithHints.add(Activator.IPHONE_DIST_CERT);
 		certFieldWithHints.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 	}
 

@@ -30,6 +30,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
 import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.ui.UpdateListener;
@@ -49,21 +50,26 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 	private Label reloadStrategyLabel;
 	private Text serverAddress;
 	private Button useDefaultServerAddress;
+	private Label sourceChangeStrategyLabel;
+	private Button enableButton;
 
 	public JavaScriptOnDeviceDebugPreferencePage() {
 		super("JavaScript On-Device Debug");
+		noDefaultAndApplyButton();
 		this.reloadStrategyMap = new LinkedHashMap<String, Integer>();
 		reloadStrategyMap.put("Ask me", RedefinitionResult.UNDETERMINED);
-		reloadStrategyMap.put("Do nothing", RedefinitionResult.CONTINUE);
-		// Disabled until 3.1.1
-		//reloadStrategyMap.put("Reload", RedefinitionResult.RELOAD);
 		reloadStrategyMap.put("Terminate", RedefinitionResult.TERMINATE);
-		reverseReloadStrategyMap = Util.reverseMap(reloadStrategyMap);
+		reloadStrategyMap.put("Do nothing", RedefinitionResult.CONTINUE);
 		this.sourceChangeStrategyMap = new LinkedHashMap<String, Integer>();
 		sourceChangeStrategyMap.put("Do nothing", Html5Plugin.DO_NOTHING);
 		sourceChangeStrategyMap.put("Reload", Html5Plugin.RELOAD);
-		// Disabled until 3.1.1
-		//sourceChangeStrategyMap.put("Hot code replace", Html5Plugin.HOT_CODE_REPLACE);
+
+		if (Html5Plugin.getDefault().isFeatureSupported(JSODDSupport.EDIT_AND_CONTINUE)) {
+			reloadStrategyMap.put("Reload", RedefinitionResult.RELOAD);
+			sourceChangeStrategyMap.put("Hot code replace", Html5Plugin.HOT_CODE_REPLACE);
+		}
+		
+		reverseReloadStrategyMap = Util.reverseMap(reloadStrategyMap);
 		reverseSourceChangeStrategyMap = Util.reverseMap(sourceChangeStrategyMap);
 	}
 
@@ -90,10 +96,15 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		
 		Group executionGroup = new Group(main, SWT.NONE);
 		executionGroup.setLayout(new GridLayout(2, false));
-		executionGroup.setText("Execution");
+		executionGroup.setText("Debugging");
 		executionGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		
-		Label sourceChangeStrategyLabel = new Label(executionGroup, SWT.NONE);
+		enableButton = new Button(executionGroup, SWT.CHECK);
+		enableButton.setText("Enable On-Device JavaScript Debugging");
+		enableButton.setSelection(Html5Plugin.getDefault().isJSODDEnabled());
+		enableButton.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false, 2, 1));
+		
+		sourceChangeStrategyLabel = new Label(executionGroup, SWT.NONE);
 		sourceChangeStrategyLabel.setText("When source changes:");
 		sourceChangeStrategyLabel.setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT));
 		sourceChangeStrategyCombo = new ComboViewer(executionGroup, SWT.READ_ONLY);
@@ -126,20 +137,15 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		shouldFetchRemotely.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false, 2, 1));
 		shouldFetchRemotely.setSelection(Html5Plugin.getDefault().shouldFetchRemotely());
 		
-		Group serverGroup = new Group(main, SWT.NONE);
-		serverGroup.setText("Debug Server");
-		serverGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-		serverGroup.setLayout(new GridLayout(2, false));
-		
-		Label serverAddressLabel = new Label(serverGroup, SWT.NONE);
+		Label serverAddressLabel = new Label(executionGroup, SWT.NONE);
 		serverAddressLabel.setText("Server address:");
 		serverAddressLabel.setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT));
 		
-		serverAddress = new Text(serverGroup, SWT.SINGLE | SWT.BORDER);
+		serverAddress = new Text(executionGroup, SWT.SINGLE | SWT.BORDER);
 		serverAddress.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		
-		Label spacer = new Label(serverGroup, SWT.NONE);
-		useDefaultServerAddress = new Button(serverGroup, SWT.CHECK);
+		Label spacer = new Label(executionGroup, SWT.NONE);
+		useDefaultServerAddress = new Button(executionGroup, SWT.CHECK);
 		useDefaultServerAddress.setText("Default");
 		useDefaultServerAddress.addListener(SWT.Selection, new Listener() {
 			@Override
@@ -164,6 +170,8 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		sourceChangeStrategyCombo.getCombo().addListener(SWT.Selection, listener);
 		serverAddress.addListener(SWT.Modify, listener);
 		useDefaultServerAddress.addListener(SWT.Selection, listener);
+		enableButton.addListener(SWT.Selection, listener);
+		
 		updateUI();
 		
 		return main;
@@ -171,17 +179,27 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 	
 	@Override
 	public void updateUI() {
+		boolean oddEnabled = enableButton.getSelection();
 		boolean requiresRemoteFetch = Util.equals(getSourceChangeStrategy(), Html5Plugin.RELOAD) || Util.equals(getSourceChangeStrategy(), Html5Plugin.HOT_CODE_REPLACE);
-		String op = sourceChangeStrategyCombo.getCombo().getText();
-		// For 3.1.1: update with hot code replace as well
-		reloadStrategyLabel.setText(MessageFormat.format("When reload fails:", op));
+		String op = requiresRemoteFetch ? 
+				sourceChangeStrategyCombo.getCombo().getText().toLowerCase() :
+				"this";
+
+		reloadStrategyLabel.setText(MessageFormat.format("When {0} fails:", op));
+		reloadStrategyCombo.getCombo().setEnabled(requiresRemoteFetch && oddEnabled);
+		reloadStrategyLabel.setEnabled(requiresRemoteFetch && oddEnabled);
+		
+		sourceChangeStrategyLabel.setEnabled(oddEnabled);
+		sourceChangeStrategyCombo.getCombo().setEnabled(oddEnabled);
+		
 		
 		if (requiresRemoteFetch) {
 			shouldFetchRemotely.setSelection(true);
 		}
-		shouldFetchRemotely.setEnabled(!requiresRemoteFetch);
+		shouldFetchRemotely.setEnabled(!requiresRemoteFetch && oddEnabled);
 		
-		serverAddress.setEnabled(!useDefaultServerAddress.getSelection());
+		serverAddress.setEnabled(!useDefaultServerAddress.getSelection() && oddEnabled);
+		useDefaultServerAddress.setEnabled(oddEnabled);
 		
 		validate();
 	}
@@ -197,7 +215,12 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		} catch (MalformedURLException e) {
 			errorMessage = "Invalid server address";
 		}
+		if (Util.equals(getSourceChangeStrategy(), Html5Plugin.RELOAD) &&
+			Util.equals(getReloadStrategy(), RedefinitionResult.RELOAD)) {
+			errorMessage = "Circular choice; please select other reload strategy.";
+		}
 		setErrorMessage(errorMessage);
+		setValid(errorMessage == null);
 	}
 
 	private Integer getReloadStrategy() {
@@ -215,6 +238,8 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 	}
 	
 	public boolean performOk() {
+		Html5Plugin.getDefault().setJSODDEnabled(enableButton.getSelection());
+		
 		Integer reloadStrategy = getReloadStrategy();
 		if (reloadStrategy != null) {
 			Html5Plugin.getDefault().setReloadStrategy(reloadStrategy);

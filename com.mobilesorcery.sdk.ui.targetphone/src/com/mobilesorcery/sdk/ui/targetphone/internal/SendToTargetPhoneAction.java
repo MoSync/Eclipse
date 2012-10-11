@@ -102,9 +102,9 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 
 					IBuildVariant variant = MoSyncBuilder.createVariant(project, targetProfile);
 					ITargetPhoneTransport transport = phone.getTransport();
-					TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.PRE_SEND, phone, transport, project, variant));
+					TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.PRE_SEND, phone, project, variant));
 					File packageToSend = buildBeforeSend(variant, monitor);
-					transport.send(window, project, phone,
+					transport.send(window, project, variant, phone,
 							packageToSend, new SubProgressMonitor(monitor, 4));
 				}
 			} catch (CoreException e) {
@@ -136,7 +136,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 			}
 			throw new CoreException(new Status(IStatus.ERROR,
 					TargetPhonePlugin.PLUGIN_ID,
-					"Could not build for device"));
+					"Could not build for device: no executable app was built"));
 		}
 	}
 
