@@ -59,7 +59,7 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 	public boolean visit(IResource resource) throws CoreException {
 		super.visit(resource);
 
-		if (MoSyncBuilder.isResourceFile(resource)) {
+		if (doesAffectBuild(resource) && MoSyncBuilder.isResourceFile(resource)) {
 			resourceFiles.add(resource);
 		}
 
