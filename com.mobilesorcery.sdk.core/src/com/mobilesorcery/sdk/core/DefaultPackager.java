@@ -105,6 +105,9 @@ public class DefaultPackager extends ParameterResolver {
 		if (targetProfile == null) {
 		    targetProfile = project.getTargetProfile();
 		}
+		if (targetProfile == null) {
+			return;
+		}
 
 		// TODO: Do not repeat these parameter keys, just strip namespaces by default (and in case of collision ask for namespace)
 		defaultParameters.put(PROFILE_NAME, targetProfile.getName());

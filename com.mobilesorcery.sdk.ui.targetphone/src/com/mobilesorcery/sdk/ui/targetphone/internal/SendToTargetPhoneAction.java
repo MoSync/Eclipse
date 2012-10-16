@@ -27,7 +27,11 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.debug.internal.ui.DebugUIPlugin;
+import org.eclipse.debug.ui.IDebugUIConstants;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowActionDelegate;
@@ -85,8 +89,14 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 
 			try {
                 assertNotNull(project, "No project selected");
-                // Fix for MOSYNC-569
-                MoSyncBuilder.saveAllEditors(project.getWrappedProject(), true, true);
+                // No API for this.
+                String savePref = DebugUIPlugin.getDefault().getPreferenceStore().getString(IDebugUIConstants.PLUGIN_ID + ".save_dirty_editors_before_launch");
+                if (!MessageDialogWithToggle.NEVER.equals(savePref)) {
+                	boolean confirm = MessageDialogWithToggle.PROMPT.equals(savePref);
+	                if (!MoSyncBuilder.saveAllEditors(project.getWrappedProject(), true, confirm)) {
+	                	return Status.CANCEL_STATUS;
+	                }
+                }
 
 				int profileManagerType = project.getProfileManagerType();
 				if (phone == null || phone.getPreferredProfile(profileManagerType) == null) {
@@ -104,6 +114,9 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 					ITargetPhoneTransport transport = phone.getTransport();
 					TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.PRE_SEND, phone, project, variant));
 					File packageToSend = buildBeforeSend(variant, monitor);
+					if (monitor.isCanceled()) {
+						return Status.CANCEL_STATUS;
+					}
 					transport.send(window, project, variant, phone,
 							packageToSend, new SubProgressMonitor(monitor, 4));
 				}
@@ -125,7 +138,7 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
             IBuildSession session = MoSyncBuilder.createDefaultBuildSession(variant);
 			buildResult = new MoSyncBuilder().build(project
 					.getWrappedProject(), session, variant, null,
-					new NullProgressMonitor());
+					new SubProgressMonitor(monitor, 1));
 			monitor.worked(1);
 
 			Map<String, List<File>> buildArtifacts = buildResult.getBuildResult();
@@ -134,9 +147,12 @@ public class SendToTargetPhoneAction implements IWorkbenchWindowActionDelegate {
 			if (fileToSend != null && !fileToSend.isEmpty()) {
 				return fileToSend.get(0);
 			}
-			throw new CoreException(new Status(IStatus.ERROR,
-					TargetPhonePlugin.PLUGIN_ID,
-					"Could not build for device: no executable app was built"));
+			if (!monitor.isCanceled()) {
+				throw new CoreException(new Status(IStatus.ERROR,
+						TargetPhonePlugin.PLUGIN_ID,
+						"Could not build for device: no executable app was built"));
+			}
+			return null;
 		}
 	}
 

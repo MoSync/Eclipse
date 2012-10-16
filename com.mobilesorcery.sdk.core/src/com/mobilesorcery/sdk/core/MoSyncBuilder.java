@@ -517,6 +517,18 @@ public class MoSyncBuilder extends ACBuilder {
 	IBuildResult incrementalBuild(IProject project, IBuildSession session,
 			IBuildVariant variant, IFilter<IResource> resourceFilter,
 			IProgressMonitor monitor) throws CoreException {
+		IProcessConsole console = createConsole(session);
+		IBuildResult result = incrementalBuild0(project, session, variant, resourceFilter, console, monitor);
+		if (monitor.isCanceled()) {
+			console.addMessage(IProcessConsole.ERR, "*** Build was cancelled by user ***");
+		}
+		return result;
+	}
+	
+	IBuildResult incrementalBuild0(IProject project, IBuildSession session,
+			IBuildVariant variant, IFilter<IResource> resourceFilter,
+			IProcessConsole console,
+			IProgressMonitor monitor) throws CoreException {
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 			CoreMoSyncPlugin.trace("Building project {0}", project);
 		}
@@ -549,8 +561,6 @@ public class MoSyncBuilder extends ACBuilder {
 		ensureOutputIsMarkedDerived(project, variant);
 
 		ErrorParserManager epm = createErrorParserManager(project);
-
-		IProcessConsole console = createConsole(session);
 
 		CoreException errorToShowInConsole = null;
 
