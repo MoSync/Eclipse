@@ -167,6 +167,8 @@ public class MoSyncBuilder extends ACBuilder {
 			+ "app.version";
 
 	public static final String APP_NAME = BUILD_PREFS_PREFIX + "app.name";
+	
+	public static final String REBUILD_ON_ERROR = BUILD_PREFS_PREFIX + "rebuild.on.error";
 
 	private static final String APP_CODE = "app.code";
 
@@ -577,10 +579,10 @@ public class MoSyncBuilder extends ACBuilder {
 
 			// And we only remove things that are on the project.
 			IFileTreeDiff diff = createDiff(buildState, session);
-			boolean hadSevereBuildErrors = hasErrorMarkers(project,
-					IResource.DEPTH_ZERO);
-			if (hadSevereBuildErrors) {
+			if (PropertyUtil.getBoolean(mosyncProject, REBUILD_ON_ERROR) &&
+					hasErrorMarkers(project)) {
 				// Build all files
+				console.addMessage(IProcessConsole.ERR, "*** Errors in previous build triggered full rebuild ***");
 				diff = null;
 			}
 

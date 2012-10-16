@@ -69,6 +69,12 @@ icon="icons/launchshortcut.png">
                id="com.mobilesorcery.sdk.preferences.emulator.usage.statistics"
                name="Usage Statistics">
          </page>
+          <page
+               category="com.mobilesorcery.sdk.preferences.main"
+               class="com.mobilesorcery.sdk.ui.internal.preferences.BuildPreferencePage"
+               id="com.mobilesorcery.sdk.preferences.build"
+               name="Build">
+         </page>
       </extension> 
       
          <extension point="org.eclipse.ui.console.consolePatternMatchListeners">

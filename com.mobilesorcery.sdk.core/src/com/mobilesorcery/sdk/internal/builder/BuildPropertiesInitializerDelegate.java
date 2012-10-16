@@ -15,7 +15,10 @@ package com.mobilesorcery.sdk.internal.builder;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
+import org.eclipse.jface.preference.IPreferenceStore;
 
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IPropertyInitializerDelegate;
@@ -24,13 +27,12 @@ import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
-import com.mobilesorcery.sdk.core.ProfileManager;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 
-public class BuildPropertiesInitializerDelegate implements IPropertyInitializerDelegate {
+public class BuildPropertiesInitializerDelegate extends AbstractPreferenceInitializer implements IPropertyInitializerDelegate {
 
     public BuildPropertiesInitializerDelegate() {
     }
@@ -99,6 +101,8 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
         	// The default is to use interpreted (=faster execution),
         	// in debug mode, static recompile otherwise.
         	return PropertyUtil.fromBoolean(!isDebugCfg);
+        } else if (MoSyncBuilder.REBUILD_ON_ERROR.equals(namespacedKey)) {
+        	return PropertyUtil.fromBoolean(CoreMoSyncPlugin.getDefault().getPreferenceStore().getBoolean(MoSyncBuilder.REBUILD_ON_ERROR));
         }
 
         return null;
@@ -116,5 +120,10 @@ public class BuildPropertiesInitializerDelegate implements IPropertyInitializerD
     	}
     	return result.toString();
 	}
+	
+    public void initializeDefaultPreferences() {
+        IPreferenceStore store = CoreMoSyncPlugin.getDefault().getPreferenceStore();
+        store.setDefault(MoSyncBuilder.REBUILD_ON_ERROR, true);
+    }
 
 }
