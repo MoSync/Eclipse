@@ -191,6 +191,11 @@ icon="icons/launchshortcut.png">
        <actionSet id="com.mobilesorcery.sdk.help.actionset"
            label="Help"
            visible="true">
+                      <action id="com.mobilesorcery.sdk.panic"
+               menubarPath="help/intro"
+               label="Translate Panic Code..."
+               class="com.mobilesorcery.ui.internal.actions.TranslatePanicCodeAction">
+           </action> 
 			<action id="com.mobilesorcery.sdk.help.doxygen"
 				menubarPath="help/intro"
 				label="MoSync C++ API Reference">
@@ -211,12 +216,7 @@ icon="icons/launchshortcut.png">
                menubarPath="help/intro"
                label="MoSync Online User Guides"
                class="com.mobilesorcery.ui.internal.actions.ShowHTMLAction">
-           </action>           ...
-           <action id="com.mobilesorcery.sdk.panic"
-               menubarPath="help/intro"
-               label="Translate Panic Code..."
-               class="com.mobilesorcery.ui.internal.actions.TranslatePanicCodeAction">
-           </action>           ...
+           </action>           ...          ...
        </actionSet>
    </extension>
          <extension
