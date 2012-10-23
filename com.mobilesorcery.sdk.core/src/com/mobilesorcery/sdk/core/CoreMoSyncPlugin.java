@@ -172,6 +172,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	private List<String> buildStepFactoryIds;
 
+	private boolean nativeLibsInited = false;
+
     /**
      * The constructor
      */
@@ -185,7 +187,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         aboutBoxHack();
         initReIndexerListener();
         initRebuildListener();
-        initNativeLibs(context);
         initPackagers();
         initDeviceFilterFactories();
         initPanicErrorMessages();
@@ -430,7 +431,11 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         getLog().log(new Status(IStatus.ERROR, PLUGIN_ID, e.getMessage(), e));
     }
 
-    private void initNativeLibs(BundleContext context) {
+    private synchronized void initNativeLibs() {
+    	if (nativeLibsInited) {
+    		return;
+    	}
+    	nativeLibsInited = true;
         try {
             JNALibInitializer.init(this.getBundle(), "libpipe");
             @SuppressWarnings("unused")
@@ -562,11 +567,13 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
      * Returns the Eclipse OS Process ID.
      * @return
      */
-    public static String getPid() {
+    public String getPid() {
+    	initNativeLibs();
         return "" + PID.INSTANCE.pid();
     }
 
     public IProcessUtil getProcessUtil() {
+    	initNativeLibs();
     	return PROCESS.INSTANCE;
     }
 
