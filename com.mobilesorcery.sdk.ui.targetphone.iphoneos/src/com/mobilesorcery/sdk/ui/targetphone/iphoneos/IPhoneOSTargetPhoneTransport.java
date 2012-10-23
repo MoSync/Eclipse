@@ -107,7 +107,7 @@ public class IPhoneOSTargetPhoneTransport implements
 
 	@Override
 	public String getDescription(String context) {
-		return "IPhone Over-The-Air";
+		return "IPhone OTA";
 	}
 
 	@Override
