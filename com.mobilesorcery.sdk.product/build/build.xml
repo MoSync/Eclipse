@@ -15,6 +15,7 @@
 	<property name="target-platform" location="${buildDirectory}/../target-platform-${tp-version}" />
 	<property name="target-platform-zip-dir" location="${buildDirectory}/.." />
 	<property name="target-platform-zip" location="${target-platform-zip-dir}/target-platform-${tp-version}.zip" />
+	<property name="old-target-platform-zip" location="${buildDirectory}/../target-platform.zip" />
 	<property name="product-def-file" value="${srcroot}/com.mobilesorcery.sdk.product/com.mobilesorcery.sdk.product" />
 
 	<!--
@@ -122,7 +123,9 @@
 
 	<target name="unzip-target-platform" depends="unzip-target-platform.precondition" unless="dont-unzip-target-platform">
 		<delete dir="${target-platform}" />
-		<unzip src="${target-platform-zip}" dest="${target-platform}" />
+		<!--  If we are using the old target platform zip, then first copy it -->
+		<copy file="${old-target-platform-zip}" tofile="${target-platform-zip}" overwrite="false" failonerror="false"/>
+		<unzip src="${target-platform-zip}" dest="${target-platform}"/>
 		<!-- <unzip src="${buildDirectory}\..\lib\swtbot-dropin.zip" dest="${buildDirectory}/../target-platform-${tp-version}/eclipse/dropins" overwrite="yes" /> -->
 	</target>
 
