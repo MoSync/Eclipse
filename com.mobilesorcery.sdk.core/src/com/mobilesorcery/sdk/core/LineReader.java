@@ -17,6 +17,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -52,6 +53,50 @@ public class LineReader implements Runnable {
 		@Override
 		public void stop(IOException e) {
 		}
+    }
+    
+    /**
+     * Allows for several {@link ILineHandler}s to listen
+     * to the same source.
+     *
+     */
+    public static class LineHandlerList implements ILineHandler {
+
+    	CopyOnWriteArrayList<ILineHandler> delegates = new CopyOnWriteArrayList<ILineHandler>();
+    	
+    	public LineHandlerList() {
+    		
+    	}
+    	
+    	public void addHandler(ILineHandler handler) {
+    		delegates.add(handler);
+    	}
+    	
+    	public void removeHandler(ILineHandler handler) {
+    		delegates.remove(handler);
+    	}
+    	
+		@Override
+		public void start(Process process) {
+			for (ILineHandler delegate : delegates) {
+				delegate.start(process);
+			}
+		}
+
+		@Override
+		public void newLine(String line) {
+			for (ILineHandler delegate : delegates) {
+				delegate.newLine(line);
+			}
+		}
+
+		@Override
+		public void stop(IOException e) {
+			for (ILineHandler delegate : delegates) {
+				delegate.stop(e);
+			}
+		}
+    	
     }
 
     public static class XMLLineAdapter extends DefaultHandler implements ILineHandler {

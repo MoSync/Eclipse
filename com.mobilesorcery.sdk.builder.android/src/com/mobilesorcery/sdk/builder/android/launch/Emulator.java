@@ -42,6 +42,11 @@ public class Emulator extends AbstractTool {
 		 */
 		public void awaitEmulatorStarted(int timeout, TimeUnit unit) throws CoreException;
 
+		/**
+		 * Returns the underlying native process for this emulator.
+		 * @return
+		 */
+		public Process getNativeProcess();
 	}
 
 	private class AndroidEmulatorProcess extends CollectingLineHandler implements IAndroidEmulatorProcess {
@@ -51,6 +56,7 @@ public class Emulator extends AbstractTool {
 		private final List<String> initialEmulators;
 		private final Emulator emulator;
 		private boolean started;
+		private Process process;
 
 		AndroidEmulatorProcess(Emulator emulator, String avd) throws CoreException {
 			this.avd = avd;
@@ -61,6 +67,7 @@ public class Emulator extends AbstractTool {
 
 		@Override
 		public void start(Process process) {
+			this.process = process;
 			super.start(process);
 		}
 
@@ -87,6 +94,10 @@ public class Emulator extends AbstractTool {
 			}
 			awaitEmulatorStarted(ADB.getExternal(), this, timeout, unit);
 			started = true;
+		}
+		
+		public Process getNativeProcess() {
+			return process;
 		}
 
 		private void awaitEmulatorStarted(ADB adb, CollectingLineHandler emulatorProcess, int timeout, TimeUnit unit) throws CoreException {

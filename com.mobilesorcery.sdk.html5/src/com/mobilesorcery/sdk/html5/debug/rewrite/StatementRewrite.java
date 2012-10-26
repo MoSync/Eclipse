@@ -64,8 +64,9 @@ public class StatementRewrite extends NodeRewrite {
 			Expression expression = ((ExpressionStatement) node)
 					.getExpression();
 			if (expression instanceof SimpleName) {
+				String identifier = ((SimpleName) expression).getIdentifier();
 				isDebuggerStatement = "debugger"
-						.equals(((SimpleName) expression).getIdentifier());
+						.equals(identifier);
 			}
 		}
 		
@@ -75,7 +76,7 @@ public class StatementRewrite extends NodeRewrite {
 		if (doInstrument) {
 			String statementPreamble =
 			    " MoSyncDebugProtocol.updatePosition(" + fileId
-				+ "," + lineNo + "," + isDebuggerStatement
+				+ "," + lineNo + ",this," + isDebuggerStatement
 				+ "," + JSODDSupport.EVAL_FUNC_SNIPPET + ");";
 		
 			// Max one instrumentation per line! Except for debugger statements.

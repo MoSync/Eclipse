@@ -24,6 +24,7 @@ public class FunctionRedefinable extends ASTRedefinable {
 
 	private Boolean isAnonymous;
 	private String subkey;
+	private String instrumented;
 
 	public FunctionRedefinable(IRedefinable parent, ISourceSupport source, ASTNode node) {
 		super(parent, source, node);
@@ -58,7 +59,7 @@ public class FunctionRedefinable extends ASTRedefinable {
 	}
 
 	public RedefinitionResult canRedefine(FunctionRedefinable replacement) {
-		if (!replacement.getFunctionSource().equals(getFunctionSource())) {
+		if (!replacement.getFunctionSource(false).equals(getFunctionSource(false))) {
 			if (isAnonymous()) {
 				// Is this the only anonymous function? That's a nice heurisitic for assuming it's the 'same' function.
 				List<IRedefinable> childrenToBeRedefined = replacement.getParent().getChildren();
@@ -71,8 +72,15 @@ public class FunctionRedefinable extends ASTRedefinable {
 		return RedefinitionResult.ok();
 	}
 
-	public String getFunctionSource() {
-		return getInstrumentedSource(NodeRewrite.include(JSODDSupport.LINE_BREAKPOINTS), getFunctionDeclaration());
+	public String getFunctionSource(boolean instrumented) {
+		if (instrumented) {
+		if (this.instrumented == null) {
+			this.instrumented = getInstrumentedSource(NodeRewrite.include(JSODDSupport.LINE_BREAKPOINTS), getFunctionDeclaration());
+		}
+		return this.instrumented;
+		} else {
+			return getSourceRange(getFunctionDeclaration().getStartPosition(), getFunctionDeclaration().getStartPosition() + getFunctionDeclaration().getLength());
+		}
 	}
 	
 	@Override

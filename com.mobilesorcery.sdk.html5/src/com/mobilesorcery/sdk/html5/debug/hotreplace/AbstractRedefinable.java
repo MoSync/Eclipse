@@ -46,6 +46,10 @@ public abstract class AbstractRedefinable implements IRedefinable {
 		return source.getSource().substring(start, end);
 	}
 	
+	protected String getSource() {
+		return source.getSource();
+	}
+	
 	public void addChild(IRedefinable child) {
 		children.add(child);
 		// Just to trigger reindexing.

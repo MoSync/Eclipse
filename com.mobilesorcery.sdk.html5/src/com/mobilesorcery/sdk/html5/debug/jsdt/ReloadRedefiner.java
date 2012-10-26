@@ -68,10 +68,15 @@ public class ReloadRedefiner implements IRedefiner {
 
 	private RedefinitionResult collectFunction(FunctionRedefinable redefinable,
 			FunctionRedefinable replacement) {
-		if (Util.equals(replacement.getFunctionSource(),
-				redefinable.getFunctionSource())) {
+		boolean sourceEqual = Util.equals(replacement.getFunctionSource(false),
+				redefinable.getFunctionSource(false));
+		boolean instrumentedSourceEqual = Util.equals(replacement.getFunctionSource(true),
+				redefinable.getFunctionSource(true)); 
+		
+		if (instrumentedSourceEqual) {
 			return RedefinitionResult.ok();
 		}
+		
 		RedefinitionResult result = redefinable.canRedefine(replacement);
 		if (!RedefinitionResult.isOk(result)) {
 			return result;
@@ -83,7 +88,7 @@ public class ReloadRedefiner implements IRedefiner {
 			for (Object frameObj : mainThread.frames()) {
 				ReloadStackFrame frame = (ReloadStackFrame) frameObj;
 				if (frame != null) {
-					if (matchesFrame(redefinable, frame)) {
+					if (!sourceEqual && matchesFrame(redefinable, frame)) {
 						int stackDepth = frame.getStackDepth();
 						// As usual: reverse!
 						dropToFrame = Math.max(dropToFrame,
@@ -166,7 +171,7 @@ public class ReloadRedefiner implements IRedefiner {
 			}
 			for (FunctionRedefinable functionUpdate : functionUpdates) {
 				vm.updateFunction(functionUpdate.key(),
-						functionUpdate.getFunctionSource());
+						functionUpdate.getFunctionSource(true));
 			}
 
 			if (vm.mainThread().isSuspended() && dropToFrame >= 0) {

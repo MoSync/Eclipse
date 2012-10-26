@@ -75,7 +75,7 @@ public class MoblinPackager extends AbstractPackager {
 			vendor = intern.getParameters()
 					.get(DefaultPackager.APP_VENDOR_NAME);
 
-			if (shouldUseDebugRuntimes() == true)
+			if (shouldUseDebugRuntimes(project, variant) == true)
 				runtime = "runtime.dbg.tar.gz";
 			else
 				runtime = "runtime.rel.tar.gz";

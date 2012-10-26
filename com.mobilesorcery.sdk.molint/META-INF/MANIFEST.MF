@@ -1,0 +1,19 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Molint
+Bundle-SymbolicName: com.mobilesorcery.sdk.molint;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.mobilesorcery.sdk.molint.MolintPlugin
+Bundle-Vendor: MOSYNC AB
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.core.resources,
+ org.eclipse.cdt.core
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy
+Import-Package: com.mobilesorcery.sdk.core,
+ com.mobilesorcery.sdk.core.apisupport.nfc,
+ com.mobilesorcery.sdk.core.build,
+ com.mobilesorcery.sdk.core.security,
+ com.mobilesorcery.sdk.core.templates,
+ com.mobilesorcery.sdk.ui

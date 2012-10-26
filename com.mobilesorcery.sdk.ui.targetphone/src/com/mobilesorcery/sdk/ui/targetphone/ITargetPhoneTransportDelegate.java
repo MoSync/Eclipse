@@ -20,6 +20,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.window.IShellProvider;
 import org.eclipse.ui.IMemento;
 
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 
@@ -49,11 +50,12 @@ public interface ITargetPhoneTransportDelegate {
 	 * @param shell
 	 * @param project
 	 * @param phone
+	 * @param variant 
 	 * @param packageToSend
 	 * @param monitor
 	 * @throws CoreException
 	 */
-	public void send(IShellProvider shell, MoSyncProject project, ITargetPhone phone, File packageToSend, IProgressMonitor monitor) throws CoreException;
+	public void send(IShellProvider shell, MoSyncProject project, IBuildVariant variant, ITargetPhone phone, File packageToSend, IProgressMonitor monitor) throws CoreException;
 
 	public ITargetPhone scan(IShellProvider shell, IProgressMonitor monitor) throws CoreException;
 

@@ -55,6 +55,8 @@ public class FunctionRewrite extends NodeRewrite {
 	private Map<ASTNode, String> nodeRedefinables;
 	private Block body;
 
+	private boolean useEscapedThis;
+
 	public FunctionRewrite(ISourceSupport rewriter, ASTNode node, long fileId, Map<ASTNode, String> nodeRedefinables) {
 		super(rewriter, node);
 		if (!(node instanceof FunctionDeclaration)) {
@@ -89,6 +91,7 @@ public class FunctionRewrite extends NodeRewrite {
 		boolean isAnonymous = isAnonymous(fd);
 		String functionIdentifier = isAnonymous ? Html5Plugin.ANONYMOUS_FUNCTION
 				: functionName.getIdentifier();
+
 		/*
 		AST ast = rewrite.getAST();
 		ASTNode fdCopy = rewrite.createCopyTarget(fd);
@@ -155,15 +158,18 @@ public class FunctionRewrite extends NodeRewrite {
 
 		String editAndContinuePreamble = "";
 		String editAndContinuePostamble = "";
-		if (supports(features, JSODDSupport.EDIT_AND_CONTINUE) && !isAnonymous(fd)) {
+		
+		boolean addEditAndContinue = supports(features, JSODDSupport.EDIT_AND_CONTINUE) && !isAnonymous(fd);
+		if (addEditAndContinue) {
 			String functionRef = functionIdentifier + ".____yaloid";
 			String redefineKey = nodeRedefinables.get(fd);
+			String signaturePrefix = isAnonymous ? "" : "____";
 			editAndContinuePreamble = "if(!" + functionRef + ") { "
 					+ "var ____unevaled=MoSyncDebugProtocol.yaloid(\""
 					+ redefineKey + "\");\n" + "if (____unevaled){\n"
 					+ "eval(\"" + functionRef + "=\" + ____unevaled);}\n"
 					+ "if(typeof " + functionRef + " !== \'function\')\n" + "{"
-					+ functionRef + "= function " + getSignature(fd);
+					+ functionRef + "= function " + signaturePrefix + getSignature(fd);
 
 			List parameters = fd.parameters();
 			String[] parameterNames = new String[parameters.size()];
@@ -186,13 +192,33 @@ public class FunctionRewrite extends NodeRewrite {
 		}
 		
 		rewrite.insert(dropToFramePreamble);
+		
 		if (supports(features, JSODDSupport.ARTIFICIAL_STACK)) {
 			rewrite.insert(functionStart);
 		}
+		
+		if (useEscapedThis && supports(features, JSODDSupport.EDIT_AND_CONTINUE)) {
+			if (useEscapedThis) {
+				rewrite.insert("var ____this = this;\n");
+			}
+		}
+			
+		//if (addEditAndContinue) {
+			rewrite.insert("var ____arguments = arguments;\n");
+		//}
 		rewrite.insert(editAndContinuePreamble);
+
+		boolean firstStatement = true;
 		for (Object statementObj : statements) {
 			ASTNode statement = (ASTNode) statementObj;
-			getRewrite(statement).rewrite(features, rewrite);
+			NodeRewrite stmtRewrite = getRewrite(statement);
+			if (firstStatement && addEditAndContinue) {
+				Position firstStmtPos = stmtRewrite.getPosition(statement, true);
+				rewrite.seek(firstStmtPos);
+				rewrite.insert("arguments = ____arguments;\n");			
+			}
+			stmtRewrite.rewrite(features, rewrite);
+			firstStatement = false;
 		}
 		rewrite.seek(endOfBody);
 		rewrite.insert(editAndContinuePostamble);
@@ -279,5 +305,9 @@ public class FunctionRewrite extends NodeRewrite {
 		HasReturnASTVisitor visitor = new HasReturnASTVisitor();
 		statements.accept(visitor);
 		return visitor.hasReturn;
+	}
+
+	public void useEscapedThis(boolean useEscapedThis) {
+		this.useEscapedThis = useEscapedThis;
 	}
 }

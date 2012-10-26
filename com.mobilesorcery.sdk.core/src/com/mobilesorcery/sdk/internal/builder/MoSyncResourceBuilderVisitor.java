@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -58,21 +59,11 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 	public boolean visit(IResource resource) throws CoreException {
 		super.visit(resource);
 
-		if (isResourceFile(resource)) {
+		if (doesAffectBuild(resource) && MoSyncBuilder.isResourceFile(resource)) {
 			resourceFiles.add(resource);
 		}
 
 		return true;
-	}
-
-	public static boolean isResourceFile(IResource resource) {
-		if (resource.getType() == IResource.FILE) {
-			IFile file = (IFile) resource;
-			String name = file.getName();
-			return ((name.endsWith(".lst") || name.endsWith(".lstx")) && !name.startsWith("stabs.") && !name.startsWith("~tmpres."));
-		}
-
-		return false;
 	}
 
 	public String[] getResourceFiles() throws CoreException {
@@ -104,11 +95,6 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 		return count;
 	}
 
-	private File getResourcesDirectory() {
-		File resDir = getProject().getLocation().append("Resources").toFile();
-		return resDir.exists() && resDir.isDirectory() ? resDir : null;
-	}
-
 	public void incrementalCompile(IProgressMonitor monitor, DependencyManager<IResource> dependencyManager, DependencyManager.Delta<IResource> dependencyDelta) throws CoreException, IOException {
 		Set<IResource> recompileThese = computeResourcesToRebuild(dependencyManager);
 		if (!recompileThese.isEmpty()) {
@@ -119,7 +105,7 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 				throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Cannot mix .lst files and .lstx"));
 			}
 
-			File resDir = getResourcesDirectory();
+			File resDir = MoSyncBuilder.getResourcesDirectory(project);
 			if (resDir != null && lstCount == 0) {
 				resourceFiles.add(resDir.getAbsolutePath());
 			}
@@ -200,7 +186,7 @@ public class MoSyncResourceBuilderVisitor extends IncrementalBuilderVisitor {
 	public boolean isBuildable(IResource resource) {
 		// Ok, I added the 'resource' file just so it will not get filtered out -- what we'd really
 		// like is the dependency files of pipe-tool resource compilation to work properly
-		return Util.equals(getResourcesDirectory(), resource.getLocation().toFile()) || isResourceFile(resource) || MoSyncBuilder.getResourceOutputPath(project, getVariant()).equals(resource.getLocation());
+		return Util.equals(MoSyncBuilder.getResourcesDirectory(resource.getProject()), resource.getLocation().toFile()) || MoSyncBuilder.isResourceFile(resource) || MoSyncBuilder.getResourceOutputPath(project, getVariant()).equals(resource.getLocation());
 	}
 
 	protected String getName() {

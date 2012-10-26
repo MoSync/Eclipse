@@ -2,15 +2,14 @@ package com.mobilesorcery.sdk.html5;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -40,9 +39,9 @@ import org.eclipse.wst.jsdt.internal.core.JavaProject;
 import org.json.simple.JSONObject;
 import org.osgi.framework.BundleContext;
 
+import com.mobilesorcery.sdk.core.BuildVariant;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildVariant;
-import com.mobilesorcery.sdk.core.ILaunchConstants;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -53,19 +52,18 @@ import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 import com.mobilesorcery.sdk.html5.debug.JSODDLaunchConfigurationDelegate;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
-import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.live.ILiveServerListener;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 import com.mobilesorcery.sdk.html5.live.ReloadManager;
+import com.mobilesorcery.sdk.html5.ui.DebuggingEnableTester;
+import com.mobilesorcery.sdk.html5.ui.JSODDConnectDialog;
 import com.mobilesorcery.sdk.html5.ui.JSODDTimeoutDialog;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
-import com.mobilesorcery.sdk.profiles.ITargetProfileProvider;
 import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 import com.mobilesorcery.sdk.ui.IWorkbenchStartupListener;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.UIUtils;
-import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransportListener;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
@@ -73,13 +71,13 @@ import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
 /**
  * The activator class controls the plug-in life cycle
  */
-public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPhoneTransportListener, ILaunchesListener2 {
+public class Html5Plugin extends AbstractUIPlugin implements IStartup,
+		ITargetPhoneTransportListener, ILaunchesListener2 {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.html5"; //$NON-NLS-1$
 
-	private static final String JS_PROJECT_SUPPORT_PROP = PLUGIN_ID
-			+ ".support";
+	public static final String JS_PROJECT_SUPPORT_PROP = PLUGIN_ID + ".support";
 
 	public static final String HTML5_TEMPLATE_TYPE = "html5";
 
@@ -88,26 +86,32 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	public static final String ANONYMOUS_FUNCTION = "<anonymous>";
 
 	static final String RELOAD_STRATEGY_PREF = "reload.strategy";
-	
+
 	static final String SOURCE_CHANGE_STRATEGY_PREF = "source.change.strategy";
-	
+
 	static final String SHOULD_FETCH_REMOTELY_PREF = "fetch.remotely";
-	
+
+	static final String ODD_SUPPORT_PREF = "odd.support";
+
 	static final String USE_DEFAULT_SERVER_URL_PREF = "use.default.server";
-	
+
 	static final String SERVER_URL_PREF = "server";
 
 	public static final String TIMEOUT_PREF = "timeout";
 
 	public static final int DEFAULT_TIMEOUT = 5;
-	
+
 	public static final int MINIMUM_TIMEOUT = 2;
 
 	public static final int DO_NOTHING = 0;
-	
+
 	public static final int RELOAD = 1;
-	
+
 	public static final int HOT_CODE_REPLACE = 2;
+
+	public static final String TERMINATE_TOKEN_LAUNCH_ATTR = PLUGIN_ID + "t.t";
+
+	public static final String SUPPRESS_TIMEOUT_LAUNCH_ATTR = PLUGIN_ID + "s.t";
 
 	// The shared instance
 	private static Html5Plugin plugin;
@@ -118,6 +122,9 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 	private final HashMap<IProject, JSODDSupport> jsOddSupport = new HashMap<IProject, JSODDSupport>();
 
+	// private HashMap<Object, AtomicInteger> timeoutSuppressions = new
+	// HashMap<Object, AtomicInteger>();
+
 	/**
 	 * The constructor
 	 */
@@ -126,7 +133,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see
 	 * org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext
 	 * )
@@ -135,24 +142,26 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		// We do not yet have the eclipse fix #54993
-		MosyncUIPlugin.getDefault().awaitWorkbenchStartup(new IWorkbenchStartupListener() {
-			@Override
-			public void started(IWorkbench workbench) {
-				DebugPlugin.getDefault().getBreakpointManager().getBreakpoints();
-			}
-		});
+		MosyncUIPlugin.getDefault().awaitWorkbenchStartup(
+				new IWorkbenchStartupListener() {
+					@Override
+					public void started(IWorkbench workbench) {
+						DebugPlugin.getDefault().getBreakpointManager()
+								.getBreakpoints();
+					}
+				});
 		plugin = this;
 
 		// Since we are an IStartup, this will work.
 		TargetPhonePlugin.getDefault().addTargetPhoneTransportListener(this);
 		DebugPlugin.getDefault().getLaunchManager().addLaunchListener(this);
-		
+
 		initReloadManager();
 	}
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see
 	 * org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext
 	 * )
@@ -173,20 +182,32 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 			server.addListener(new ILiveServerListener() {
 				@Override
 				public void timeout(final ReloadVirtualMachine vm) {
-					Display d = PlatformUI.getWorkbench().getDisplay();
-					UIUtils.onUiThread(d, new Runnable() {
-						@Override
-						public void run() {
-							Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-							JSODDTimeoutDialog.openIfNecessary(shell, vm);
+					ILaunch launch = vm.getJavaScriptDebugTarget().getLaunch();
+					String terminateToken = launch == null ? null : launch
+							.getAttribute(TERMINATE_TOKEN_LAUNCH_ATTR);
+					if (!Boolean.parseBoolean(launch
+							.getAttribute(SUPPRESS_TIMEOUT_LAUNCH_ATTR))) {
+						Display d = PlatformUI.getWorkbench().getDisplay();
+						UIUtils.onUiThread(d, new Runnable() {
+							@Override
+							public void run() {
+								Shell shell = PlatformUI.getWorkbench()
+										.getActiveWorkbenchWindow().getShell();
+								JSODDTimeoutDialog.openIfNecessary(shell, vm);
+							}
+						}, false);
+					} else {
+						if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+							CoreMoSyncPlugin.trace(
+									"Suppressed timeout dialog for {0}.",
+									terminateToken);
 						}
-					}, false);
+					}
 				}
-				
+
 				@Override
-				public void received(String command, JSONObject json) {
-					// TODO Auto-generated method stub
-					
+				public void inited(ReloadVirtualMachine vm, boolean reset) {
+
 				}
 			});
 		}
@@ -212,9 +233,10 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	public ReloadManager getReloadManager() {
 		return reloadManager;
 	}
+
 	/**
 	 * Returns the shared instance
-	 *
+	 * 
 	 * @return the shared instance
 	 */
 	public static Html5Plugin getDefault() {
@@ -223,11 +245,13 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 	/**
 	 * Adds HTML5 support to a {@link MoSyncProject}.
+	 * 
 	 * @param configureForODD
-	 *
+	 * 
 	 * @throws CoreException
 	 */
-	public void addHTML5Support(MoSyncProject project, boolean configureForODD) throws CoreException {
+	public void addHTML5Support(MoSyncProject project, boolean configureForODD)
+			throws CoreException {
 		try {
 			BuildSequence sequence = new BuildSequence(project);
 			List<IBuildStepFactory> factories = sequence
@@ -269,10 +293,13 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		}
 
 		// Add HTML5 capability filter!
-		DeviceCapabilitiesFilter oldFilter = DeviceCapabilitiesFilter.extractFilterFromProject(mosyncProject);
-		HashSet<String> newCapabilities = new HashSet<String>(oldFilter.getRequiredCapabilities());
+		DeviceCapabilitiesFilter oldFilter = DeviceCapabilitiesFilter
+				.extractFilterFromProject(mosyncProject);
+		HashSet<String> newCapabilities = new HashSet<String>(
+				oldFilter.getRequiredCapabilities());
 		newCapabilities.add("HTML5");
-		DeviceCapabilitiesFilter newFilter = DeviceCapabilitiesFilter.create(newCapabilities.toArray(new String[0]), new String[0]);
+		DeviceCapabilitiesFilter newFilter = DeviceCapabilitiesFilter.create(
+				newCapabilities.toArray(new String[0]), new String[0]);
 		DeviceCapabilitiesFilter.setFilter(mosyncProject, newFilter);
 	}
 
@@ -291,45 +318,41 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	}
 
 	public boolean hasHTML5Support(MoSyncProject project) {
-		boolean hasSupport;
-		try{
-			if (project == null) {
-				return false;
-			}
-			hasSupport = PropertyUtil.getBoolean(project, JS_PROJECT_SUPPORT_PROP)
-					|| DeviceCapabilitiesFilter.extractFilterFromProject(project).getRequiredCapabilities().contains("HTML5");			
-			return hasSupport;
+		if (project == null) {
+			return false;
 		}
-		catch(NullPointerException ex)
-		{
-			if (project == null) {
-				return false;
-			}
-			hasSupport = PropertyUtil.getBoolean(project, JS_PROJECT_SUPPORT_PROP);
-			return hasSupport;
-		}
-		
+		DeviceCapabilitiesFilter filter = DeviceCapabilitiesFilter
+				.extractFilterFromProject(project);
+		boolean hasHTML5Capability = filter != null
+				&& filter.getRequiredCapabilities().contains("HTML5");
+		boolean hasSupport = hasHTML5Capability
+				&& PropertyUtil.getBoolean(project, JS_PROJECT_SUPPORT_PROP);
+		return hasSupport;
 	}
-	
+
 	public boolean hasHTML5PackagerBuildStep(MoSyncProject project) {
 		BuildSequence seq = BuildSequence.getCached(project);
-		return !seq.getBuildStepFactories(HTML5DebugSupportBuildStep.Factory.class).isEmpty();
+		return !seq.getBuildStepFactories(
+				HTML5DebugSupportBuildStep.Factory.class).isEmpty();
 	}
 
 	private IBuildStepFactory createHTML5PackagerBuildStep() {
-		/*BundleBuildStep.Factory factory = new BundleBuildStep.Factory();
-		factory.setFailOnError(true);
-		factory.setName("HTML5/JavaScript bundling");
-		factory.setInFile("%current-project%/LocalFiles");
-		factory.setOutFile("%current-project%/Resources/LocalFiles.bin");
-		return factory;*/
+		/*
+		 * BundleBuildStep.Factory factory = new BundleBuildStep.Factory();
+		 * factory.setFailOnError(true);
+		 * factory.setName("HTML5/JavaScript bundling");
+		 * factory.setInFile("%current-project%/LocalFiles");
+		 * factory.setOutFile("%current-project%/Resources/LocalFiles.bin");
+		 * return factory;
+		 */
 		// BAH -- We do NOT always want to copy LocalFiles to package etc
 		HTML5DebugSupportBuildStep.Factory factory = new HTML5DebugSupportBuildStep.Factory();
 		return factory;
 	}
 
 	public synchronized JSODDSupport getJSODDSupport(IProject project) {
-		if (!hasHTML5Support(MoSyncProject.create(project))) {
+		if (!DebuggingEnableTester.hasDebugSupport(MoSyncProject
+				.create(project))) {
 			return null;
 		}
 		JSODDSupport result = jsOddSupport.get(project);
@@ -339,7 +362,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		}
 		return result;
 	}
-	
+
 	public boolean hasJSODDSupport(IProject project) {
 		return getJSODDSupport(project) != null;
 	}
@@ -354,8 +377,9 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 	}
 
 	/**
-	 * Returns the path where HTML5 content is stored.
-	 * The path is project relative.
+	 * Returns the path where HTML5 content is stored. The path is project
+	 * relative.
+	 * 
 	 * @param wrappedProject
 	 * @return
 	 */
@@ -363,10 +387,11 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		// I guess this might always be constant...
 		return new Path("LocalFiles");
 	}
-	
+
 	/**
-	 * Returns the 'local path' of a file, i e where it is located
-	 * related to its LocalFiles directory.
+	 * Returns the 'local path' of a file, i e where it is located related to
+	 * its LocalFiles directory.
+	 * 
 	 * @param file
 	 * @return
 	 */
@@ -379,7 +404,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		}
 		return null;
 	}
-	
+
 	public IResource getLocalFile(IProject project, IPath path) {
 		return project.getFolder(getHTML5Folder(project)).findMember(path);
 	}
@@ -391,7 +416,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		}
 		return result;
 	}
-	
+
 	public void setTimeout(int timeout) {
 		getPreferenceStore().setValue(TIMEOUT_PREF, timeout);
 	}
@@ -400,26 +425,37 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 		// TODO. Default = 0 = UNDEFINED
 		return getPreferenceStore().getInt(RELOAD_STRATEGY_PREF);
 	}
-	
+
 	public void setReloadStrategy(int reloadStrategy) {
 		getPreferenceStore().setDefault(RELOAD_STRATEGY_PREF, reloadStrategy);
 	}
 
 	public void setSourceChangeStrategy(int sourceChangeStrategy) {
-		getPreferenceStore().setValue(SOURCE_CHANGE_STRATEGY_PREF, sourceChangeStrategy);
+		getPreferenceStore().setValue(SOURCE_CHANGE_STRATEGY_PREF,
+				sourceChangeStrategy);
 	}
-	
+
 	public int getSourceChangeStrategy() {
 		return getPreferenceStore().getInt(SOURCE_CHANGE_STRATEGY_PREF);
 	}
 
 	public boolean shouldFetchRemotely() {
-		boolean shouldFetchRemotely = getPreferenceStore().getBoolean(SHOULD_FETCH_REMOTELY_PREF);
+		boolean shouldFetchRemotely = getPreferenceStore().getBoolean(
+				SHOULD_FETCH_REMOTELY_PREF);
 		return shouldFetchRemotely || getSourceChangeStrategy() != DO_NOTHING;
 	}
-	
+
 	public void setShouldFetchRemotely(boolean shouldFetchRemotely) {
-		getPreferenceStore().setValue(SHOULD_FETCH_REMOTELY_PREF, shouldFetchRemotely);
+		getPreferenceStore().setValue(SHOULD_FETCH_REMOTELY_PREF,
+				shouldFetchRemotely);
+	}
+
+	public boolean isJSODDEnabled(MoSyncProject project) {
+		return PropertyUtil.getBoolean(project, ODD_SUPPORT_PREF);
+	}
+
+	public void setJSODDEnabled(MoSyncProject project, boolean enabled) {
+		PropertyUtil.setBoolean(project, ODD_SUPPORT_PREF, enabled);
 	}
 
 	@Override
@@ -436,9 +472,12 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 				try {
 					String cfgId = cfg.getType().getIdentifier();
 					if (EmulatorLaunchConfigurationDelegate.ID.equals(cfgId)) {
-						IProject project = EmulatorLaunchConfigurationDelegate.getProject(cfg);
-						IBuildVariant variant = EmulatorLaunchConfigurationDelegate.getVariant(cfg, launch.getLaunchMode());
-						launchJSODD(MoSyncProject.create(project), variant, null);
+						IProject project = EmulatorLaunchConfigurationDelegate
+								.getProject(cfg);
+						IBuildVariant variant = EmulatorLaunchConfigurationDelegate
+								.getVariant(cfg, launch.getLaunchMode());
+						launchJSODD(MoSyncProject.create(project), variant,
+								false, BuildVariant.toString(variant));
 					}
 				} catch (Exception e) {
 					// Who cares?
@@ -455,49 +494,92 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup, ITargetPh
 
 	@Override
 	public void launchesTerminated(ILaunch[] launches) {
-		
+
 	}
 
 	@Override
 	public void handleEvent(TargetPhoneTransportEvent event) {
 		// Launch the debug server if sending package in debug mode
-		if (TargetPhoneTransportEvent.isType(TargetPhoneTransportEvent.PRE_SEND, event)) {
+		if (TargetPhoneTransportEvent.isType(
+				TargetPhoneTransportEvent.ABOUT_TO_LAUNCH, event)) {
 			MoSyncProject project = event.project;
 			IBuildVariant variant = event.variant;
-			launchJSODD(project, variant, event.phone);
+			launchJSODD(project, variant, true, event.phone.getName());
 		}
 	}
 
-	private void launchJSODD(MoSyncProject project, IBuildVariant variant, Object terminateToken) {
-		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
-		if (hasHTML5Support(project) && PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)) {
-			try {
-				JSODDLaunchConfigurationDelegate.launchDefault();
-			} catch (CoreException e) {
-				Policy.getStatusHandler().show(e.getStatus(), "Could not launch JavaScript On-Device Debug Server");
-			}
+	private void launchJSODD(final MoSyncProject project,
+			final IBuildVariant variant, final boolean onDevice,
+			final String terminateToken) {
+		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project,
+				variant.getConfigurationId());
+		if (DebuggingEnableTester.hasDebugSupport(project)
+				&& PropertyUtil.getBoolean(properties,
+						MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS) && isJSODDEnabled(project)) {
+
+			new Thread(new Runnable() {
+				public void run() {
+					try {
+						boolean wasLaunched = JSODDLaunchConfigurationDelegate
+								.launchDefault(terminateToken);
+						int result = JSODDConnectDialog.show(project, variant,
+								onDevice, null);
+						if (result == JSODDConnectDialog.CANCEL) {
+							JSODDLaunchConfigurationDelegate
+									.killLaunch(terminateToken);
+						}
+					} catch (CoreException e) {
+						Policy.getStatusHandler()
+								.show(e.getStatus(),
+										"Could not launch JavaScript On-Device Debug Server");
+					}
+				}
+			}).start();
 		}
 	}
+
+	/*
+	 * private int incTimeoutSuppression(Object terminateToken, int increment) {
+	 * // We don't scare users with timeouts if we just // started another
+	 * session for potentially the same // device / app (since a timeout is
+	 * expected // and not an error condition. AtomicInteger suppressionCount =
+	 * timeoutSuppressions.get(terminateToken); if (suppressionCount == null) {
+	 * suppressionCount = new AtomicInteger();
+	 * timeoutSuppressions.put(terminateToken, suppressionCount); } int result =
+	 * suppressionCount.addAndGet(increment); if (result == 0) {
+	 * timeoutSuppressions.remove(terminateToken); } return result; }
+	 */
 
 	public URL getServerURL() throws IOException {
-		if (getPreferenceStore().getBoolean(USE_DEFAULT_SERVER_URL_PREF)) {
+		if (useDefaultServerURL()) {
 			return getDefaultServerURL();
 		} else {
 			return new URL(getPreferenceStore().getString(SERVER_URL_PREF));
 		}
 	}
-	
-	public void setServerURL(String addr, boolean useDefault) throws IOException {
+
+	public boolean useDefaultServerURL() {
+		return getPreferenceStore().getBoolean(USE_DEFAULT_SERVER_URL_PREF);
+	}
+
+	public void setServerURL(String addr, boolean useDefault)
+			throws IOException {
 		// Just to get an exception.
 		URL url = new URL(addr);
 		getPreferenceStore().setValue(USE_DEFAULT_SERVER_URL_PREF, useDefault);
 		getPreferenceStore().setValue(SERVER_URL_PREF, addr);
 	}
-	
+
 	public URL getDefaultServerURL() throws IOException {
 		InetAddress localHost = InetAddress.getLocalHost();
 		String host = localHost.getHostAddress();
 		return new URL("http", host, 8511, "");
+	}
+
+	public boolean isFeatureSupported(String feature) {
+		// Ok, one more tricky thing left: binding of function defined
+		// within function - then we can enable this.
+		return !JSODDSupport.EDIT_AND_CONTINUE.equals(feature);
 	}
 
 }

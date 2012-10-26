@@ -167,6 +167,8 @@ public class MoSyncBuilder extends ACBuilder {
 			+ "app.version";
 
 	public static final String APP_NAME = BUILD_PREFS_PREFIX + "app.name";
+	
+	public static final String REBUILD_ON_ERROR = BUILD_PREFS_PREFIX + "rebuild.on.error";
 
 	private static final String APP_CODE = "app.code";
 
@@ -517,6 +519,18 @@ public class MoSyncBuilder extends ACBuilder {
 	IBuildResult incrementalBuild(IProject project, IBuildSession session,
 			IBuildVariant variant, IFilter<IResource> resourceFilter,
 			IProgressMonitor monitor) throws CoreException {
+		IProcessConsole console = createConsole(session);
+		IBuildResult result = incrementalBuild0(project, session, variant, resourceFilter, console, monitor);
+		if (monitor.isCanceled()) {
+			console.addMessage(IProcessConsole.ERR, "*** Build was cancelled by user ***");
+		}
+		return result;
+	}
+	
+	IBuildResult incrementalBuild0(IProject project, IBuildSession session,
+			IBuildVariant variant, IFilter<IResource> resourceFilter,
+			IProcessConsole console,
+			IProgressMonitor monitor) throws CoreException {
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 			CoreMoSyncPlugin.trace("Building project {0}", project);
 		}
@@ -550,8 +564,6 @@ public class MoSyncBuilder extends ACBuilder {
 
 		ErrorParserManager epm = createErrorParserManager(project);
 
-		IProcessConsole console = createConsole(session);
-
 		CoreException errorToShowInConsole = null;
 
 		try {
@@ -567,10 +579,10 @@ public class MoSyncBuilder extends ACBuilder {
 
 			// And we only remove things that are on the project.
 			IFileTreeDiff diff = createDiff(buildState, session);
-			boolean hadSevereBuildErrors = hasErrorMarkers(project,
-					IResource.DEPTH_ZERO);
-			if (hadSevereBuildErrors) {
+			if (PropertyUtil.getBoolean(mosyncProject, REBUILD_ON_ERROR) &&
+					hasErrorMarkers(project)) {
 				// Build all files
+				console.addMessage(IProcessConsole.ERR, "*** Errors in previous build triggered full rebuild ***");
 				diff = null;
 			}
 
@@ -1339,4 +1351,20 @@ public class MoSyncBuilder extends ACBuilder {
 		return PROJECT_TYPE_LIBRARY.equals(mosyncProject
 				.getProperty(PROJECT_TYPE));
 	}
+	
+	public static boolean isResourceFile(IResource resource) {
+		if (resource.getType() == IResource.FILE) {
+			IFile file = (IFile) resource;
+			String name = file.getName();
+			return ((name.endsWith(".lst") || name.endsWith(".lstx")) && !name.startsWith("stabs.") && !name.startsWith("~tmpres."));
+		}
+
+		return false;
+	}
+	
+	public static File getResourcesDirectory(IProject project) {
+		File resDir = project.getLocation().append("Resources").toFile();
+		return resDir.exists() && resDir.isDirectory() ? resDir : null;
+	}
+	
 }

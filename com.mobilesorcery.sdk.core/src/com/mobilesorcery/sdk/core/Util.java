@@ -468,16 +468,29 @@ public class Util {
 	}
 
 	public static String getExtension(File file) {
-		int index = file.getName().lastIndexOf('.');
+		return getExtension(file.getName());
+	}
+	
+	public static String getExtension(String filename) {
+		if (filename == null) {
+			return "";
+		}
+		int index = filename.lastIndexOf('.');
 		if (index != -1) {
-			return file.getName().substring(index + 1);
+			return filename.substring(index + 1);
 		} else {
 			return "";
 		}
 	}
 
 	public static String getNameWithoutExtension(File file) {
-		String name = file.getName();
+		return getNameWithoutExtension(file.getName());
+	}
+	
+	public static String getNameWithoutExtension(String name) {
+		if (name == null) {
+			return "";
+		}
 		int index = name.lastIndexOf('.');
 		if (index == -1) {
 			return name;
@@ -642,7 +655,8 @@ public class Util {
 			return filenameFile;
 		}
 
-		return new File(peer.getParent(), filename);
+		File dir = peer.isDirectory() ? peer : peer.getParentFile();
+		return new File(dir, filename).getAbsoluteFile();
 	}
 
 	public static boolean isParent(File potentialParent, File potentialChild) {

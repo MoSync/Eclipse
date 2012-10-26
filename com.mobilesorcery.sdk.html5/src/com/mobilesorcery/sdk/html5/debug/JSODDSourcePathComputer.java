@@ -1,6 +1,7 @@
 package com.mobilesorcery.sdk.html5.debug;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
@@ -26,7 +27,16 @@ public class JSODDSourcePathComputer implements ISourcePathComputerDelegate {
 		IProject[] allProjects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
 		ArrayList<ISourceContainer> sourceContainers = new ArrayList<ISourceContainer>();
 		for (IProject project : allProjects) {
-			MoSyncProject mosyncProject = MoSyncProject.create(project);
+			MoSyncProject mosyncProject = null;
+			List<ReloadVirtualMachine> vms = Html5Plugin.getDefault().getReloadServer().getVMs(false);
+			// We filter out all projects that are not being debugged. Will remove almost
+			// all practical concerns for having several equally named files in different projects.
+			for (ReloadVirtualMachine vm : vms) {
+				if (project.equals(vm.getProject())) {
+					mosyncProject = MoSyncProject.create(project);
+				}
+			}
+			
 			if (mosyncProject != null) {
 				if (Html5Plugin.getDefault().hasHTML5Support(mosyncProject)) {
 					// TODO: Should this really be hardcoded here?

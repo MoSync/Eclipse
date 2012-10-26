@@ -23,17 +23,22 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.window.IShellProvider;
 
+import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
+import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
 
 final class BTSendJob extends Job {
 
 	private final BTTargetPhone selectedPhone;
 	private IShellProvider shellProvider;
 	private File packageToSend;
+	private MoSyncProject project;
+	private IBuildVariant variant;
 
 	BTSendJob(IShellProvider shellProvider, BTTargetPhone selectedPhone,
-			File packageToSend) {
+			File packageToSend, MoSyncProject project, IBuildVariant variant) {
 		super("Sending to device");
 		this.shellProvider = shellProvider;
 		this.selectedPhone = selectedPhone;
@@ -81,6 +86,7 @@ final class BTSendJob extends Job {
 	protected void sendBuildResult(File buildResult, IProgressMonitor monitor)
 			throws CoreException {
 		try {
+			TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.ABOUT_TO_LAUNCH, selectedPhone, project, variant));
 			Bcobex.sendObexFile(selectedPhone, buildResult, monitor);
 		} catch (Exception e) {
 			throw new CoreException(new Status(IStatus.ERROR,

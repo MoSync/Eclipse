@@ -67,7 +67,8 @@ public class GCCDependencyFileParser {
 		for (String line = lines.readLine(); line != null; line = lines
 				.readLine()) {
 			int continuationIx = line.lastIndexOf('\\');
-			if (continuationIx != -1) {
+			boolean endsWithSlash = line.trim().endsWith("\\");
+			if (continuationIx != -1 && endsWithSlash) {
 				compoundLine.append(line.substring(0, continuationIx));
 			} else {
 				compoundLine.append(line);
@@ -121,9 +122,7 @@ public class GCCDependencyFileParser {
 				break;
 
 			case IN_DEP_LIST:
-				if (!potentialEscapeState || peek != ' ') {
-					doAppend = true;
-				}
+				doAppend = !potentialEscapeState || peek != ' ';
 				
 				if (!isInEscapeState && ch == ' ' && currentDependencies != null) {
 					addCurrentFileToDependencies(depFile);
