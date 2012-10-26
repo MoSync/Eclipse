@@ -1238,7 +1238,7 @@ public class JSODDServer implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 		if (Html5Plugin.getDefault().getSourceChangeStrategy() == Html5Plugin.DO_NOTHING) {
 			// Just return!
-			//return;
+			return;
 		}
 
 		List<ReloadVirtualMachine> vms = getVMs(false);
@@ -1252,6 +1252,8 @@ public class JSODDServer implements IResourceChangeListener {
 		}
 
 		IResourceDelta delta = event.getDelta();
+		
+		final boolean[] requiredRewrite = new boolean[] { false };
 
 		// This code seems to be repeated elsewhere; refactor! TODO!
 		if (delta != null) {
@@ -1272,6 +1274,7 @@ public class JSODDServer implements IResourceChangeListener {
 								if (replacement == null) {
 									return false;
 								}
+								requiredRewrite[0] = true;
 								JSODDSupport jsoddSupport = Html5Plugin
 										.getDefault().getJSODDSupport(project);
 								if (delta.getKind() == IResourceDelta.REMOVED) {
@@ -1292,6 +1295,10 @@ public class JSODDServer implements IResourceChangeListener {
 			}
 		}
 
+		if (!requiredRewrite[0]) {
+			return;
+		}
+		
 		int failedRedefineResolution = 0;
 		for (ReloadVirtualMachine vm : vms) {
 			IProject project = vm.getProject();
