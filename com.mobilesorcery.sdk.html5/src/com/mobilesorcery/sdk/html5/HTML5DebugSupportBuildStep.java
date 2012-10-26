@@ -39,6 +39,8 @@ import com.mobilesorcery.sdk.core.build.AbstractBuildStep;
 import com.mobilesorcery.sdk.core.build.AbstractBuildStepFactory;
 import com.mobilesorcery.sdk.core.build.BundleBuildStep;
 import com.mobilesorcery.sdk.core.build.IBuildStep;
+import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
+import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.FileRedefinable;
 import com.mobilesorcery.sdk.internal.builder.IncrementalBuilderVisitor;
@@ -334,6 +336,11 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				// TODO -- would prefer it not to always output there... Since
 				// we'll get build problems for sure!
 				BundleBuildStep.bundle(outputRoot, outputResource);
+				
+				// We need internet permissions.
+				IApplicationPermissions modifiedPermissions = project.getPermissions().createWorkingCopy();
+				modifiedPermissions.setRequestedPermission(ICommonPermissions.INTERNET, true);
+				session.getProperties().put(MODIFIED_PERMISSIONS, modifiedPermissions);
 			} else {
 				BundleBuildStep.bundle(inputRoot.getLocation().toFile(),
 						outputResource);

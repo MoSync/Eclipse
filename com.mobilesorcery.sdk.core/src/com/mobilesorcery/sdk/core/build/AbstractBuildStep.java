@@ -20,12 +20,22 @@ import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
 
 public abstract class AbstractBuildStep implements IBuildStep {
 
+	/**
+	 * A constant that build steps may use to indicate to
+	 * subsequent build steps that another set of permissions
+	 * should be used for building.
+	 * This should be added to a {@link IBuildSession}'s
+	 * properties and must be of type {@link IApplicationPermissions}.
+	 */
+	public static final String MODIFIED_PERMISSIONS = CoreMoSyncPlugin.PLUGIN_ID + "mod.perm";
+	
 	private IProcessConsole console;
 	private IPropertyOwner buildProperties;
 	private IBuildState buildState;

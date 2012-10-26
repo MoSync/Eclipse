@@ -14,6 +14,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.apisupport.nfc.NFCSupport;
+import com.mobilesorcery.sdk.core.build.AbstractBuildStep;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -42,7 +43,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 
 				CommandLineBuilder commandLine = new CommandLineBuilder(
 						packagerTool.toOSString());
-				addGeneralParameters(project, variant, commandLine);
+				addGeneralParameters(project, session, variant, commandLine);
 				addPlatformSpecifics(project, variant, commandLine);
 
 				String packageOutputDirStr = internal
@@ -95,7 +96,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		return null;
 	}
 
-	private void addGeneralParameters(MoSyncProject project,
+	private void addGeneralParameters(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, CommandLineBuilder commandLine)
 			throws Exception {
 		DefaultPackager internal = new DefaultPackager(project, variant);
@@ -114,6 +115,12 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		Version version = new Version(internal.get(DefaultPackager.APP_VERSION));
 		String appName = internal.get(DefaultPackager.APP_NAME);
 		IApplicationPermissions permissions = project.getPermissions();
+		
+		Object modifiedPermissions = session.getProperties().get(AbstractBuildStep.MODIFIED_PERMISSIONS);
+		if (modifiedPermissions instanceof IApplicationPermissions) {
+			permissions = (IApplicationPermissions) modifiedPermissions;
+		}
+		
 		String permissionsStr = Util.join(
 				permissions.getRequestedPermissions(true).toArray(), ",");
 
