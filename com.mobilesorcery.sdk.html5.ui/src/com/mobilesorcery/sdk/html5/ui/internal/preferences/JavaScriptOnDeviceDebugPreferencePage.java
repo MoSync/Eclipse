@@ -51,7 +51,6 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 	private Text serverAddress;
 	private Button useDefaultServerAddress;
 	private Label sourceChangeStrategyLabel;
-	private Button enableButton;
 
 	public JavaScriptOnDeviceDebugPreferencePage() {
 		super("JavaScript On-Device Debug");
@@ -98,11 +97,6 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		executionGroup.setLayout(new GridLayout(2, false));
 		executionGroup.setText("Debugging");
 		executionGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-		
-		enableButton = new Button(executionGroup, SWT.CHECK);
-		enableButton.setText("Enable On-Device JavaScript Debugging");
-		enableButton.setSelection(Html5Plugin.getDefault().isJSODDEnabled());
-		enableButton.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false, 2, 1));
 		
 		sourceChangeStrategyLabel = new Label(executionGroup, SWT.NONE);
 		sourceChangeStrategyLabel.setText("When source changes:");
@@ -170,7 +164,6 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		sourceChangeStrategyCombo.getCombo().addListener(SWT.Selection, listener);
 		serverAddress.addListener(SWT.Modify, listener);
 		useDefaultServerAddress.addListener(SWT.Selection, listener);
-		enableButton.addListener(SWT.Selection, listener);
 		
 		updateUI();
 		
@@ -179,27 +172,21 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 	
 	@Override
 	public void updateUI() {
-		boolean oddEnabled = enableButton.getSelection();
 		boolean requiresRemoteFetch = Util.equals(getSourceChangeStrategy(), Html5Plugin.RELOAD) || Util.equals(getSourceChangeStrategy(), Html5Plugin.HOT_CODE_REPLACE);
 		String op = requiresRemoteFetch ? 
 				sourceChangeStrategyCombo.getCombo().getText().toLowerCase() :
 				"this";
 
 		reloadStrategyLabel.setText(MessageFormat.format("When {0} fails:", op));
-		reloadStrategyCombo.getCombo().setEnabled(requiresRemoteFetch && oddEnabled);
-		reloadStrategyLabel.setEnabled(requiresRemoteFetch && oddEnabled);
-		
-		sourceChangeStrategyLabel.setEnabled(oddEnabled);
-		sourceChangeStrategyCombo.getCombo().setEnabled(oddEnabled);
-		
+		reloadStrategyCombo.getCombo().setEnabled(requiresRemoteFetch);
+		reloadStrategyLabel.setEnabled(requiresRemoteFetch);
 		
 		if (requiresRemoteFetch) {
 			shouldFetchRemotely.setSelection(true);
 		}
-		shouldFetchRemotely.setEnabled(!requiresRemoteFetch && oddEnabled);
+		shouldFetchRemotely.setEnabled(!requiresRemoteFetch);
 		
-		serverAddress.setEnabled(!useDefaultServerAddress.getSelection() && oddEnabled);
-		useDefaultServerAddress.setEnabled(oddEnabled);
+		serverAddress.setEnabled(!useDefaultServerAddress.getSelection());
 		
 		validate();
 	}
@@ -238,8 +225,6 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 	}
 	
 	public boolean performOk() {
-		Html5Plugin.getDefault().setJSODDEnabled(enableButton.getSelection());
-		
 		Integer reloadStrategy = getReloadStrategy();
 		if (reloadStrategy != null) {
 			Html5Plugin.getDefault().setReloadStrategy(reloadStrategy);

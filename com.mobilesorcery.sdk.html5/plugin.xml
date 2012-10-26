@@ -114,10 +114,15 @@
                id="com.mobilesorcery.sdk.html5.evaluate"
                name="Evaluate JavaScript">
          </command>
-                  <command
+          <command
                defaultHandler="com.mobilesorcery.sdk.html5.ui.DebuggingEnableHandler"
                id="com.mobilesorcery.sdk.html5.enable.debugger"
                name="Enable JavaScript Debugging">
+         </command>
+          <command
+               defaultHandler="com.mobilesorcery.sdk.html5.ui.DebuggingEnableHandler"
+               id="com.mobilesorcery.sdk.html5.disable.debugger"
+               name="Disable JavaScript Debugging">
          </command>
          <command
                id="com.mobilesorcery.sdk.html5.reload"
@@ -180,7 +185,7 @@
             class="com.mobilesorcery.sdk.html5.ui.DebuggingEnableTester"
             id="com.mobilesorcery.sdk.html5.canEnableDebugging"
             namespace="com.mobilesorcery.sdk.html5"
-            properties="canEnableDebugging"
+            properties="canEnableDebugging,canDisableDebugging"
             type="java.lang.Object"/>
          <propertyTester
             class="com.mobilesorcery.sdk.html5.ui.ActiveDebugSessionsTester"

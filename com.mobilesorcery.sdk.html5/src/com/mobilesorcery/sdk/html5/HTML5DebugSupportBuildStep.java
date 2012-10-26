@@ -230,7 +230,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 				String reloadStrategy = Integer.toString(Html5Plugin.getDefault().getReloadStrategy());
 				String sourceChangeStartegy = Integer.toString(Html5Plugin.getDefault().getSourceChangeStrategy());
-				String enabled = Boolean.toString(Html5Plugin.getDefault().isJSODDEnabled());
+				String enabled = Boolean.toString(Html5Plugin.getDefault().isJSODDEnabled(MoSyncProject.create(getProject())));
 				
 				String oldReloadStrategy = jsoddProps.get(Html5Plugin.RELOAD_STRATEGY_PREF);
 				String oldSourceChangeStartegy = jsoddProps.get(Html5Plugin.SOURCE_CHANGE_STRATEGY_PREF);
@@ -312,7 +312,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			deps.addDependency(outputFile, inputRoot);
 			
 			if (PropertyUtil.getBoolean(properties,
-					MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS) && Html5Plugin.getDefault().isJSODDEnabled()) {
+					MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS) && Html5Plugin.getDefault().isJSODDEnabled(project)) {
 				monitor.beginTask("Instrumenting JavaScript source files", 10);
 				File outputRoot = MoSyncBuilder
 						.getOutputPath(wrappedProject, variant)

@@ -450,12 +450,12 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 				shouldFetchRemotely);
 	}
 
-	public boolean isJSODDEnabled() {
-		return getPreferenceStore().getBoolean(ODD_SUPPORT_PREF);
+	public boolean isJSODDEnabled(MoSyncProject project) {
+		return PropertyUtil.getBoolean(project, ODD_SUPPORT_PREF);
 	}
 
-	public void setJSODDEnabled(boolean enabled) {
-		getPreferenceStore().setValue(ODD_SUPPORT_PREF, enabled);
+	public void setJSODDEnabled(MoSyncProject project, boolean enabled) {
+		PropertyUtil.setBoolean(project, ODD_SUPPORT_PREF, enabled);
 	}
 
 	@Override
@@ -515,7 +515,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 				variant.getConfigurationId());
 		if (DebuggingEnableTester.hasDebugSupport(project)
 				&& PropertyUtil.getBoolean(properties,
-						MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS) && isJSODDEnabled()) {
+						MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS) && isJSODDEnabled(project)) {
 
 			new Thread(new Runnable() {
 				public void run() {
