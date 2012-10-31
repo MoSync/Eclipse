@@ -16,9 +16,14 @@ package com.mobilesorcery.sdk.core;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
+
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.internal.core.LaunchManager;
 
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 
@@ -36,6 +41,7 @@ public class CommandLineExecutor {
 	private final String consoleName;
 	private ILineHandler stdoutHandler;
 	private ILineHandler stderrHandler;
+	private HashMap<String, String> envs;
 
 	public CommandLineExecutor(String consoleName) {
 		this.consoleName = consoleName;
@@ -63,6 +69,13 @@ public class CommandLineExecutor {
         consoleMsgs.add(consoleMsg);
     }
 
+    public int runCommandLine(Map<String, String> env, String[] commandLine, String consoleMsg) throws IOException {
+    	for (Map.Entry<String, String> var : env.entrySet()) {
+    		addEnv(var.getKey(), var.getValue());
+    	}
+    	return runCommandLine(commandLine, consoleMsg);
+    }
+    
 	/**
 	 * Convenience method for running exactly one line.
 	 *
@@ -110,6 +123,13 @@ public class CommandLineExecutor {
 
 	public void setExecutionDirectory(String dir) {
 		this.dir = dir;
+	}
+	
+	public void addEnv(String env, String value) {
+		if (envs == null) {
+			envs = new HashMap<String, String>();
+		}
+		envs.put(env, value);
 	}
 
 	/**
@@ -185,10 +205,10 @@ public class CommandLineExecutor {
 			/* It is better to pass the command as an array here since then Java will
 			 * fix all problems with quotations and such that are suitable for the
 			 * platform. */
-			if (dir == null) {
+			if (dir == null && envs == null) {
 			    currentProcess = Runtime.getRuntime().exec(resolvedLine);
 			} else {
-			    currentProcess = Runtime.getRuntime().exec(resolvedLine, null, new File(dir));
+			    currentProcess = Runtime.getRuntime().exec(resolvedLine, getEnv(), new File(dir));
 			}
 
 			console.attachProcess(currentProcess, stdoutHandler, stderrHandler);
@@ -205,6 +225,27 @@ public class CommandLineExecutor {
 		}
 
 		return result;
+	}
+
+	private String[] getEnv() {
+		if (this.envs == null) {
+			return null;
+		}
+		
+		ArrayList<String> envs = new ArrayList<String>();
+		Map nativeEnvs = DebugPlugin.getDefault().getLaunchManager().getNativeEnvironmentCasePreserved();
+		for (Object env : nativeEnvs.keySet()) {
+			Object nativeValue = nativeEnvs.get(env);
+			if (!this.envs.containsKey(env)) {
+				envs.add(env + "=" + nativeValue);
+			}
+			
+		}
+		for (Map.Entry<String, String> env : this.envs.entrySet()) {
+			envs.add(env.getKey() + "=" + env.getValue());
+		}
+		
+		return envs.toArray(new String[envs.size()]);
 	}
 
 	private String mergeCommandLine(String[] commandLine) {
@@ -231,6 +272,10 @@ public class CommandLineExecutor {
 		if (currentProcess == null) {
 			currentProcess.destroy();
 		}
+	}
+	
+	public Process getCurrentProcess() {
+		return currentProcess;
 	}
 
 	public static String replace(String originalString, CascadingProperties parameters) {

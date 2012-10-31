@@ -69,6 +69,12 @@ icon="icons/launchshortcut.png">
                id="com.mobilesorcery.sdk.preferences.emulator.usage.statistics"
                name="Usage Statistics">
          </page>
+          <page
+               category="com.mobilesorcery.sdk.preferences.main"
+               class="com.mobilesorcery.sdk.ui.internal.preferences.BuildPreferencePage"
+               id="com.mobilesorcery.sdk.preferences.build"
+               name="Build">
+         </page>
       </extension> 
       
          <extension point="org.eclipse.ui.console.consolePatternMatchListeners">
@@ -185,6 +191,11 @@ icon="icons/launchshortcut.png">
        <actionSet id="com.mobilesorcery.sdk.help.actionset"
            label="Help"
            visible="true">
+                      <action id="com.mobilesorcery.sdk.panic"
+               menubarPath="help/intro"
+               label="Translate Panic Code..."
+               class="com.mobilesorcery.ui.internal.actions.TranslatePanicCodeAction">
+           </action> 
 			<action id="com.mobilesorcery.sdk.help.doxygen"
 				menubarPath="help/intro"
 				label="MoSync C++ API Reference">
@@ -205,12 +216,7 @@ icon="icons/launchshortcut.png">
                menubarPath="help/intro"
                label="MoSync Online User Guides"
                class="com.mobilesorcery.ui.internal.actions.ShowHTMLAction">
-           </action>           ...
-           <action id="com.mobilesorcery.sdk.panic"
-               menubarPath="help/intro"
-               label="Translate Panic Code..."
-               class="com.mobilesorcery.ui.internal.actions.TranslatePanicCodeAction">
-           </action>           ...
+           </action>           ...          ...
        </actionSet>
    </extension>
          <extension
@@ -525,7 +531,21 @@ icon="icons/launchshortcut.png">
                      checkEnabled="true">
             </visibleWhen>
             <parameter name="com.mobilesorcery.sdk.ui.finalize.scope" value="all"/>
-            </command></menuContribution> 
+            </command>
+            
+            </menuContribution> 
+            
+            <!-- "toolbar:org.eclipse.ui.trim.status?after=org.eclipse.jface.action.StatusLineManager" -->
+                         <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?endof=additions">
+    <toolbar id="com.mobilesorcery.sdk.help.searchbox">
+        <control id="com.mobilesorcery.sdk.help.searchbox"
+                class="com.mobilesorcery.sdk.ui.internal.help.SearchBox">
+            <visibleWhen 
+            		checkEnabled="true">
+            </visibleWhen>
+        </control>
+    </toolbar>
+    </menuContribution> 
                  <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
     <toolbar id="com.mobilesorcery.sdk.ui.profile.toolbar">
         <control id="com.mobilesorcery.sdk.ui.changeActiveProfile"

@@ -4,11 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.net.InetAddress;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,6 +47,7 @@ import org.eclipse.wst.jsdt.core.dom.CatchClause;
 import org.eclipse.wst.jsdt.core.dom.DoStatement;
 import org.eclipse.wst.jsdt.core.dom.Expression;
 import org.eclipse.wst.jsdt.core.dom.ExpressionStatement;
+import org.eclipse.wst.jsdt.core.dom.FieldAccess;
 import org.eclipse.wst.jsdt.core.dom.ForInStatement;
 import org.eclipse.wst.jsdt.core.dom.ForStatement;
 import org.eclipse.wst.jsdt.core.dom.FunctionDeclaration;
@@ -60,6 +60,7 @@ import org.eclipse.wst.jsdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.wst.jsdt.core.dom.Statement;
 import org.eclipse.wst.jsdt.core.dom.SwitchCase;
 import org.eclipse.wst.jsdt.core.dom.SwitchStatement;
+import org.eclipse.wst.jsdt.core.dom.ThisExpression;
 import org.eclipse.wst.jsdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.wst.jsdt.core.dom.WhileStatement;
 import org.eclipse.wst.jsdt.core.dom.WithStatement;
@@ -89,6 +90,7 @@ import com.mobilesorcery.sdk.html5.debug.rewrite.ISourceSupport;
 import com.mobilesorcery.sdk.html5.debug.rewrite.NodeRewrite;
 import com.mobilesorcery.sdk.html5.debug.rewrite.SourceRewrite;
 import com.mobilesorcery.sdk.html5.debug.rewrite.StatementRewrite;
+import com.mobilesorcery.sdk.html5.debug.rewrite.ThisRewrite;
 
 public class JSODDSupport {
 
@@ -119,12 +121,11 @@ public class JSODDSupport {
 		private static final int ERROR_COUNT_THRESHOLD = 10;
 
 		private JavaScriptUnit unit;
-		private final Stack<ASTNode> statementStack = new Stack<ASTNode>();
 		private LocalVariableScope currentScope = new LocalVariableScope()
 				.nestScope();
+		private final Stack<FunctionRewrite> functionRewriteStack = new Stack<FunctionRewrite>();
 		private final Stack<IRedefinable> redefinableStack = new Stack<IRedefinable>();
 		private final TreeMap<Integer, LocalVariableScope> localVariables = new TreeMap<Integer, LocalVariableScope>();
-		private final HashSet<Integer> debuggerStatements = new HashSet<Integer>();
 		private final HashSet<ASTNode> exclusions = new HashSet<ASTNode>();
 		private final HashSet<ASTNode> blockifiables = new HashSet<ASTNode>();
 		private final TreeMap<Integer, List<String>> insertions = new TreeMap<Integer, List<String>>();
@@ -170,6 +171,8 @@ public class JSODDSupport {
 			if (node instanceof FunctionDeclaration) {
 				FunctionDeclaration fd = (FunctionDeclaration) node;
 				currentScope = currentScope.nestScope();
+				// Special function var.
+				currentScope = currentScope.addLocalVariableDeclaration("arguments");
 				for (Object paramObj : fd.parameters()) {
 					SingleVariableDeclaration param = (SingleVariableDeclaration) paramObj;
 					String name = param.getName().getIdentifier();
@@ -182,13 +185,17 @@ public class JSODDSupport {
 				String functionIdentifier = isAnonymous ? Html5Plugin.ANONYMOUS_FUNCTION
 						: functionName.getIdentifier();
 
-				rewrites.put(fd, new FunctionRewrite(this, fd, fileId,
-						nodeRedefinables));
+				FunctionRewrite functionRewrite = new FunctionRewrite(this, fd, fileId,nodeRedefinables);
+				rewrites.put(fd, functionRewrite);
+				functionRewriteStack.push(functionRewrite);
 
 				Block body = fd.getBody();
 
 				ASTNode firstStatement = startOfFunction(fd);
 				ASTNode lastStatement = endOfFunction(fd);
+				
+				// TODO: If both first and last statement null, then we have a problem
+				// and should blacklist that node.
 
 				if (firstStatement instanceof Block
 						&& lastStatement instanceof Block) {
@@ -214,28 +221,17 @@ public class JSODDSupport {
 				validateAST(unit.getProblems());
 			}
 
-			if (node instanceof Statement) {
-				statementStack.push(node);
-			}
-
-			if (node instanceof ExpressionStatement) {
-				Expression expression = ((ExpressionStatement) node)
-						.getExpression();
-				if (expression instanceof SimpleName) {
-					boolean isDebuggerStatement = "debugger"
-							.equals(((SimpleName) expression).getIdentifier());
-					if (isDebuggerStatement) {
-						debuggerStatements.add(startLine);
-					}
-				}
-			}
-
 			int instrumentable = isInstrumentableStatement(node);
 			if (instrumentable != INSTRUMENTATION_DISALLOWED) {
 				rewrites.put(node, new StatementRewrite(this, node, fileId,
 						localVariables, blockifiables, instrumentedLines,
 						instrumentable == FORCE_INSTRUMENTATION));
 			}
+			
+			if (node instanceof ThisExpression && !functionRewriteStack.isEmpty()) {
+				rewrites.put(node, new ThisRewrite(this, node));
+				functionRewriteStack.peek().useEscapedThis(true);
+			}	
 
 			if (nest) {
 				currentScope = currentScope.nestScope();
@@ -277,6 +273,9 @@ public class JSODDSupport {
 
 		private ASTNode startOfFunction(FunctionDeclaration fd) {
 			Block body = fd.getBody();
+			if (body == null) {
+				return null;
+			}
 			List statements = body.statements();
 			boolean useBody = statements.isEmpty();
 			return (ASTNode) (useBody ? body : statements.get(0));
@@ -284,6 +283,9 @@ public class JSODDSupport {
 
 		private ASTNode endOfFunction(FunctionDeclaration fd) {
 			Block body = fd.getBody();
+			if (body == null) {
+				return null;
+			}
 			List statements = body.statements();
 			boolean useBody = statements.isEmpty();
 			return (ASTNode) (useBody ? body : statements
@@ -313,6 +315,7 @@ public class JSODDSupport {
 
 			if (node instanceof FunctionDeclaration) {
 				popRedefinable();
+				functionRewriteStack.pop();
 			}
 
 			if (node instanceof VariableDeclarationFragment) {
@@ -323,10 +326,6 @@ public class JSODDSupport {
 
 			if (node instanceof JavaScriptUnit) {
 				unit = null;
-			}
-
-			if (node instanceof Statement) {
-				statementStack.pop();
 			}
 
 			if (unnest) {
@@ -342,9 +341,8 @@ public class JSODDSupport {
 		}
 
 		private boolean isNestStatement(ASTNode node) {
-			return node instanceof FunctionDeclaration || node instanceof Block
-					|| node instanceof ForStatement
-					|| node instanceof ForInStatement;
+			// No block scope in JS.
+			return node instanceof FunctionDeclaration;
 		}
 
 		private int getStartPosition(ASTNode node) {
@@ -473,7 +471,7 @@ public class JSODDSupport {
 			insert(position, "\n" + (start ? '{' : '}') + "\n");
 		}
 
-		public void rewrite(long fileId, String originalSource, boolean addBoilerPlate, Writer output,
+		public void rewrite(long fileId, String originalSource, int fwImportLocation, Writer output,
 				NavigableMap<Integer, LocalVariableScope> scopeMap,
 				NavigableSet<Integer> instrumentedLines) throws IOException, CoreException {
 			// TODO: I guess there are some better AST rewrite methods around.
@@ -500,9 +498,9 @@ public class JSODDSupport {
 			}
 
 			SourceRewrite doc = new SourceRewrite(originalSource);
-			if (addBoilerPlate) {
-				doc.seek(0);
-				doc.insert(generateBoilerplate(MoSyncProject.create(project)));
+			if (fwImportLocation > 0) {
+				doc.seek(fwImportLocation);
+				doc.insert(generateFrameworkImport());
 			}
 			rootRewrite.rewrite(null, doc);
 			instrumented = doc.rewrite();
@@ -632,6 +630,7 @@ public class JSODDSupport {
 
 	private static final Map<String, IRedefinable> EMPTY = Collections
 			.emptyMap();
+	
 
 	private final ASTParser parser;
 
@@ -682,7 +681,7 @@ public class JSODDSupport {
 				CoreMoSyncPlugin.getDefault().log(e);
 			}
 		} else {
-			List<IPath> added = diff.getAdded();
+			Collection<IPath> added = diff.getAdded();
 			for (IPath path : added) {
 				result[0] |= (fileIds == null || fileIds.get(path) == null);
 				assignFileId(path);
@@ -702,6 +701,20 @@ public class JSODDSupport {
 		return fileRedefinable;
 	}
 
+	public void writeFramework(Writer output) throws CoreException {
+		IFile frameworkFile = project.getFile(Html5Plugin
+				.getHTML5Folder(project).append(getFrameworkPath()));
+		String frameworkSource = generateFrameworkSource();
+		this.instrumentedSource.put(frameworkFile, frameworkSource);
+		if (output != null) {
+			try {
+				output.write(frameworkSource);
+			} catch (IOException e) {
+				throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID, "Cannot write debug framework", e));
+			}
+		}
+	}
+	
 	public FileRedefinable rewrite(IPath filePath, Writer output,
 			ProjectRedefinable baseline) throws CoreException {
 		DebugRewriteOperationVisitor visitor = null;
@@ -723,14 +736,19 @@ public class JSODDSupport {
 				visitor = new DebugRewriteOperationVisitor(
 						sourceLineMap, fileId);
 
+				int fwImportLocation = -1;
 				if (isEmbeddedJavaScriptFile(filePath)) {
 					ArrayList<Pair<Integer, Integer>> htmlRanges = new ArrayList<Pair<Integer, Integer>>();
+					ArrayList<Pair<Integer, Integer>> htmlImportRanges = new ArrayList<Pair<Integer, Integer>>();
 					prunedSource = getEmbeddedJavaScript(file,
-							scopeResetPoints, htmlRanges);
+							scopeResetPoints, htmlRanges, htmlImportRanges);
 					HTMLRedefinable htmlRedefinable = new HTMLRedefinable(null,
 							file, visitor);
 					htmlRedefinable.setHtmlRanges(htmlRanges);
 					fileRedefinable = htmlRedefinable;
+					if (!htmlImportRanges.isEmpty()) {
+						fwImportLocation = htmlImportRanges.get(0).first;
+					}
 				}
 
 				// 1. Parse (JSDT)
@@ -743,9 +761,7 @@ public class JSODDSupport {
 				ast.accept(visitor);
 				TreeMap<Integer, LocalVariableScope> scopeMap = new TreeMap<Integer, LocalVariableScope>();
 				TreeSet<Integer> instrumentedLines = new TreeSet<Integer>();
-				boolean addBoilerPlate = JSODDSupport
-						.isWormholeLib(filePath);
-				visitor.rewrite(fileId, source, addBoilerPlate, output, scopeMap,
+				visitor.rewrite(fileId, source, fwImportLocation, output, scopeMap,
 						instrumentedLines);
 
 				// 3. Update state and notify listeners
@@ -788,7 +804,8 @@ public class JSODDSupport {
 	// spaces
 	private String getEmbeddedJavaScript(IFile file,
 			NavigableSet<Integer> scopeResetPoints,
-			ArrayList<Pair<Integer, Integer>> htmlRanges) throws IOException,
+			ArrayList<Pair<Integer, Integer>> htmlRanges,
+			ArrayList<Pair<Integer, Integer>> importHtmlRanges) throws IOException,
 			CoreException, InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(1);
 		IModelManager modelManager = StructuredModelManager.getModelManager();
@@ -819,28 +836,14 @@ public class JSODDSupport {
 			int end = i == ranges.length ? doc.getLength() : ranges[i].offset;
 			htmlRanges.add(new Pair<Integer, Integer>(start, end));
 		}
-
-		String[] imports = translator.getRawImports();
-		boolean wormholeIsFirstImport = imports.length > 0
-				&& isWormholeLib(new Path(imports[0]));
-		if (htmlRanges.size() > 1 && !wormholeIsFirstImport) {
-			// TODO: Is this really necessary - we could take care of it in some
-			// other way?
-			throw new CoreException(
-					new Status(
-							IStatus.ERROR,
-							Html5Plugin.PLUGIN_ID,
-							MessageFormat
-									.format("{0}: Java On-Device Debug requires each file that contains JavaScript to have wormhole (typically js/wormhole.js) as its first import.",
-											file.getProjectRelativePath())));
+		
+		org.eclipse.jface.text.Position[] importRanges = translator.getImportHtmlRanges();
+		for (int i = 0; i < importRanges.length; i++) {
+			org.eclipse.jface.text.Position importRange = importRanges[i];
+			importHtmlRanges.add(new Pair<Integer, Integer>(importRange.offset, importRange.offset + importRange.length));
 		}
 
 		return translator.getJsText();
-	}
-
-	public static boolean isWormholeLib(IPath path) {
-		return path != null
-				&& path.lastSegment().equalsIgnoreCase("wormhole.js");
 	}
 
 	public static boolean isValidJavaScriptFile(IPath file) {
@@ -906,7 +909,18 @@ public class JSODDSupport {
 		return LocalVariableScope.EMPTY;
 	}
 
-	public String generateBoilerplate(MoSyncProject project) throws CoreException {
+	public String generateFrameworkImport() throws CoreException {
+		return MessageFormat.format(
+				"<script type=\"text/javascript\" charset=\"utf-8\" src=\"{0}\"></script>",
+				getFrameworkPath());
+	}
+	
+	public static String getFrameworkPath() {
+		return "wormhole_dbg_fw.js";
+	}
+
+	public String generateFrameworkSource() throws CoreException {
+		MoSyncProject project = MoSyncProject.create(this.project);
 		StringWriter boilerplateOutput = new StringWriter();
 		writeTemplate(project, "/templates/jsoddsupport.template",
 				boilerplateOutput);
@@ -1052,6 +1066,7 @@ public class JSODDSupport {
 	}
 
 	public ProjectRedefinable getBaseline() {
+		initProjectRedefinable();
 		return projectRedefinable;
 	}
 

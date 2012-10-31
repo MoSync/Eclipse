@@ -129,7 +129,7 @@ public class UpdateManager extends UpdateManagerBase {
 
         // QUASI-HARD-CODED LOCATION!
         String absoluteMosyncExe = MoSyncTool.getDefault().getBinary("eclipse/mosync").toOSString();
-        String pid = CoreMoSyncPlugin.getPid();
+        String pid = CoreMoSyncPlugin.getDefault().getPid();
         String updaterExe = MoSyncTool.getDefault().getBinary("bin/updater").toOSString(); //$NON-NLS-1$
 
         if (!new File(absoluteMosyncExe).exists() || !new File(updaterExe).exists()) {

@@ -11,6 +11,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
@@ -22,6 +23,7 @@ import org.eclipse.ui.PlatformUI;
 import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.AndroidPackager;
 import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
+import com.mobilesorcery.sdk.builder.android.launch.ADB.ProcessKiller;
 import com.mobilesorcery.sdk.builder.android.launch.Emulator.IAndroidEmulatorProcess;
 import com.mobilesorcery.sdk.builder.android.ui.dialogs.ConfigureAndroidSDKDialog;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
@@ -108,6 +110,8 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 			process = emulator.start(avd, true);
 			startLogCat(adb);
 		}
+		
+		DebugPlugin.newProcess(launch, process.getNativeProcess(), MessageFormat.format("Android Emulator ''{0}''", avd));
 
 		// We need to wait until we're started.
 		process.awaitEmulatorStarted(2, TimeUnit.MINUTES);
@@ -117,8 +121,10 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
     	File packageToInstall = getPackageToInstall(launchConfig, mode);
     	if (packageToInstall != null) {
     		String serialNumberOfDevice = process.getEmulatorId();
-    		adb.install(packageToInstall, MoSyncProject.create(project).getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME), serialNumberOfDevice);
-    		adb.launch(Activator.getAndroidComponentName(MoSyncProject.create(project)), serialNumberOfDevice);
+    		adb.install(packageToInstall, MoSyncProject.create(project).getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME), serialNumberOfDevice, new ProcessKiller(monitor));
+    		if (!monitor.isCanceled()) {
+    			adb.launch(Activator.getAndroidComponentName(MoSyncProject.create(project)), serialNumberOfDevice, new ProcessKiller(monitor));
+    		}
         } else {
         	throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Project not built or build failed"));
         }

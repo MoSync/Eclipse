@@ -76,6 +76,9 @@ public class SimpleScriptReference implements ScriptReference {
 		return ResourcesPlugin.getWorkspace().getRoot().getFile(path);
 	}
 
+	public String toString() {
+		return getFile().toString();
+	}
 	public static IPath getFile(Location location) {
 		ScriptReference ref = location.scriptReference();
 		if (ref instanceof SimpleScriptReference) {

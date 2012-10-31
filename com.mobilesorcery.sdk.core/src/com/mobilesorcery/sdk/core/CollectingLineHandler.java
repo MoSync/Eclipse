@@ -14,6 +14,7 @@ public class CollectingLineHandler extends LineAdapter {
 	List<String> lines = new ArrayList<String>();
 	private boolean stopped;
 	private final int maxLines;
+	private Process process;
 
 	public CollectingLineHandler() {
 		this(1024);
@@ -30,6 +31,15 @@ public class CollectingLineHandler extends LineAdapter {
 		}
 	}
 
+	@Override
+	public void start(Process process) {
+		this.process = process;
+	}
+	
+	public Process getProcess() {
+		return process;
+	}
+	
 	@Override
 	public void stop(IOException e) {
 		stopped = true;

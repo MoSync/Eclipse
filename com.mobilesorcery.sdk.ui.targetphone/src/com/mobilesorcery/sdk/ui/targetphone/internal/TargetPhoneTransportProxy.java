@@ -11,6 +11,7 @@ import org.eclipse.ui.IMemento;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
@@ -67,11 +68,11 @@ public class TargetPhoneTransportProxy implements ITargetPhoneTransport {
 		return delegate.store(phone, memento);
 	}
 
-	public void send(IShellProvider shell, MoSyncProject project,
+	public void send(IShellProvider shell, MoSyncProject project, IBuildVariant variant,
 			ITargetPhone phone, File packageToSend, IProgressMonitor monitor)
 			throws CoreException {
 		initDelegate();
-		delegate.send(shell, project, phone, packageToSend, monitor);
+		delegate.send(shell, project, variant, phone, packageToSend, monitor);
 	}
 
 	public ITargetPhone scan(IShellProvider shell, IProgressMonitor monitor)

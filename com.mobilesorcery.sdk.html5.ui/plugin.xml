@@ -59,7 +59,20 @@
                <visibleWhen
                      checkEnabled="true">
                      <test property="com.mobilesorcery.sdk.html5.canEnableDebugging"/>
-                                      </visibleWhen>
+              </visibleWhen>
+            </command>
+            </menuContribution>
+                                     <menuContribution
+               locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+            <command
+                  commandId="com.mobilesorcery.sdk.html5.disable.debugger"
+                  label="Disable JavaScript Debugging"
+                  style="push"
+                  tooltip="Disables JavaScript Debugging for this project">
+               <visibleWhen
+                     checkEnabled="true">
+                     <test property="com.mobilesorcery.sdk.html5.canDisableDebugging"/>
+              </visibleWhen>
             </command>
             </menuContribution>
             

@@ -4,6 +4,7 @@ import java.io.File;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jface.util.Util;
@@ -57,7 +58,9 @@ public class WindowsPhoneEmulatorLauncher extends AbstractEmulatorLauncher {
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
 		final File packageToInstall = getPackageToInstall(launchConfig, mode);
-		WindowsPhoneEmulator.getDefault().run(packageToInstall);
+		Process process = WindowsPhoneEmulator.getDefault().run(packageToInstall);
+		
+		DebugPlugin.newProcess(launch, process, "Windows Phone Emulator");
 	}
 
 	@Override

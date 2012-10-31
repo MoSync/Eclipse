@@ -112,15 +112,18 @@
       </viewerContentBinding>
    </extension>
    <extension
-         point="org.eclipse.core.runtime.preferences">
-   </extension>
-   <extension
          point="com.mobilesorcery.core.propertyinitializers">
       <initializer
             class="com.mobilesorcery.sdk.internal.builder.BuildPropertiesInitializerDelegate"
             context="com.mobilesorcery.sdk.mosync.project.context"
             id="com.mobilesorcery.sdk.builder.initializer"
             prefix="build.prefs">
+      </initializer>
+   </extension>
+         <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="com.mobilesorcery.sdk.internal.builder.BuildPropertiesInitializerDelegate">
       </initializer>
    </extension>
    <extension

@@ -6,6 +6,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 
 import com.mobilesorcery.sdk.core.AbstractTool;
+import com.mobilesorcery.sdk.core.CollectingLineHandler;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
@@ -29,8 +30,9 @@ public class IPhoneSimulator extends AbstractTool {
 	 * @param sdk The sdk to use, or {@code null }for the default
 	 * @param family The device family (eg iPhone, iPad) to simulate, or {@code null} for the default
 	 * @throws CoreException
+	 * @return The emulator process
 	 */
-	public void runApp(IPath pathToApp, String sdk, String family) throws CoreException {
+	public Process runApp(IPath pathToApp, String sdk, String family) throws CoreException {
 		ArrayList<String> cmd = new ArrayList<String>();
 		cmd.add(getToolPath().getAbsolutePath());
 		cmd.add("launch");
@@ -43,7 +45,9 @@ public class IPhoneSimulator extends AbstractTool {
 			cmd.add("--family");
 			cmd.add(family);
 		}
-		execute(cmd.toArray(new String[0]), null, null, false);
+		CollectingLineHandler processHandler = new CollectingLineHandler();
+		execute(cmd.toArray(new String[0]), processHandler, null, true);
+		return processHandler.getProcess();
 	}
 
 	@Override

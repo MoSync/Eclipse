@@ -76,8 +76,7 @@ public class JavaPackager2 extends AbstractPackager {
         File runtimeDir = internal.resolveFile("%runtime-dir%");
         File compileOut = internal.resolveFile("%compile-output-dir%");
 
-        internal.setParameters(getParameters());
-        internal.setParameter("D", shouldUseDebugRuntimes() ? "D" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        internal.setParameter("D", shouldUseDebugRuntimes(project, variant) ? "D" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
         try {
             File packageOutputDir = internal.resolveFile("%package-output-dir%"); //$NON-NLS-1$

@@ -15,11 +15,13 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.dialogs.ListDialog;
 
+import com.mobilesorcery.sdk.core.AbstractTool;
+import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
-import com.mobilesorcery.sdk.profiles.ui.Activator;
 import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhone;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransport;
@@ -27,6 +29,18 @@ import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 
 public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 
+	private final static Version OSX_108 = new Version("10.8");
+	
+	private static void assertAvailability() throws CoreException {
+		if (AbstractTool.isMac()) {
+			Version version = new Version(System.getProperty("os.version"));
+			if (version.isValid() && !version.isOlder(OSX_108)) {
+				throw new CoreException(new Status(IStatus.ERROR, TargetPhonePlugin.PLUGIN_ID,
+						"Bluetooth is only supported for Mac OS X before 10.8"));
+			}
+		}
+	}
+	
 	@Override
 	public ITargetPhone load(IMemento memento, String name) {
 		String addr = memento.getString("addr");
@@ -111,8 +125,8 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
 						BTTargetPhone targetDevice = selectedDevice.getTargetPhone();
 						ITargetPhone correspondingDevice = findInHistory(targetDevice);
 						if (correspondingDevice != null) {
-							targetDevice.setPreferredProfile(correspondingDevice.getPreferredProfile(MoSyncTool.DEFAULT_PROFILE_TYPE));
-							targetDevice.setPreferredProfile(correspondingDevice.getPreferredProfile(MoSyncTool.LEGACY_PROFILE_TYPE));
+							targetDevice.setPreferredProfile(MoSyncTool.DEFAULT_PROFILE_TYPE, correspondingDevice.getPreferredProfile(MoSyncTool.DEFAULT_PROFILE_TYPE));
+							targetDevice.setPreferredProfile(MoSyncTool.LEGACY_PROFILE_TYPE, correspondingDevice.getPreferredProfile(MoSyncTool.LEGACY_PROFILE_TYPE));
 						}
 					    result.add(targetDevice);
 					}
@@ -152,17 +166,19 @@ public class BTTargetPhoneTransport implements ITargetPhoneTransport {
         return null;
     }
 	@Override
-	public void send(IShellProvider shell, MoSyncProject project,
+	public void send(IShellProvider shell, MoSyncProject project, IBuildVariant variant,
 			ITargetPhone phone, File packageToSend, IProgressMonitor monitor)
 			throws CoreException {
+		assertAvailability();
 		BTSendJob job = new BTSendJob(shell, (BTTargetPhone) phone,
-				packageToSend);
+				packageToSend, project, variant);
 		job.runSync(monitor);
 	}
 
 	@Override
 	public ITargetPhone scan(IShellProvider shell, IProgressMonitor monitor)
 			throws CoreException {
+		assertAvailability();
 		try {
 			BTTargetPhone phone = selectPhone( shell.getShell( ) );
 			if (phone != null) {

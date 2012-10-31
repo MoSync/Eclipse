@@ -13,30 +13,17 @@
  */
 package com.mobilesorcery.sdk.core;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.eclipse.core.runtime.CoreException;
-
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 public abstract class AbstractPackager implements IPackagerDelegate {
 
-	private final Map<String, String> parameters = new HashMap<String, String>();
-
-	@Override
-	public void setParameter(String param, String value) throws CoreException {
-		parameters.put(param, value);
-	}
-
-	protected Map<String, String> getParameters() {
-		return parameters;
-	}
-
-	public boolean shouldUseDebugRuntimes() {
-		return Boolean.parseBoolean(parameters
-				.get(MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS));
+	public boolean shouldUseDebugRuntimes(MoSyncProject project, IBuildVariant variant) {
+		IPropertyOwner buildProperties = MoSyncBuilder.getPropertyOwner(
+				project, variant.getConfigurationId());
+		
+		return PropertyUtil
+                .getBoolean(buildProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS);
 	}
 
 	@Override

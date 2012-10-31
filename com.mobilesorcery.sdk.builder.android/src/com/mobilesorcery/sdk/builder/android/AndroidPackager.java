@@ -57,6 +57,16 @@ public class AndroidPackager extends PackageToolPackager {
         commandLine.flag("--android-storepass", true).with(storepass);
         commandLine.flag("--android-alias").with(alias);
         commandLine.flag("--android-keypass", true).with(keypass);
+        
+        String installLocation = project.getProperty(PropertyInitializer.ANDROID_INSTALL_LOCATION);
+        if (!Util.isEmpty(installLocation)) {
+        	commandLine.flag("--android-install-location").with(installLocation);
+        }
+        
+        String manifestTemplate = project.getProperty(PropertyInitializer.ANDROID_MANIFEST_TEMPLATE);
+        if (!Util.isEmpty(manifestTemplate)) {
+        	commandLine.flag("--android-manifest-template").with(manifestTemplate);
+        }
 	}
 
 	@Override

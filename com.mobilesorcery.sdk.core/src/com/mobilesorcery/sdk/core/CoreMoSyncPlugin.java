@@ -170,6 +170,10 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 
 	private HashMap<String, IBuildStepFactoryExtension> buildStepExtensions = null;
 
+	private List<String> buildStepFactoryIds;
+
+	private boolean nativeLibsInited = false;
+
     /**
      * The constructor
      */
@@ -183,7 +187,6 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         aboutBoxHack();
         initReIndexerListener();
         initRebuildListener();
-        initNativeLibs(context);
         initPackagers();
         initDeviceFilterFactories();
         initPanicErrorMessages();
@@ -428,7 +431,11 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
         getLog().log(new Status(IStatus.ERROR, PLUGIN_ID, e.getMessage(), e));
     }
 
-    private void initNativeLibs(BundleContext context) {
+    private synchronized void initNativeLibs() {
+    	if (nativeLibsInited) {
+    		return;
+    	}
+    	nativeLibsInited = true;
         try {
             JNALibInitializer.init(this.getBundle(), "libpipe");
             @SuppressWarnings("unused")
@@ -560,11 +567,13 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
      * Returns the Eclipse OS Process ID.
      * @return
      */
-    public static String getPid() {
+    public String getPid() {
+    	initNativeLibs();
         return "" + PID.INSTANCE.pid();
     }
 
     public IProcessUtil getProcessUtil() {
+    	initNativeLibs();
     	return PROCESS.INSTANCE;
     }
 
@@ -716,6 +725,14 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 			return new CopyBuildResultBuildStep.Factory();
 		}
 
+		IBuildStepFactoryExtension extension = getBuildStepFactoryExtension(id);
+		if (extension != null) {
+			return extension.createFactory();
+		}
+		return null;
+	}
+	
+	public IBuildStepFactoryExtension getBuildStepFactoryExtension(String id) {
 		if (buildStepExtensions == null) {
 			buildStepExtensions = new HashMap<String, IBuildStepFactoryExtension>();
 			IExtensionRegistry registry = Platform.getExtensionRegistry();
@@ -731,11 +748,28 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 				}
 			}
 		}
-		IBuildStepFactoryExtension extension = buildStepExtensions.get(id);
-		if (extension != null) {
-			return extension.createFactory();
+		return buildStepExtensions.get(id);
+	}
+	
+	/**
+	 * Returns a mutable list of all build step factories.
+	 * @return
+	 */
+	public List<String> getBuildStepFactories() {
+		if (buildStepFactoryIds == null) {
+			ArrayList<String> result = new ArrayList<String>();
+			result.add(CompileBuildStep.ID);
+			result.add(ResourceBuildStep.ID);
+			result.add(LinkBuildStep.ID);
+			result.add(PackBuildStep.ID);
+			result.add(CommandLineBuildStep.ID);
+			result.add(BundleBuildStep.ID);
+			result.add(CopyBuildResultBuildStep.ID);
+			getBuildStepFactoryExtension(""); // Just to init.
+			result.addAll(buildStepExtensions.keySet());
+			buildStepFactoryIds = Collections.unmodifiableList(result);
 		}
-		return null;
+		return buildStepFactoryIds;
 	}
 
 	public IUpdater getUpdater() {

@@ -3,6 +3,7 @@ package com.mobilesorcery.sdk.core;
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,10 +11,10 @@ import java.util.Map;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.apisupport.nfc.NFCSupport;
+import com.mobilesorcery.sdk.core.build.AbstractBuildStep;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -42,7 +43,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 
 				CommandLineBuilder commandLine = new CommandLineBuilder(
 						packagerTool.toOSString());
-				addGeneralParameters(project, variant, commandLine);
+				addGeneralParameters(project, session, variant, commandLine);
 				addPlatformSpecifics(project, variant, commandLine);
 
 				String packageOutputDirStr = internal
@@ -72,7 +73,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			return true;
 		}
 
-		List<IPath> changeSet = diff.getChanged();
+		Collection<IPath> changeSet = diff.getChanged();
 		for (IPath changed : changeSet) {
 			if (!changed.lastSegment().startsWith(".")) {
 				return true;
@@ -95,11 +96,10 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		return null;
 	}
 
-	private void addGeneralParameters(MoSyncProject project,
+	private void addGeneralParameters(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, CommandLineBuilder commandLine)
 			throws Exception {
 		DefaultPackager internal = new DefaultPackager(project, variant);
-		internal.setParameters(getParameters());
 
 		IProfile profile = variant.getProfile();
 
@@ -115,6 +115,12 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		Version version = new Version(internal.get(DefaultPackager.APP_VERSION));
 		String appName = internal.get(DefaultPackager.APP_NAME);
 		IApplicationPermissions permissions = project.getPermissions();
+		
+		Object modifiedPermissions = session.getProperties().get(AbstractBuildStep.MODIFIED_PERMISSIONS);
+		if (modifiedPermissions instanceof IApplicationPermissions) {
+			permissions = (IApplicationPermissions) modifiedPermissions;
+		}
+		
 		String permissionsStr = Util.join(
 				permissions.getRequestedPermissions(true).toArray(), ",");
 
@@ -145,7 +151,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			commandLine.flag("--permissions").with(permissionsStr);
 		}
 
-		if (shouldUseDebugRuntimes()) {
+		if (shouldUseDebugRuntimes(project, variant)) {
 			commandLine.flag("--debug");
 		}
 
@@ -182,4 +188,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		return result;
 	}
 
+	protected IProcessConsole getBuildConsole() {
+		return CoreMoSyncPlugin.getDefault().createConsole(MoSyncBuilder.CONSOLE_ID);
+	}
 }

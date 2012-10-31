@@ -13,11 +13,16 @@
 */
 package com.mobilesorcery.sdk.builder.iphoneos;
 
+import java.text.MessageFormat;
+
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -30,6 +35,10 @@ public class Activator extends AbstractUIPlugin {
     public final static String IOS_SIMULATOR_SPECIFIER = "simulator";
 
     public final static String ONLY_GENERATE_XCODE_PROJECT = PLUGIN_ID + ".build.xcode";
+    
+    public final static String IPHONE_DEV_CERT = "iPhone Developer";
+    
+    public final static String IPHONE_DIST_CERT = "iPhone Distribution";
 
     // The shared instance
     private static Activator plugin;
@@ -95,4 +104,43 @@ public class Activator extends AbstractUIPlugin {
 		project.setProperty(sdkType == XCodeBuild.IOS_SDKS ? PropertyInitializer.IOS_SDK : PropertyInitializer.IOS_SIM_SDK, sdkId);
 	}
 
+	/**
+	 * Validates a UTI, which is used for bundler identifiers etc.
+	 * @param ignoreParameters 
+	 * @param uti
+	 * @return
+	 */
+	public IMessageProvider validateBundleIdentifier(String bundleId, boolean ignoreParameters) {
+    	String message = null;
+    	int messageType = IMessageProvider.ERROR;
+    	if (Util.isEmpty(bundleId)) {
+    		message = "Bundle identifier cannot be empty";
+    	} else if (bundleId.contains("..")) {
+    		message = MessageFormat.format("Bundle identifier cannot have empty segment ({0})", bundleId);
+    	} else if (bundleId.endsWith(".") || bundleId.startsWith(".")) {
+    		message = MessageFormat.format("Bundle identifier cannot start or end with '.' ({0})", bundleId);
+    	} else if (containsInvalidChars(bundleId, ignoreParameters)) {
+    		message = MessageFormat.format("Bundle identifier segments can only contain letters, digits and '-'. ({0})", bundleId);
+    	} else if (!bundleId.startsWith("com.")) {
+			message = "Bundle identifier should start with 'com.'";
+			messageType = IMessageProvider.WARNING;
+		} else if (bundleId.split("\\.").length != 3) {
+			message = "Recommended bundle identifier format: com.YOURCOMPANY.YOURAPP";
+			messageType = IMessageProvider.WARNING;
+		}
+		
+		return Util.isEmpty(message) ? DefaultMessageProvider.EMPTY : new DefaultMessageProvider(message, messageType);
+	}
+
+    private boolean containsInvalidChars(String bundleId, boolean ignoreParameters) {
+		for (int i = 0; i < bundleId.length(); i++) {
+			char ch = bundleId.charAt(i);
+			boolean valid = ch > 32 && ch < 128 && (Character.isLetter(ch) || Character.isDigit(ch) || ch == '-' || ch == '.');
+			valid |= (ignoreParameters && ch == '%');
+			if (!valid) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

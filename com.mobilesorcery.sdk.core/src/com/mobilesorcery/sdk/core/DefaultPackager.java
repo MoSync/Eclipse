@@ -105,6 +105,9 @@ public class DefaultPackager extends ParameterResolver {
 		if (targetProfile == null) {
 		    targetProfile = project.getTargetProfile();
 		}
+		if (targetProfile == null) {
+			return;
+		}
 
 		// TODO: Do not repeat these parameter keys, just strip namespaces by default (and in case of collision ask for namespace)
 		defaultParameters.put(PROFILE_NAME, targetProfile.getName());
@@ -151,6 +154,11 @@ public class DefaultPackager extends ParameterResolver {
 		return executor;
 	}
 
+	public int runCommandLine(HashMap<String, String> env, String[] commandLine,
+			String consoleMsg) throws IOException {
+		return getExecutor().runCommandLine(env, commandLine, consoleMsg);	
+	}
+	
     public int runCommandLine(String... commandLine) throws IOException {
         return getExecutor().runCommandLine(commandLine);
     }
@@ -210,5 +218,6 @@ public class DefaultPackager extends ParameterResolver {
 	public List<String> listPrefixes() {
 		return new ArrayList<String>(parameters.keySet());
 	}
+
 
 }

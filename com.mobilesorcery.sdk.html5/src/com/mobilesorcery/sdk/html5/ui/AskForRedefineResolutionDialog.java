@@ -14,6 +14,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.RedefineException;
 import com.mobilesorcery.sdk.html5.debug.RedefinitionResult;
 import com.mobilesorcery.sdk.ui.UpdateListener;
@@ -49,7 +50,8 @@ public class AskForRedefineResolutionDialog extends IconAndMessageDialog {
 	
 	public void createButtonsForButtonBar(Composite parent) {
 		createButton(parent, RedefinitionResult.TERMINATE, "Terminate", false);
-		if (error == null || error.getRedefineResult() == null || !error.getRedefineResult().isFlagSet(RedefinitionResult.CANNOT_RELOAD)) {
+		boolean hotCodeReplaceEnabled = Html5Plugin.getDefault().isFeatureSupported(JSODDSupport.EDIT_AND_CONTINUE);
+		if (!hotCodeReplaceEnabled && error == null || error.getRedefineResult() == null || !error.getRedefineResult().isFlagSet(RedefinitionResult.CANNOT_RELOAD)) {
 			createButton(parent, RedefinitionResult.RELOAD, "Reload", false);
 		}
 		createButton(parent, RedefinitionResult.CONTINUE, "Continue", true);

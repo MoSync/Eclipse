@@ -41,11 +41,13 @@ public class GCCDependencyFileParserTest {
 		IFile f1 = ResourcesPlugin.getWorkspace().getRoot().getFile(new Path("project/b.s"));
 		IFile f2 = ResourcesPlugin.getWorkspace().getRoot().getFile(new Path("project/b.c"));
 		IFile f3withEscapedSpace = ResourcesPlugin.getWorkspace().getRoot().getFile(new Path("project/d c.c"));
+		IFile f4 = ResourcesPlugin.getWorkspace().getRoot().getFile(new Path("project/e.c"));
+		IFile f5withEscapedSpace = ResourcesPlugin.getWorkspace().getRoot().getFile(new Path("project/f c.c"));
 		GCCDependencyFileParser parser = createParser();
-		parser.parse("", createTestLine(f1, f2, f3withEscapedSpace));
+		parser.parse("", createTestLine(f1, f2, f3withEscapedSpace, f4, f5withEscapedSpace));
 		Map<IResource, Collection<IResource>> deps = parser.getDependencies();
 		System.err.println(deps);
-		assertEquals(2, deps.entrySet().iterator().next().getValue().size());
+		assertEquals(4, deps.entrySet().iterator().next().getValue().size());
 	}
 
 	private InputStream createTestLine(IFile depFrom, IFile... depsTo) {
@@ -56,7 +58,9 @@ public class GCCDependencyFileParserTest {
 			String unescaped = depsTo[i].getLocation().toOSString(); 
 			String escaped = unescaped.replace(" ", "\\ ");
 			str.append(escaped);
-			str.append("\\\n");
+			if (i < depsTo.length - 1) {
+				str.append("\\\n");
+			}
 		}
 		
 		return createTestFile(str.toString());

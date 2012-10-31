@@ -63,7 +63,6 @@ public class PackBuildStep extends AbstractBuildStep {
 			IBuildVariant variant, IFileTreeDiff diff,
 			IBuildResult buildResult, IProgressMonitor monitor) throws Exception {
 		IProcessConsole console = getConsole();
-		IPropertyOwner buildProperties = getBuildProperties();
 		IProfile targetProfile = variant.getProfile();
 
 		// Special hack for MoRe (I don't think this is how it should work though.)
@@ -71,10 +70,7 @@ public class PackBuildStep extends AbstractBuildStep {
 			buildResult.setBuildResult(IBuildResult.MAIN, buildResult.getIntermediateBuildResult(LinkBuildStep.ID));
 		} else {
 	        monitor.setTaskName(MessageFormat.format("Packaging for {0}", targetProfile));
-
 	        IPackager packager = targetProfile.getPackager();
-	        packager.setParameter(MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS, Boolean.toString(PropertyUtil
-	                .getBoolean(buildProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)));
 	        packager.createPackage(mosyncProject, session, variant, diff, buildResult);
 		}
 

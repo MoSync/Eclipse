@@ -2,7 +2,9 @@ package com.mobilesorcery.sdk.html5.debug.jsdt;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -83,13 +85,13 @@ public class ReloadStackFrame implements StackFrame {
 	private void initVars() {
 		if (!inited) {
 			inited = true;
-			thisVar = new ReloadVariable(vm, this, "this", "this");
+			thisVar = new ReloadVariable(vm, this, "this");
 			localVars = new ArrayList<ReloadVariable>();
 			int scopeLine = catchLine == null ? location.lineNumber() : catchLine.intValue();
 			LocalVariableScope scope = vm.getLocalVariableScope(location.scriptReference(), scopeLine);
 			if (scope != null) {
 				for (String localVar : scope.getLocalVariables()) {
-					localVars.add(new ReloadVariable(vm, this, localVar, localVar));
+					localVars.add(new ReloadVariable(vm, this, localVar));
 				}
 			}
 		}
@@ -136,56 +138,48 @@ public class ReloadStackFrame implements StackFrame {
 		return MessageFormat.format("MoSyncDebugProtocol.doDropToFrame({0}, {1});", Integer.toString(frameToDropTo), expression);
 	}
 
-	public Value getValue(String name) {
-		// TODO: Put on client so it may be precompiled!
-		String metaExpr = String.format(
-				"var ____info = {};" +
-				"var ____keys = [];" +
-				"var ____typeOf = typeof(%s);" +
-				"if (____typeOf == \"object\" && %s != null) {" +
-				"  if (!%s.____oid) {" +
-				"    MoSyncDebugProtocol.assignOID(%s);" +
-				"  }" +
-				"  ____info.oid = %s.____oid;" +
-				"  for (var ____key in %s) {" +
-				"    ____keys.push(____key);" +
-				"  }" +
-				"  ____info.properties = ____keys;" +
-				"  ____info.clazz = ____info.constructor ? ____info.constructor.toString() : null;" +
-				"  ____info.repr = %s.toString();" +
-				"} else if (____typeOf == \"function\") {" +
-				"  ____info.repr = ____typeOf;" +
-				"} else {" +
-				"  ____info.repr = %s;" +
-				"}" +
-				"____info.type = ____typeOf; ____info;"
-				, name, name, name, name, name, name, name, name, name);
+	public Value getValue(ReloadProperty property) {
+		String symbolToEvaluate = property.getSymbolToEvaluate();
+		String name = property.name();
+		String metaFn = "this".equals(symbolToEvaluate) ? "evalThis" : "evalVar";
+		String metaExpr = String.format("MoSyncDebugProtocol.%s(%s);", metaFn, symbolToEvaluate);
+
 		String metaEvaluation = internalEvaluate(metaExpr, stackDepth);
 		try {
 			if (metaEvaluation != null) {
 				JSONObject metaObject = (JSONObject) PARSER.parse(metaEvaluation);
 				String type = (String) metaObject.get("type");
 				String repr = "" + metaObject.get("repr");
+
 				if ("object".equals(type) || "function".equals(type)) {
 					Number oid = (Number) metaObject.get("oid");
 					String className = (String) metaObject.get("clazz");
 					JSONArray properties = (JSONArray) metaObject.get("properties");
+					
+					if (properties != null) {
+						properties.addAll(property.getIntrinsicProperties());
+					}
+					
 					ArrayList<ReloadProperty> generatedProperties = new ArrayList<ReloadProperty>();
 					boolean hasArrayProperty = false;
 					boolean hasLengthProperty = false;
 
+					HashSet<String> unDuplicateSet = new HashSet<String>();
 					for (int i = 0; properties != null && i < properties.size(); i++) {
 						String propertyName = (String) properties.get(i);
 						hasLengthProperty |= "length".equals(propertyName);
 						boolean isArrayProperty = Character.isDigit(propertyName.charAt(0));
 						hasArrayProperty |= isArrayProperty;
-						String fullName = isArrayProperty ? name + "[" + propertyName + "]" : name + "." + propertyName;
-						boolean isSpecialProperty = "____oid".equals(propertyName);
-						if (!isSpecialProperty) {
-							generatedProperties.add(new ReloadProperty(vm, this, fullName, propertyName));
+						boolean isInternalProperty = "____oid".equals(propertyName);
+						if (!isInternalProperty && !unDuplicateSet.contains(propertyName)) {
+							unDuplicateSet.add(propertyName);
+							generatedProperties.add(isArrayProperty ?
+									new ReloadArrayProperty(vm, this, property, propertyName) : 
+								    new ReloadProperty(vm, this, property, propertyName));
 						}
 					}
-					boolean isArray = hasArrayProperty; // && hasLengthProperty;
+					
+					boolean isArray = hasArrayProperty; //|| hasLengthProperty;
 					ReloadObjectReference ref = isArray ? new ReloadArrayReference(vm, repr, oid) : new ReloadObjectReference(vm, repr, className, oid);
 					for (ReloadProperty generatedProperty : generatedProperties) {
 						ref.addProperty(generatedProperty);
@@ -211,4 +205,5 @@ public class ReloadStackFrame implements StackFrame {
 		}
 		return vm.mirrorOfUndefined();
 	}
+
 }

@@ -1,6 +1,7 @@
 <project name="mosync.sdk" default="dev">
 	<property name="buildDirectory" value="${basedir}/buildresult" />
 	<property name="test-directory" value="${buildDirectory}\I.MoSync\MoSync-win32.win32.x86-trimmed-test" />
+	<property name="tp-version" value="3.8"/>
 	
 	<!-- We're three levels down; srcroot is the top root, all plugins reside one 
 	     level below this -->
@@ -10,6 +11,12 @@
 	     we have not kept up re the test plugins. Fix as soon as possible.
 	     -->
 	<property name="no-tests" value="true" />
+
+	<property name="target-platform" location="${buildDirectory}/../target-platform-${tp-version}" />
+	<property name="target-platform-zip-dir" location="${buildDirectory}/.." />
+	<property name="target-platform-zip" location="${target-platform-zip-dir}/target-platform-${tp-version}.zip" />
+	<property name="old-target-platform-zip" location="${buildDirectory}/../target-platform.zip" />
+	<property name="product-def-file" value="${srcroot}/com.mobilesorcery.sdk.product/com.mobilesorcery.sdk.product" />
 
 	<!--
         PDE Build expects that the build directory contains a "plugins" 
@@ -21,9 +28,6 @@
 		   <format property="build.timestamp" pattern="yyyyMMdd-HHmm" />
 		</tstamp>
 		
-		<property name="target-platform" location="${buildDirectory}/../target-platform" />
-		<property name="product-def-file" value="${srcroot}/com.mobilesorcery.sdk.product/com.mobilesorcery.sdk.product" />
-
 		<!-- For some other strange reason (of course, this is PDE build...),
              we must have a fixed path in build.properties, so we
              just use build.properties.template and replace it with
@@ -47,6 +51,7 @@
 		     some very important and basic information in the PDE build tutorial... 
 	    -->
 		<replace file="./build.properties" token="%%target-platform%%" value="${escaped-target-platform}" />
+		<replace file="./build.properties" token="%%tp-version%%" value="${tp-version}" />
 		<replace file="./build.properties" token="%%product-def-file%%" value="${escaped-product-def-file}" />
 		<replace file="./build.properties" token="%%basedir%%" value="${escaped-basedir}" />
 		<replace file="./build.properties" token="%%timestamp%%" value="${build.timestamp}" />
@@ -97,14 +102,15 @@
 				<include name="com.mobilesorcery.sdk.ui.editors.resources/**" />
 				<include name="com.mobilesorcery.sdk.ui.targetphone/**" />
 				<include name="com.mobilesorcery.sdk.ui.targetphone.android/**" />
+				<include name="com.mobilesorcery.sdk.ui.targetphone.iphoneos/**" />
 				<include name="com.mobilesorcery.sdk.ui.wizards/**" />
 				<include name="com.mobilesorcery.sdk.ui.perspective/**" />
 				<include name="com.mobilesorcery.sdk.update/**" />
 				
-				<include name="com.mobilesorcery.sdk.smoketests/**" />
+				<!--<include name="com.mobilesorcery.sdk.smoketests/**" />
 				<include name="com.mobilesorcery.sdk.core.tests/**" />
 				<include name="com.mobilesorcery.sdk.core.templates.tests/**" />
-				<include name="com.mobilesorcery.sdk.importproject.tests/**" />
+				<include name="com.mobilesorcery.sdk.importproject.tests/**" />-->
 			</fileset>
 		</copy>
 		<copy todir="${buildDirectory}/features">
@@ -116,15 +122,17 @@
 	</target>
 
 	<target name="unzip-target-platform" depends="unzip-target-platform.precondition" unless="dont-unzip-target-platform">
-		<delete dir="${buildDirectory}/../target-platform" />
-		<unzip src="./target-platform.zip" dest="${buildDirectory}/../target-platform" />
-		<unzip src="${buildDirectory}\..\lib\swtbot-dropin.zip" dest="${buildDirectory}/../target-platform/eclipse/dropins" overwrite="yes" />
+		<delete dir="${target-platform}" />
+		<!--  If we are using the old target platform zip, then first copy it -->
+		<copy file="${old-target-platform-zip}" tofile="${target-platform-zip}" overwrite="false" failonerror="false"/>
+		<unzip src="${target-platform-zip}" dest="${target-platform}"/>
+		<!-- <unzip src="${buildDirectory}\..\lib\swtbot-dropin.zip" dest="${buildDirectory}/../target-platform-${tp-version}/eclipse/dropins" overwrite="yes" /> -->
 	</target>
 
 	<target name="unzip-target-platform.precondition">
 	    <uptodate property="dont-unzip-target-platform"
-	              targetfile="${buildDirectory}/../target-platform">
-	        <srcfiles dir="." includes="target-platform.zip"/>
+	              targetfile="${target-platform}">
+	        <srcfiles dir="${target-platform-zip-dir}" includes="${target-platform-zip}"/>
 	    </uptodate>
 	</target>
 
@@ -136,8 +144,6 @@
 			<arg value="-buildfile" />
 			<arg value="${pdebuild-dir}/scripts/productBuild/productBuild.xml" />
 			<arg value="-Dbuilder=${basedir}"/>
-			<!-- <arg value="-Declipse.pdebuild.scripts=C:/development/projects/mobilesorcery-2/com.mobilesorcery.sdk.product/build/target-platform/eclipse/plugins/org.eclipse.pde.build_${pdeBuildPluginVersion}/scripts"/>
-			<arg value="-Declipse.pdebuild.templates=C:/development/projects/mobilesorcery-2/com.mobilesorcery.sdk.product/build/target-platform/eclipse/plugins/org.eclipse.pde.build_${pdeBuildPluginVersion}/templates"/> -->
 		</java>		
 	</target>
 
@@ -171,7 +177,7 @@
 	</target>
 	
 	<target name="-clean-target-platform">
-		<delete dir="${buildDirectory}/../target-platform" />
+		<delete dir="${buildDirectory}/../target-platform-${tp-version}" />
 	</target>
 
 	<target name="-prepare-test-host" unless="no-tests" >

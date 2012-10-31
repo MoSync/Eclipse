@@ -17,8 +17,36 @@
       [Enter License Description here.]
    </license>
 
+   <includes
+         id="org.eclipse.wst.jsdt.feature"
+         version="0.0.0"/>
+
+   <requires>
+      <import plugin="com.mobilesorcery.sdk.core"/>
+      <import plugin="org.eclipse.core.runtime"/>
+      <import plugin="org.eclipse.debug.core"/>
+      <import plugin="org.eclipse.debug.ui"/>
+      <import plugin="org.eclipse.ui"/>
+      <import plugin="com.mobilesorcery.sdk.ui"/>
+      <import plugin="org.eclipse.core.resources"/>
+      <import plugin="com.mobilesorcery.sdk.ui.targetphone"/>
+      <import plugin="org.eclipse.jetty.util"/>
+      <import plugin="org.eclipse.equinox.http.jetty"/>
+      <import plugin="org.eclipse.jetty.server"/>
+      <import plugin="org.eclipse.jetty.servlet"/>
+      <import plugin="javax.servlet"/>
+      <import plugin="org.eclipse.cdt.core"/>
+   </requires>
+
    <plugin
          id="com.mobilesorcery.sdk.builder.iphoneos"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.mobilesorcery.sdk.ui.targetphone.iphoneos"
          download-size="0"
          install-size="0"
          version="0.0.0"
