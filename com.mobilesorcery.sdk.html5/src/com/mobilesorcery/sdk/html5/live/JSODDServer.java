@@ -40,6 +40,7 @@ import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
@@ -880,6 +881,8 @@ public class JSODDServer implements IResourceChangeListener {
 					}
 					if (bp instanceof JavaScriptBreakpointDesc) {
 						JavaScriptBreakpointDesc lineBp = (JavaScriptBreakpointDesc) bp;
+						lineBp = syncBreakpoint(lineBp);
+						
 						int lineNo = bp instanceof IJavaScriptLoadBreakpoint ? -1
 								: lineBp.getLineNumber();
 						IResource resource = lineBp.getResource();
@@ -887,7 +890,8 @@ public class JSODDServer implements IResourceChangeListener {
 								: resource.getFullPath().toPortableString();
 						String condition = lineBp.getCondition();
 						int hitCount = lineBp.getHitCount();
-
+						
+						
 						JSONObject jsonBp = new JSONObject();
 						jsonBp.put("file", file);
 						JSODDSupport jsoddSupport = resource.getType() == IResource.FILE ? Html5Plugin
@@ -916,6 +920,29 @@ public class JSODDServer implements IResourceChangeListener {
 			}
 			command.put("data", jsonBps);
 			return command;
+		}
+
+		private JavaScriptBreakpointDesc syncBreakpoint(JavaScriptBreakpointDesc lineBp) {
+			IResource resource = lineBp.getResource();
+			if (resource != null) {
+				IPath path = resource.getFullPath();
+				int lineNo = lineBp.getLineNumber();
+				IJavaScriptLineBreakpoint underlyingBp = JSODDSupport.findBreakPoint(path, lineNo);
+				if (underlyingBp != null) {
+					try {
+						String condition = underlyingBp.isConditionEnabled() ? lineBp.getCondition() : null;
+						String suspendStrategy = underlyingBp.isConditionSuspendOnTrue() ? 
+								JavaScriptBreakpointDesc.SUSPEND_ON_TRUE :
+								JavaScriptBreakpointDesc.SUSPEND_ON_CHANGE;
+						lineBp = lineBp.setCondition(condition);
+						lineBp = lineBp.setConditionSuspend(suspendStrategy);
+						System.err.println("SYNCED: " + lineBp);
+					} catch (CoreException e) {
+						CoreMoSyncPlugin.getDefault().log(e);
+					}
+				}
+			}
+			return lineBp;
 		}
 
 		private JavaScriptBreakpointDesc toInternalFormat(

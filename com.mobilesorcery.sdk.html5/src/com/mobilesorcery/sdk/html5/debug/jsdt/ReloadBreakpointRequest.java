@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ScriptReference;
@@ -13,6 +14,7 @@ import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 
 public class ReloadBreakpointRequest extends ReloadEventRequest implements
@@ -56,9 +58,17 @@ public class ReloadBreakpointRequest extends ReloadEventRequest implements
 			ScriptReference scriptRef = location.scriptReference();
 			if (scriptRef instanceof SimpleScriptReference) {
 				IFile file = ((SimpleScriptReference) scriptRef).getFile();
-				// TODO: How do we get the suspend type here? Want this on client side only!
-				JavaScriptBreakpointDesc bp = new JavaScriptBreakpointDesc(file, location.lineNumber(), condition, JavaScriptBreakpointDesc.SUSPEND_ON_TRUE, hitcount);
-				Html5Plugin.getDefault().getReloadServer().setLineBreakpoint(enabled, bp);
+
+				// NOTE: This breakpoint will be modified to reflect properties
+				// of the breakpoint
+				// that are difficult to reliable get at this point (condition
+				// enablement etc).
+
+				JavaScriptBreakpointDesc bp = new JavaScriptBreakpointDesc(
+						file, location.lineNumber(), condition,
+						JavaScriptBreakpointDesc.SUSPEND_ON_TRUE, hitcount);
+				Html5Plugin.getDefault().getReloadServer()
+						.setLineBreakpoint(enabled, bp);
 			}
 		}
 	}

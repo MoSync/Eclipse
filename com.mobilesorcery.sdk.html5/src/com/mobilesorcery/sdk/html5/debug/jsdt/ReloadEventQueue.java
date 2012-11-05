@@ -20,6 +20,7 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
@@ -95,7 +96,7 @@ public class ReloadEventQueue implements EventQueue {
 					Location location = new SimpleLocation(vm, file,
 							line.intValue());
 					IProject project = file.getProject();
-					IJavaScriptLineBreakpoint bp = Html5Plugin.getDefault().getJSODDSupport(project).findBreakPoint(
+					IJavaScriptLineBreakpoint bp = JSODDSupport.findBreakPoint(
 							new Path(fileName), line.intValue());
 					for (Object bpRequestObj : bpRequests) {
 						ReloadBreakpointRequest bpRequest = (ReloadBreakpointRequest) bpRequestObj;

@@ -1005,7 +1005,7 @@ public class JSODDSupport {
 	 * @param hitLine
 	 * @return
 	 */
-	public IJavaScriptLineBreakpoint findBreakPoint(IPath path, int hitLine) {
+	public static IJavaScriptLineBreakpoint findBreakPoint(IPath path, int hitLine) {
 		IBreakpoint[] bps = DebugPlugin.getDefault().getBreakpointManager()
 				.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
 		IJavaScriptLineBreakpoint closest = null;
