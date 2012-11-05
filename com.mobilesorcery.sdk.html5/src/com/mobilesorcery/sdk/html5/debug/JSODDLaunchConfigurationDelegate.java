@@ -107,7 +107,7 @@ public class JSODDLaunchConfigurationDelegate implements
 		ReloadVirtualMachine vm = (ReloadVirtualMachine) connector.accept(arguments);
 		
 		// TODO: refactor
-		JavaScriptProcess process = new JSODDProcess(vm, launch, "Reload");
+		JavaScriptProcess process = new JSODDProcess(vm, launch, "JavaScript On-device Debug");
 		launch.addProcess(process);
 
 		final boolean isDebugging = CoreMoSyncPlugin.getDefault().isDebugging();
