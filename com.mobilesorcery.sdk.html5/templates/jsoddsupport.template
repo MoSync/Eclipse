@@ -498,6 +498,7 @@ window.MoSyncDebugProtocol = new (function() {
                     var evaluatedCondition = evalScopeFunc(condition);
                     if ("change" == conditionSuspend) {
                         isBreakpoint = (evaluatedCondition != breakpointDesc.lastEvaluation);
+                        breakpointDesc.lastEvaluation = evaluatedCondition;
                     } else {
                         isBreakpoint = evaluatedCondition;
                     }
