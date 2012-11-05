@@ -204,7 +204,7 @@ public class JSODDServer implements IResourceChangeListener {
 		public void offer(int sessionId, DebuggerMessage msg) {
 			synchronized (queueLock) {
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-					CoreMoSyncPlugin.trace("{2}Ê- OFFER: Session id {0}: {1}",
+					CoreMoSyncPlugin.trace("{2} - OFFER: Session id {0}: {1}",
 							sessionId, msg, new Date().toString());
 					CoreMoSyncPlugin.trace("CONSUMERS: {0}", consumers);
 				}
@@ -240,8 +240,8 @@ public class JSODDServer implements IResourceChangeListener {
 			try {
 				if (!cd.await(timeout, TimeUnit.SECONDS)) {
 					if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-						CoreMoSyncPlugin.trace("Message timeout (#{0})",
-								sessionId);
+						CoreMoSyncPlugin.trace("{2}s message timeout (#{0}, #{1})",
+								sessionId, msg.getMessageId(), timeout);
 					}
 					throw new TimeoutException();
 				}
@@ -345,7 +345,7 @@ public class JSODDServer implements IResourceChangeListener {
 				public void run() {
 					pingAll();
 				}
-			}, PING_INTERVAL, 2000);
+			}, PING_INTERVAL, PING_INTERVAL);
 		}
 
 		public void stopPingDeamon() {
@@ -385,9 +385,13 @@ public class JSODDServer implements IResourceChangeListener {
 								sessionId);
 					}
 					pendingPings.add(sessionId);
-					offer(sessionId, ping());
+					ping(sessionId);
 				}
 			}
+		}
+		
+		public void ping(int sessionId) {
+			offer(sessionId, ping());
 		}
 
 		public void heartbeat(int sessionId) {
