@@ -3,13 +3,13 @@ package com.mobilesorcery.sdk.html5;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -36,12 +36,12 @@ import org.eclipse.wst.jsdt.core.IJavaScriptProject;
 import org.eclipse.wst.jsdt.core.JavaScriptCore;
 import org.eclipse.wst.jsdt.core.LibrarySuperType;
 import org.eclipse.wst.jsdt.internal.core.JavaProject;
-import org.json.simple.JSONObject;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.BuildVariant;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -182,6 +182,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 			server.addListener(new ILiveServerListener() {
 				@Override
 				public void timeout(final ReloadVirtualMachine vm) {
+					IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(MoSyncBuilder.CONSOLE_ID);
+					console.addMessage(IProcessConsole.ERR, MessageFormat.format("*** A timeout occurred. The device being debugged (at {0}) seems to have been disconnected. ***", vm.getRemoteAddr()));
 					ILaunch launch = vm.getJavaScriptDebugTarget().getLaunch();
 					String terminateToken = launch == null ? null : launch
 							.getAttribute(TERMINATE_TOKEN_LAUNCH_ATTR);
