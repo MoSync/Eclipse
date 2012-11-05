@@ -72,7 +72,7 @@ window.MoSyncDebugProtocol = new (function() {
             asyncXHR.ontimeout = function() { disconnect("Could not connect to server"); }
             asyncXHR.send(null);
         } catch (ex) {
-            disconnect(ex);
+            disconnect(ex + "(incoming)");
         }
     }
     
@@ -94,29 +94,42 @@ window.MoSyncDebugProtocol = new (function() {
         if (disconnected) {
             return;
         }
-        try {
-            var req = new XMLHttpRequest();
-            var timeoutHandle = null;
-            var timeoutFn = function() {
-                req.abort();
-                disconnect("Could not connect to debug server");
-            };
-            if (timeout) {
-                timeoutHandle = setTimeout(timeoutFn, timeout);
+        
+        // Some devices have problems with simultaneous connections.
+        var maxRetries = 4;
+        var retries = maxRetries;
+        while (true) {
+            try {
+	            var req = new XMLHttpRequest();
+	            var timeoutHandle = null;
+	            var timeoutFn = function() {
+	                req.abort();
+	                disconnect("Could not connect to debug server");
+	            };
+	            if (timeout) {
+	                timeoutHandle = setTimeout(timeoutFn, timeout);
+	            }
+	            req.open('POST', serverUrl + '/mobile' + path + "/" + timestamp(), false);
+	            req.setRequestHeader('Content-Type', 'application/json');
+	            if (sessionId != null) {
+	                payload.sessionId = sessionId;
+	                if (maxRetries != retries) {
+	                	payload.retries = maxRetries - retries;
+	                }
+	            }
+	            var json = JSON.stringify(payload)
+	            req.send(json);
+	            if (timeout) {
+	                clearTimeout(timeoutHandle);
+	            }
+	            return safeJSONParse(req.responseText);
+            } catch (ex) {
+                retries--;
+                if (retries <= 0) {
+                    disconnect(ex + "(" + path + ")");
+                    return;
+                }
             }
-            req.open('POST', serverUrl + '/mobile' + path + "/" + timestamp(), false);
-            req.setRequestHeader('Content-Type', 'application/json');
-            if (sessionId != null) {
-                payload.sessionId = sessionId;
-            }
-            var json = JSON.stringify(payload)
-            req.send(json);
-            if (timeout) {
-                clearTimeout(timeoutHandle);
-            }
-            return safeJSONParse(req.responseText);
-        } catch (ex) {
-            disconnect(ex);
         }
     }
     
