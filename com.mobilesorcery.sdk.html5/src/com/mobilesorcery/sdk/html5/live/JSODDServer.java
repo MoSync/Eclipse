@@ -42,7 +42,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
@@ -52,9 +51,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -444,7 +441,6 @@ public class JSODDServer implements IResourceChangeListener {
 	private class JSODDServerHandler extends AbstractHandler {
 
 		private final HashMap<Object, Thread> waitThreads = new HashMap<Object, Thread>();
-		private HashSet<Integer> singleThreadPings = new HashSet<Integer>();
 
 		@Override
 		public void handle(String target, Request baseRequest,
@@ -564,9 +560,6 @@ public class JSODDServer implements IResourceChangeListener {
 				ReloadVirtualMachine vm = getVM(req.getRemoteAddr());
 				int sessionId = vm == null ? NO_SESSION : vm
 						.getCurrentSessionId();
-				if (singleThreadPings.remove(sessionId)) {
-					queues.ping(sessionId);
-				}
 				result = pushCommandsToClient(sessionId, preflight);
 			} else if (targetMatches(target, "/mobile/breakpoint")) {
 				// RACE CONDITION WILL OCCUR HERE!
@@ -574,10 +567,6 @@ public class JSODDServer implements IResourceChangeListener {
 					Integer sessionId = extractSessionId(command);
 					notifyCommandListeners(getCommand(command), command);
 					result = pushCommandsToClient(sessionId, preflight);
-					// TODO: This is an experimental fix.
-					if (Util.join(Platform.getApplicationArgs(), "|").contains("-SingleThreadClient")) {
-						singleThreadPings.add(sessionId);
-					}
 				} else {
 					return new JSONObject();
 				}
@@ -990,11 +979,7 @@ public class JSODDServer implements IResourceChangeListener {
 			ResourcesPlugin.getWorkspace().addResourceChangeListener(this,
 					IResourceChangeEvent.POST_CHANGE);
 			server = new Server(getPort());
-			if (Util.join(Platform.getApplicationArgs(), "|").contains("-SingleThreadServer")) {
-				server.setThreadPool(new ExecutorThreadPool());
-			} else {
-				server.setThreadPool(new QueuedThreadPool(5));
-			}
+			server.setThreadPool(new QueuedThreadPool(5));
 			server.setHandler(new JSODDServerHandler());
 			Connector connector = new SelectChannelConnector();
 			connector.setPort(getPort());
