@@ -5,16 +5,38 @@
 <style type="text/css">
 body: {
 	font-size: 1em;
+	width: 100%%;
 }
 a: {
-    font-size: 1em;
+    font-size: 44px;
+}
+.r {
+    display: inline-block;
+    background-color: #000;
+    padding: 8px;
+    border-radius: 15px;
+    width: 57px;
+    height: 57px;
+}
+.q {
+    display: block;
+    padding-left: 89px;
+}
+.large {
+    .font-size: 44px;
+}
+.l {
+    vertical-align:top;
+    padding: 16px;
+    display: inline-block;
+    font-size: 44px;
+    font-weight: bold;
 }
 </style>
 </head>
 <body>
-<b>MoSync Projects</b><br/>
-%project-count% project(s)
-<hr/>
+<b>MoSync Projects</b> - %project-count% project(s)
+<br/><br/>
 %project-list%
 </body>
 </html>

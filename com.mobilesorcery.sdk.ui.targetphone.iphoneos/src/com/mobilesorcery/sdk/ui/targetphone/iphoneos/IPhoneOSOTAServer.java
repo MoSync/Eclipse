@@ -16,6 +16,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.servlet.ServletException;
@@ -235,18 +236,32 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 				"/templates/index.html.template"));
 		StringBuffer projectList = new StringBuffer();
 		int projectCount = 0;
+		
+		TreeMap<Long, MoSyncProject> sortedByBuildTime = new TreeMap<Long, MoSyncProject>();
 		for (MoSyncProject project : projects.keySet()) {
+			IBuildVariant variant = this.projects.get(project);
+			IBuildState buildState = project.getBuildState(variant);
+			IBuildResult buildResult = buildState.getBuildResult();
+			if (buildResult != null) {
+				long buildTimestamp =buildResult.getTimestamp();
+				sortedByBuildTime.put(-buildTimestamp, project);
+			}
+		}
+		
+		for (MoSyncProject project : sortedByBuildTime.values()) {
 			IBuildVariant variant = this.projects.get(project);
 			IBuildState buildState = project.getBuildState(variant);
 			List<File> ipaFile = buildState.getBuildResult().getBuildResult().get(IBuildResult.MAIN);
 			if (!ipaFile.isEmpty() && ipaFile.get(0).exists()) {
 				projectCount++;
 				String projectName = project.getName();
-				projectList.append("<b>");
-				projectList.append(project.getName());
-				projectList.append("</b><br/>");
-				projectList.append("<ul>");
 				String url = URLEncoder.encode(getBaseURL(), "UTF-8");
+				
+				projectList.append("<div class=\"appitem\">");
+				projectList.append(MessageFormat.format("<div class=\"r\"><img src=\"./{0}/icon57x57.png\"></div>", projectName));
+				projectList.append("<div class=\"l\">");
+				projectList.append(project.getName());
+				projectList.append("</div><br/>");
 	
 				long buildTimestamp = buildState.getBuildResult().getTimestamp();
 				boolean fairlyRecent = System.currentTimeMillis() - buildTimestamp < 18 * 3600 * 1000;
@@ -254,12 +269,12 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 				String buildTime = format.format(new Date(buildTimestamp));
 				long fileSize = ipaFile.get(0).length();
 				projectList.append(MessageFormat.format(
-						"<li><a href=\"itms-services://?action=download-manifest&url={0}/{1}.plist\">Download App</a>" +
+						"<div class=\"q\"><a href=\"itms-services://?action=download-manifest&url={0}/{1}.plist\">Download App</a>" +
 						"<small><br/>Build time: {2}" +
 						"<br/>App size: {3}" +
-						"<br/>Configuration: {4}</small></li>", url, projectName, buildTime, Util.dataSize(fileSize), variant.getConfigurationId()));
-				projectList.append("</ul>");
-				projectList.append("<hr/>");
+						"<br/>Configuration: {4}</small></div>", url, projectName, buildTime, Util.dataSize(fileSize), variant.getConfigurationId()));
+				projectList.append("<br/>");
+				projectList.append("</div>");
 			}
 		}
 		HashMap<String, String> map = new HashMap<String, String>();
