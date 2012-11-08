@@ -12,6 +12,9 @@ a: {
 </style>
 </head>
 <body>
+<b>MoSync Projects</b><br/>
+%project-count% project(s)
+<hr/>
 %project-list%
 </body>
 </html>

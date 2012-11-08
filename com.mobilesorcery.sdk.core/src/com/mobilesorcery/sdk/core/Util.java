@@ -54,15 +54,20 @@ import com.mobilesorcery.sdk.internal.ReverseComparator;
 public class Util {
 
 	private static final class ExtensionFileFilter implements FileFilter {
-		private final String ext;
+		private final String[] exts;
 
-		private ExtensionFileFilter(String ext) {
-			this.ext = ext;
+		private ExtensionFileFilter(String... ext) {
+			this.exts = ext;
 		}
 
 		@Override
 		public boolean accept(File pathname) {
-			return ext.equals(Util.getExtension(pathname));
+			for (String ext : exts) {
+				if (ext.equals(Util.getExtension(pathname))) {
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 
@@ -357,6 +362,9 @@ public class Util {
 
 	public static void copyFile(IProgressMonitor monitor, File src, File dest)
 			throws IOException {
+		if (dest.isDirectory()) {
+			dest = new File(dest, src.getName());
+		}
 		mergeFiles(monitor, new File[] { src }, dest);
 	}
 
@@ -446,10 +454,10 @@ public class Util {
 				new StringBuffer(30), new FieldPosition(0)).toString();
 	}
 	
-	public static String elapsedTime(int ms) {
+	public static String elapsedTime(long ms) {
 		String unit = "ms";
-		int value = ms;
-		int rem = 0;
+		long value = ms;
+		long rem = 0;
 		if (ms >= 3600000) {
 			unit = "h";
 			value = ms / 3600000;
@@ -562,7 +570,7 @@ public class Util {
 		}
 	}
 
-	public static FileFilter getExtensionFilter(final String ext) {
+	public static FileFilter getExtensionFilter(final String... ext) {
 		FileFilter filter = new ExtensionFileFilter(ext);
 		return filter;
 	}
