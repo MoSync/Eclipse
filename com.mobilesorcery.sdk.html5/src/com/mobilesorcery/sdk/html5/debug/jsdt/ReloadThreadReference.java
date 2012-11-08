@@ -76,6 +76,9 @@ public class ReloadThreadReference implements ThreadReference {
 
 	@Override
 	public void suspend() {
+		if (isSuspended()) {
+			return;
+		}
 		markSuspended(false);
 		vm.suspend(true);
 	}

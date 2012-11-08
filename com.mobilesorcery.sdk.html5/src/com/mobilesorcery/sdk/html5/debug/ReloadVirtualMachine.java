@@ -67,6 +67,7 @@ public class ReloadVirtualMachine implements VirtualMachine,
 	private IJavaScriptDebugTarget debugTarget;
 	private String remoteAddr;
 	private HashMap<Class, Boolean> redefineSupport = new HashMap<Class, Boolean>();
+	private boolean breakOnException;
 
 	public ReloadVirtualMachine(int port) throws Exception {
 		// TODO: PORT
@@ -457,5 +458,15 @@ public class ReloadVirtualMachine implements VirtualMachine,
 
 	public void setRedefineSupport(Class redefinables, boolean hasSupport) {
 		redefineSupport.put(redefinables, hasSupport);
+	}
+
+	public void setBreakOnException(boolean breakOnException) {
+		this.breakOnException = breakOnException;
+		// Just refresh all breakpoints; this one does not happen often...
+		server.refreshBreakpoints(currentSessionId);
+	}
+
+	public boolean getBreakOnException() {
+		return this.breakOnException;
 	}
 }
