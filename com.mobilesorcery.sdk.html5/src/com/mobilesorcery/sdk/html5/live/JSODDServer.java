@@ -10,6 +10,7 @@ import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,6 +23,7 @@ import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -60,6 +62,7 @@ import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLoadBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.StepRequest;
 import org.eclipse.wst.jsdt.debug.core.model.IJavaScriptDebugTarget;
 import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
+import org.eclipse.wst.jsdt.debug.internal.core.breakpoints.JavaScriptExceptionBreakpoint;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -86,6 +89,17 @@ import com.mobilesorcery.sdk.ui.UIUtils;
 public class JSODDServer implements IResourceChangeListener {
 
 	static class DebuggerMessage {
+		public static final Comparator<DebuggerMessage> COMPARATOR = new Comparator<DebuggerMessage>() {
+			@Override
+			public int compare(DebuggerMessage o1, DebuggerMessage o2) {
+				int result = o1.type - o2.type;
+				if (result == 0) {
+					return o2.messageId - o1.messageId;
+				}
+				return result;
+			}
+			
+		};
 		static AtomicInteger idCounter = new AtomicInteger(0);
 		int messageId = idCounter.incrementAndGet();
 		AtomicBoolean processed = new AtomicBoolean(false);
@@ -143,7 +157,7 @@ public class JSODDServer implements IResourceChangeListener {
 		private static final int POISON = -1;
 
 		// TODO: Slow refactoring to make this class useful
-		private final HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> consumers = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
+		private final HashMap<Integer, PriorityBlockingQueue<DebuggerMessage>> consumers = new HashMap<Integer, PriorityBlockingQueue<DebuggerMessage>>();
 
 		private final HashMap<Integer, IMessageListener> messageListeners = new HashMap<Integer, IMessageListener>();
 
@@ -168,11 +182,11 @@ public class JSODDServer implements IResourceChangeListener {
 		}
 
 		public DebuggerMessage take(int sessionId) throws InterruptedException {
-			LinkedBlockingQueue<DebuggerMessage> consumer = null;
+			PriorityBlockingQueue<DebuggerMessage> consumer = null;
 			synchronized (queueLock) {
 				consumer = consumers.get(sessionId);
-				LinkedBlockingQueue<DebuggerMessage> newConsumer = new LinkedBlockingQueue<DebuggerMessage>(
-						1024);
+				PriorityBlockingQueue<DebuggerMessage> newConsumer = new PriorityBlockingQueue<DebuggerMessage>(
+						1024, DebuggerMessage.COMPARATOR);
 				if (consumer != null) {
 					consumer.drainTo(newConsumer);
 					consumer.offer(poison());
@@ -209,7 +223,7 @@ public class JSODDServer implements IResourceChangeListener {
 							sessionId, msg, new Date().toString());
 					CoreMoSyncPlugin.trace("CONSUMERS: {0}", consumers);
 				}
-				LinkedBlockingQueue<DebuggerMessage> consumer = consumers
+				PriorityBlockingQueue<DebuggerMessage> consumer = consumers
 						.get(sessionId);
 				if (consumer != null) {
 					msg.setOfferTimestamp(System.currentTimeMillis());
@@ -295,7 +309,7 @@ public class JSODDServer implements IResourceChangeListener {
 		public void killSession(int sessionId) {
 			Set<Integer> messageListenerIds = new TreeSet<Integer>();
 			synchronized (queueLock) {
-				LinkedBlockingQueue<DebuggerMessage> sessionQueue = consumers
+				PriorityBlockingQueue<DebuggerMessage> sessionQueue = consumers
 						.remove(sessionId);
 				takeTimestamps.remove(sessionId);
 				if (sessionQueue != null) {
@@ -362,7 +376,7 @@ public class JSODDServer implements IResourceChangeListener {
 			// on the client side.
 			// And if the client is disconnected/does not respond we need to
 			// handle that too.
-			HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>> consumersCopy = new HashMap<Integer, LinkedBlockingQueue<DebuggerMessage>>();
+			HashMap<Integer, PriorityBlockingQueue<DebuggerMessage>> consumersCopy = new HashMap<Integer, PriorityBlockingQueue<DebuggerMessage>>();
 			synchronized (queueLock) {
 				 consumersCopy.putAll(consumers);
 			}
@@ -652,7 +666,6 @@ public class JSODDServer implements IResourceChangeListener {
 				}
 				result.put("id", queuedElement.getMessageId());
 			} catch (InterruptedException e) {
-				// e.printStackTrace();
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 					CoreMoSyncPlugin
 							.trace("Dropped connection (often temporarily).");
@@ -763,6 +776,7 @@ public class JSODDServer implements IResourceChangeListener {
 			// No caching!
 			res.setHeader("Pragma", "no-cache");
 			res.setHeader("Cache-Control", "no-cache");
+			res.setHeader("Access-Control-Allow-Origin", "*");
 			res.setContentType(guessContentTypeFromName(resource));
 			return source;
 		}
@@ -925,7 +939,6 @@ public class JSODDServer implements IResourceChangeListener {
 								JavaScriptBreakpointDesc.SUSPEND_ON_CHANGE;
 						lineBp = lineBp.setCondition(condition);
 						lineBp = lineBp.setConditionSuspend(suspendStrategy);
-						System.err.println("SYNCED: " + lineBp);
 					} catch (CoreException e) {
 						CoreMoSyncPlugin.getDefault().log(e);
 					}
@@ -979,7 +992,7 @@ public class JSODDServer implements IResourceChangeListener {
 			ResourcesPlugin.getWorkspace().addResourceChangeListener(this,
 					IResourceChangeEvent.POST_CHANGE);
 			server = new Server(getPort());
-			server.setThreadPool(new ExecutorThreadPool());
+			server.setThreadPool(new ExecutorThreadPool(5, 128, 120));
 			server.setHandler(new JSODDServerHandler());
 			Connector connector = new SelectChannelConnector();
 			connector.setPort(getPort());
@@ -1225,6 +1238,7 @@ public class JSODDServer implements IResourceChangeListener {
 				// Just to make sure the terminate request is sent
 				// before the server is killed.
 				Thread.sleep(1000 * getTimeout(sessionId));
+				queues.killSession(sessionId);
 			}
 		} catch (Exception e) {
 			CoreMoSyncPlugin.getDefault().log(e);
