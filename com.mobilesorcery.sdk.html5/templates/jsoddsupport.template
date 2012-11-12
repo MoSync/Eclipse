@@ -6,6 +6,7 @@ window.MoSyncDebugProtocol = new (function() {
     var timeoutInMs = %TIMEOUT_IN_MS%;
     var serverUrl = 'http://' + serverHost + ':' + serverPort;
     var breakpoints = {};
+    var breakonexceptions = true;
     var breakpointDescs = {};
     var loadBreakpoints = {};
     var redefinedFunctions = {};
@@ -172,6 +173,9 @@ window.MoSyncDebugProtocol = new (function() {
             case 'clear-breakpoints':
                 if (cmd.reset) {
                     breakpoints = {};
+                }
+                if (cmd.breakonexceptions) {
+                    breakonexceptions = cmd.breakonexceptions;
                 }
                 cmd.data.forEach(function(bp) {
                     var file = bp.file;
@@ -541,15 +545,17 @@ window.MoSyncDebugProtocol = new (function() {
     this.reportException = function(e, catchLine, evalScopeFunc) {
         var lastFile = idToFile[lastFileId];
         try {
-	        handleBreakpoint({
-	            command: 'report-breakpoint',
-	            type: 'exception',
-	            message: e.toString(),
-	            file: lastFile,
-	            line: lastLine,
-	            catchLine: catchLine,
-	            stack: resolveStack(stack)
-	        }, evalScopeFunc);
+            if (breakonexceptions) {
+		        handleBreakpoint({
+		            command: 'report-breakpoint',
+		            type: 'exception',
+		            message: e.toString(),
+		            file: lastFile,
+		            line: lastLine,
+		            catchLine: catchLine,
+		            stack: resolveStack(stack)
+		        }, evalScopeFunc);
+	        }
         } catch (potentialDropToFrame) {
             if (potentialDropToFrame.dropToFrame) {
                 return potentialDropToFrame;
