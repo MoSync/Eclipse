@@ -31,6 +31,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IStartup;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.internal.util.Util;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.wst.jsdt.core.IJavaScriptProject;
 import org.eclipse.wst.jsdt.core.JavaScriptCore;
@@ -122,6 +123,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 
 	private final HashMap<IProject, JSODDSupport> jsOddSupport = new HashMap<IProject, JSODDSupport>();
 
+	private HashSet<String> supportedFeatures;
+
 	// private HashMap<Object, AtomicInteger> timeoutSuppressions = new
 	// HashMap<Object, AtomicInteger>();
 
@@ -141,6 +144,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 	@Override
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
+		initSupportedFeatures();
 		// We do not yet have the eclipse fix #54993
 		MosyncUIPlugin.getDefault().awaitWorkbenchStartup(
 				new IWorkbenchStartupListener() {
@@ -578,10 +582,34 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 		return new URL("http", host, 8511, "");
 	}
 
+	private void initSupportedFeatures() {
+		supportedFeatures = new HashSet<String>();
+		supportedFeatures.add(JSODDSupport.LINE_BREAKPOINTS);
+		supportedFeatures.add(JSODDSupport.ARTIFICIAL_STACK);
+		supportedFeatures.add(JSODDSupport.DROP_TO_FRAME);
+		
+		String supportedFeaturesArg = System.getProperty(Html5Plugin.PLUGIN_ID + ".jsodd.features");
+		if (supportedFeaturesArg != null) {
+			String[] supportedFeatures = supportedFeaturesArg.split(",\\s");
+			for (String supportedFeature : supportedFeatures) {
+				boolean remove = supportedFeature.startsWith("-");
+				boolean explicitAdd = supportedFeature.startsWith("+");
+				if (remove || explicitAdd) {
+					supportedFeature = supportedFeature.substring(1);
+				}
+				if (remove) {
+					this.supportedFeatures.remove(supportedFeature);
+				} else {
+					this.supportedFeatures.add(supportedFeature);
+				}
+			}
+		}
+	}
 	public boolean isFeatureSupported(String feature) {
 		// Ok, one more tricky thing left: binding of function defined
 		// within function - then we can enable this.
-		return !JSODDSupport.EDIT_AND_CONTINUE.equals(feature);
+		//return !JSODDSupport.EDIT_AND_CONTINUE.equals(feature);
+		return supportedFeatures.contains(feature);
 	}
 
 }
