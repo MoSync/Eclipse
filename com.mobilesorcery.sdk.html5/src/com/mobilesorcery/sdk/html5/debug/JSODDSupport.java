@@ -102,9 +102,28 @@ public class JSODDSupport {
 
 	}
 
+	/**
+	 * A constant representing the 'drop to frame' feature.
+	 * @see Html5Plugin#isFeatureSupported(String)
+	 */
 	public static final String DROP_TO_FRAME = "drop.to.frame";
+	
+	/**
+	 * A constant representing the 'edit-and-continue' feature.
+	 * @see Html5Plugin#isFeatureSupported(String)
+	 */
 	public static final String EDIT_AND_CONTINUE = "edit.continue";
+	
+	/**
+	 * A constant representing the 'line breakpoints' feature.
+	 * @see Html5Plugin#isFeatureSupported(String)
+	 */
 	public static final String LINE_BREAKPOINTS = "line.breakpoint";
+	
+	/**
+	 * A constant representing the 'artificial stack' feature.
+	 * @see Html5Plugin#isFeatureSupported(String)
+	 */
 	public static final String ARTIFICIAL_STACK = "artificial.stack";
 
 	public static final String EVAL_FUNC_SNIPPET = "function(____eval) {return eval(____eval);}";
