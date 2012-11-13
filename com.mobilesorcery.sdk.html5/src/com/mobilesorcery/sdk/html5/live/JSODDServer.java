@@ -604,9 +604,9 @@ public class JSODDServer implements IResourceChangeListener {
 				return error("Session not initialized");
 			}
 
-			// We use a zero-length breakpoint list as 'ping'
-			JSONObject result = createBreakpointJSON(new Object[0], true, false);
-
+			
+			JSONObject result = createPing();
+			
 			try {
 				DebuggerMessage queuedElement = queues.take(session);
 
@@ -672,6 +672,11 @@ public class JSODDServer implements IResourceChangeListener {
 				}
 			}
 			return result;
+		}
+
+		private JSONObject createPing() {
+			// We use a zero-length breakpoint list as 'ping'
+			return createBreakpointJSON(null, new Object[0], true, false, false);
 		}
 
 		private String getStepCommand(int stepType) {
