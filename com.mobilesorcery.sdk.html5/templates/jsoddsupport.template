@@ -14,7 +14,7 @@ window.MoSyncDebugProtocol = new (function() {
     var shouldBreak = function() { return false; };
     var asyncXHR = null;
     var lastFileId = -1;
-    var lastLine = '';
+    var lastLine = 1;
     var lastEvalScopeFunc = null;
     var lastThisRef = null;
     
@@ -68,7 +68,7 @@ window.MoSyncDebugProtocol = new (function() {
                     }
                 }
             };
-            asyncXHR.open('GET', serverUrl + '/mobile/incoming/' + timestamp(), true);
+            asyncXHR.open('GET', serverUrl + '/mobile/incoming/' + getLocation() + "?timestamp=" + timestamp(), true);
             asyncXHR.timeout = timeoutInMs;
             asyncXHR.ontimeout = function() { disconnect("Could not connect to server"); }
             asyncXHR.send(null);

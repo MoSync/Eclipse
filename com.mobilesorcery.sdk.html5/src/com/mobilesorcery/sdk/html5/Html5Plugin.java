@@ -527,7 +527,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 				public void run() {
 					try {
 						boolean wasLaunched = JSODDLaunchConfigurationDelegate
-								.launchDefault(terminateToken);
+								.launchDefault(project, terminateToken);
 						int result = JSODDConnectDialog.show(project, variant,
 								onDevice, null);
 						if (result == JSODDConnectDialog.CANCEL) {

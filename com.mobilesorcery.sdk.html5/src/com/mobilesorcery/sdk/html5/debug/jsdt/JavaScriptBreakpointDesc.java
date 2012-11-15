@@ -65,7 +65,7 @@ public class JavaScriptBreakpointDesc {
 	public String toString() {
 		String hitCountStr = hitCount > 0 ? " Hit count: " + Integer.toString(hitCount) : "";
 		String suspendStr = SUSPEND_ON_TRUE.equals(conditionSuspend) ? " (suspend on true)" : " (suspend on change)";
-		String conditionStr = condition != null ? " Condition: " + condition : "" + suspendStr;
+		String conditionStr = condition != null ? " Condition: " + condition + suspendStr : "";
 		return resource.getFullPath().toPortableString() + ": " + lineNumber + hitCountStr + conditionStr;
 	}
 

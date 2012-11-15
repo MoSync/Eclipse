@@ -8,7 +8,7 @@ body: {
 	width: 100%%;
 }
 a: {
-    font-size: 44px;
+    font-weight: bold;
 }
 .r {
     display: inline-block;

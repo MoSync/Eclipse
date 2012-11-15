@@ -46,7 +46,7 @@ public class ReloadProperty extends ReloadMirror implements Property {
 		if ("arguments".equals(name)) {
 			result.add("length");
 			String evalName = getSymbolToEvaluate();
-			Object evaledLength = vm.evaluate(evalName + ".length");
+			Object evaledLength = frame.thread().evaluate(evalName + ".length");
 			if (evaledLength instanceof Number) {
 				int length = ((Number) evaledLength).intValue();
 				for (int i = 0; i < length; i++) {

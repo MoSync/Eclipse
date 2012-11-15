@@ -5,8 +5,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.URLConnection;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -45,6 +47,10 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.model.IBreakpoint;
@@ -59,9 +65,12 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLoadBreakpoint;
+import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.StepRequest;
 import org.eclipse.wst.jsdt.debug.core.model.IJavaScriptDebugTarget;
 import org.eclipse.wst.jsdt.debug.core.model.JavaScriptDebugModel;
+import org.eclipse.wst.jsdt.debug.internal.core.Constants;
+import org.eclipse.wst.jsdt.debug.internal.core.JavaScriptDebugPlugin;
 import org.eclipse.wst.jsdt.debug.internal.core.breakpoints.JavaScriptExceptionBreakpoint;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -81,6 +90,7 @@ import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 import com.mobilesorcery.sdk.html5.debug.hotreplace.ProjectRedefinable;
 import com.mobilesorcery.sdk.html5.debug.jsdt.JavaScriptBreakpointDesc;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadRedefiner;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadReference;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadValue;
 import com.mobilesorcery.sdk.html5.live.JSODDServer.InternalQueues.ITimeoutListener;
 import com.mobilesorcery.sdk.html5.ui.AskForRedefineResolutionDialog;
@@ -182,6 +192,9 @@ public class JSODDServer implements IResourceChangeListener {
 		}
 
 		public DebuggerMessage take(int sessionId) throws InterruptedException {
+			if (sessionId == NO_SESSION) {
+				throw new IllegalStateException("No session id");
+			}
 			PriorityBlockingQueue<DebuggerMessage> consumer = null;
 			synchronized (queueLock) {
 				consumer = consumers.get(sessionId);
@@ -409,6 +422,12 @@ public class JSODDServer implements IResourceChangeListener {
 			offer(sessionId, ping());
 		}
 
+		public void heartbeat(Integer[] sessionIds) {
+			for (Integer sessionId : sessionIds) {
+				heartbeat(sessionId);	
+			}
+		}
+		
 		public void heartbeat(int sessionId) {
 			lastHeartbeats.put(sessionId, System.currentTimeMillis());
 		}
@@ -473,8 +492,9 @@ public class JSODDServer implements IResourceChangeListener {
 
 				// Heartbeat.
 				ReloadVirtualMachine vm = getVM(req.getRemoteAddr());
-				if (vm != null && vm.getCurrentSessionId() != NO_SESSION) {
-					queues.heartbeat(vm.getCurrentSessionId());
+				ReloadThreadReference thread = getThread(req, target);
+				if (thread != null && thread.getSessionId() != NO_SESSION) {
+					queues.heartbeat(thread.getSessionId());
 				}
 
 				// Preflight.
@@ -512,6 +532,12 @@ public class JSODDServer implements IResourceChangeListener {
 				e.printStackTrace();
 				throw new IOException(e);
 			}
+		}
+
+		private ReloadThreadReference getThread(HttpServletRequest req, String target) throws UnsupportedEncodingException {
+			ReloadVirtualMachine vm = getVM(req.getRemoteAddr());
+			String threadId = extractThreadId(target);
+			return vm == null ? null : vm.getThread(threadId);
 		}
 
 		private void writeResponse(Object obj, HttpServletResponse res) throws CoreException, IOException {
@@ -568,24 +594,34 @@ public class JSODDServer implements IResourceChangeListener {
 
 		private JSONObject waitForClient(String target, JSONObject command,
 				HttpServletRequest req, HttpServletResponse res,
-				boolean preflight) {
+				boolean preflight) throws UnsupportedEncodingException {
 			JSONObject result = null;
-			if (targetMatches(target, "/mobile/incoming")) {
-				ReloadVirtualMachine vm = getVM(req.getRemoteAddr());
-				int sessionId = vm == null ? NO_SESSION : vm
-						.getCurrentSessionId();
+			String threadId = extractThreadId(target);
+			if (threadId != null && targetMatches(target, "/mobile/incoming")) {
+				ReloadThreadReference thread = getThread(req, target);
+				int sessionId = thread == null ? NO_SESSION : thread.getSessionId();
 				result = pushCommandsToClient(sessionId, preflight);
-			} else if (targetMatches(target, "/mobile/breakpoint")) {
+			} else if (threadId != null && targetMatches(target, "/mobile/breakpoint")) {
 				// RACE CONDITION WILL OCCUR HERE!
 				if (!preflight) {
 					Integer sessionId = extractSessionId(command);
-					notifyCommandListeners(getCommand(command), command);
+					notifyCommandListeners(sessionId, getCommand(command), command);
 					result = pushCommandsToClient(sessionId, preflight);
 				} else {
 					return new JSONObject();
 				}
 			}
 			return result;
+		}
+		
+		private String extractThreadId(String target) throws UnsupportedEncodingException {
+			String[] components = target.split("/", 4);
+			if (components.length < 4) {
+				return null;
+			}
+			String threadId = components[3];
+			threadId = normalizeThreadId(threadId);
+			return threadId;
 		}
 
 		private JSONObject error(String msg) {
@@ -600,7 +636,7 @@ public class JSODDServer implements IResourceChangeListener {
 				return new JSONObject();
 			}
 
-			if (session == null) {
+			if (session == null || session == NO_SESSION) {
 				return error("Session not initialized");
 			}
 
@@ -616,8 +652,8 @@ public class JSODDServer implements IResourceChangeListener {
 						: queuedElement.type;
 				if (queuedType == BREAKPOINT) {
 					Pair<Boolean, Object> bp = (Pair<Boolean, Object>) queuedObject;
-					result = createBreakpointJSON(new Object[] { bp.second },
-							bp.first, false);
+					result = createBreakpointJSON(getVM(session), new Object[] { bp.second },
+							bp.first, false, false);
 				} else if (queuedType == RESUME) {
 					result = newCommand("breakpoint-continue");
 				} else if (queuedType == STEP) {
@@ -647,7 +683,7 @@ public class JSODDServer implements IResourceChangeListener {
 					IBreakpoint[] bps = DebugPlugin.getDefault()
 							.getBreakpointManager()
 							.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
-					result = createBreakpointJSON(bps, true, true);
+					result = createBreakpointJSON(getVM(session), bps, true, true, true);
 				} else if (queuedType == REDEFINE) {
 					Pair<String, String> data = (Pair<String, String>) queuedObject;
 					result = newCommand("update-function");
@@ -761,7 +797,7 @@ public class JSODDServer implements IResourceChangeListener {
 					if (project != null) {
 						if (vm == null) {
 							// The session id will be assigned soon.
-							resetVM(req, MoSyncProject.create(project), -1);
+							initVM(req, MoSyncProject.create(project), null);
 						}
 					}
 				}
@@ -825,19 +861,18 @@ public class JSODDServer implements IResourceChangeListener {
 				IBreakpoint[] bps = DebugPlugin.getDefault()
 						.getBreakpointManager()
 						.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
-				JSONObject jsonBps = createBreakpointJSON(bps, true, true);
+				JSONObject jsonBps = createPing();
+				ReloadVirtualMachine vm = null;
 				if (command != null) {
-					int newSessionId = newSessionId();
-					jsonBps.put(SESSION_ID_ATTR, newSessionId);
 					String projectName = (String) command.get("project");
+					String threadId = normalizeThreadId((String) command.get("location"));
 					MoSyncProject project = MoSyncProject
 							.create(ResourcesPlugin.getPlugin().getWorkspace()
 									.getRoot().getProject(projectName));
-					if (project != null) {
-						ReloadVirtualMachine vm = resetVM(req, project,
-								newSessionId);
-						vm.setCurrentLocation((String) command.get("location"));
-					}
+					vm = initVM(req, project, threadId);
+					ReloadThreadReference thread = vm.resetThread(threadId);
+					jsonBps = createBreakpointJSON(vm, bps, true, true, true);
+					jsonBps.put(SESSION_ID_ATTR, thread.getSessionId());
 				}
 				return jsonBps;
 			} else if (targetMatches(target, "/mobile/console")) {
@@ -873,8 +908,8 @@ public class JSODDServer implements IResourceChangeListener {
 			return (String) command.get("command");
 		}
 
-		private JSONObject createBreakpointJSON(Object[] bps, boolean enabled,
-				boolean reset) {
+		private JSONObject createBreakpointJSON(ReloadVirtualMachine vm, Object[] bps, boolean enabled,
+				boolean reset, boolean sendExceptionBp) {
 			JSONObject command = new JSONObject();
 			command.put("command", enabled ? "set-breakpoints"
 					: "clear-breakpoints");
@@ -925,6 +960,9 @@ public class JSODDServer implements IResourceChangeListener {
 				} catch (Exception e) {
 					CoreMoSyncPlugin.getDefault().log(e);
 				}
+			}
+			if (vm != null && sendExceptionBp) {
+				command.put("breakonexceptions", vm.getBreakOnException());
 			}
 			command.put("data", jsonBps);
 			return command;
@@ -983,10 +1021,12 @@ public class JSODDServer implements IResourceChangeListener {
 	private final CopyOnWriteArrayList<ILiveServerListener> lifecycleListeners = new CopyOnWriteArrayList<ILiveServerListener>();
 	private final CopyOnWriteArrayList<ILiveServerCommandListener> commandListeners = new CopyOnWriteArrayList<ILiveServerCommandListener>();
 	private final CopyOnWriteArrayList<ILineHandler> consoleListeners = new CopyOnWriteArrayList<ILineHandler>();
-	private final AtomicInteger sessionId = new AtomicInteger(1);
+	private final AtomicInteger uniqueId = new AtomicInteger(1);
 	private final IdentityHashMap<Object, Object> refs = new IdentityHashMap<Object, Object>();
 	private final ArrayList<ReloadVirtualMachine> unassignedVMs = new ArrayList<ReloadVirtualMachine>();
 	private final HashMap<String, ReloadVirtualMachine> vmsByHost = new HashMap<String, ReloadVirtualMachine>();
+	protected boolean breakOnExceptions = true;
+	private IPreferenceChangeListener breakOnExceptionsListener;
 
 	public synchronized void startServer(Object ref) throws CoreException {
 		refs.put(ref, true);
@@ -1007,22 +1047,27 @@ public class JSODDServer implements IResourceChangeListener {
 			queues.startPingDeamon();
 			queues.setTimeoutListener(new ITimeoutListener() {
 				@Override
-				public void timeoutOccurred(int sessionId) {
-					ReloadVirtualMachine vm = getVM(sessionId);
+				public void timeoutOccurred(int threadId) {
+					ReloadVirtualMachine vm = getVM(threadId);
 					if (vm != null) {
-						IJavaScriptDebugTarget debugTarget = vm
-								.getJavaScriptDebugTarget();
-						if (debugTarget != null) {
-							try {
-								debugTarget.terminate();
-							} catch (DebugException e) {
-								CoreMoSyncPlugin.getDefault().log(e);
+						vm.killThread(threadId);
+						if (vm.allThreads().isEmpty()) {
+							IJavaScriptDebugTarget debugTarget = vm.getJavaScriptDebugTarget();
+							if (debugTarget != null) {
+								try {
+									debugTarget.terminate();
+								} catch (DebugException e) {
+									CoreMoSyncPlugin.getDefault().log(e);
+								}
 							}
+							notifyTerminateListeners(vm);
 						}
-						notifyTerminateListeners(vm);
 					}
 				}
 			});
+			
+			initBreakpointOnExceptionListener();
+			
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 				InetAddress host = InetAddress.getLocalHost();
 				String hostName = host.getHostName();
@@ -1036,6 +1081,38 @@ public class JSODDServer implements IResourceChangeListener {
 		}
 	}
 
+	public static String normalizeThreadId(String threadId) {
+		return URLDecoder.decode(threadId);
+	}
+
+	private void initBreakpointOnExceptionListener() {
+		// Ok, some bug in JSDT that causes enablement request to come
+		// in a non-timely fashion.
+		// More internal APIs.
+		/*final IEclipsePreferences node = InstanceScope.INSTANCE.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
+		breakOnExceptions = node.getBoolean(Constants.SUSPEND_ON_THROWN_EXCEPTION, true);
+		breakOnExceptionsListener = new IPreferenceChangeListener() {
+			@Override
+			public void preferenceChange(PreferenceChangeEvent event) {
+				if (Constants.SUSPEND_ON_THROWN_EXCEPTION.equals(event.getKey())) {
+					breakOnExceptions = node.getBoolean(Constants.SUSPEND_ON_THROWN_EXCEPTION, true);
+					List<ReloadVirtualMachine> allVMs = getVMs(true);
+					for (ReloadVirtualMachine vm : allVMs) {
+						vm.setBreakOnException(breakOnExceptions);
+						// Just refresh all breakpoints; this one does not happen often...
+						refreshBreakpoints(vm.getCurrentSessionId());
+					}
+				}
+			}
+		};
+		node.addPreferenceChangeListener(breakOnExceptionsListener);*/
+	}
+	
+	private void removeBreakpointOnExceptionListener() {
+		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
+		node.removePreferenceChangeListener(breakOnExceptionsListener);
+	}
+
 	public static Integer extractSessionId(JSONObject command) {
 		Object sessionIdObj = command.get(SESSION_ID_ATTR);
 		Integer sessionId = sessionIdObj == null ? null : Integer
@@ -1043,15 +1120,22 @@ public class JSODDServer implements IResourceChangeListener {
 		return sessionId;
 	}
 
-	public synchronized ReloadVirtualMachine getVM(int sessionId) {
+	public synchronized ReloadThreadReference getThread(int sessionId) {
 		if (sessionId != NO_SESSION) {
 			for (ReloadVirtualMachine vm : vmsByHost.values()) {
-				if (vm.getCurrentSessionId() == sessionId) {
-					return vm;
+				for (Object thread : vm.allThreads()) {
+					if (((ReloadThreadReference) thread).getSessionId() == sessionId) {
+						return (ReloadThreadReference) thread;
+					}
 				}
 			}
 		}
 		return null;
+	}
+	
+	public synchronized ReloadVirtualMachine getVM(int sessionId) {
+		ReloadThreadReference thread = getThread(sessionId);
+		return (ReloadVirtualMachine) (thread == null ? null : thread.virtualMachine());
 	}
 
 	public synchronized List<ReloadVirtualMachine> getVMs(
@@ -1074,37 +1158,33 @@ public class JSODDServer implements IResourceChangeListener {
 		return vm;
 	}
 
-	public synchronized ReloadVirtualMachine resetVM(HttpServletRequest req,
-			MoSyncProject project, int newSessionId) {
+	synchronized ReloadVirtualMachine initVM(HttpServletRequest req,
+			MoSyncProject project, String threadId) {
 		String remoteIp = req.getRemoteAddr();
 		ReloadVirtualMachine vm = getVM(remoteIp);
-		boolean reset = vm != null;
-		if (!reset) {
+		boolean resetVM = vm == null || vm.getThread(threadId) != null;
+		if (resetVM) {
 			if (!unassignedVMs.isEmpty()) {
 				vm = unassignedVMs.remove(0);
 			}
-		} else {
-			int oldSessionId = vm.getCurrentSessionId();
+			int newVMId = newUniqueId();
+			vm.reset(newVMId, project, remoteIp);
+			vmsByHost.put(remoteIp, vm);
+			vm.setBreakOnException(breakOnExceptions);
+			notifyInitListeners(vm, !resetVM);
+			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+				CoreMoSyncPlugin.trace("Assigned id #{0} to vm for project {1}",
+						newVMId, vm.getProject());
+			}
 		}
-		// TODO: What if vm == null here?
-		
-		vm.reset(newSessionId, project, remoteIp);
-
-		vmsByHost.put(remoteIp, vm);
-		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-			CoreMoSyncPlugin.trace("Assigned session {0} to address {1}",
-					newSessionId, remoteIp);
-		}
-		
-		notifyInitListeners(vm, reset);
 		
 		return vm;
 	}
 
-	public int newSessionId() {
+	public int newUniqueId() {
 		int traceMask = CoreMoSyncPlugin.getDefault().isDebugging() ? 0xffff
 				: 0;
-		return traceMask + sessionId.incrementAndGet();
+		return traceMask + uniqueId.incrementAndGet();
 	}
 
 	private Object awaitEvalResult(int sessionId, String expression,
@@ -1131,10 +1211,10 @@ public class JSODDServer implements IResourceChangeListener {
 		this.commandListeners.remove(listener);
 	}
 
-	private void notifyCommandListeners(String commandName, JSONObject command) {
+	private void notifyCommandListeners(Integer sessionId, String commandName, JSONObject command) {
 		// TODO: Send directly to the proper VM instead!!
 		for (ILiveServerCommandListener listener : commandListeners) {
-			listener.received(commandName, command);
+			listener.received(sessionId, commandName, command);
 		}
 	}
 	
@@ -1151,8 +1231,8 @@ public class JSODDServer implements IResourceChangeListener {
 	}
 
 	public synchronized void stopServer(Object ref) throws CoreException {
-		ResourcesPlugin.getWorkspace().addResourceChangeListener(this,
-				IResourceChangeEvent.POST_CHANGE);
+		ResourcesPlugin.getWorkspace().removeResourceChangeListener(this);
+		removeBreakpointOnExceptionListener();
 		refs.remove(ref);
 		if (refs.isEmpty()) {
 			unassignedVMs.clear();
@@ -1234,15 +1314,20 @@ public class JSODDServer implements IResourceChangeListener {
 				new Pair<String, String>(key, source)));
 	}
 
-	public void terminate(int sessionId) {
+	public void terminate(int sessionId, boolean main) {
 		try {
 			ReloadVirtualMachine vm = getVM(sessionId);
 			if (vm != null && !vm.isTerminated()) {
-				DebuggerMessage msg = new DebuggerMessage(TERMINATE);
-				queues.offer(sessionId, msg);
-				// Just to make sure the terminate request is sent
-				// before the server is killed.
-				Thread.sleep(1000 * getTimeout(sessionId));
+				if (main) {
+					DebuggerMessage msg = new DebuggerMessage(TERMINATE);
+					queues.offer(sessionId, msg);
+					// Just to make sure the terminate request is sent
+					// before the server is killed.
+					Thread.sleep(1000 * getTimeout(sessionId));
+				} else {
+					DebuggerMessage msg = new DebuggerMessage(DISCONNECT);
+					queues.offer(sessionId, msg);
+				}
 				queues.killSession(sessionId);
 			}
 		} catch (Exception e) {
