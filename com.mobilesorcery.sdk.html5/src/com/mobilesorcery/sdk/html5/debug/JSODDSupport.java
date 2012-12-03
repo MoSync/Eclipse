@@ -173,6 +173,7 @@ public class JSODDSupport {
 			currentPosition = getPosition(node, true);
 			
 			int start = getStartPosition(node);
+			int scopeStart = start;
 			int startLine = unit == null ? -1 : unit.getLineNumber(start);
 
 			LocalVariableScope startScope = currentScope;
@@ -181,6 +182,7 @@ public class JSODDSupport {
 			if (scopeResetPoint != null) {
 				scopeResetPoints.remove(scopeResetPoint);
 				currentScope = currentScope.clear();
+				scopeStart = scopeResetPoint;
 			}
 
 			boolean nest = isNestStatement(node);
@@ -257,7 +259,7 @@ public class JSODDSupport {
 			}
 
 			if (currentScope != startScope) {
-				localVariables.put(start, currentScope);
+				localVariables.put(scopeStart, currentScope);
 			}
 		}
 
