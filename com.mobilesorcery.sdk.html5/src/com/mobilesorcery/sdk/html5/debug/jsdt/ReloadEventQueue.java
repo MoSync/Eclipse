@@ -23,6 +23,21 @@ import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadBreakpointEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadDebuggerStatementEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadExceptionEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadScriptEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadStepEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadSuspendEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadThreadEnterEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadThreadExitEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadBreakpointRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadDebuggerStatementRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadExceptionRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadScriptLoadRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadStepRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadSuspendRequest;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
 public class ReloadEventQueue implements EventQueue {
@@ -160,6 +175,9 @@ public class ReloadEventQueue implements EventQueue {
 				ReloadEvent event = (ReloadEvent) commandObj;
 				eventSet.add(event);
 			}
+		}
+		if (CoreMoSyncPlugin.getDefault().isDebugging() && !eventSet.isEmpty()) {
+			CoreMoSyncPlugin.trace("Event set: {0}", eventSet);
 		}
 		return eventSet;
 	}

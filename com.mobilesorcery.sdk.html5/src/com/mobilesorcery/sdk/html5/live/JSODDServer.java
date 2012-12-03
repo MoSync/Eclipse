@@ -704,7 +704,7 @@ public class JSODDServer implements IResourceChangeListener {
 			} catch (InterruptedException e) {
 				if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 					CoreMoSyncPlugin
-							.trace("Dropped connection (often temporarily).");
+							.trace("Dropped connection, session #{0} (often temporarily).", session);
 				}
 			}
 			return result;

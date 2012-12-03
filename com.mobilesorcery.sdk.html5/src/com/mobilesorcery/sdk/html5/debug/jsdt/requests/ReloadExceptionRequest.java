@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.html5.debug.jsdt;
+package com.mobilesorcery.sdk.html5.debug.jsdt.requests;
 
 import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.ExceptionRequest;
@@ -9,7 +9,7 @@ public class ReloadExceptionRequest extends ReloadEventRequest implements Except
 
 	private ThreadReference thread;
 
-	ReloadExceptionRequest(ReloadVirtualMachine vm) {
+	public ReloadExceptionRequest(ReloadVirtualMachine vm) {
 		super(vm);
 	}
 

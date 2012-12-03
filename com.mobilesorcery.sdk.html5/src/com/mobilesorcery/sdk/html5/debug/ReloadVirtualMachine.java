@@ -44,10 +44,10 @@ import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadNullValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadNumberValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadStackFrame;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadStringValue;
-import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadEnterEvent;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadReference;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadUndefinedValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.SimpleScriptReference;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadThreadEnterEvent;
 import com.mobilesorcery.sdk.html5.live.ILiveServerCommandListener;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
@@ -126,6 +126,10 @@ public class ReloadVirtualMachine implements VirtualMachine,
 		resetEventQueue();
 		this.project = project.getWrappedProject();
 		this.remoteAddr = remoteAddr;
+	}
+	
+	public int getId() {
+		return vmId;
 	}
 
 	@Override
@@ -285,7 +289,7 @@ public class ReloadVirtualMachine implements VirtualMachine,
 		return mainThread == null ? JSODDServer.NO_SESSION : mainThread.getSessionId();
 	}
 
-	private ReloadThreadReference getMainThread() {
+	public ReloadThreadReference getMainThread() {
 		return mainThread;
 	}
 
@@ -303,9 +307,7 @@ public class ReloadVirtualMachine implements VirtualMachine,
 
 	@Override
 	public void received(int sessionId, String command, JSONObject json) {
-		// TODO!!! Session id - now all will suspend.
 		// TODID -- filtering is done in the eventqueue. For now.
-
 		ReloadThreadReference thread = getThread(sessionId);
 		boolean isClientSuspend = Boolean.parseBoolean(""
 				+ json.get("suspended"));
@@ -477,6 +479,13 @@ public class ReloadVirtualMachine implements VirtualMachine,
 		ReloadThreadReference thread = threads.remove(threadId);
 		if (thread == mainThread) {
 			mainThread = (ReloadThreadReference) (threads.values().isEmpty() ? null : threads.values().toArray()[0]);
+		}
+		if (thread == null) {
+			return;
+		}
+		thread.terminate();
+		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+			CoreMoSyncPlugin.trace("Killed thread {0}", threadId);
 		}
 	}
 

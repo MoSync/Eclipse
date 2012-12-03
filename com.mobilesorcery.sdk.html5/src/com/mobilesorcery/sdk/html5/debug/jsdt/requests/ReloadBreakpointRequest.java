@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.html5.debug.jsdt;
+package com.mobilesorcery.sdk.html5.debug.jsdt.requests;
 
 import java.util.HashMap;
 
@@ -16,6 +16,8 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.debug.jsdt.JavaScriptBreakpointDesc;
+import com.mobilesorcery.sdk.html5.debug.jsdt.SimpleScriptReference;
 
 public class ReloadBreakpointRequest extends ReloadEventRequest implements
 		BreakpointRequest {
@@ -25,7 +27,7 @@ public class ReloadBreakpointRequest extends ReloadEventRequest implements
 	private String condition;
 	private int hitcount;
 
-	ReloadBreakpointRequest(ReloadVirtualMachine vm, Location location) {
+	public ReloadBreakpointRequest(ReloadVirtualMachine vm, Location location) {
 		super(vm);
 		this.location = location;
 	}

@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.html5.debug.jsdt;
+package com.mobilesorcery.sdk.html5.debug.jsdt.events;
 
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.Event;
@@ -24,5 +24,9 @@ public class ReloadEvent implements Event {
 	@Override
 	public VirtualMachine virtualMachine() {
 		return vm;
+	}
+	
+	public String toString() {
+		return getClass().getSimpleName() + " #" + vm.getId();
 	}
 }

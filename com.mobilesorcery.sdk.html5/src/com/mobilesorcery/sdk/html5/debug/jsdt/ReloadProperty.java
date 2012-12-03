@@ -57,4 +57,7 @@ public class ReloadProperty extends ReloadMirror implements Property {
 		return result;
 	}
 
+	public String toString() {
+		return name;
+	}
 }

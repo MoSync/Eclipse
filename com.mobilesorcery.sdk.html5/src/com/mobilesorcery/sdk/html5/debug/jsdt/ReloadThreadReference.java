@@ -16,6 +16,7 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.request.StepRequest;
 
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadStepRequest;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
 public class ReloadThreadReference implements ThreadReference {
@@ -73,7 +74,7 @@ public class ReloadThreadReference implements ThreadReference {
 		if (!isSuspended()) {
 			return;
 		}
-		this.suspended = false;
+		markSuspended(false,  false);
 		switch (stepType) {
 		case ReloadStepRequest.NO_STEPPING:
 			server.resume(sessionId);
@@ -113,6 +114,10 @@ public class ReloadThreadReference implements ThreadReference {
 		return formattedLocation;
 	}
 
+	public void terminate() {
+		server.terminate(sessionId, vm.getMainThread() == this);
+	}
+	
 	public void markSuspended(boolean isAtBreakpoint) {
 		markSuspended(true, isAtBreakpoint);
 	}
@@ -184,4 +189,5 @@ public class ReloadThreadReference implements ThreadReference {
 	public String toString() {
 		return name() + " #" + sessionId;
 	}
+
 }

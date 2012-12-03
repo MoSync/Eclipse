@@ -112,6 +112,7 @@ public class ReloadStackFrame implements StackFrame {
 
 	@Override
 	public Location location() {
+		new Exception().printStackTrace();
 		return location;
 	}
 
@@ -213,6 +214,10 @@ public class ReloadStackFrame implements StackFrame {
 
 	public ReloadThreadReference thread() {
 		return thread;
+	}
+	
+	public String toString() {
+		return "[" + Util.join(variables().toArray(), ", ") + "]";
 	}
 
 }
