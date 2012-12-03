@@ -1037,7 +1037,7 @@ public class JSODDServer implements IResourceChangeListener {
 			ResourcesPlugin.getWorkspace().addResourceChangeListener(this,
 					IResourceChangeEvent.POST_CHANGE);
 			server = new Server(getPort());
-			server.setThreadPool(new ExecutorThreadPool(5, 128, 120));
+			server.setThreadPool(new ExecutorThreadPool(128, 128, 120));
 			server.setHandler(new JSODDServerHandler());
 			Connector connector = new SelectChannelConnector();
 			connector.setPort(getPort());
