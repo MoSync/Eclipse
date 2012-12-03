@@ -169,6 +169,8 @@ public class MoSyncBuilder extends ACBuilder {
 
 	public static final String APP_NAME = BUILD_PREFS_PREFIX + "app.name";
 	
+	public static final String EXTENSIONS = BUILD_PREFS_PREFIX + "ext";
+	
 	public static final String REBUILD_ON_ERROR = BUILD_PREFS_PREFIX + "rebuild.on.error";
 
 	private static final String APP_CODE = "app.code";
@@ -1083,6 +1085,12 @@ public class MoSyncBuilder extends ACBuilder {
 			result.addAll(Arrays.asList(additionalIncludePaths));
 		}
 
+		String[] extensions = PropertyUtil.getStrings(project, MoSyncBuilder.EXTENSIONS);
+		for (String extension : extensions) {
+			String extensionInclude = "%mosync-home%/extensions/" + extension + "/inc";
+			result.add(new Path(extensionInclude));
+		}
+		
 		return resolvePaths(result.toArray(new IPath[0]),
 				createParameterResolver(project, variant));
 	}
@@ -1108,6 +1116,12 @@ public class MoSyncBuilder extends ACBuilder {
 			result.addAll(Arrays.asList(additionalLibraryPaths));
 		}
 
+		String[] extensions = PropertyUtil.getStrings(MoSyncProject.create(project), MoSyncBuilder.EXTENSIONS);
+		for (String extension : extensions) {
+			String extensionLibraryPath = "%mosync-home%/extensions/" + extension + "/lib";
+			result.add(new Path(extensionLibraryPath));
+		}
+		
 		return result.toArray(new IPath[0]);
 	}
 
@@ -1127,7 +1141,11 @@ public class MoSyncBuilder extends ACBuilder {
 		if (additionalLibraries != null) {
 			result.addAll(Arrays.asList(additionalLibraries));
 		}
-
+		
+		String[] extensions = PropertyUtil.getStrings(project, MoSyncBuilder.EXTENSIONS);
+		for (String extension : extensions) {
+			result.add(new Path(extension + ".lib"));
+		}
 		return result.toArray(new IPath[0]);
 	}
 
