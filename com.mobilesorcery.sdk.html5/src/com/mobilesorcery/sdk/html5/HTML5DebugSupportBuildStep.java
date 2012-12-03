@@ -59,8 +59,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				this.op = op;
 			}
 
-			public int rewrite(IResource resourceToInstrument,
-					boolean persistToFile, boolean fetchRemotely, boolean delete)
+			public int rewrite(IResource resourceToInstrument, boolean fetchRemotely, boolean delete)
 					throws CoreException {
 				IPath resourcePath = resourceToInstrument.getFullPath();
 				resourcePath = resourcePath.removeFirstSegments(inputRoot
@@ -72,18 +71,16 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				} else {
 					Writer output = null;
 					try {
-						output = persistToFile ? createWriter(resourcePath) : null;
+						output = createWriter(resourcePath);
 						MoSyncProject mosyncProject = MoSyncProject
 								.create(getProject());
 						if (fetchRemotely) {
-							op.generateRemoteFetch(mosyncProject, output);
+							op.generateRemoteFetch(mosyncProject, resourceToInstrument, output);
 						}
-						if (!fetchRemotely || CoreMoSyncPlugin.getDefault().isDebugging()) {
-							// This is a *build* op, so update the baseline.
-							result = op.rewrite(
-									resourceToInstrument.getFullPath(), output,
+						// This is a *build* op, so update the baseline.
+						result = op.rewrite(
+									resourceToInstrument.getFullPath(), fetchRemotely ? null : output,
 									op.getBaseline());
-						}
 					} catch (IOException e) {
 						throw new CoreException(
 								new Status(
@@ -175,7 +172,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			boolean fetchRemotely = Html5Plugin.getDefault().shouldFetchRemotely();
 			Rewriter rewriter = new Rewriter(op);
 
-			if (!instrumentThese.isEmpty() && fetchRemotely) {
+			/*if (!instrumentThese.isEmpty() && fetchRemotely) {
 				IResource indexHtml = Html5Plugin.getDefault().getLocalFile(
 						project, new Path("index.html"));
 				if (indexHtml.getType() != IResource.FILE
@@ -184,8 +181,9 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 							Html5Plugin.PLUGIN_ID,
 							"Missing index.html, cannot build for debugging"));
 				}
-				rewriter.rewrite(indexHtml, true, true, false);
-			}
+				rewriter.rewrite(indexHtml, true, false);
+				instrumentThese.remove(indexHtml);
+			}*/
 			for (IResource instrumentThis : instrumentThese) {
 				if (monitor.isCanceled()) {
 					return;
@@ -194,8 +192,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 						getResourceBundleLocation(project));
 				long start = System.currentTimeMillis();
 				boolean wasDeleted = deleted.contains(instrumentThis);
-				int memoryConsumption = rewriter.rewrite(instrumentThis,
-						!fetchRemotely, false, wasDeleted);
+				int memoryConsumption = rewriter.rewrite(instrumentThis, fetchRemotely, wasDeleted);
 				long elapsed = System.currentTimeMillis() - start;
 				console.addMessage(MessageFormat.format(
 						"Instrumented {0} [{1}, {2}].", instrumentThis

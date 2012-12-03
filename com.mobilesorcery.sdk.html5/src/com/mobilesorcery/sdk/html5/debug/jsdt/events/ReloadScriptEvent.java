@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.html5.debug.jsdt;
+package com.mobilesorcery.sdk.html5.debug.jsdt.events;
 
 import org.eclipse.wst.jsdt.debug.core.jsdi.ScriptReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
@@ -6,6 +6,7 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.event.ScriptLoadEvent;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.ScriptLoadRequest;
 
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.debug.jsdt.SimpleScriptReference;
 
 public class ReloadScriptEvent extends ReloadLocatableEvent implements ScriptLoadEvent {
 

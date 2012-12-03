@@ -4,6 +4,6 @@ import org.json.simple.JSONObject;
 
 public interface ILiveServerCommandListener {
 
-	void received(String command, JSONObject json);
+	void received(int sessionId, String command, JSONObject json);
 	
 }
