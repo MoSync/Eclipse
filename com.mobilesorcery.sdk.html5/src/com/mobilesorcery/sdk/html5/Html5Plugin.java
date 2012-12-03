@@ -3,13 +3,13 @@ package com.mobilesorcery.sdk.html5;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -31,17 +31,18 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IStartup;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.internal.util.Util;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.wst.jsdt.core.IJavaScriptProject;
 import org.eclipse.wst.jsdt.core.JavaScriptCore;
 import org.eclipse.wst.jsdt.core.LibrarySuperType;
 import org.eclipse.wst.jsdt.internal.core.JavaProject;
-import org.json.simple.JSONObject;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.BuildVariant;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -122,6 +123,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 
 	private final HashMap<IProject, JSODDSupport> jsOddSupport = new HashMap<IProject, JSODDSupport>();
 
+	private HashSet<String> supportedFeatures;
+
 	// private HashMap<Object, AtomicInteger> timeoutSuppressions = new
 	// HashMap<Object, AtomicInteger>();
 
@@ -141,6 +144,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 	@Override
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
+		initSupportedFeatures();
 		// We do not yet have the eclipse fix #54993
 		MosyncUIPlugin.getDefault().awaitWorkbenchStartup(
 				new IWorkbenchStartupListener() {
@@ -182,6 +186,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 			server.addListener(new ILiveServerListener() {
 				@Override
 				public void timeout(final ReloadVirtualMachine vm) {
+					IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(MoSyncBuilder.CONSOLE_ID);
+					console.addMessage(IProcessConsole.ERR, MessageFormat.format("*** A timeout occurred. The device being debugged (at {0}) seems to have been disconnected. ***", vm.getRemoteAddr()));
 					ILaunch launch = vm.getJavaScriptDebugTarget().getLaunch();
 					String terminateToken = launch == null ? null : launch
 							.getAttribute(TERMINATE_TOKEN_LAUNCH_ATTR);
@@ -521,7 +527,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 				public void run() {
 					try {
 						boolean wasLaunched = JSODDLaunchConfigurationDelegate
-								.launchDefault(terminateToken);
+								.launchDefault(project, terminateToken);
 						int result = JSODDConnectDialog.show(project, variant,
 								onDevice, null);
 						if (result == JSODDConnectDialog.CANCEL) {
@@ -576,10 +582,34 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 		return new URL("http", host, 8511, "");
 	}
 
+	private void initSupportedFeatures() {
+		supportedFeatures = new HashSet<String>();
+		supportedFeatures.add(JSODDSupport.LINE_BREAKPOINTS);
+		supportedFeatures.add(JSODDSupport.ARTIFICIAL_STACK);
+		supportedFeatures.add(JSODDSupport.DROP_TO_FRAME);
+		
+		String supportedFeaturesArg = System.getProperty(Html5Plugin.PLUGIN_ID + ".jsodd.features");
+		if (supportedFeaturesArg != null) {
+			String[] supportedFeatures = supportedFeaturesArg.split(",\\s");
+			for (String supportedFeature : supportedFeatures) {
+				boolean remove = supportedFeature.startsWith("-");
+				boolean explicitAdd = supportedFeature.startsWith("+");
+				if (remove || explicitAdd) {
+					supportedFeature = supportedFeature.substring(1);
+				}
+				if (remove) {
+					this.supportedFeatures.remove(supportedFeature);
+				} else {
+					this.supportedFeatures.add(supportedFeature);
+				}
+			}
+		}
+	}
 	public boolean isFeatureSupported(String feature) {
 		// Ok, one more tricky thing left: binding of function defined
 		// within function - then we can enable this.
-		return !JSODDSupport.EDIT_AND_CONTINUE.equals(feature);
+		//return !JSODDSupport.EDIT_AND_CONTINUE.equals(feature);
+		return supportedFeatures.contains(feature);
 	}
 
 }

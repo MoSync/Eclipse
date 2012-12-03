@@ -20,6 +20,18 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.request.VMDeathRequest;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.VMDisconnectRequest;
 
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadBreakpointRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadDebuggerStatementRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadEventRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadExceptionRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadResumeRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadScriptLoadRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadStepRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadSuspendRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadThreadEnterRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadThreadExitRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadVMDeathRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadVMDisconnectRequest;
 
 
 public class ReloadEventRequestManager implements EventRequestManager {

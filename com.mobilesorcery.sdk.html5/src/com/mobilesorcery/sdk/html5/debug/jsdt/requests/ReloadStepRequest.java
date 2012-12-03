@@ -1,10 +1,11 @@
-package com.mobilesorcery.sdk.html5.debug.jsdt;
+package com.mobilesorcery.sdk.html5.debug.jsdt.requests;
 
 import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.StepRequest;
 
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadReference;
 
 public class ReloadStepRequest extends ReloadEventRequest implements StepRequest {
 
@@ -13,7 +14,7 @@ public class ReloadStepRequest extends ReloadEventRequest implements StepRequest
 	private final ReloadThreadReference thread;
 	private final int step;
 
-	ReloadStepRequest(ReloadVirtualMachine vm, ThreadReference thread, int step) {
+	public ReloadStepRequest(ReloadVirtualMachine vm, ThreadReference thread, int step) {
 		super(vm);
 		this.thread = (ReloadThreadReference) thread;
 		this.step = step;

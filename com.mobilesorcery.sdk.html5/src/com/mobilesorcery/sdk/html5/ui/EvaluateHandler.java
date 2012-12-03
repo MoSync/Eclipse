@@ -59,7 +59,7 @@ public class EvaluateHandler extends AbstractHandler {
 							String sessionIdStr = "";
 							if (sessionIds.size() > 1) {
 								ReloadVirtualMachine vm = server.getVM(sessionId);
-								sessionIdStr = "IP: " + vm.getRemoteAddr();
+								sessionIdStr = vm.getRemoteAddr();
 							}
 							console.addMessage(sessionIdStr + ">" + result);
 						} catch (Exception e) {

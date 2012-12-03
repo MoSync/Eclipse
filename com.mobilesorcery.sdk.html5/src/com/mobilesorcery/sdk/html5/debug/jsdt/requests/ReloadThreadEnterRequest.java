@@ -1,16 +1,16 @@
-package com.mobilesorcery.sdk.html5.debug.jsdt;
+package com.mobilesorcery.sdk.html5.debug.jsdt.requests;
 
 import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
-import org.eclipse.wst.jsdt.debug.core.jsdi.request.ExceptionRequest;
+import org.eclipse.wst.jsdt.debug.core.jsdi.request.ThreadEnterRequest;
 
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 
-public class ReloadExceptionRequest extends ReloadEventRequest implements ExceptionRequest {
+public class ReloadThreadEnterRequest extends ReloadEventRequest implements ThreadEnterRequest {
 
 	private ThreadReference thread;
 
-	ReloadExceptionRequest(ReloadVirtualMachine vm) {
+	public ReloadThreadEnterRequest(ReloadVirtualMachine vm) {
 		super(vm);
 	}
 

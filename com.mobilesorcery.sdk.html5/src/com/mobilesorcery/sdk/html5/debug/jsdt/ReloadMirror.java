@@ -9,7 +9,7 @@ public class ReloadMirror implements Mirror {
 
 	protected final ReloadVirtualMachine vm;
 
-	ReloadMirror(ReloadVirtualMachine vm) {
+	protected ReloadMirror(ReloadVirtualMachine vm) {
 		this.vm = vm;
 	}
 

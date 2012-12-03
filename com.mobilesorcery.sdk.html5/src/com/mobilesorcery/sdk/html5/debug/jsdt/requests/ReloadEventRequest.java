@@ -1,8 +1,9 @@
-package com.mobilesorcery.sdk.html5.debug.jsdt;
+package com.mobilesorcery.sdk.html5.debug.jsdt.requests;
 
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequest;
 
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadMirror;
 
 
 public class ReloadEventRequest extends ReloadMirror implements EventRequest {

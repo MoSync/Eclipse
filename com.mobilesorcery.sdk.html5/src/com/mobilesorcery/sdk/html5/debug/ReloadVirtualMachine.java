@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.html5.debug;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,6 +47,7 @@ import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadStringValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadReference;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadUndefinedValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.SimpleScriptReference;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadThreadEnterEvent;
 import com.mobilesorcery.sdk.html5.live.ILiveServerCommandListener;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
@@ -53,28 +55,25 @@ public class ReloadVirtualMachine implements VirtualMachine,
 		ILiveServerCommandListener {
 
 	private final JSODDServer server;
-	private List threads = new ArrayList();
+	private HashMap<String, ReloadThreadReference> threads = new HashMap<String, ReloadThreadReference>();
 	private final ReloadEventRequestManager requestMgr;
 	private ReloadEventQueue eventQueue;
 	private final NullValue nullValue;
 	private final ReloadUndefinedValue undefValue;
-	private int currentSessionId = JSODDServer.NO_SESSION;
 	private IProject project;
-	private ReloadThreadReference mainThread;
 	private boolean isTerminated = false;
 	private ProjectRedefinable baseline;
 	private ILaunch launch;
 	private IJavaScriptDebugTarget debugTarget;
 	private String remoteAddr;
 	private HashMap<Class, Boolean> redefineSupport = new HashMap<Class, Boolean>();
+	private boolean breakOnException;
+	private ReloadThreadReference mainThread;
+	private int vmId;
 
 	public ReloadVirtualMachine(int port) throws Exception {
 		// TODO: PORT
 		server = Html5Plugin.getDefault().getReloadServer();
-		// JUST ONE MAIN THREAD
-		mainThread = new ReloadThreadReference(this);
-		threads.add(mainThread);
-		resetThreads();
 
 		// By default we support function redefines.
 		redefineSupport.put(FunctionRedefinable.class, Boolean.TRUE);
@@ -91,10 +90,6 @@ public class ReloadVirtualMachine implements VirtualMachine,
 		server.registerVM(this);
 	}
 
-	private void resetThreads() {
-		mainThread.markSuspended(false, false);
-	}
-
 	private void resetEventQueue() {
 		if (eventQueue != null) {
 			eventQueue.close();
@@ -108,43 +103,42 @@ public class ReloadVirtualMachine implements VirtualMachine,
 		}
 	}
 
-	public void setCurrentSessionId(int sessionId) {
-		this.currentSessionId = sessionId;
-	}
-
 	@Override
 	public void resume() {
-		server.resume(currentSessionId);
+		for (ReloadThreadReference thread : threads.values()) {
+			thread.resume();
+		}
 	}
 
-	public void step(int stepType) {
-		server.step(currentSessionId, stepType);
-	}
 
 	@Override
 	public void suspend() {
-		mainThread.suspend();
-	}
-
-	public void suspend(boolean isThread) {
-		server.suspend(currentSessionId);
-	}
-
-	public void reset(int newSessionId, MoSyncProject project, String remoteAddr) {
-		resetThreads();
-		if (currentSessionId != JSODDServer.NO_SESSION) {
-			server.reset(currentSessionId);
-			resetEventQueue();
+		for (ReloadThreadReference thread : threads.values()) {
+			thread.suspend();
 		}
-		setCurrentSessionId(newSessionId);
+	}
+
+	public void reset(int vmId, MoSyncProject project, String remoteAddr) {
+		this.vmId = vmId;
+		for (ReloadThreadReference thread : threads.values()) {
+			server.reset(thread.getSessionId());
+		}
+		resetEventQueue();
 		this.project = project.getWrappedProject();
 		this.remoteAddr = remoteAddr;
+	}
+	
+	public int getId() {
+		return vmId;
 	}
 
 	@Override
 	public synchronized void terminate() {
 		try {
-			server.terminate(currentSessionId);
+			for (ReloadThreadReference thread : threads.values()) {
+				int sessionId = thread.getSessionId();
+				server.terminate(thread.getSessionId(), sessionId == getMainThreadId());	
+			}
 			server.removeListener(this);
 			server.stopServer(this);
 		} catch (Exception e) {
@@ -157,7 +151,7 @@ public class ReloadVirtualMachine implements VirtualMachine,
 
 	@Override
 	public String name() {
-		return "Reload";
+		return project == null ? "On-Device Debug" :  project.getName();
 	}
 
 	@Override
@@ -173,7 +167,7 @@ public class ReloadVirtualMachine implements VirtualMachine,
 
 	@Override
 	public List allThreads() {
-		return threads;
+		return new ArrayList(threads.values());
 	}
 
 	@Override
@@ -249,48 +243,13 @@ public class ReloadVirtualMachine implements VirtualMachine,
 	}
 
 	/**
-	 * Evaluates an expression in the current scope.
-	 * 
-	 * @param expression
-	 *            The JavaScript expression to evaluate
-	 * @return The result of the evaluation
-	 * @throws InterruptedException
-	 *             If the waiting thread was interrupted, for example by a
-	 *             terminate request.
-	 * @throws TimeoutException
-	 *             If the client failed to respond within a specified timeout.
-	 */
-	public Object evaluate(String expression) throws InterruptedException,
-			TimeoutException {
-		return evaluate(expression, null);
-	}
-
-	/**
-	 * Evaluates an expression at a specified stack depth
-	 * 
-	 * @param expression
-	 *            The JavaScript expression to evaluate
-	 * @param stackDepth
-	 *            The stackdepth to perform the evaluation, or {@code null} to
-	 *            use the current scope.
-	 * @return The result of the evaluation
-	 * @throws InterruptedException
-	 *             If the waiting thread was interrupted, for example by a
-	 *             terminate request.
-	 * @throws TimeoutException
-	 *             If the client failed to respond within a specified timeout.
-	 */
-	public Object evaluate(String expression, Integer stackDepth)
-			throws InterruptedException, TimeoutException {
-		return server.evaluate(currentSessionId, expression, stackDepth);
-	}
-
-	/**
 	 * Clears and resets all breakpoints on target.
 	 */
 	public void refreshBreakpoints() {
 		// TODO: Clear per file instead.
-		server.refreshBreakpoints(currentSessionId);
+		for (ReloadThreadReference thread : threads.values()) {
+			server.refreshBreakpoints(thread.getSessionId());
+		}
 	}
 
 	/**
@@ -311,19 +270,27 @@ public class ReloadVirtualMachine implements VirtualMachine,
 		boolean doUpdate = resource != null
 				&& resource.getProject().equals(project);
 		if (doUpdate) {
-			server.update(currentSessionId, resource);
+			server.update(getMainThreadId(), resource);
 		}
 		return doUpdate;
 	}
 
 	public void reload() {
-		server.reload(currentSessionId);
+		server.reload(getMainThreadId());
 		try {
 			debugTarget.resume();
 		} catch (DebugException e) {
 			CoreMoSyncPlugin.getDefault().log(e);
 		}
+	}
+	
+	private int getMainThreadId() {
+		ReloadThreadReference mainThread = getMainThread();
+		return mainThread == null ? JSODDServer.NO_SESSION : mainThread.getSessionId();
+	}
 
+	public ReloadThreadReference getMainThread() {
+		return mainThread;
 	}
 
 	/**
@@ -333,16 +300,15 @@ public class ReloadVirtualMachine implements VirtualMachine,
 	 * @param source
 	 */
 	public void updateFunction(String key, String source) {
-		server.updateFunction(currentSessionId, key, source);
+		for (ReloadThreadReference thread : threads.values()) {
+			server.updateFunction(thread.getSessionId(), key, source);
+		}
 	}
 
 	@Override
-	public void received(String command, JSONObject json) {
-		// TODO!!! Session id - now all will suspend.
+	public void received(int sessionId, String command, JSONObject json) {
 		// TODID -- filtering is done in the eventqueue. For now.
-
-		// MAIN THREAD
-		ReloadThreadReference thread = (ReloadThreadReference) threads.get(0);
+		ReloadThreadReference thread = getThread(sessionId);
 		boolean isClientSuspend = Boolean.parseBoolean(""
 				+ json.get("suspended"));
 		if (thread.isSuspended() && !isClientSuspend) {
@@ -352,13 +318,13 @@ public class ReloadVirtualMachine implements VirtualMachine,
 		JSONArray array = (JSONArray) json.get("stack");
 		ReloadStackFrame[] frames = new ReloadStackFrame[array.size()];
 		for (int i = 0; i < array.size(); i++) {
-			ReloadStackFrame frame = new ReloadStackFrame(this, json, i);
+			ReloadStackFrame frame = new ReloadStackFrame(this, thread, json, i);
 			// Stack traces are reported in the reverse order.
 			frames[array.size() - 1 - i] = frame;
 		}
 		if (frames.length == 0) {
 			frames = new ReloadStackFrame[1];
-			frames[0] = new ReloadStackFrame(this, json, -1);
+			frames[0] = new ReloadStackFrame(this, thread, json, -1);
 		}
 		thread.setFrames(frames);
 		// suspend();
@@ -380,14 +346,9 @@ public class ReloadVirtualMachine implements VirtualMachine,
 		return null;
 	}
 
-	public int getCurrentSessionId() {
-		return currentSessionId;
-	}
-
 	@Override
 	public String toString() {
-		return "JavaScript On-Device Debug VM, session id #"
-				+ getCurrentSessionId();
+		return MessageFormat.format("JavaScript On-Device Debug VM #{0}, main thread session {1}, all threads: {2}", vmId, getMainThread(), allThreads());
 	}
 
 	public void setCurrentLocation(String location) {
@@ -457,5 +418,82 @@ public class ReloadVirtualMachine implements VirtualMachine,
 
 	public void setRedefineSupport(Class redefinables, boolean hasSupport) {
 		redefineSupport.put(redefinables, hasSupport);
+	}
+
+	public void setBreakOnException(boolean breakOnException) {
+		this.breakOnException = breakOnException;
+		// Just refresh all breakpoints; this one does not happen often...
+		for (ReloadThreadReference thread : threads.values()) {
+			server.refreshBreakpoints(thread.getSessionId());
+		}
+	}
+
+	public boolean getBreakOnException() {
+		return this.breakOnException;
+	}
+
+	public ReloadThreadReference getThread(String threadId) {
+		ReloadThreadReference thread = threads.get(threadId);
+		return thread;
+	}
+	
+	public ReloadThreadReference getThread(int sessionId) {
+		for (ReloadThreadReference thread : threads.values()) {
+			if (thread.getSessionId() == sessionId) {
+				return thread;
+			}
+		}
+		return null;
+	}
+
+	public ReloadThreadReference resetThread(String threadId) {
+		ReloadThreadReference thread = getThread(threadId);
+		if (thread == null) {
+			thread = new ReloadThreadReference(this);
+			thread.setSessionId(server.newUniqueId());
+			thread.setCurrentLocation(threadId);
+			threads.put(threadId, thread);
+			
+			if (mainThread == null) {
+				mainThread = thread;
+			}
+			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+				boolean isMain = getMainThread() == thread;
+				String mainStr = isMain ? "" : "MAIN ";
+				CoreMoSyncPlugin.trace("Assigned id {0} to {2}thread {1}",
+						thread.getSessionId(), thread.name(), mainStr);
+			}
+			eventQueue.received("thread-enter", thread);
+		} else {
+			resetThread(thread);
+			thread.markSuspended(false, false);
+		}
+		return thread;
+	}
+	
+	private void resetThread(ReloadThreadReference thread) {
+		server.reset(thread.setSessionId(server.newUniqueId()));
+	}
+
+	public void killThread(int threadId) {
+		ReloadThreadReference thread = threads.remove(threadId);
+		if (thread == mainThread) {
+			mainThread = (ReloadThreadReference) (threads.values().isEmpty() ? null : threads.values().toArray()[0]);
+		}
+		if (thread == null) {
+			return;
+		}
+		thread.terminate();
+		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+			CoreMoSyncPlugin.trace("Killed thread {0}", threadId);
+		}
+	}
+
+	public Object evaluate(String input) throws InterruptedException, TimeoutException {
+		return getMainThread().evaluate(input);
+	}
+
+	public void setProject(IProject project) {
+		this.project = project;
 	}
 }

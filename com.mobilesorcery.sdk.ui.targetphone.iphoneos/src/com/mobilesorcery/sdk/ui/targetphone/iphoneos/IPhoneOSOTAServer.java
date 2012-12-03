@@ -9,11 +9,14 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.MessageFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.servlet.ServletException;
@@ -22,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jetty.server.Connector;
@@ -137,11 +141,22 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 						transferApp(response, mosyncProject, variant);
 					} else if (ext.equals("png") && fileName.startsWith("icon")) {
 						transferIcon(response, mosyncProject, variant);
+					} else if (ext.equals("png") && fileName.startsWith("image")) {
+						transferImage(response, mosyncProject, variant);
 					}
 				}
 			} else {
 				response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 			}
+		}
+	}
+
+	private void transferImage(HttpServletResponse response,
+			MoSyncProject mosyncProject, IBuildVariant variant) throws IOException {
+        URL defaultImageFileURL = FileLocator.find(IPhoneOSTransportPlugin.getDefault().getBundle(), new Path("/images/default-itunes-image512x512.png"), null);
+        URL defaultImageFile = FileLocator.toFileURL(defaultImageFileURL);
+		if (defaultImageFile != null) {
+			transferFile(response, new File(defaultImageFile.getPath()));
 		}
 	}
 
@@ -159,9 +174,6 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 	
 	private void transferIcon(HttpServletResponse response,
 			MoSyncProject mosyncProject, IBuildVariant variant) throws IOException {
-		response.setContentType("application/octet-stream");
-		response.setStatus(HttpServletResponse.SC_OK);
-		
 		IPath output = MoSyncBuilder.getPackageOutputPath(mosyncProject.getWrappedProject(), variant);
 		// We make use of internal knowledge!
 		IPath iconFile = output.append(new Path("xcode-proj/Icon.png"));
@@ -223,28 +235,51 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 		Template indexTemplate = new Template(getClass().getResource(
 				"/templates/index.html.template"));
 		StringBuffer projectList = new StringBuffer();
+		int projectCount = 0;
+		
+		TreeMap<Long, MoSyncProject> sortedByBuildTime = new TreeMap<Long, MoSyncProject>();
 		for (MoSyncProject project : projects.keySet()) {
-			String projectName = project.getName();
-			projectList.append("<b>");
-			projectList.append(project.getName());
-			projectList.append("</b><br/>");
-			projectList.append("<ul>");
-			String url = URLEncoder.encode(getBaseURL(), "UTF-8");
 			IBuildVariant variant = this.projects.get(project);
 			IBuildState buildState = project.getBuildState(variant);
-			long buildTimestamp = buildState.getBuildResult().getTimestamp();
-			String buildTime = DateFormat.getTimeInstance(DateFormat.LONG).format(new Date(buildTimestamp));
-			projectList.append(MessageFormat.format(
-					"<li><a href=\"itms-services://?action=download-manifest&url={0}/{1}.plist\">App</a> ({2})</li>", url, projectName, buildTime));
-			projectList
-					.append(MessageFormat
-							.format("<li><a href=\"{0}/{1}.mobileprovisioning\">Provisioning file</a></li>",
-									url, projectName));
-			projectList.append("</ul>");
-			projectList.append("<hr/>");
+			IBuildResult buildResult = buildState.getBuildResult();
+			if (buildResult != null) {
+				long buildTimestamp =buildResult.getTimestamp();
+				sortedByBuildTime.put(-buildTimestamp, project);
+			}
+		}
+		
+		for (MoSyncProject project : sortedByBuildTime.values()) {
+			IBuildVariant variant = this.projects.get(project);
+			IBuildState buildState = project.getBuildState(variant);
+			List<File> ipaFile = buildState.getBuildResult().getBuildResult().get(IBuildResult.MAIN);
+			if (!ipaFile.isEmpty() && ipaFile.get(0).exists()) {
+				projectCount++;
+				String projectName = project.getName();
+				String url = URLEncoder.encode(getBaseURL(), "UTF-8");
+				
+				projectList.append("<div class=\"appitem\">");
+				projectList.append(MessageFormat.format("<div class=\"r\"><img src=\"./{0}/icon57x57.png\"></div>", projectName));
+				projectList.append("<div class=\"l\">");
+				projectList.append(project.getName());
+				projectList.append("</div><br/>");
+	
+				long buildTimestamp = buildState.getBuildResult().getTimestamp();
+				boolean fairlyRecent = System.currentTimeMillis() - buildTimestamp < 18 * 3600 * 1000;
+				DateFormat format = fairlyRecent ? DateFormat.getTimeInstance(DateFormat.SHORT) : DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.SHORT);
+				String buildTime = format.format(new Date(buildTimestamp));
+				long fileSize = ipaFile.get(0).length();
+				projectList.append(MessageFormat.format(
+						"<div class=\"q\"><a href=\"itms-services://?action=download-manifest&url={0}/{1}.plist\">Download App</a>" +
+						"<small><br/>Build time: {2}" +
+						"<br/>App size: {3}" +
+						"<br/>Configuration: {4}</small></div>", url, projectName, buildTime, Util.dataSize(fileSize), variant.getConfigurationId()));
+				projectList.append("<br/>");
+				projectList.append("</div>");
+			}
 		}
 		HashMap<String, String> map = new HashMap<String, String>();
 		map.put("project-list", projectList.toString());
+		map.put("project-count", Integer.toString(projectCount));
 		output.write(indexTemplate.resolve(map));
 		
 		Util.safeClose(output);

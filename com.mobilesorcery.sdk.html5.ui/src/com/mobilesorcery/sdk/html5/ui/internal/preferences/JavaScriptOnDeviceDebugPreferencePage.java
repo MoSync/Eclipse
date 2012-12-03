@@ -44,10 +44,10 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 	private HashMap<Integer, String> reverseReloadStrategyMap;
 	private HashMap<Integer, String> reverseSourceChangeStrategyMap;
 	private ComboViewer sourceChangeStrategyCombo;
-	private ComboViewer reloadStrategyCombo;
+	//private ComboViewer reloadStrategyCombo;
 	private Button shouldFetchRemotely;
 	private Text timeoutInSecsText;
-	private Label reloadStrategyLabel;
+	//private Label reloadStrategyLabel;
 	private Text serverAddress;
 	private Button useDefaultServerAddress;
 	private Label sourceChangeStrategyLabel;
@@ -112,7 +112,7 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		}
 		sourceChangeStrategyCombo.getCombo().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 				
-		reloadStrategyLabel = new Label(executionGroup, SWT.NONE);
+		/*reloadStrategyLabel = new Label(executionGroup, SWT.NONE);
 		reloadStrategyLabel.setLayoutData(new GridData(UIUtils.getDefaultFieldSize(), SWT.DEFAULT));
 		
 		reloadStrategyCombo = new ComboViewer(executionGroup, SWT.READ_ONLY);
@@ -124,7 +124,7 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		if (strategyStr != null) {
 			reloadStrategyCombo.setSelection(new StructuredSelection(strategyStr));	
 		}
-		reloadStrategyCombo.getCombo().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		reloadStrategyCombo.getCombo().setLayoutData(new GridData(GridData.FILL_HORIZONTAL));*/
 		
 		shouldFetchRemotely = new Button(executionGroup, SWT.CHECK);
 		shouldFetchRemotely.setText("Load source code and resources from debug server");
@@ -160,7 +160,7 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		}
 		
 		UpdateListener listener = new UpdateListener(this);
-		reloadStrategyCombo.getCombo().addListener(SWT.Selection, listener);
+		//reloadStrategyCombo.getCombo().addListener(SWT.Selection, listener);
 		sourceChangeStrategyCombo.getCombo().addListener(SWT.Selection, listener);
 		serverAddress.addListener(SWT.Modify, listener);
 		useDefaultServerAddress.addListener(SWT.Selection, listener);
@@ -177,9 +177,9 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 				sourceChangeStrategyCombo.getCombo().getText().toLowerCase() :
 				"this";
 
-		reloadStrategyLabel.setText(MessageFormat.format("When {0} fails:", op));
+		/*reloadStrategyLabel.setText(MessageFormat.format("When {0} fails:", op));
 		reloadStrategyCombo.getCombo().setEnabled(requiresRemoteFetch);
-		reloadStrategyLabel.setEnabled(requiresRemoteFetch);
+		reloadStrategyLabel.setEnabled(requiresRemoteFetch);*/
 		
 		if (requiresRemoteFetch) {
 			shouldFetchRemotely.setSelection(true);
@@ -202,20 +202,20 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 		} catch (MalformedURLException e) {
 			errorMessage = "Invalid server address";
 		}
-		if (Util.equals(getSourceChangeStrategy(), Html5Plugin.RELOAD) &&
+		/*if (Util.equals(getSourceChangeStrategy(), Html5Plugin.RELOAD) &&
 			Util.equals(getReloadStrategy(), RedefinitionResult.RELOAD)) {
 			errorMessage = "Circular choice; please select other reload strategy.";
-		}
+		}*/
 		setErrorMessage(errorMessage);
 		setValid(errorMessage == null);
 	}
 
-	private Integer getReloadStrategy() {
+	/*private Integer getReloadStrategy() {
 		IStructuredSelection reloadStrategySelection = (IStructuredSelection) reloadStrategyCombo.getSelection();
 		String reloadStrategySelectionStr = (String) reloadStrategySelection.getFirstElement();
 		Integer reloadStrategy = reloadStrategyMap.get(reloadStrategySelectionStr);
 		return reloadStrategy;
-	}
+	}*/
 	
 	private Integer getSourceChangeStrategy() {
 		IStructuredSelection sourceChangeStrategySelection = (IStructuredSelection) sourceChangeStrategyCombo.getSelection();
@@ -225,10 +225,10 @@ public class JavaScriptOnDeviceDebugPreferencePage extends PreferencePage
 	}
 	
 	public boolean performOk() {
-		Integer reloadStrategy = getReloadStrategy();
+		/*Integer reloadStrategy = getReloadStrategy();
 		if (reloadStrategy != null) {
 			Html5Plugin.getDefault().setReloadStrategy(reloadStrategy);
-		}
+		}*/
 		
 		Integer sourceChangeStrategy = getSourceChangeStrategy();
 		if (sourceChangeStrategy != null) {
