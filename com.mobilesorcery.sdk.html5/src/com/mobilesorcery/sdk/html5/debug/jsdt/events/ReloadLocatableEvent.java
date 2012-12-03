@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.html5.debug.jsdt;
+package com.mobilesorcery.sdk.html5.debug.jsdt.events;
 
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
@@ -28,4 +28,7 @@ public class ReloadLocatableEvent extends ReloadEvent implements LocatableEvent 
 		return thread;
 	}
 
+	public String toString() {
+		return super.toString() + " " + thread + " " + location;
+	}
 }

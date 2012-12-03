@@ -76,7 +76,7 @@ public class BuildSequence implements IBuildSequence {
 					CoreMoSyncPlugin.getDefault().getBuildStepFactoryExtension(factoryId);
 			if (ext != null) {
 				Pair<Position, String> pos = ext.getDefaultPosition();
-				if (pos.first != Position.NONE && pos.second != null) {
+				if (pos != null && pos.first != Position.NONE && pos.second != null) {
 					// We only allow positions relative to intrinsic factories.
 					int ix = getIndex(pos.second);
 					addDefaultFactory(ix + (pos.first == Position.BEFORE ? 0 : 1), 
@@ -112,7 +112,7 @@ public class BuildSequence implements IBuildSequence {
 				baseSequenceIx++;
 			} else {
 				Pair<Position, String> pos = ext.getDefaultPosition();
-				if (pos.first == Position.NONE || pos.second == null) {
+				if (pos == null || pos.first == Position.NONE || pos.second == null) {
 					return false;
 				}
 				boolean correctPositionBefore = pos.first == Position.BEFORE &&

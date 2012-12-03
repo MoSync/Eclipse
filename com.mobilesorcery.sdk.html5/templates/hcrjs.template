@@ -1,0 +1,10 @@
+var href = 'http://%SERVER_HOST%:%SERVER_PORT%/fetch/%PROJECT_NAME%/%FILE_PATH%';
+var req = new XMLHttpRequest();
+req.open('POST', href, false);
+req.send(null);
+var result = req.responseText;
+if (req.status == 200) {
+    eval(result);
+} else {
+    window.alert("Could not find %FILE_PATH%");
+}

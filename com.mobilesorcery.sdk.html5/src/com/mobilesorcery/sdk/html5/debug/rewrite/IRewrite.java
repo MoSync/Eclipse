@@ -7,5 +7,6 @@ public interface IRewrite {
 	public void seek(Position position);
 	public void seek(int position);
 	public void insert(String insertion);
+	public int skip(int delta);
 	
 }

@@ -1,16 +1,16 @@
-package com.mobilesorcery.sdk.html5.debug.jsdt;
+package com.mobilesorcery.sdk.html5.debug.jsdt.requests;
 
 import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
-import org.eclipse.wst.jsdt.debug.core.jsdi.request.ThreadExitRequest;
+import org.eclipse.wst.jsdt.debug.core.jsdi.request.DebuggerStatementRequest;
 
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 
-public class ReloadThreadExitRequest extends ReloadEventRequest implements ThreadExitRequest {
+public class ReloadDebuggerStatementRequest extends ReloadEventRequest implements DebuggerStatementRequest {
 
 	private ThreadReference thread;
 
-	public ReloadThreadExitRequest(ReloadVirtualMachine vm) {
+	public ReloadDebuggerStatementRequest(ReloadVirtualMachine vm) {
 		super(vm);
 	}
 
