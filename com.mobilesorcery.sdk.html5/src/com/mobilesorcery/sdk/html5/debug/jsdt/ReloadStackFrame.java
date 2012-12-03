@@ -112,7 +112,6 @@ public class ReloadStackFrame implements StackFrame {
 
 	@Override
 	public Location location() {
-		new Exception().printStackTrace();
 		return location;
 	}
 

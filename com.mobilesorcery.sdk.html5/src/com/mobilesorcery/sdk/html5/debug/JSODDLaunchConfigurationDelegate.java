@@ -132,7 +132,7 @@ public class JSODDLaunchConfigurationDelegate implements
 				// course be more like this one (sigh!)
 				// http://bertrandmeyer.com/2011/06/20/concurrent-programming-is-easy/
 				if (isDebugging) {
-					CoreMoSyncPlugin.trace("Breakpoint changed, recv'd event @ " + Thread.currentThread().getName());
+					//CoreMoSyncPlugin.trace("Breakpoint changed, recv'd event @ " + Thread.currentThread().getName());
 				}
 			}
 		};
