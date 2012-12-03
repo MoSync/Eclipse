@@ -510,7 +510,7 @@ public class JSODDServer implements IResourceChangeListener {
 						preflight);
 				}
 				if (result == null) {
-					result = waitForClient(target, command, req, res, preflight);
+					result = waitForClient(target, vm, command, req, res, preflight);
 				}
 
 				if (result != null) {
@@ -592,14 +592,17 @@ public class JSODDServer implements IResourceChangeListener {
 
 		}
 
-		private JSONObject waitForClient(String target, JSONObject command,
+		private JSONObject waitForClient(String target, ReloadVirtualMachine vm, JSONObject command,
 				HttpServletRequest req, HttpServletResponse res,
 				boolean preflight) throws UnsupportedEncodingException {
 			JSONObject result = null;
 			String threadId = extractThreadId(target);
 			if (threadId != null && targetMatches(target, "/mobile/incoming")) {
 				ReloadThreadReference thread = getThread(req, target);
-				int sessionId = thread == null ? NO_SESSION : thread.getSessionId();
+				if (thread == null) {
+					thread = vm.resetThread(threadId);
+				}
+				int sessionId = thread.getSessionId();
 				result = pushCommandsToClient(sessionId, preflight);
 			} else if (threadId != null && targetMatches(target, "/mobile/breakpoint")) {
 				// RACE CONDITION WILL OCCUR HERE!
