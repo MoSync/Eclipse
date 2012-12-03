@@ -83,7 +83,6 @@ public class ReloadEventQueue implements EventQueue {
 		}
 		ReloadEventSet eventSet = new ReloadEventSet(vm);
 		ReloadVirtualMachine targetVM = extractVM(commandObj);
-		ReloadThreadReference targetThread = extractThread(commandObj);
 		if (targetVM == this.vm) {
 			List bpRequests = requests.breakpointRequests();
 			List stepRequests = requests.stepRequests();
@@ -95,10 +94,9 @@ public class ReloadEventQueue implements EventQueue {
 			List debuggerStatementRequests = requests.debuggerStatementRequests();
 
 			if ("report-breakpoint".equals(commandName)) {
+				ReloadThreadReference thread = extractThread(commandObj);
 				// Breakpoint!
 				JSONObject command = (JSONObject) commandObj;
-				ReloadThreadReference thread = (ReloadThreadReference) vm
-						.allThreads().get(0);
 				String fileName = (String) command.get("file");
 				Long line = (Long) command.get("line");
 				boolean isSuspendedByDebugger = command.containsKey("suspended")
