@@ -594,7 +594,7 @@ public class JSODDServer implements IResourceChangeListener {
 
 		private JSONObject waitForClient(String target, ReloadVirtualMachine vm, JSONObject command,
 				HttpServletRequest req, HttpServletResponse res,
-				boolean preflight) throws UnsupportedEncodingException {
+				boolean preflight) throws UnsupportedEncodingException, CoreException {
 			JSONObject result = null;
 			String threadId = extractThreadId(target);
 			if (threadId != null && targetMatches(target, "/mobile/incoming")) {
@@ -634,7 +634,7 @@ public class JSODDServer implements IResourceChangeListener {
 		}
 
 		private JSONObject pushCommandsToClient(Integer session,
-				boolean preflight) {
+				boolean preflight) throws CoreException {
 			if (preflight) {
 				return new JSONObject();
 			}
@@ -683,9 +683,7 @@ public class JSODDServer implements IResourceChangeListener {
 						result.put("noStack", true);
 					}
 				} else if (queuedType == REFRESH_BREAKPOINTS) {
-					IBreakpoint[] bps = DebugPlugin.getDefault()
-							.getBreakpointManager()
-							.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
+					IBreakpoint[] bps = getEnabledBreakpoints();
 					result = createBreakpointJSON(getVM(session), bps, true, true, true);
 				} else if (queuedType == REDEFINE) {
 					Pair<String, String> data = (Pair<String, String>) queuedObject;
@@ -858,12 +856,10 @@ public class JSODDServer implements IResourceChangeListener {
 
 		private Object handleCommand(String target, JSONObject command,
 				HttpServletRequest req, HttpServletResponse res,
-				boolean preflight) {
+				boolean preflight) throws CoreException {
 			if (targetMatches(target, "/mobile/init")) {
 				// Just push the breakpoints!
-				IBreakpoint[] bps = DebugPlugin.getDefault()
-						.getBreakpointManager()
-						.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
+				IBreakpoint[] bps = getEnabledBreakpoints();
 				JSONObject jsonBps = createPing();
 				ReloadVirtualMachine vm = null;
 				if (command != null) {
@@ -1028,7 +1024,6 @@ public class JSODDServer implements IResourceChangeListener {
 	private final IdentityHashMap<Object, Object> refs = new IdentityHashMap<Object, Object>();
 	private final ArrayList<ReloadVirtualMachine> unassignedVMs = new ArrayList<ReloadVirtualMachine>();
 	private final HashMap<String, ReloadVirtualMachine> vmsByHost = new HashMap<String, ReloadVirtualMachine>();
-	protected boolean breakOnExceptions = true;
 	private IPreferenceChangeListener breakOnExceptionsListener;
 
 	public synchronized void startServer(Object ref) throws CoreException {
@@ -1082,6 +1077,17 @@ public class JSODDServer implements IResourceChangeListener {
 			throw new CoreException(new Status(IStatus.ERROR,
 					Html5Plugin.PLUGIN_ID, e.getMessage(), e));
 		}
+	}
+
+	public IBreakpoint[] getEnabledBreakpoints() throws CoreException {
+		IBreakpoint[] bps = DebugPlugin.getDefault().getBreakpointManager().getBreakpoints(JavaScriptDebugModel.MODEL_ID);
+		ArrayList<IBreakpoint> result = new ArrayList<IBreakpoint>();
+		for (IBreakpoint bp : bps) {
+			if (bp.isEnabled()) {
+				result.add(bp);
+			}
+		}
+		return result.toArray(new IBreakpoint[result.size()]);
 	}
 
 	public static String normalizeThreadId(String threadId) {
@@ -1173,7 +1179,6 @@ public class JSODDServer implements IResourceChangeListener {
 			int newVMId = newUniqueId();
 			vm.reset(newVMId, project, remoteIp);
 			vmsByHost.put(remoteIp, vm);
-			vm.setBreakOnException(breakOnExceptions);
 			notifyInitListeners(vm, !resetVM);
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 				CoreMoSyncPlugin.trace("Assigned id #{0} to vm for project {1}",
