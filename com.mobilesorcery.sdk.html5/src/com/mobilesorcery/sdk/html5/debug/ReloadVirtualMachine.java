@@ -475,8 +475,15 @@ public class ReloadVirtualMachine implements VirtualMachine,
 		server.reset(thread.setSessionId(server.newUniqueId()));
 	}
 
-	public void killThread(int threadId) {
-		ReloadThreadReference thread = threads.remove(threadId);
+	public void killThread(int threadSessionId) {
+		String removeThis = null;
+		for (Map.Entry<String, ReloadThreadReference> thread : threads.entrySet()) {
+			int id = thread.getValue().getSessionId();
+			if (id == threadSessionId) {
+				removeThis = thread.getKey();
+			}
+		}
+		ReloadThreadReference thread = threads.remove(removeThis);
 		if (thread == mainThread) {
 			mainThread = (ReloadThreadReference) (threads.values().isEmpty() ? null : threads.values().toArray()[0]);
 		}
@@ -485,7 +492,7 @@ public class ReloadVirtualMachine implements VirtualMachine,
 		}
 		thread.terminate();
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-			CoreMoSyncPlugin.trace("Killed thread {0}", threadId);
+			CoreMoSyncPlugin.trace("Killed thread {0}", thread.getSessionId());
 		}
 	}
 

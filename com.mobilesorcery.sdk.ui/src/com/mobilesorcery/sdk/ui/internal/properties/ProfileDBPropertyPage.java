@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.ui.internal.properties;
 
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -34,10 +35,17 @@ public class ProfileDBPropertyPage extends MoSyncPropertyPage {
 
 	@Override
 	public boolean performOk() {
-		getProject().setProfileManagerType(profileTypeButton
+		int newProfileManagerType = profileTypeButton
 				.getSelection() ? MoSyncTool.DEFAULT_PROFILE_TYPE
-				: MoSyncTool.LEGACY_PROFILE_TYPE);
-		return super.performOk();
+				: MoSyncTool.LEGACY_PROFILE_TYPE;
+		boolean changeToDeviceBased = getProject().getProfileManagerType() == MoSyncTool.DEFAULT_PROFILE_TYPE &&
+				newProfileManagerType == MoSyncTool.LEGACY_PROFILE_TYPE;
+		if (!changeToDeviceBased || MessageDialog.openConfirm(getShell(), "Change of profile type", "Changing to using device based profiles may cause some project functionality to stop working. Continue anyway?")) {
+			getProject().setProfileManagerType(newProfileManagerType);
+			return super.performOk();
+		} else {
+			return false;
+		}
 	}
 
 	@Override
