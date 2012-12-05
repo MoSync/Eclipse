@@ -329,7 +329,6 @@ public class JSODDServer implements IResourceChangeListener {
 				if (sessionQueue != null) {
 					sessionQueue.offer(poison());
 				}
-
 				
 				messageListenerIds.addAll(messageListeners.keySet());
 			}
