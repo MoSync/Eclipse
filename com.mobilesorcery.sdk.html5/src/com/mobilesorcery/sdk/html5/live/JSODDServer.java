@@ -47,6 +47,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
@@ -1064,8 +1065,6 @@ public class JSODDServer implements IResourceChangeListener {
 				}
 			});
 			
-			initBreakpointOnExceptionListener();
-			
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 				InetAddress host = InetAddress.getLocalHost();
 				String hostName = host.getHostName();
@@ -1092,34 +1091,6 @@ public class JSODDServer implements IResourceChangeListener {
 
 	public static String normalizeThreadId(String threadId) {
 		return URLDecoder.decode(threadId);
-	}
-
-	private void initBreakpointOnExceptionListener() {
-		// Ok, some bug in JSDT that causes enablement request to come
-		// in a non-timely fashion.
-		// More internal APIs.
-		/*final IEclipsePreferences node = InstanceScope.INSTANCE.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
-		breakOnExceptions = node.getBoolean(Constants.SUSPEND_ON_THROWN_EXCEPTION, true);
-		breakOnExceptionsListener = new IPreferenceChangeListener() {
-			@Override
-			public void preferenceChange(PreferenceChangeEvent event) {
-				if (Constants.SUSPEND_ON_THROWN_EXCEPTION.equals(event.getKey())) {
-					breakOnExceptions = node.getBoolean(Constants.SUSPEND_ON_THROWN_EXCEPTION, true);
-					List<ReloadVirtualMachine> allVMs = getVMs(true);
-					for (ReloadVirtualMachine vm : allVMs) {
-						vm.setBreakOnException(breakOnExceptions);
-						// Just refresh all breakpoints; this one does not happen often...
-						refreshBreakpoints(vm.getCurrentSessionId());
-					}
-				}
-			}
-		};
-		node.addPreferenceChangeListener(breakOnExceptionsListener);*/
-	}
-	
-	private void removeBreakpointOnExceptionListener() {
-		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
-		node.removePreferenceChangeListener(breakOnExceptionsListener);
 	}
 
 	public static Integer extractSessionId(JSONObject command) {
@@ -1240,7 +1211,6 @@ public class JSODDServer implements IResourceChangeListener {
 
 	public synchronized void stopServer(Object ref) throws CoreException {
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(this);
-		removeBreakpointOnExceptionListener();
 		refs.remove(ref);
 		if (refs.isEmpty()) {
 			unassignedVMs.clear();
