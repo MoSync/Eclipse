@@ -21,6 +21,11 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.preferences.DefaultScope;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
@@ -36,6 +41,8 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.wst.jsdt.core.IJavaScriptProject;
 import org.eclipse.wst.jsdt.core.JavaScriptCore;
 import org.eclipse.wst.jsdt.core.LibrarySuperType;
+import org.eclipse.wst.jsdt.debug.internal.core.Constants;
+import org.eclipse.wst.jsdt.debug.internal.core.JavaScriptDebugPlugin;
 import org.eclipse.wst.jsdt.internal.core.JavaProject;
 import org.osgi.framework.BundleContext;
 
@@ -125,6 +132,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 
 	private HashSet<String> supportedFeatures;
 
+	private IPreferenceChangeListener breakOnExceptionsListener;
+
 	// private HashMap<Object, AtomicInteger> timeoutSuppressions = new
 	// HashMap<Object, AtomicInteger>();
 
@@ -145,6 +154,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		initSupportedFeatures();
+		initBreakpointOnExceptionListener();
 		// We do not yet have the eclipse fix #54993
 		MosyncUIPlugin.getDefault().awaitWorkbenchStartup(
 				new IWorkbenchStartupListener() {
@@ -176,6 +186,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 		super.stop(context);
 		TargetPhonePlugin.getDefault().removeTargetPhoneTransportListener(this);
 		DebugPlugin.getDefault().getLaunchManager().removeLaunchListener(this);
+		removeBreakpointOnExceptionListener();
 		disposeReloadManager();
 	}
 
@@ -611,5 +622,41 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 		//return !JSODDSupport.EDIT_AND_CONTINUE.equals(feature);
 		return supportedFeatures.contains(feature);
 	}
+
+	private void initBreakpointOnExceptionListener() {
+		// Ok, this is a ridiculous workaround -- JSDT does not react to property changes
+		// where the property value is null. The problem is that enabling exceptions
+		// is the default value, which just happens to be propagated as null in the
+		// preference change event. Did anyone even test that functionality??
+		final IEclipsePreferences node = InstanceScope.INSTANCE.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
+		final IEclipsePreferences defaultNode = DefaultScope.INSTANCE.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
+		breakOnExceptionsListener = new IPreferenceChangeListener() {
+			private boolean inChange = false;
+			@Override
+			public void preferenceChange(PreferenceChangeEvent event) {
+				if (Constants.SUSPEND_ON_THROWN_EXCEPTION.equals(event.getKey())) {
+					if (!inChange && event.getNewValue() == null) {
+						inChange = true;
+						try {
+							// This is the default value -- to trigger this so JSDT understands it is horrible
+							// but works.
+							defaultNode.putBoolean(Constants.SUSPEND_ON_THROWN_EXCEPTION, false);
+							node.putBoolean(Constants.SUSPEND_ON_THROWN_EXCEPTION, true);
+							defaultNode.putBoolean(Constants.SUSPEND_ON_THROWN_EXCEPTION, true);
+						} finally {
+							inChange = false;
+						}
+					}
+				}
+			}
+		};
+		node.addPreferenceChangeListener(breakOnExceptionsListener);
+	}
+	
+	private void removeBreakpointOnExceptionListener() {
+		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
+		node.removePreferenceChangeListener(breakOnExceptionsListener);
+	}
+
 
 }
