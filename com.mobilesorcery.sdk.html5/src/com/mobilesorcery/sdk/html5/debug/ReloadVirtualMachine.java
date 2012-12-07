@@ -161,8 +161,12 @@ public class ReloadVirtualMachine implements VirtualMachine,
 
 	@Override
 	public String version() {
-		return MoSyncTool.getDefault()
+		String versionInfo = MoSyncTool.getDefault()
 				.getVersionInfo(MoSyncTool.BINARY_VERSION);
+		if (versionInfo.toLowerCase().startsWith("version")) {
+			versionInfo = versionInfo.substring("version".length()).trim();
+		}
+		return versionInfo;
 	}
 
 	@Override

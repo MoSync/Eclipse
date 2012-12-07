@@ -54,6 +54,8 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChang
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
@@ -1143,12 +1145,17 @@ public class JSODDServer implements IResourceChangeListener {
 		ReloadVirtualMachine vm = getVM(remoteIp);
 		boolean resetVM = vm == null || vm.getThread(threadId) != null;
 		if (resetVM) {
+			boolean needsNewVm = false;
 			if (!unassignedVMs.isEmpty()) {
 				vm = unassignedVMs.remove(0);
+				needsNewVm = true;
 			}
 			int newVMId = newUniqueId();
 			vm.reset(newVMId, project, remoteIp);
-			vmsByHost.put(remoteIp, vm);
+			ReloadVirtualMachine oldVm = vmsByHost.put(remoteIp, vm);
+			if (needsNewVm && oldVm != null) {
+				terminate(oldVm, true);	
+			}
 			notifyInitListeners(vm, !resetVM);
 			if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 				CoreMoSyncPlugin.trace("Assigned id #{0} to vm for project {1}",
@@ -1443,11 +1450,7 @@ public class JSODDServer implements IResourceChangeListener {
 					}
 					break;
 				case RedefinitionResult.TERMINATE:
-					try {
-						vm.getJavaScriptDebugTarget().terminate();
-					} catch (DebugException debugException) {
-						CoreMoSyncPlugin.getDefault().log(debugException);
-					}
+					terminate(vm, false);
 					break;
 				default:
 					// Continue/cancel; do nothing.
@@ -1456,6 +1459,19 @@ public class JSODDServer implements IResourceChangeListener {
 			if (updateBaseline) {
 				vm.setBaseline(replacement);
 			}
+		}
+	}
+
+	private void terminate(ReloadVirtualMachine vm, boolean removeLaunch) {
+		try {
+			IJavaScriptDebugTarget debugTarget = vm.getJavaScriptDebugTarget();
+			debugTarget.terminate();
+			if (removeLaunch) {
+				ILaunchManager manager = DebugPlugin.getDefault().getLaunchManager();
+				manager.removeLaunch(debugTarget.getLaunch());
+			}
+		} catch (DebugException debugException) {
+			CoreMoSyncPlugin.getDefault().log(debugException);
 		}
 	}
 
