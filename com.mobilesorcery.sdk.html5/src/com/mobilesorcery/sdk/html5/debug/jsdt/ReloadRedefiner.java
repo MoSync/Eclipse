@@ -139,6 +139,9 @@ public class ReloadRedefiner implements IRedefiner {
 								| RedefinitionResult.REDEFINE_OK,
 						"HTML has changed, must reload");
 			}
+		} else if (needsRedefine) {
+			// TODO: We want hot code replace for this one too!
+			return RedefinitionResult.unrecoverable("Cannot reload non-HTML/JS files");
 		}
 		if (needsRedefine && !vm.canRedefine(redefinable)) {
 			return RedefinitionResult
