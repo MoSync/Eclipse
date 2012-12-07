@@ -255,7 +255,12 @@ window.MoSyncDebugProtocol = new (function() {
                 step = false;
                 shouldBreak = function() { return false; };
                 // Try to kill it -- this obviously requires wormhole.
-                mosync.bridge.send(["close"]);
+                var canTerminate = mosync && mosync.app && mosync.app.exit;
+                if (canTerminate) {
+                    mosync.app.exit();
+                } else {
+                    alert('Remote terminate not supported for this app');
+                }
                 return false;
                 
             case 'disconnect':

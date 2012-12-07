@@ -26,6 +26,7 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.EventQueue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequestManager;
 import org.eclipse.wst.jsdt.debug.core.model.IJavaScriptDebugTarget;
+import org.eclipse.wst.jsdt.debug.internal.core.model.JavaScriptThread;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -47,7 +48,6 @@ import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadStringValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadThreadReference;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadUndefinedValue;
 import com.mobilesorcery.sdk.html5.debug.jsdt.SimpleScriptReference;
-import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadThreadEnterEvent;
 import com.mobilesorcery.sdk.html5.live.ILiveServerCommandListener;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
@@ -161,8 +161,12 @@ public class ReloadVirtualMachine implements VirtualMachine,
 
 	@Override
 	public String version() {
-		return MoSyncTool.getDefault()
+		String versionInfo = MoSyncTool.getDefault()
 				.getVersionInfo(MoSyncTool.BINARY_VERSION);
+		if (versionInfo.toLowerCase().startsWith("version")) {
+			versionInfo = versionInfo.substring("version".length()).trim();
+		}
+		return versionInfo;
 	}
 
 	@Override
@@ -309,11 +313,15 @@ public class ReloadVirtualMachine implements VirtualMachine,
 	public void received(int sessionId, String command, JSONObject json) {
 		// TODID -- filtering is done in the eventqueue. For now.
 		ReloadThreadReference thread = getThread(sessionId);
+
 		boolean isClientSuspend = Boolean.parseBoolean(""
 				+ json.get("suspended"));
-		if (thread.isSuspended() && !isClientSuspend) {
+		if (thread == null || thread.isSuspended() && !isClientSuspend) {
 			return;
 		}
+		
+		syncThread(thread);
+		
 		thread.markSuspended(true);
 		JSONArray array = (JSONArray) json.get("stack");
 		ReloadStackFrame[] frames = new ReloadStackFrame[array.size()];
@@ -329,6 +337,32 @@ public class ReloadVirtualMachine implements VirtualMachine,
 		thread.setFrames(frames);
 		// suspend();
 		eventQueue.received(command, json);
+	}
+
+	private void syncThread(ReloadThreadReference thread) {
+		// Another miscommunication thing with JSDT;
+		// sometimes the threadenterevent does not
+		// propagate to the debug target, probably
+		// due to a concurrency mishap.
+		// Please note that we now open up a very small
+		// possibility for race conditions but that is
+		// preferable in this case.
+		IThread[] dtThreads;
+		try {
+			dtThreads = debugTarget.getThreads();
+		} catch (DebugException e) {
+			// Just return!
+			return;
+		}
+		
+		for (IThread dtThread : dtThreads) {
+			JavaScriptThread jsThread = (JavaScriptThread) dtThread;
+			if (jsThread.matches(thread)) {
+				return;
+			}
+		}
+		
+		eventQueue.received(ReloadEventQueue.THREAD_ENTER, thread);
 	}
 
 	public LocalVariableScope getLocalVariableScope(ScriptReference ref,
@@ -463,7 +497,7 @@ public class ReloadVirtualMachine implements VirtualMachine,
 				CoreMoSyncPlugin.trace("Assigned id {0} to {2}thread {1}",
 						thread.getSessionId(), thread.name(), mainStr);
 			}
-			eventQueue.received("thread-enter", thread);
+			eventQueue.received(ReloadEventQueue.THREAD_ENTER, thread);
 		} else {
 			resetThread(thread);
 			thread.markSuspended(false, false);
