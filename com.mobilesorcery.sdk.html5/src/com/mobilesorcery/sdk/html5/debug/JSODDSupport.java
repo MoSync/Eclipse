@@ -789,10 +789,9 @@ public class JSODDSupport {
 				this.instrumentedSource.put(file, instrumentedSource);
 				scopeMaps.put(fileId, scopeMap);
 				lineMaps.put(fileId, instrumentedLines);
-
-				if (baseline != null) {
-					baseline.replaceChild(fileRedefinable);
-				}
+			}
+			if (baseline != null) {
+				baseline.replaceChild(fileRedefinable);
 			}
 			return fileRedefinable;
 		} catch (CoreException e) {

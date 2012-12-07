@@ -31,6 +31,7 @@ import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile;
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
@@ -153,8 +154,10 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 					project);
 			
 			if (op == null) {
+				String platformTypeWarning = MoSyncProject.create(project).getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE ?
+						"Make the project platform based and make sure the HTML5 capability is selected" : "Make sure that the HTML5 capability is selected.";
 				throw new CoreException(new Status(IStatus.ERROR, Html5Plugin.PLUGIN_ID,
-						MessageFormat.format("The project {0} has no support for HTML5.", project.getName())));
+						MessageFormat.format("The project {0} has no support for HTML5. {1}", project.getName(), platformTypeWarning)));
 			}
 
 			IFileTreeDiff diff = this.diff;
