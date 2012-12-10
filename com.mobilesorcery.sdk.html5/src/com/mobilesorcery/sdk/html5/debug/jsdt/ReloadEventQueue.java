@@ -42,7 +42,9 @@ import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
 public class ReloadEventQueue implements EventQueue {
 
-	public final static String CUSTOM_EVENT = "custom-event";
+	public static final String CUSTOM_EVENT = "custom-event";
+	public static final String THREAD_ENTER = "thread-enter";
+	public static final String THREAD_EXIT = "thread-exit";
 
 	private final ReloadVirtualMachine vm;
 	private final ReloadEventRequestManager requests;
@@ -159,12 +161,12 @@ public class ReloadEventQueue implements EventQueue {
 				if (!eventSet.isEmpty()) {
 					thread.markSuspended(!isStepping && !isException && !isSuspendedByDebugger);
 				}
-			} else if ("thread-enter".equals(commandName)) { 
+			} else if (THREAD_ENTER.equals(commandName)) { 
 				ReloadThreadReference thread = (ReloadThreadReference) commandObj;
 				for (Object threadEnterRequest : threadEnterRequests) {
 					eventSet.add(new ReloadThreadEnterEvent(targetVM, thread, null, (EventRequest) threadEnterRequest));
 				}
-			} else if ("thread-exit".equals(commandName)) { 
+			} else if (THREAD_EXIT.equals(commandName)) { 
 				ReloadThreadReference thread = (ReloadThreadReference) commandObj;
 				for (Object threadExitRequest : threadExitRequests) {
 					eventSet.add(new ReloadThreadExitEvent(targetVM, thread, null, (EventRequest) threadExitRequest));

@@ -488,13 +488,15 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 			if (cfg != null) {
 				try {
 					String cfgId = cfg.getType().getIdentifier();
-					if (EmulatorLaunchConfigurationDelegate.ID.equals(cfgId)) {
-						IProject project = EmulatorLaunchConfigurationDelegate
-								.getProject(cfg);
-						IBuildVariant variant = EmulatorLaunchConfigurationDelegate
-								.getVariant(cfg, launch.getLaunchMode());
-						launchJSODD(MoSyncProject.create(project), variant,
-								false, BuildVariant.toString(variant));
+					if ("debug".equals(launch.getLaunchMode())) {
+						if (EmulatorLaunchConfigurationDelegate.ID.equals(cfgId)) {
+							IProject project = EmulatorLaunchConfigurationDelegate
+									.getProject(cfg);
+							IBuildVariant variant = EmulatorLaunchConfigurationDelegate
+									.getVariant(cfg, launch.getLaunchMode());
+							launchJSODD(MoSyncProject.create(project), variant,
+									false, BuildVariant.toString(variant));
+						}
 					}
 				} catch (Exception e) {
 					// Who cares?
