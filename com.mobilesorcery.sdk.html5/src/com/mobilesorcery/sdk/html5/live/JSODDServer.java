@@ -403,9 +403,13 @@ public class JSODDServer implements IResourceChangeListener {
 						&& timeOfLastTake != null
 						&& now - timeOfLastTake > PING_INTERVAL;
 				Long lastHeartbeat = lastHeartbeats.get(sessionId);
+				long elapsedSinceLastHeartbeat = now - lastHeartbeat; 
 				boolean timeoutOccured = lastHeartbeat != null
-						&& now - lastHeartbeat > 2 * PING_INTERVAL;
+						&& elapsedSinceLastHeartbeat > 2 * PING_INTERVAL;
 				if (timeoutOccured && timeoutListener != null) {
+					if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+						CoreMoSyncPlugin.trace("Timeout occurred for {0}, {1} since last ping", sessionId, Util.elapsedTime(elapsedSinceLastHeartbeat));
+					}
 					killSession(sessionId);
 					timeoutListener.timeoutOccurred(sessionId);
 				}
@@ -422,12 +426,6 @@ public class JSODDServer implements IResourceChangeListener {
 		
 		public void ping(int sessionId) {
 			offer(sessionId, ping());
-		}
-
-		public void heartbeat(Integer[] sessionIds) {
-			for (Integer sessionId : sessionIds) {
-				heartbeat(sessionId);	
-			}
 		}
 		
 		public void heartbeat(int sessionId) {
@@ -610,6 +608,7 @@ public class JSODDServer implements IResourceChangeListener {
 				// RACE CONDITION WILL OCCUR HERE!
 				if (!preflight) {
 					Integer sessionId = extractSessionId(command);
+					queues.heartbeat(sessionId);
 					notifyCommandListeners(sessionId, getCommand(command), command);
 					result = pushCommandsToClient(sessionId, preflight);
 				} else {
@@ -729,24 +728,6 @@ public class JSODDServer implements IResourceChangeListener {
 			default:
 				return "breakpoint-continue";
 			}
-		}
-
-		private void assignNewWaitThread() {
-			Thread previousThread = waitThreads.get("");
-			if (previousThread != Thread.currentThread()) {
-				if (previousThread != null) {
-					previousThread.interrupt();
-				}
-				waitThreads.put("", Thread.currentThread());
-			}
-
-		}
-
-		private DebuggerMessage nextMessage(
-				LinkedBlockingQueue<DebuggerMessage> queue)
-				throws InterruptedException {
-			DebuggerMessage result = queue.take();
-			return result;
 		}
 
 		private void configureForPreflight(HttpServletRequest req,
