@@ -30,6 +30,7 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchesListener2;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.util.Policy;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -197,8 +198,13 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 			server.addListener(new ILiveServerListener() {
 				@Override
 				public void timeout(final ReloadVirtualMachine vm) {
-					IProcessConsole console = CoreMoSyncPlugin.getDefault().createConsole(MoSyncBuilder.CONSOLE_ID);
-					console.addMessage(IProcessConsole.ERR, MessageFormat.format("*** A timeout occurred. The device being debugged (at {0}) seems to have been disconnected. ***", vm.getRemoteAddr()));
+					IProcessConsole console = CoreMoSyncPlugin.getDefault()
+							.createConsole(MoSyncBuilder.CONSOLE_ID);
+					console.addMessage(
+							IProcessConsole.ERR,
+							MessageFormat
+									.format("*** A timeout occurred. The device being debugged (at {0}) seems to have been disconnected. ***",
+											vm.getRemoteAddr()));
 					ILaunch launch = vm.getJavaScriptDebugTarget().getLaunch();
 					String terminateToken = launch == null ? null : launch
 							.getAttribute(TERMINATE_TOKEN_LAUNCH_ATTR);
@@ -488,15 +494,32 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 			if (cfg != null) {
 				try {
 					String cfgId = cfg.getType().getIdentifier();
+					MoSyncProject project = MoSyncProject
+							.create(EmulatorLaunchConfigurationDelegate
+									.getProject(cfg));
+					IBuildVariant variant = EmulatorLaunchConfigurationDelegate
+							.getVariant(cfg, launch.getLaunchMode());
 					if ("debug".equals(launch.getLaunchMode())) {
-						if (EmulatorLaunchConfigurationDelegate.ID.equals(cfgId)) {
-							IProject project = EmulatorLaunchConfigurationDelegate
-									.getProject(cfg);
-							IBuildVariant variant = EmulatorLaunchConfigurationDelegate
-									.getVariant(cfg, launch.getLaunchMode());
-							launchJSODD(MoSyncProject.create(project), variant,
-									false, BuildVariant.toString(variant));
+						if (EmulatorLaunchConfigurationDelegate.ID
+								.equals(cfgId)) {
+							launchJSODD(project, variant, false,
+									BuildVariant.toString(variant));
 						}
+					} else if ("run".equals(launch.getLaunchMode())
+							&& canLaunchJSODD(project, variant)) {
+						launch.terminate();
+						Display d = PlatformUI.getWorkbench().getDisplay();
+						d.asyncExec(new Runnable() {
+							@Override
+							public void run() {
+								MessageDialog
+										.openError(PlatformUI.getWorkbench()
+												.getModalDialogShellProvider()
+												.getShell(), "Cannot launch",
+												"JavaScript On-Device Debug can only be run in debug mode.");
+							}
+						});
+
 					}
 				} catch (Exception e) {
 					// Who cares?
@@ -530,12 +553,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 	private void launchJSODD(final MoSyncProject project,
 			final IBuildVariant variant, final boolean onDevice,
 			final String terminateToken) {
-		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project,
-				variant.getConfigurationId());
-		if (DebuggingEnableTester.hasDebugSupport(project)
-				&& PropertyUtil.getBoolean(properties,
-						MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS) && isJSODDEnabled(project)) {
-
+		if (canLaunchJSODD(project, variant)) {
 			new Thread(new Runnable() {
 				public void run() {
 					try {
@@ -555,6 +573,20 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 				}
 			}).start();
 		}
+	}
+
+	private boolean canLaunchJSODD(MoSyncProject project, IBuildVariant variant) {
+		if (!DebuggingEnableTester.hasDebugSupport(project)) {
+			return false;
+		}
+		if (!isJSODDEnabled(project)) {
+			return false;
+		}
+
+		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project,
+				variant.getConfigurationId());
+		return PropertyUtil.getBoolean(properties,
+				MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS);
 	}
 
 	/*
@@ -600,8 +632,9 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 		supportedFeatures.add(JSODDSupport.LINE_BREAKPOINTS);
 		supportedFeatures.add(JSODDSupport.ARTIFICIAL_STACK);
 		supportedFeatures.add(JSODDSupport.DROP_TO_FRAME);
-		
-		String supportedFeaturesArg = System.getProperty(Html5Plugin.PLUGIN_ID + ".jsodd.features");
+
+		String supportedFeaturesArg = System.getProperty(Html5Plugin.PLUGIN_ID
+				+ ".jsodd.features");
 		if (supportedFeaturesArg != null) {
 			String[] supportedFeatures = supportedFeaturesArg.split(",\\s");
 			for (String supportedFeature : supportedFeatures) {
@@ -618,33 +651,48 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 			}
 		}
 	}
+
 	public boolean isFeatureSupported(String feature) {
 		// Ok, one more tricky thing left: binding of function defined
 		// within function - then we can enable this.
-		//return !JSODDSupport.EDIT_AND_CONTINUE.equals(feature);
+		// return !JSODDSupport.EDIT_AND_CONTINUE.equals(feature);
 		return supportedFeatures.contains(feature);
 	}
 
 	private void initBreakpointOnExceptionListener() {
-		// Ok, this is a ridiculous workaround -- JSDT does not react to property changes
-		// where the property value is null. The problem is that enabling exceptions
-		// is the default value, which just happens to be propagated as null in the
+		// Ok, this is a ridiculous workaround -- JSDT does not react to
+		// property changes
+		// where the property value is null. The problem is that enabling
+		// exceptions
+		// is the default value, which just happens to be propagated as null in
+		// the
 		// preference change event. Did anyone even test that functionality??
-		final IEclipsePreferences node = InstanceScope.INSTANCE.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
-		final IEclipsePreferences defaultNode = DefaultScope.INSTANCE.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
+		final IEclipsePreferences node = InstanceScope.INSTANCE
+				.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
+		final IEclipsePreferences defaultNode = DefaultScope.INSTANCE
+				.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
 		breakOnExceptionsListener = new IPreferenceChangeListener() {
 			private boolean inChange = false;
+
 			@Override
 			public void preferenceChange(PreferenceChangeEvent event) {
-				if (Constants.SUSPEND_ON_THROWN_EXCEPTION.equals(event.getKey())) {
+				if (Constants.SUSPEND_ON_THROWN_EXCEPTION
+						.equals(event.getKey())) {
 					if (!inChange && event.getNewValue() == null) {
 						inChange = true;
 						try {
-							// This is the default value -- to trigger this so JSDT understands it is horrible
+							// This is the default value -- to trigger this so
+							// JSDT understands it is horrible
 							// but works.
-							defaultNode.putBoolean(Constants.SUSPEND_ON_THROWN_EXCEPTION, false);
-							node.putBoolean(Constants.SUSPEND_ON_THROWN_EXCEPTION, true);
-							defaultNode.putBoolean(Constants.SUSPEND_ON_THROWN_EXCEPTION, true);
+							defaultNode.putBoolean(
+									Constants.SUSPEND_ON_THROWN_EXCEPTION,
+									false);
+							node.putBoolean(
+									Constants.SUSPEND_ON_THROWN_EXCEPTION, true);
+							defaultNode
+									.putBoolean(
+											Constants.SUSPEND_ON_THROWN_EXCEPTION,
+											true);
 						} finally {
 							inChange = false;
 						}
@@ -654,11 +702,11 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 		};
 		node.addPreferenceChangeListener(breakOnExceptionsListener);
 	}
-	
+
 	private void removeBreakpointOnExceptionListener() {
-		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
+		IEclipsePreferences node = InstanceScope.INSTANCE
+				.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
 		node.removePreferenceChangeListener(breakOnExceptionsListener);
 	}
-
 
 }
