@@ -60,7 +60,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				this.op = op;
 			}
 
-			public int rewrite(IResource resourceToInstrument, boolean fetchRemotely, boolean delete)
+			public FileRedefinable rewrite(IResource resourceToInstrument, boolean fetchRemotely, boolean delete)
 					throws CoreException {
 				IPath resourcePath = resourceToInstrument.getFullPath();
 				resourcePath = resourcePath.removeFirstSegments(inputRoot
@@ -93,7 +93,7 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 						Util.safeClose(output);
 					}
 				}
-				return result == null ? 0 : result.getMemSize();
+				return result;
 			}
 
 			public void writeFramework() throws CoreException {
@@ -195,13 +195,17 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 						getResourceBundleLocation(project));
 				long start = System.currentTimeMillis();
 				boolean wasDeleted = deleted.contains(instrumentThis);
-				int memoryConsumption = rewriter.rewrite(instrumentThis, fetchRemotely, wasDeleted);
+				FileRedefinable instrumented = rewriter.rewrite(instrumentThis, fetchRemotely, wasDeleted);
+				int memoryConsumption = instrumented == null ? 0 : instrumented.getMemSize();
 				long elapsed = System.currentTimeMillis() - start;
+				String errorMsg = instrumented.validate();
+				errorMsg = errorMsg == null ? "" : (" (" + errorMsg + ")");
 				console.addMessage(MessageFormat.format(
-						"Instrumented {0} [{1}, {2}].", instrumentThis
+						"Instrumented {0} [{1}, {2}].{3}", instrumentThis
 								.getFullPath(),
 						Util.elapsedTime((int) elapsed), wasDeleted ? "deleted"
-								: Util.dataSize(memoryConsumption)));
+								: Util.dataSize(memoryConsumption),
+								errorMsg));
 			}
 			if (diff == null) {
 				rewriter.writeFramework();

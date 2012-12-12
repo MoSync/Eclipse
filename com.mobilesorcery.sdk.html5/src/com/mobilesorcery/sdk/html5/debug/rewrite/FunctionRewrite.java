@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.html5.debug.rewrite;
 
+import java.io.ObjectInputStream.GetField;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,11 @@ public class FunctionRewrite extends NodeRewrite {
 		}
 	}
 
-	private static final String END_OF_BODY_BUG = "JSDT internals makes it impossible to add breakpoints to this piece of code (Reason: 'end of body bug')";
+	private static final String END_OF_BODY_BUG = "End of body bug";
+
+	private static final String EMPTY_BODY_BUG = "JSDT has problems understanding this kind of construct (eg jQuery has this issue)";
+	
+	private static final String OUTSIDE_PARENT = "JSDT thinks body is overflowing parent";
 
 	private long fileId;
 	private Map<ASTNode, String> nodeRedefinables;
@@ -72,9 +77,14 @@ public class FunctionRewrite extends NodeRewrite {
 		Block body = fd.getBody();
 		// Strange parsing problems in some instances!
 		if (isOutsideParent(body)) {
-			// TODO: REPORT ERROR!!!
+			setBlacklisted(OUTSIDE_PARENT);
 			return;
 		}
+		
+		if (hasEmptyBodyBug(body)) {
+			setBlacklisted(EMPTY_BODY_BUG);
+		}
+		
 		List statements = body.statements();
 		if (hasEndOfBodyBug(body, statements)) {
 			setBlacklisted(END_OF_BODY_BUG);
@@ -248,10 +258,23 @@ public class FunctionRewrite extends NodeRewrite {
 		return false;
 	}
 
+	private boolean hasEmptyBodyBug(Block body) {
+		// JQuery 1.8 has several constructs that
+		// confuses JSDT; hence this one.
+		String src = getSource(body);
+		int trimmedLen = src.length() - src.trim().length();
+		int bodyLength = body.getLength();
+		return body.statements().isEmpty() && bodyLength > trimmedLen;
+	}
+	
 	private boolean isOutsideParent(Block body) {
+		if (body == null) {
+			return true;
+		}
 		// Note: A body declaration CAN be outside its parent,
 		// but blocks cannot.
 		int startOfBody = body.getStartPosition();
+
 		ASTNode parent = body.getParent();
 		while (parent != null) {
 			if (parent.getStartPosition() > startOfBody) {
