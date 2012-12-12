@@ -83,6 +83,7 @@ public class FunctionRewrite extends NodeRewrite {
 		
 		if (hasEmptyBodyBug(body)) {
 			setBlacklisted(EMPTY_BODY_BUG);
+			return;
 		}
 		
 		List statements = body.statements();
