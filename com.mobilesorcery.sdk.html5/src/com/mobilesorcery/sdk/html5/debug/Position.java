@@ -40,6 +40,9 @@ public class Position {
 		return position;
 	}
 
+	public String toString() {
+		return line + ":" + column;
+	}
 	/*public static int[] getUncommentedRange(ASTNode node) {
 		int[] result = new int[2];
 		result[0] = node.getStartPosition();
