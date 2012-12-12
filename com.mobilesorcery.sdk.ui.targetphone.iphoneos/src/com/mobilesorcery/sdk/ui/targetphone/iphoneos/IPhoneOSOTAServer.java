@@ -119,6 +119,7 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 		String ext = Util.getExtension(target);
 		String[] segments = target.split("/");
 		String projectName = Util.getNameWithoutExtension(segments[0]);
+		String projectNameWithExt = segments[0];
 		String fileName = segments[segments.length - 1];
 		
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
@@ -129,6 +130,9 @@ public class IPhoneOSOTAServer extends AbstractHandler {
 			generateIndex(response);
 		} else {
 			IProject project = ResourcesPlugin.getPlugin().getWorkspace().getRoot().getProject(projectName);
+			if (!project.exists()) {
+				project = ResourcesPlugin.getPlugin().getWorkspace().getRoot().getProject(projectNameWithExt);
+			}
 			MoSyncProject mosyncProject = MoSyncProject.create(project);
 			if (mosyncProject != null) {
 				IBuildVariant variant = projects.get(mosyncProject);

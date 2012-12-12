@@ -773,19 +773,38 @@ public class JSODDSupport {
 
 				// 1. Parse (JSDT)
 				parser.setSource(prunedSource.toCharArray());
-				ASTNode ast = parser.createAST(new NullProgressMonitor());
-
-				// 2. Instrument
-				visitor.setFileRedefinable(fileRedefinable);
-				visitor.setScopeResetPoints(scopeResetPoints);
-				ast.accept(visitor);
 				TreeMap<Integer, LocalVariableScope> scopeMap = new TreeMap<Integer, LocalVariableScope>();
 				TreeSet<Integer> instrumentedLines = new TreeSet<Integer>();
+				
+				try {
+					ASTNode ast = parser.createAST(new NullProgressMonitor());
+	
+					// 2. Instrument
+					visitor.setFileRedefinable(fileRedefinable);
+					visitor.setScopeResetPoints(scopeResetPoints);
+					ast.accept(visitor);
+				} catch (Exception e) {
+					int errorLine = findPossibleErrorLine(visitor);
+					fileRedefinable.setErrorMessage(MessageFormat.format("Could not parse {0} -- probably a syntax error close to line {1}. Debugging disabled for this file.", filePath.toOSString(), errorLine));
+				}
+				
 				visitor.rewrite(fileId, source, fwImportLocation, output, scopeMap,
 						instrumentedLines);
 
 				// 3. Update state and notify listeners
 				String instrumentedSource = visitor.getInstrumentedSource();
+				
+				// 4. Do another parse of the instrumented stuff.
+				try {
+					if (fileRedefinable.validate() == null) {
+						parser.setSource(instrumentedSource.toCharArray());
+						parser.createAST(new NullProgressMonitor());
+					}
+				} catch (Exception e) {
+					instrumentedSource = source;
+					fileRedefinable.setErrorMessage(MessageFormat.format("Unable to instrument {0} due to limitiations in the instrumentation engine. Debugging disabled for this file", filePath.toOSString()));
+				}
+				
 				this.instrumentedSource.put(file, instrumentedSource);
 				scopeMaps.put(fileId, scopeMap);
 				lineMaps.put(fileId, instrumentedLines);
@@ -798,17 +817,25 @@ public class JSODDSupport {
 			throw e;
 		} catch (Exception e) {
 			String positionHint = "";
-			Position currentPosition = null;
-			if (visitor != null) {
-				currentPosition = visitor.getCurrentPosition();
-			}
-			if (currentPosition != null) {
-				positionHint = ", near line " + currentPosition.getLine();
+			int line = findPossibleErrorLine(visitor);
+			if (line > 0) {
+				positionHint = ", near line " + line;
 			}
 			String locationHintMsg = MessageFormat.format("In file {0}{1}: {2}", filePath.toOSString(), positionHint, e.getMessage());
 			throw new CoreException(new Status(IStatus.ERROR,
 					Html5Plugin.PLUGIN_ID, locationHintMsg, e));
 		}
+	}
+
+	private int findPossibleErrorLine(DebugRewriteOperationVisitor visitor) {
+		Position currentPosition = null;
+		if (visitor != null) {
+			currentPosition = visitor.getCurrentPosition();
+		}
+		if (currentPosition != null) {
+			return currentPosition.getLine();
+		}
+		return 0;
 	}
 
 	private void initProjectRedefinable() {
