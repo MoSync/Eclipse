@@ -1124,7 +1124,7 @@ public class JSODDServer implements IResourceChangeListener {
 			MoSyncProject project, String threadId) {
 		String remoteIp = req.getRemoteAddr();
 		ReloadVirtualMachine vm = getVM(remoteIp);
-		boolean resetVM = vm == null || vm.getThread(threadId) != null;
+		boolean resetVM = vm == null || !Util.equals(vm.getProject(), project.getWrappedProject()) || vm.getThread(threadId) != null;
 		if (resetVM) {
 			boolean needsNewVm = false;
 			if (!unassignedVMs.isEmpty()) {
