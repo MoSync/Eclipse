@@ -405,7 +405,7 @@ public class JSODDServer implements IResourceChangeListener {
 				Long lastHeartbeat = lastHeartbeats.get(sessionId);
 				long elapsedSinceLastHeartbeat = now - lastHeartbeat; 
 				boolean timeoutOccured = lastHeartbeat != null
-						&& elapsedSinceLastHeartbeat > 2 * PING_INTERVAL;
+						&& elapsedSinceLastHeartbeat > 5 * PING_INTERVAL;
 				if (timeoutOccured && timeoutListener != null) {
 					if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 						CoreMoSyncPlugin.trace("Timeout occurred for {0}, {1} since last ping", sessionId, Util.elapsedTime(elapsedSinceLastHeartbeat));
