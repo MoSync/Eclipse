@@ -1085,10 +1085,12 @@ public class MoSyncBuilder extends ACBuilder {
 			result.addAll(Arrays.asList(additionalIncludePaths));
 		}
 
-		String[] extensions = PropertyUtil.getStrings(project, MoSyncBuilder.EXTENSIONS);
-		for (String extension : extensions) {
-			String extensionInclude = "%mosync-home%/extensions/" + extension + "/inc";
-			result.add(new Path(extensionInclude));
+		String[] extensionNames = PropertyUtil.getStrings(project, MoSyncBuilder.EXTENSIONS);
+		for (String extensionName : extensionNames) {
+			MoSyncExtension extension = MoSyncExtensionManager.getDefault().getExtension(extensionName);
+			if (extension != null) {
+				result.add(extension.getIncludePath());
+			}
 		}
 		
 		return resolvePaths(result.toArray(new IPath[0]),

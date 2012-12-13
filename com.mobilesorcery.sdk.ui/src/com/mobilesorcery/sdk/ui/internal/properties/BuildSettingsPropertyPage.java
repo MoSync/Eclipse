@@ -49,6 +49,8 @@ import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
+import com.mobilesorcery.sdk.core.MoSyncExtension;
+import com.mobilesorcery.sdk.core.MoSyncExtensionManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncProjectParameterResolver;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
@@ -113,6 +115,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private Text extraLink;
     private Text libOutputPath;
     private Text appOutputPath;
+    private Text extensions;
     private UpdateListener listener;
     private String currentOutputPath;
     private Button gccWall;
@@ -215,6 +218,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         additionalIncludePathsText.addListener(SWT.Modify, listener);
         additionalLibrariesText.addListener(SWT.Modify, listener);
         additionalLibraryPathsText.addListener(SWT.Modify, listener);
+        extensions.addListener(SWT.Modify, listener);
         libOutputPath.addListener(SWT.Modify, listener);
         appOutputPath.addListener(SWT.Modify, listener);
         stackSize.addListener(SWT.Modify, listener);
@@ -406,6 +410,15 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         excludeFilesData.horizontalSpan = 2;
         excludeFiles.setLayoutData(excludeFilesData);
 
+        Label extensionsLabel = new Label(buildPaths, SWT.NONE);
+        extensionsLabel.setText("Extensions");
+        extensionsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
+
+        extensions = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
+        GridData extensionsData = new GridData(GridData.FILL_HORIZONTAL);
+        extensionsData.horizontalSpan = 2;
+        extensions.setLayoutData(extensionsData);
+        
         Label outputPathLabel = new Label(buildPaths, SWT.NONE);
         outputPathLabel.setText("&Output File (libraries only)");
         outputPathLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
@@ -454,6 +467,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         setText(excludeFiles, configProperties.getProperty(addBuildProperty(MoSyncProject.EXCLUDE_FILTER_KEY)));
 
+        setText(extensions, configProperties.getProperty(addBuildProperty(MoSyncBuilder.EXTENSIONS)));
+        
         setText(libOutputPath, configProperties.getProperty(addBuildProperty(MoSyncBuilder.LIB_OUTPUT_PATH)));
         setText(appOutputPath, configProperties.getProperty(addBuildProperty(MoSyncBuilder.APP_OUTPUT_PATH)));
 
@@ -572,6 +587,14 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
             }
         }
 
+        String[] extensionList = PropertyUtil.toStrings(extensions.getText());
+        for (String extensionName : extensionList) {
+        	MoSyncExtension extension = MoSyncExtensionManager.getDefault().getExtension(extensionName);
+        	if (extension == null) {
+        		message.setMessage(extensions, new DefaultMessageProvider("Extension does not exist: " + extensionName, IMessageProvider.WARNING));
+        	}
+        }
+        
         setMessage(message);
     }
 
@@ -692,6 +715,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         changed |= configProperties.setProperty(MoSyncProject.EXCLUDE_FILTER_KEY, excludeFiles.getText());
         changed |= configProperties.setProperty(MoSyncBuilder.LIB_OUTPUT_PATH, libOutputPath.getText());
         changed |= configProperties.setProperty(MoSyncBuilder.APP_OUTPUT_PATH, appOutputPath.getText());
+        
+        changed |= configProperties.setProperty(MoSyncBuilder.EXTENSIONS, extensions.getText());
 
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.DEAD_CODE_ELIMINATION, deadCodeElim.getSelection());
 
