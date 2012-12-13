@@ -405,7 +405,7 @@ public class JSODDServer implements IResourceChangeListener {
 				Long lastHeartbeat = lastHeartbeats.get(sessionId);
 				long elapsedSinceLastHeartbeat = now - lastHeartbeat; 
 				boolean timeoutOccured = lastHeartbeat != null
-						&& elapsedSinceLastHeartbeat > 2 * PING_INTERVAL;
+						&& elapsedSinceLastHeartbeat > 5 * PING_INTERVAL;
 				if (timeoutOccured && timeoutListener != null) {
 					if (CoreMoSyncPlugin.getDefault().isDebugging()) {
 						CoreMoSyncPlugin.trace("Timeout occurred for {0}, {1} since last ping", sessionId, Util.elapsedTime(elapsedSinceLastHeartbeat));
@@ -1124,7 +1124,7 @@ public class JSODDServer implements IResourceChangeListener {
 			MoSyncProject project, String threadId) {
 		String remoteIp = req.getRemoteAddr();
 		ReloadVirtualMachine vm = getVM(remoteIp);
-		boolean resetVM = vm == null || vm.getThread(threadId) != null;
+		boolean resetVM = vm == null || !Util.equals(vm.getProject(), project.getWrappedProject()) || vm.getThread(threadId) != null;
 		if (resetVM) {
 			boolean needsNewVm = false;
 			if (!unassignedVMs.isEmpty()) {
