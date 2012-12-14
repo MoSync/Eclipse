@@ -222,6 +222,13 @@ public class MoSyncTool {
 	public IPath getMoSyncLib() {
 		return getMoSyncHome().append("lib");
 	}
+	
+	/**
+	 * Returns the extension directory
+	 */
+	public IPath getMoSyncExtensions() {
+		return getMoSyncHome().append("extensions");
+	}
 
 	/**
 	 * Returns the <code>examples</code> directory, where all MoSync example
@@ -692,4 +699,5 @@ public class MoSyncTool {
 					+ preferredProfile.getName();
 		}
 	}
+
 }

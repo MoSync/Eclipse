@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.runtime.Path;
 import org.eclipse.debug.core.model.IStackFrame;
@@ -13,7 +14,10 @@ import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
 import org.eclipse.wst.jsdt.debug.core.jsdi.VirtualMachine;
 import org.eclipse.wst.jsdt.debug.core.jsdi.request.StepRequest;
 
+import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadStepRequest;
+import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
 public class ReloadThreadReference implements ThreadReference {
 
@@ -24,10 +28,13 @@ public class ReloadThreadReference implements ThreadReference {
 	private List frames = null;
 	private int stepType;
 	private String location;
+	private int sessionId;
+	private JSODDServer server;
 
 	public ReloadThreadReference(ReloadVirtualMachine vm) {
 		this.vm = vm;
 		this.status = THREAD_STATUS_RUNNING;
+		this.server = Html5Plugin.getDefault().getReloadServer();
 	}
 
 	@Override
@@ -64,20 +71,26 @@ public class ReloadThreadReference implements ThreadReference {
 
 	@Override
 	public void resume() {
-		this.suspended = false;
+		if (!isSuspended()) {
+			return;
+		}
+		markSuspended(false,  false);
 		switch (stepType) {
 		case ReloadStepRequest.NO_STEPPING:
-			vm.resume();
+			server.resume(sessionId);
 			break;
 		default:
-			vm.step(stepType);
+			server.step(sessionId, stepType);
 		}
 	}
 
 	@Override
 	public void suspend() {
+		if (isSuspended()) {
+			return;
+		}
 		markSuspended(false);
-		vm.suspend(true);
+		server.suspend(sessionId);
 	}
 
 	@Override
@@ -97,10 +110,14 @@ public class ReloadThreadReference implements ThreadReference {
 
 	@Override
 	public String name() {
-		String formattedLocation = location == null ? "" : " - " + new Path(location).lastSegment();
-		return MessageFormat.format("main", formattedLocation);
+		String formattedLocation = location == null ? "" : new Path(location).lastSegment();
+		return formattedLocation;
 	}
 
+	public void terminate() {
+		server.terminate(sessionId, vm.getMainThread() == this);
+	}
+	
 	public void markSuspended(boolean isAtBreakpoint) {
 		markSuspended(true, isAtBreakpoint);
 	}
@@ -121,4 +138,56 @@ public class ReloadThreadReference implements ThreadReference {
 	public void setCurrentLocation(String location) {
 		this.location = location;
 	}
+
+	public int getSessionId() {
+		return sessionId;
+	}
+	
+	public int setSessionId(int newSessionId) {
+		int previousSessionId = this.sessionId;
+		this.sessionId = newSessionId;
+		return previousSessionId;
+	}
+	
+	/**
+	 * Evaluates an expression in the current scope.
+	 * 
+	 * @param expression
+	 *            The JavaScript expression to evaluate
+	 * @return The result of the evaluation
+	 * @throws InterruptedException
+	 *             If the waiting thread was interrupted, for example by a
+	 *             terminate request.
+	 * @throws TimeoutException
+	 *             If the client failed to respond within a specified timeout.
+	 */
+	public Object evaluate(String expression) throws InterruptedException,
+			TimeoutException {
+		return evaluate(expression, null);
+	}
+
+	/**
+	 * Evaluates an expression at a specified stack depth
+	 * 
+	 * @param expression
+	 *            The JavaScript expression to evaluate
+	 * @param stackDepth
+	 *            The stackdepth to perform the evaluation, or {@code null} to
+	 *            use the current scope.
+	 * @return The result of the evaluation
+	 * @throws InterruptedException
+	 *             If the waiting thread was interrupted, for example by a
+	 *             terminate request.
+	 * @throws TimeoutException
+	 *             If the client failed to respond within a specified timeout.
+	 */
+	public Object evaluate(String expression, Integer stackDepth)
+			throws InterruptedException, TimeoutException {
+		return server.evaluate(sessionId, expression, stackDepth);
+	}
+
+	public String toString() {
+		return name() + " #" + sessionId;
+	}
+
 }

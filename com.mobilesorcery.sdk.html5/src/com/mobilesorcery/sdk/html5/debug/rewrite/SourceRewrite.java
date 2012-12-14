@@ -36,6 +36,11 @@ public class SourceRewrite implements IRewrite {
 	public void seek(int position) {
 		this.currentPosition = position;
 	}
+	
+	public int skip(int delta) {
+		this.currentPosition += delta;
+		return currentPosition;
+	}
 
 	@Override
 	public void insert(String insertion) {

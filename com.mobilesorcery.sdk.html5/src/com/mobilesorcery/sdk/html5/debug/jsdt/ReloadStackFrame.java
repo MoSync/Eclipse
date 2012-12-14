@@ -27,7 +27,6 @@ public class ReloadStackFrame implements StackFrame {
 
 	private final static JSONParser PARSER = new JSONParser();
 
-	private final ReloadVirtualMachine vm;
 	private Variable thisVar;
 	private SimpleLocation location;
 	private Number catchLine;
@@ -40,9 +39,14 @@ public class ReloadStackFrame implements StackFrame {
 
 	private boolean isTop;
 
-	public ReloadStackFrame(ReloadVirtualMachine vm, JSONObject suspendCommand,
+	private ReloadThreadReference thread;
+	
+	private ReloadVirtualMachine vm;
+
+	public ReloadStackFrame(ReloadVirtualMachine vm, ReloadThreadReference thread, JSONObject suspendCommand,
 			int ix) {
 		this.vm = vm;
+		this.thread = thread;
 		this.stackDepth = ix;
 
 		init(suspendCommand, ix);
@@ -53,7 +57,8 @@ public class ReloadStackFrame implements StackFrame {
 	}
 	
 	private void init(JSONObject suspended, int ix) {
-		int line = ((Long) suspended.get("line")).intValue();
+		Object lineObj = suspended.get("line");
+		int line = lineObj instanceof Number ? ((Number) lineObj).intValue() : 1;
 		JSONArray stack = (JSONArray) suspended.get("stack");
 		JSONArray frame = ix >= 0 ? (JSONArray) stack.get(ix) : null;
 		String functionName = frame == null ? "<unknown>" : (String) frame.get(0);
@@ -62,7 +67,7 @@ public class ReloadStackFrame implements StackFrame {
 		isTop = ix == stack.size() - 1;
 		if (!isTop) {
 			JSONArray nextFrame = (JSONArray) stack.get(ix + 1);
-			line = ((Long) nextFrame.get(3)).intValue();
+			line = ((Number) nextFrame.get(3)).intValue();
 		}
 		IFile resource = ResourcesPlugin.getWorkspace().getRoot().getFile(new Path(file));
 		location = new SimpleLocation(vm, resource, line);
@@ -73,7 +78,7 @@ public class ReloadStackFrame implements StackFrame {
 
 	@Override
 	public VirtualMachine virtualMachine() {
-		return vm;
+		return thread.virtualMachine();
 	}
 
 	@Override
@@ -119,7 +124,7 @@ public class ReloadStackFrame implements StackFrame {
 		Integer stackDepthToSend = isTop ? null : stackDepth + 1;
 		String valueStr;
 		try {
-			valueStr = "" + vm.evaluate(expression, stackDepthToSend);
+			valueStr = "" + thread.evaluate(expression, stackDepthToSend);
 		} catch (Exception e) {
 			valueStr = null;
 		}
@@ -204,6 +209,14 @@ public class ReloadStackFrame implements StackFrame {
 			// IGNORE.
 		}
 		return vm.mirrorOfUndefined();
+	}
+
+	public ReloadThreadReference thread() {
+		return thread;
+	}
+	
+	public String toString() {
+		return "[" + Util.join(variables().toArray(), ", ") + "]";
 	}
 
 }

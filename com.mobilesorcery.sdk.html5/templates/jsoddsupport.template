@@ -6,6 +6,7 @@ window.MoSyncDebugProtocol = new (function() {
     var timeoutInMs = %TIMEOUT_IN_MS%;
     var serverUrl = 'http://' + serverHost + ':' + serverPort;
     var breakpoints = {};
+    var breakonexceptions = true;
     var breakpointDescs = {};
     var loadBreakpoints = {};
     var redefinedFunctions = {};
@@ -13,7 +14,7 @@ window.MoSyncDebugProtocol = new (function() {
     var shouldBreak = function() { return false; };
     var asyncXHR = null;
     var lastFileId = -1;
-    var lastLine = '';
+    var lastLine = 1;
     var lastEvalScopeFunc = null;
     var lastThisRef = null;
     
@@ -67,12 +68,12 @@ window.MoSyncDebugProtocol = new (function() {
                     }
                 }
             };
-            asyncXHR.open('GET', serverUrl + '/mobile/incoming/' + timestamp(), true);
+            asyncXHR.open('GET', serverUrl + '/mobile/incoming/' + getLocation() + "?timestamp=" + timestamp(), true);
             asyncXHR.timeout = timeoutInMs;
             asyncXHR.ontimeout = function() { disconnect("Could not connect to server"); }
             asyncXHR.send(null);
         } catch (ex) {
-            disconnect(ex);
+            disconnect(ex + "(incoming)");
         }
     }
     
@@ -94,29 +95,42 @@ window.MoSyncDebugProtocol = new (function() {
         if (disconnected) {
             return;
         }
-        try {
-            var req = new XMLHttpRequest();
-            var timeoutHandle = null;
-            var timeoutFn = function() {
-                req.abort();
-                disconnect("Could not connect to debug server");
-            };
-            if (timeout) {
-                timeoutHandle = setTimeout(timeoutFn, timeout);
+        
+        // Some devices have problems with simultaneous connections.
+        var maxRetries = 4;
+        var retries = maxRetries;
+        while (true) {
+            try {
+	            var req = new XMLHttpRequest();
+	            var timeoutHandle = null;
+	            var timeoutFn = function() {
+	                req.abort();
+	                disconnect("Could not connect to debug server");
+	            };
+	            if (timeout) {
+	                timeoutHandle = setTimeout(timeoutFn, timeout);
+	            }
+	            req.open('POST', serverUrl + '/mobile' + path + "/" + timestamp(), false);
+	            req.setRequestHeader('Content-Type', 'application/json');
+	            if (sessionId != null) {
+	                payload.sessionId = sessionId;
+	                if (maxRetries != retries) {
+	                	payload.retries = maxRetries - retries;
+	                }
+	            }
+	            var json = JSON.stringify(payload)
+	            req.send(json);
+	            if (timeout) {
+	                clearTimeout(timeoutHandle);
+	            }
+	            return safeJSONParse(req.responseText);
+            } catch (ex) {
+                retries--;
+                if (retries <= 0) {
+                    disconnect(ex + "(" + path + ")");
+                    return;
+                }
             }
-            req.open('POST', serverUrl + '/mobile' + path + "/" + timestamp(), false);
-            req.setRequestHeader('Content-Type', 'application/json');
-            if (sessionId != null) {
-                payload.sessionId = sessionId;
-            }
-            var json = JSON.stringify(payload)
-            req.send(json);
-            if (timeout) {
-                clearTimeout(timeoutHandle);
-            }
-            return safeJSONParse(req.responseText);
-        } catch (ex) {
-            disconnect(ex);
         }
     }
     
@@ -159,6 +173,9 @@ window.MoSyncDebugProtocol = new (function() {
             case 'clear-breakpoints':
                 if (cmd.reset) {
                     breakpoints = {};
+                }
+                if (cmd.breakonexceptions) {
+                    breakonexceptions = cmd.breakonexceptions;
                 }
                 cmd.data.forEach(function(bp) {
                     var file = bp.file;
@@ -238,7 +255,12 @@ window.MoSyncDebugProtocol = new (function() {
                 step = false;
                 shouldBreak = function() { return false; };
                 // Try to kill it -- this obviously requires wormhole.
-                mosync.bridge.send(["close"]);
+                var canTerminate = mosync && mosync.app && mosync.app.exit;
+                if (canTerminate) {
+                    mosync.app.exit();
+                } else {
+                    alert('Remote terminate not supported for this app');
+                }
                 return false;
                 
             case 'disconnect':
@@ -340,7 +362,6 @@ window.MoSyncDebugProtocol = new (function() {
     
     function performReload() {
         window.location.reload();
-        mosync.bridge.send(["reload", serverHost, serverPort]);
     }
     
     function doEval(evalScopeFunc, cmd) {
@@ -400,7 +421,8 @@ window.MoSyncDebugProtocol = new (function() {
     }
     
     function getLocation() {
-        return window ? window.document.location.href : "<unknown>";
+        // Remove any # in the url
+        return window ? window.document.location.href.replace(/#(.*)/, '') : "<unknown>";
     }
     
     this.init = function() {
@@ -485,6 +507,7 @@ window.MoSyncDebugProtocol = new (function() {
                     var evaluatedCondition = evalScopeFunc(condition);
                     if ("change" == conditionSuspend) {
                         isBreakpoint = (evaluatedCondition != breakpointDesc.lastEvaluation);
+                        breakpointDesc.lastEvaluation = evaluatedCondition;
                     } else {
                         isBreakpoint = evaluatedCondition;
                     }
@@ -527,15 +550,17 @@ window.MoSyncDebugProtocol = new (function() {
     this.reportException = function(e, catchLine, evalScopeFunc) {
         var lastFile = idToFile[lastFileId];
         try {
-	        handleBreakpoint({
-	            command: 'report-breakpoint',
-	            type: 'exception',
-	            message: e.toString(),
-	            file: lastFile,
-	            line: lastLine,
-	            catchLine: catchLine,
-	            stack: resolveStack(stack)
-	        }, evalScopeFunc);
+            if (breakonexceptions) {
+		        handleBreakpoint({
+		            command: 'report-breakpoint',
+		            type: 'exception',
+		            message: e.toString(),
+		            file: lastFile,
+		            line: lastLine,
+		            catchLine: catchLine,
+		            stack: resolveStack(stack)
+		        }, evalScopeFunc);
+	        }
         } catch (potentialDropToFrame) {
             if (potentialDropToFrame.dropToFrame) {
                 return potentialDropToFrame;

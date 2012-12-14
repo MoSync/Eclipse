@@ -12,6 +12,7 @@ public class FileRedefinable extends AbstractRedefinable {
 
 	private IFile file;
 	private boolean deleted;
+	private String errorMsg;
 
 	public FileRedefinable(IRedefinable parent, IFile file) {
 		this(parent, file, false);
@@ -29,6 +30,14 @@ public class FileRedefinable extends AbstractRedefinable {
 	
 	public boolean isDeleted() {
 		return deleted;
+	}
+	
+	public void setErrorMessage(String errorMsg) {
+		this.errorMsg = errorMsg;
+	}
+	
+	public String validate() {
+		return errorMsg;
 	}
 	
 	@Override

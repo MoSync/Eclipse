@@ -45,9 +45,6 @@ import org.eclipse.wst.jsdt.core.dom.Block;
 import org.eclipse.wst.jsdt.core.dom.BodyDeclaration;
 import org.eclipse.wst.jsdt.core.dom.CatchClause;
 import org.eclipse.wst.jsdt.core.dom.DoStatement;
-import org.eclipse.wst.jsdt.core.dom.Expression;
-import org.eclipse.wst.jsdt.core.dom.ExpressionStatement;
-import org.eclipse.wst.jsdt.core.dom.FieldAccess;
 import org.eclipse.wst.jsdt.core.dom.ForInStatement;
 import org.eclipse.wst.jsdt.core.dom.ForStatement;
 import org.eclipse.wst.jsdt.core.dom.FunctionDeclaration;
@@ -70,6 +67,9 @@ import org.eclipse.wst.jsdt.web.core.javascript.JsTranslator;
 import org.eclipse.wst.sse.core.StructuredModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.IModelManager;
 import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocument;
+import org.eclipse.wst.sse.core.internal.provisional.text.IStructuredDocumentRegion;
+import org.eclipse.wst.xml.core.internal.parser.regions.TagNameRegion;
+import org.eclipse.wst.xml.core.internal.text.XMLStructuredDocumentRegion;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
@@ -102,9 +102,28 @@ public class JSODDSupport {
 
 	}
 
+	/**
+	 * A constant representing the 'drop to frame' feature.
+	 * @see Html5Plugin#isFeatureSupported(String)
+	 */
 	public static final String DROP_TO_FRAME = "drop.to.frame";
+	
+	/**
+	 * A constant representing the 'edit-and-continue' feature.
+	 * @see Html5Plugin#isFeatureSupported(String)
+	 */
 	public static final String EDIT_AND_CONTINUE = "edit.continue";
+	
+	/**
+	 * A constant representing the 'line breakpoints' feature.
+	 * @see Html5Plugin#isFeatureSupported(String)
+	 */
 	public static final String LINE_BREAKPOINTS = "line.breakpoint";
+	
+	/**
+	 * A constant representing the 'artificial stack' feature.
+	 * @see Html5Plugin#isFeatureSupported(String)
+	 */
 	public static final String ARTIFICIAL_STACK = "artificial.stack";
 
 	public static final String EVAL_FUNC_SNIPPET = "function(____eval) {return eval(____eval);}";
@@ -154,6 +173,7 @@ public class JSODDSupport {
 			currentPosition = getPosition(node, true);
 			
 			int start = getStartPosition(node);
+			int scopeStart = start;
 			int startLine = unit == null ? -1 : unit.getLineNumber(start);
 
 			LocalVariableScope startScope = currentScope;
@@ -162,6 +182,7 @@ public class JSODDSupport {
 			if (scopeResetPoint != null) {
 				scopeResetPoints.remove(scopeResetPoint);
 				currentScope = currentScope.clear();
+				scopeStart = scopeResetPoint;
 			}
 
 			boolean nest = isNestStatement(node);
@@ -238,7 +259,7 @@ public class JSODDSupport {
 			}
 
 			if (currentScope != startScope) {
-				localVariables.put(start, currentScope);
+				localVariables.put(scopeStart, currentScope);
 			}
 		}
 
@@ -740,56 +761,81 @@ public class JSODDSupport {
 				if (isEmbeddedJavaScriptFile(filePath)) {
 					ArrayList<Pair<Integer, Integer>> htmlRanges = new ArrayList<Pair<Integer, Integer>>();
 					ArrayList<Pair<Integer, Integer>> htmlImportRanges = new ArrayList<Pair<Integer, Integer>>();
-					prunedSource = getEmbeddedJavaScript(file,
-							scopeResetPoints, htmlRanges, htmlImportRanges);
+					Pair<String, Integer> prunedSourceAndLoc = getEmbeddedJavaScript(file,
+							scopeResetPoints, htmlRanges);
+					prunedSource = prunedSourceAndLoc.first;
+					fwImportLocation = prunedSourceAndLoc.second;
 					HTMLRedefinable htmlRedefinable = new HTMLRedefinable(null,
 							file, visitor);
 					htmlRedefinable.setHtmlRanges(htmlRanges);
 					fileRedefinable = htmlRedefinable;
-					if (!htmlImportRanges.isEmpty()) {
-						fwImportLocation = htmlImportRanges.get(0).first;
-					}
 				}
 
 				// 1. Parse (JSDT)
 				parser.setSource(prunedSource.toCharArray());
-				ASTNode ast = parser.createAST(new NullProgressMonitor());
-
-				// 2. Instrument
-				visitor.setFileRedefinable(fileRedefinable);
-				visitor.setScopeResetPoints(scopeResetPoints);
-				ast.accept(visitor);
 				TreeMap<Integer, LocalVariableScope> scopeMap = new TreeMap<Integer, LocalVariableScope>();
 				TreeSet<Integer> instrumentedLines = new TreeSet<Integer>();
+				
+				try {
+					ASTNode ast = parser.createAST(new NullProgressMonitor());
+	
+					// 2. Instrument
+					visitor.setFileRedefinable(fileRedefinable);
+					visitor.setScopeResetPoints(scopeResetPoints);
+					ast.accept(visitor);
+				} catch (Exception e) {
+					int errorLine = findPossibleErrorLine(visitor);
+					fileRedefinable.setErrorMessage(MessageFormat.format("Could not parse {0} -- probably a syntax error close to line {1}. Debugging disabled for this file.", filePath.toOSString(), errorLine));
+				}
+				
 				visitor.rewrite(fileId, source, fwImportLocation, output, scopeMap,
 						instrumentedLines);
 
 				// 3. Update state and notify listeners
 				String instrumentedSource = visitor.getInstrumentedSource();
+				
+				// 4. Do another parse of the instrumented stuff.
+				try {
+					if (fileRedefinable.validate() == null) {
+						parser.setSource(instrumentedSource.toCharArray());
+						parser.createAST(new NullProgressMonitor());
+					}
+				} catch (Exception e) {
+					instrumentedSource = source;
+					fileRedefinable.setErrorMessage(MessageFormat.format("Unable to instrument {0} due to limitiations in the instrumentation engine. Debugging disabled for this file", filePath.toOSString()));
+				}
+				
 				this.instrumentedSource.put(file, instrumentedSource);
 				scopeMaps.put(fileId, scopeMap);
 				lineMaps.put(fileId, instrumentedLines);
-
-				if (baseline != null) {
-					baseline.replaceChild(fileRedefinable);
-				}
+			}
+			if (baseline != null) {
+				baseline.replaceChild(fileRedefinable);
 			}
 			return fileRedefinable;
 		} catch (CoreException e) {
 			throw e;
 		} catch (Exception e) {
 			String positionHint = "";
-			Position currentPosition = null;
-			if (visitor != null) {
-				currentPosition = visitor.getCurrentPosition();
-			}
-			if (currentPosition != null) {
-				positionHint = ", near line " + currentPosition.getLine();
+			int line = findPossibleErrorLine(visitor);
+			if (line > 0) {
+				positionHint = ", near line " + line;
 			}
 			String locationHintMsg = MessageFormat.format("In file {0}{1}: {2}", filePath.toOSString(), positionHint, e.getMessage());
 			throw new CoreException(new Status(IStatus.ERROR,
 					Html5Plugin.PLUGIN_ID, locationHintMsg, e));
 		}
+	}
+
+	private int findPossibleErrorLine(DebugRewriteOperationVisitor visitor) {
+		Position currentPosition = null;
+		if (visitor != null) {
+			currentPosition = visitor.getCurrentPosition();
+		}
+		if (currentPosition != null) {
+			return currentPosition.getLine();
+		}
+		return 0;
 	}
 
 	private void initProjectRedefinable() {
@@ -801,12 +847,9 @@ public class JSODDSupport {
 	}
 
 	// Returns a string where everything that is not javascript is replaced by
-	// spaces
-	private String getEmbeddedJavaScript(IFile file,
-			NavigableSet<Integer> scopeResetPoints,
-			ArrayList<Pair<Integer, Integer>> htmlRanges,
-			ArrayList<Pair<Integer, Integer>> importHtmlRanges) throws IOException,
-			CoreException, InterruptedException {
+	// spaces. The second value is the location of the first script tag.
+	private Pair<String, Integer> getEmbeddedJavaScript(IFile file,
+			NavigableSet<Integer> scopeResetPoints, ArrayList<Pair<Integer, Integer>> htmlRanges) throws Exception {
 		final CountDownLatch latch = new CountDownLatch(1);
 		IModelManager modelManager = StructuredModelManager.getModelManager();
 		IStructuredDocument doc = modelManager
@@ -837,13 +880,33 @@ public class JSODDSupport {
 			htmlRanges.add(new Pair<Integer, Integer>(start, end));
 		}
 		
-		org.eclipse.jface.text.Position[] importRanges = translator.getImportHtmlRanges();
+		// The import ranges in JSDT is (of course!) not comprehensive... so we need to roll our own.
+		// Again, using internal APIs.
+		IStructuredDocumentRegion[] regs = doc.getStructuredDocumentRegions();
+		int fwImportLocation = -1;
+		for (int i = 0; fwImportLocation == -1 && i < regs.length; i++) {
+			if (regs[i] instanceof XMLStructuredDocumentRegion) {
+				XMLStructuredDocumentRegion xmlReg = (XMLStructuredDocumentRegion) regs[i];
+				for (int j = 0; fwImportLocation == -1 && j < xmlReg.getRegions().size(); j++) {
+					if (xmlReg.getRegions().get(j) instanceof TagNameRegion) {
+						TagNameRegion tag = (TagNameRegion) xmlReg.getRegions().get(j);
+						String tagName = xmlReg.getFullText(tag);
+						if ("script".equalsIgnoreCase(tagName.trim())) {
+							fwImportLocation = xmlReg.getStart();
+							continue;
+						}
+					}
+				}
+			}	
+		}
+		
+		/*org.eclipse.jface.text.Position[] importRanges = translator.getImportHtmlRanges();
 		for (int i = 0; i < importRanges.length; i++) {
 			org.eclipse.jface.text.Position importRange = importRanges[i];
 			importHtmlRanges.add(new Pair<Integer, Integer>(importRange.offset, importRange.offset + importRange.length));
-		}
+		}*/
 
-		return translator.getJsText();
+		return new Pair<String, Integer>(translator.getJsText(), fwImportLocation);
 	}
 
 	public static boolean isValidJavaScriptFile(IPath file) {
@@ -922,20 +985,30 @@ public class JSODDSupport {
 	public String generateFrameworkSource() throws CoreException {
 		MoSyncProject project = MoSyncProject.create(this.project);
 		StringWriter boilerplateOutput = new StringWriter();
-		writeTemplate(project, "/templates/jsoddsupport.template",
+		writeTemplate(project, "/templates/jsoddsupport.template", new HashMap<String, String>(),
 				boilerplateOutput);
 		return boilerplateOutput.getBuffer().toString();
 	}
 
-	public void generateRemoteFetch(MoSyncProject project,
+	public void generateRemoteFetch(MoSyncProject project, IResource resource,
 			Writer remoteFetchOutput) throws CoreException {
-		writeTemplate(project, "/templates/hcr.template", remoteFetchOutput);
+		Map<String, String> additionalProperties = new HashMap<String, String>();
+		if (resource instanceof IFile) {
+			additionalProperties.put("FILE_PATH", Html5Plugin.getDefault().getLocalPath((IFile) resource).toPortableString());
+			if (isEmbeddedJavaScriptFile(resource.getFullPath())) {
+				writeTemplate(project, "/templates/hcr.template", additionalProperties, remoteFetchOutput);	
+			} else {
+				writeTemplate(project, "/templates/hcrjs.template", additionalProperties, remoteFetchOutput);
+			}
+			
+		}
 	}
 
-	private void writeTemplate(MoSyncProject project, String templatePath,
+	private void writeTemplate(MoSyncProject project, String templatePath, Map<String, String> additionalProperties,
 			Writer output) throws CoreException {
 		Template template = new Template(getClass().getResource(templatePath));
 		Map<String, String> properties = getTemplateProperties(project);
+		properties.putAll(additionalProperties);
 		try {
 			String contents = template.resolve(properties);
 			output.write(contents);
@@ -1005,7 +1078,7 @@ public class JSODDSupport {
 	 * @param hitLine
 	 * @return
 	 */
-	public IJavaScriptLineBreakpoint findBreakPoint(IPath path, int hitLine) {
+	public static IJavaScriptLineBreakpoint findBreakPoint(IPath path, int hitLine) {
 		IBreakpoint[] bps = DebugPlugin.getDefault().getBreakpointManager()
 				.getBreakpoints(JavaScriptDebugModel.MODEL_ID);
 		IJavaScriptLineBreakpoint closest = null;

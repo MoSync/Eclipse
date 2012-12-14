@@ -4,6 +4,7 @@ import java.util.Collection;
 
 import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.jface.text.ITextSelection;
+import org.eclipse.wst.xml.core.internal.document.TextImpl;
 
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 
@@ -19,6 +20,10 @@ public class EvaluateTester extends ActiveDebugSessionsTester {
 				}
 			}
 			if (receiver instanceof ITextSelection) {
+				return true;
+			}
+			if (receiver.getClass().getName().equals("org.eclipse.wst.xml.core.internal.document.TextImpl")) {
+				// Very non-future-proof HTML check.
 				return true;
 			}
 		}
