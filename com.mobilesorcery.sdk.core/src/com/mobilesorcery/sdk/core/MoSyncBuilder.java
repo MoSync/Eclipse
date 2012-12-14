@@ -21,6 +21,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -632,6 +633,7 @@ public class MoSyncBuilder extends ACBuilder {
 			int continueFlag = IBuildStep.CONTINUE;
 
 			for (IBuildStep buildStep : buildSteps) {
+				long startTime = System.currentTimeMillis();
 				if (monitor.isCanceled()) {
 					return buildResult;
 				}
@@ -662,8 +664,8 @@ public class MoSyncBuilder extends ACBuilder {
 								.format("Was told by build step {0} to skip the remaining build steps. Build successful.",
 										buildStep.getName()));
 					}
+					console.addMessage(MessageFormat.format("Time for buildstep {0}: {1}.", buildStep.getName(), Util.elapsedTime(System.currentTimeMillis() - startTime)));
 				}
-
 				monitor.worked(1);
 			}
 
@@ -675,9 +677,11 @@ public class MoSyncBuilder extends ACBuilder {
 			// Update the current set of dependencies.
 			buildState.getDependencyManager().applyDelta(
 					buildResult.getDependencyDelta());
-
-			console.addMessage("Build finished at "
-					+ dateFormater.format(Calendar.getInstance().getTime()));
+			
+			Date endTimestamp = Calendar.getInstance().getTime();
+			console.addMessage(MessageFormat.format("Build finished at {0}. (Build time: {1}.)",
+					dateFormater.format(endTimestamp),
+					Util.elapsedTime(endTimestamp.getTime() - timestamp.getTime().getTime())));
 
 			refresh(project);
 

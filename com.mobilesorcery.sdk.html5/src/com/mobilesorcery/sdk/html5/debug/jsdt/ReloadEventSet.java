@@ -42,4 +42,7 @@ public class ReloadEventSet extends HashSet implements EventSet {
 		this.thread = thread;
 	}
 
+	public String toString() {
+		return vm.getId() + "; " + thread + ": " + super.toString();
+	}
 }

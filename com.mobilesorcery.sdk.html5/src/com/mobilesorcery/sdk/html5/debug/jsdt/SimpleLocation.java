@@ -40,5 +40,10 @@ public class SimpleLocation implements Location {
 	public String functionName() {
 		return functionName;
 	}
+	
+	public String toString() {
+		String fnName = functionName == null ? "" : " (" + functionName + ")";
+		return ref + ":" + line + fnName;
+	}
 
 }

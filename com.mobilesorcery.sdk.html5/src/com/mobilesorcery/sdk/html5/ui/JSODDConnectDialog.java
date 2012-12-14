@@ -91,6 +91,7 @@ public class JSODDConnectDialog extends ProgressAndStepDialog {
 								monitor.beginTask(
 										MessageFormat.format("Waiting for {0} to connect...", dialog.getTargetType()), -1);
 								boolean waiting = true;
+								
 								while (!monitor.isCanceled() && waiting) {
 									Thread.sleep(500);
 									waiting = !listener.isStarted() && !dialog.shouldWaitInBackground();

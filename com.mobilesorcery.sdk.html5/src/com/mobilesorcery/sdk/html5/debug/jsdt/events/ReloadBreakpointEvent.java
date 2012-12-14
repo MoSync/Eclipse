@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.html5.debug.jsdt;
+package com.mobilesorcery.sdk.html5.debug.jsdt.events;
 
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
@@ -9,7 +9,7 @@ import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
 
 public class ReloadBreakpointEvent extends ReloadLocatableEvent implements BreakpointEvent {
 
-	ReloadBreakpointEvent(ReloadVirtualMachine vm, ThreadReference thread,
+	public ReloadBreakpointEvent(ReloadVirtualMachine vm, ThreadReference thread,
 			Location location, EventRequest request) {
 		super(vm, thread, location, request);
 	}

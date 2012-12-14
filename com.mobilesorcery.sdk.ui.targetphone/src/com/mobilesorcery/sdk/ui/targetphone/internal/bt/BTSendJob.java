@@ -43,6 +43,8 @@ final class BTSendJob extends Job {
 		this.shellProvider = shellProvider;
 		this.selectedPhone = selectedPhone;
 		this.packageToSend = packageToSend;
+		this.project = project;
+		this.variant = variant;
 	}
 
 	protected IStatus run(IProgressMonitor monitor) {

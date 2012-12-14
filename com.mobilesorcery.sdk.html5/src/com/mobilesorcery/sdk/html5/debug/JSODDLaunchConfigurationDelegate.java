@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.core.resources.IMarkerDelta;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -28,6 +30,7 @@ import org.eclipse.wst.jsdt.debug.internal.core.launching.JavaScriptProcess;
 import org.eclipse.wst.jsdt.debug.internal.core.model.JavaScriptDebugTarget;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
 import com.mobilesorcery.sdk.html5.debug.jsdt.ReloadListeningConnector;
@@ -61,6 +64,7 @@ public class JSODDLaunchConfigurationDelegate implements
 
 	private static final String DEFAULT_LAUNCH_CONFIG = "default.launch.config";
 	private static final String LAUNCH_CONFIG_TYPE = "com.mobilesorcery.html5.jsodd.launchconfigurationtype";
+	public static final String PROJECT_NAME = "project.name";
 
 	@Override
 	public void launch(ILaunchConfiguration configuration, String mode,
@@ -99,15 +103,18 @@ public class JSODDLaunchConfigurationDelegate implements
 		}
 	}
 
-	public void runJSDTRemoteConnector(ILaunch launch) throws IOException {
+	public void runJSDTRemoteConnector(ILaunch launch) throws IOException, CoreException {
 		// This is more or less extracted from JSDTs remote java script launcher
 		ReloadListeningConnector connector = ReloadListeningConnector
 				.getDefault();
 		Map arguments = new HashMap<String, String>();
 		ReloadVirtualMachine vm = (ReloadVirtualMachine) connector.accept(arguments);
+		String projectName = launch.getLaunchConfiguration().getAttribute(PROJECT_NAME, (String) null);
+		IProject project = projectName == null ? null : ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
+		vm.setProject(project);
 		
 		// TODO: refactor
-		JavaScriptProcess process = new JSODDProcess(vm, launch, "Reload");
+		JavaScriptProcess process = new JSODDProcess(vm, launch, "JavaScript On-device Debug");
 		launch.addProcess(process);
 
 		final boolean isDebugging = CoreMoSyncPlugin.getDefault().isDebugging();
@@ -125,7 +132,7 @@ public class JSODDLaunchConfigurationDelegate implements
 				// course be more like this one (sigh!)
 				// http://bertrandmeyer.com/2011/06/20/concurrent-programming-is-easy/
 				if (isDebugging) {
-					CoreMoSyncPlugin.trace("Breakpoint changed, recv'd event @ " + Thread.currentThread().getName());
+					//CoreMoSyncPlugin.trace("Breakpoint changed, recv'd event @ " + Thread.currentThread().getName());
 				}
 			}
 		};
@@ -153,7 +160,7 @@ public class JSODDLaunchConfigurationDelegate implements
 		return true;
 	}
 
-	public static boolean launchDefault(String terminateToken) throws CoreException {
+	public static synchronized boolean launchDefault(MoSyncProject project, String terminateToken) throws CoreException {
 		ILaunchManager manager = DebugPlugin.getDefault().getLaunchManager();
 		// TODO: Kill old ones.
 
@@ -168,14 +175,16 @@ public class JSODDLaunchConfigurationDelegate implements
 				}
 			}
 
+			ILaunchConfigurationWorkingCopy wc = type.newInstance(null, "Default JavaScript On-Device Debug");
 			if (cfg == null) {
-				ILaunchConfigurationWorkingCopy wc = type.newInstance(null, "Default JavaScript On-Device Debug");
 				wc.setAttribute(DEFAULT_LAUNCH_CONFIG, true);
 				wc.setAttribute(IDebugUIConstants.ATTR_PRIVATE, true);
-				wc.doSave();
-				
-				cfg = wc;
 			}
+
+			wc.setAttribute(PROJECT_NAME, project.getName());
+			wc.doSave();
+			
+			cfg = wc;
 		}
 
 		ILaunch launch = null;

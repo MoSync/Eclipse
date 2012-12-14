@@ -1,4 +1,4 @@
-package com.mobilesorcery.sdk.html5.debug.jsdt;
+package com.mobilesorcery.sdk.html5.debug.jsdt.events;
 
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.ThreadReference;
@@ -11,7 +11,7 @@ public class ReloadThreadExitEvent extends ReloadLocatableEvent implements Threa
 
 	public ReloadThreadExitEvent(ReloadVirtualMachine vm, ThreadReference thread,
 			Location location, EventRequest request) {
-		super(vm, thread, null, request);
+		super(vm, thread, location, request);
 	}
 
 }

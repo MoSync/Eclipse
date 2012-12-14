@@ -110,10 +110,12 @@ public class Template implements ITemplate {
         boolean doOutput = true;
         for (int i = 0; i < lines.length; i++) {
             String line = lines[i];
-            if (line.trim().startsWith("#ifdef")) { //$NON-NLS-1$
+            boolean ifdef = line.trim().startsWith("#ifdef"); //$NON-NLS-1$
+            boolean ifndef = line.trim().startsWith("#ifndef"); //$NON-NLS-1$
+            if (ifdef || ifndef) {
                 String[] ifdefLine = line.split("\\s+", 2); //$NON-NLS-1$
                 if (ifdefLine.length == 2) {
-                    doOutput = flags.contains(ifdefLine[1].trim());
+                    doOutput = ifndef ^ flags.contains(ifdefLine[1].trim());
                 }
             } else if (line.trim().startsWith("#endif")) { //$NON-NLS-1$
                 doOutput = true;

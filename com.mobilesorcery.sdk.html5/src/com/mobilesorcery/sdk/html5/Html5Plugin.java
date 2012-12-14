@@ -3,13 +3,13 @@ package com.mobilesorcery.sdk.html5;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -21,27 +21,36 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.preferences.DefaultScope;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchesListener2;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.util.Policy;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IStartup;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.internal.util.Util;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.wst.jsdt.core.IJavaScriptProject;
 import org.eclipse.wst.jsdt.core.JavaScriptCore;
 import org.eclipse.wst.jsdt.core.LibrarySuperType;
+import org.eclipse.wst.jsdt.debug.internal.core.Constants;
+import org.eclipse.wst.jsdt.debug.internal.core.JavaScriptDebugPlugin;
 import org.eclipse.wst.jsdt.internal.core.JavaProject;
-import org.json.simple.JSONObject;
 import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.BuildVariant;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -122,6 +131,10 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 
 	private final HashMap<IProject, JSODDSupport> jsOddSupport = new HashMap<IProject, JSODDSupport>();
 
+	private HashSet<String> supportedFeatures;
+
+	private IPreferenceChangeListener breakOnExceptionsListener;
+
 	// private HashMap<Object, AtomicInteger> timeoutSuppressions = new
 	// HashMap<Object, AtomicInteger>();
 
@@ -141,6 +154,8 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 	@Override
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
+		initSupportedFeatures();
+		initBreakpointOnExceptionListener();
 		// We do not yet have the eclipse fix #54993
 		MosyncUIPlugin.getDefault().awaitWorkbenchStartup(
 				new IWorkbenchStartupListener() {
@@ -172,6 +187,7 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 		super.stop(context);
 		TargetPhonePlugin.getDefault().removeTargetPhoneTransportListener(this);
 		DebugPlugin.getDefault().getLaunchManager().removeLaunchListener(this);
+		removeBreakpointOnExceptionListener();
 		disposeReloadManager();
 	}
 
@@ -182,6 +198,13 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 			server.addListener(new ILiveServerListener() {
 				@Override
 				public void timeout(final ReloadVirtualMachine vm) {
+					IProcessConsole console = CoreMoSyncPlugin.getDefault()
+							.createConsole(MoSyncBuilder.CONSOLE_ID);
+					console.addMessage(
+							IProcessConsole.ERR,
+							MessageFormat
+									.format("*** A timeout occurred. The device being debugged (at {0}) seems to have been disconnected. ***",
+											vm.getRemoteAddr()));
 					ILaunch launch = vm.getJavaScriptDebugTarget().getLaunch();
 					String terminateToken = launch == null ? null : launch
 							.getAttribute(TERMINATE_TOKEN_LAUNCH_ATTR);
@@ -471,13 +494,32 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 			if (cfg != null) {
 				try {
 					String cfgId = cfg.getType().getIdentifier();
-					if (EmulatorLaunchConfigurationDelegate.ID.equals(cfgId)) {
-						IProject project = EmulatorLaunchConfigurationDelegate
-								.getProject(cfg);
-						IBuildVariant variant = EmulatorLaunchConfigurationDelegate
-								.getVariant(cfg, launch.getLaunchMode());
-						launchJSODD(MoSyncProject.create(project), variant,
-								false, BuildVariant.toString(variant));
+					MoSyncProject project = MoSyncProject
+							.create(EmulatorLaunchConfigurationDelegate
+									.getProject(cfg));
+					IBuildVariant variant = EmulatorLaunchConfigurationDelegate
+							.getVariant(cfg, launch.getLaunchMode());
+					if ("debug".equals(launch.getLaunchMode())) {
+						if (EmulatorLaunchConfigurationDelegate.ID
+								.equals(cfgId)) {
+							launchJSODD(project, variant, false,
+									BuildVariant.toString(variant));
+						}
+					} else if ("run".equals(launch.getLaunchMode())
+							&& canLaunchJSODD(project, variant)) {
+						launch.terminate();
+						Display d = PlatformUI.getWorkbench().getDisplay();
+						d.asyncExec(new Runnable() {
+							@Override
+							public void run() {
+								MessageDialog
+										.openError(PlatformUI.getWorkbench()
+												.getModalDialogShellProvider()
+												.getShell(), "Cannot launch",
+												"JavaScript On-Device Debug can only be run in debug mode.");
+							}
+						});
+
 					}
 				} catch (Exception e) {
 					// Who cares?
@@ -511,17 +553,12 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 	private void launchJSODD(final MoSyncProject project,
 			final IBuildVariant variant, final boolean onDevice,
 			final String terminateToken) {
-		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project,
-				variant.getConfigurationId());
-		if (DebuggingEnableTester.hasDebugSupport(project)
-				&& PropertyUtil.getBoolean(properties,
-						MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS) && isJSODDEnabled(project)) {
-
+		if (canLaunchJSODD(project, variant)) {
 			new Thread(new Runnable() {
 				public void run() {
 					try {
 						boolean wasLaunched = JSODDLaunchConfigurationDelegate
-								.launchDefault(terminateToken);
+								.launchDefault(project, terminateToken);
 						int result = JSODDConnectDialog.show(project, variant,
 								onDevice, null);
 						if (result == JSODDConnectDialog.CANCEL) {
@@ -536,6 +573,20 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 				}
 			}).start();
 		}
+	}
+
+	private boolean canLaunchJSODD(MoSyncProject project, IBuildVariant variant) {
+		if (!DebuggingEnableTester.hasDebugSupport(project)) {
+			return false;
+		}
+		if (!isJSODDEnabled(project)) {
+			return false;
+		}
+
+		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project,
+				variant.getConfigurationId());
+		return PropertyUtil.getBoolean(properties,
+				MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS);
 	}
 
 	/*
@@ -576,10 +627,86 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 		return new URL("http", host, 8511, "");
 	}
 
+	private void initSupportedFeatures() {
+		supportedFeatures = new HashSet<String>();
+		supportedFeatures.add(JSODDSupport.LINE_BREAKPOINTS);
+		supportedFeatures.add(JSODDSupport.ARTIFICIAL_STACK);
+		supportedFeatures.add(JSODDSupport.DROP_TO_FRAME);
+
+		String supportedFeaturesArg = System.getProperty(Html5Plugin.PLUGIN_ID
+				+ ".jsodd.features");
+		if (supportedFeaturesArg != null) {
+			String[] supportedFeatures = supportedFeaturesArg.split(",\\s");
+			for (String supportedFeature : supportedFeatures) {
+				boolean remove = supportedFeature.startsWith("-");
+				boolean explicitAdd = supportedFeature.startsWith("+");
+				if (remove || explicitAdd) {
+					supportedFeature = supportedFeature.substring(1);
+				}
+				if (remove) {
+					this.supportedFeatures.remove(supportedFeature);
+				} else {
+					this.supportedFeatures.add(supportedFeature);
+				}
+			}
+		}
+	}
+
 	public boolean isFeatureSupported(String feature) {
 		// Ok, one more tricky thing left: binding of function defined
 		// within function - then we can enable this.
-		return !JSODDSupport.EDIT_AND_CONTINUE.equals(feature);
+		// return !JSODDSupport.EDIT_AND_CONTINUE.equals(feature);
+		return supportedFeatures.contains(feature);
+	}
+
+	private void initBreakpointOnExceptionListener() {
+		// Ok, this is a ridiculous workaround -- JSDT does not react to
+		// property changes
+		// where the property value is null. The problem is that enabling
+		// exceptions
+		// is the default value, which just happens to be propagated as null in
+		// the
+		// preference change event. Did anyone even test that functionality??
+		final IEclipsePreferences node = InstanceScope.INSTANCE
+				.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
+		final IEclipsePreferences defaultNode = DefaultScope.INSTANCE
+				.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
+		breakOnExceptionsListener = new IPreferenceChangeListener() {
+			private boolean inChange = false;
+
+			@Override
+			public void preferenceChange(PreferenceChangeEvent event) {
+				if (Constants.SUSPEND_ON_THROWN_EXCEPTION
+						.equals(event.getKey())) {
+					if (!inChange && event.getNewValue() == null) {
+						inChange = true;
+						try {
+							// This is the default value -- to trigger this so
+							// JSDT understands it is horrible
+							// but works.
+							defaultNode.putBoolean(
+									Constants.SUSPEND_ON_THROWN_EXCEPTION,
+									false);
+							node.putBoolean(
+									Constants.SUSPEND_ON_THROWN_EXCEPTION, true);
+							defaultNode
+									.putBoolean(
+											Constants.SUSPEND_ON_THROWN_EXCEPTION,
+											true);
+						} finally {
+							inChange = false;
+						}
+					}
+				}
+			}
+		};
+		node.addPreferenceChangeListener(breakOnExceptionsListener);
+	}
+
+	private void removeBreakpointOnExceptionListener() {
+		IEclipsePreferences node = InstanceScope.INSTANCE
+				.getNode(JavaScriptDebugPlugin.PLUGIN_ID);
+		node.removePreferenceChangeListener(breakOnExceptionsListener);
 	}
 
 }

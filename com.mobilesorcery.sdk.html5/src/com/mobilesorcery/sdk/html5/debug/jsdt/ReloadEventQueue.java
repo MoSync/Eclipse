@@ -14,18 +14,37 @@ import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptLineBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.jsdi.Location;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.EventQueue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.event.EventSet;
+import org.eclipse.wst.jsdt.debug.core.jsdi.request.EventRequest;
 import org.json.simple.JSONObject;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.html5.Html5Plugin;
+import com.mobilesorcery.sdk.html5.debug.JSODDSupport;
 import com.mobilesorcery.sdk.html5.debug.ReloadVirtualMachine;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadBreakpointEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadDebuggerStatementEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadExceptionEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadScriptEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadStepEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadSuspendEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadThreadEnterEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.events.ReloadThreadExitEvent;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadBreakpointRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadDebuggerStatementRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadExceptionRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadScriptLoadRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadStepRequest;
+import com.mobilesorcery.sdk.html5.debug.jsdt.requests.ReloadSuspendRequest;
 import com.mobilesorcery.sdk.html5.live.JSODDServer;
 
 public class ReloadEventQueue implements EventQueue {
 
-	public final static String CUSTOM_EVENT = "custom-event";
+	public static final String CUSTOM_EVENT = "custom-event";
+	public static final String THREAD_ENTER = "thread-enter";
+	public static final String THREAD_EXIT = "thread-exit";
 
 	private final ReloadVirtualMachine vm;
 	private final ReloadEventRequestManager requests;
@@ -72,13 +91,14 @@ public class ReloadEventQueue implements EventQueue {
 			List suspendRequests = requests.suspendRequests();
 			List exceptionRequests = requests.exceptionRequests();
 			List scriptLoadRequests = requests.scriptLoadRequests();
+			List threadExitRequests = requests.threadExitRequests();
+			List threadEnterRequests = requests.threadEnterRequests();
 			List debuggerStatementRequests = requests.debuggerStatementRequests();
 
 			if ("report-breakpoint".equals(commandName)) {
+				ReloadThreadReference thread = extractThread(commandObj);
 				// Breakpoint!
 				JSONObject command = (JSONObject) commandObj;
-				ReloadThreadReference thread = (ReloadThreadReference) vm
-						.allThreads().get(0);
 				String fileName = (String) command.get("file");
 				Long line = (Long) command.get("line");
 				boolean isSuspendedByDebugger = command.containsKey("suspended")
@@ -95,7 +115,7 @@ public class ReloadEventQueue implements EventQueue {
 					Location location = new SimpleLocation(vm, file,
 							line.intValue());
 					IProject project = file.getProject();
-					IJavaScriptLineBreakpoint bp = Html5Plugin.getDefault().getJSODDSupport(project).findBreakPoint(
+					IJavaScriptLineBreakpoint bp = JSODDSupport.findBreakPoint(
 							new Path(fileName), line.intValue());
 					for (Object bpRequestObj : bpRequests) {
 						ReloadBreakpointRequest bpRequest = (ReloadBreakpointRequest) bpRequestObj;
@@ -141,25 +161,47 @@ public class ReloadEventQueue implements EventQueue {
 				if (!eventSet.isEmpty()) {
 					thread.markSuspended(!isStepping && !isException && !isSuspendedByDebugger);
 				}
+			} else if (THREAD_ENTER.equals(commandName)) { 
+				ReloadThreadReference thread = (ReloadThreadReference) commandObj;
+				for (Object threadEnterRequest : threadEnterRequests) {
+					eventSet.add(new ReloadThreadEnterEvent(targetVM, thread, null, (EventRequest) threadEnterRequest));
+				}
+			} else if (THREAD_EXIT.equals(commandName)) { 
+				ReloadThreadReference thread = (ReloadThreadReference) commandObj;
+				for (Object threadExitRequest : threadExitRequests) {
+					eventSet.add(new ReloadThreadExitEvent(targetVM, thread, null, (EventRequest) threadExitRequest));
+				}
 			} else if (CUSTOM_EVENT.equals(commandName)) {
 				ReloadEvent event = (ReloadEvent) commandObj;
 				eventSet.add(event);
 			}
 		}
+		if (CoreMoSyncPlugin.getDefault().isDebugging() && !eventSet.isEmpty()) {
+			CoreMoSyncPlugin.trace("Event set: {0}", eventSet);
+		}
 		return eventSet;
 	}
 
 	private ReloadVirtualMachine extractVM(Object commandObj) {
+		if (commandObj instanceof ReloadEvent) {
+				return (ReloadVirtualMachine) ((ReloadEvent) commandObj)
+						.virtualMachine();
+		} else {
+			ReloadThreadReference thread = extractThread(commandObj);
+			return (ReloadVirtualMachine) (thread == null ? null : thread.virtualMachine());
+		}
+	}
+
+	private ReloadThreadReference extractThread(Object commandObj) {
 		if (commandObj instanceof JSONObject) {
 			Integer sessionId = JSODDServer
 					.extractSessionId((JSONObject) commandObj);
 			if (sessionId != null) {
 				return Html5Plugin.getDefault().getReloadServer()
-						.getVM(sessionId);
+						.getThread(sessionId);
 			}
-		} else if (commandObj instanceof ReloadEvent) {
-			return (ReloadVirtualMachine) ((ReloadEvent) commandObj)
-					.virtualMachine();
+		} else if (commandObj instanceof ReloadThreadReference) {
+			return (ReloadThreadReference) commandObj;
 		}
 		return null;
 	}
@@ -183,6 +225,9 @@ public class ReloadEventQueue implements EventQueue {
 	}
 
 	public void received(String command, Object data) {
+		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+			CoreMoSyncPlugin.trace("Received event {0}", command);
+		}
 		internalQueue.offer(new Pair<String, Object>(command, data));
 	}
 
