@@ -1085,7 +1085,7 @@ public class MoSyncBuilder extends ACBuilder {
 			result.addAll(Arrays.asList(additionalIncludePaths));
 		}
 
-		String[] extensionNames = PropertyUtil.getStrings(project, MoSyncBuilder.EXTENSIONS);
+		String[] extensionNames = PropertyUtil.getStrings(buildProperties, MoSyncBuilder.EXTENSIONS);
 		for (String extensionName : extensionNames) {
 			MoSyncExtension extension = MoSyncExtensionManager.getDefault().getExtension(extensionName);
 			if (extension != null) {
@@ -1118,7 +1118,7 @@ public class MoSyncBuilder extends ACBuilder {
 			result.addAll(Arrays.asList(additionalLibraryPaths));
 		}
 
-		String[] extensions = PropertyUtil.getStrings(MoSyncProject.create(project), MoSyncBuilder.EXTENSIONS);
+		String[] extensions = PropertyUtil.getStrings(buildProperties, MoSyncBuilder.EXTENSIONS);
 		for (String extension : extensions) {
 			String extensionLibraryPath = "%mosync-home%/extensions/" + extension + "/lib";
 			result.add(new Path(extensionLibraryPath));
@@ -1144,7 +1144,7 @@ public class MoSyncBuilder extends ACBuilder {
 			result.addAll(Arrays.asList(additionalLibraries));
 		}
 		
-		String[] extensions = PropertyUtil.getStrings(project, MoSyncBuilder.EXTENSIONS);
+		String[] extensions = PropertyUtil.getStrings(buildProperties, MoSyncBuilder.EXTENSIONS);
 		for (String extension : extensions) {
 			result.add(new Path(extension + ".lib"));
 		}

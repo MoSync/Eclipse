@@ -86,6 +86,7 @@ public class RebuildListener implements PropertyChangeListener {
 	private boolean shouldUpdatePaths(PropertyChangeEvent event) {
 		return MoSyncProject.TARGET_PROFILE_CHANGED == event.getPropertyName() ||
 				MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS.equals(NameSpacePropertyOwner.getKey(event.getPropertyName())) ||
+				MoSyncBuilder.EXTENSIONS.equals(NameSpacePropertyOwner.getKey(event.getPropertyName()))  ||
 				MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS.equals(NameSpacePropertyOwner.getKey(event.getPropertyName()));
 	}
 
