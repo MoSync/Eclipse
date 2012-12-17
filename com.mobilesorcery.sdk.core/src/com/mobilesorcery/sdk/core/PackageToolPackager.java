@@ -143,7 +143,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 
 		boolean useStaticRecompile = shouldUseStaticRecompile(project, variant);
 
-		String[] extensions = PropertyUtil.getStrings(project, MoSyncBuilder.EXTENSIONS);
+		String[] extensions = PropertyUtil.getStrings(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()), MoSyncBuilder.EXTENSIONS);
 		if (extensions.length > 0) {
 			commandLine.flag("--extensions").with(Util.join(extensions, ","));
 		}
