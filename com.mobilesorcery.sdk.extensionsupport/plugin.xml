@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+      <extension
+            point="com.mobilesorcery.sdk.build.steps">
+         <factory
+               id="com.mobilesorcery.sdk.extensionsupport"
+               implementation="com.mobilesorcery.sdk.extensionsupport.ExtensionSupportBuildStepExtension">
+         </factory>
+      </extension>
+           <extension
+           point="com.mobilesorcery.sdk.templates.type.extension">
+        <templateextension
+              configurer="com.mobilesorcery.sdk.extensionsupport.wizards.ExtensionTemplateExtension"
+              image="icons/extension.png"
+              name="Extension"
+              type="ext">
+        </templateextension>
+     </extension>
+</plugin>
