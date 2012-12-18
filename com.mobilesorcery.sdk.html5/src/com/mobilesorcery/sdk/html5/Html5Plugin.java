@@ -494,17 +494,18 @@ public class Html5Plugin extends AbstractUIPlugin implements IStartup,
 			if (cfg != null) {
 				try {
 					String cfgId = cfg.getType().getIdentifier();
+					if (!EmulatorLaunchConfigurationDelegate.ID
+							.equals(cfgId)) {
+						return;
+					}
 					MoSyncProject project = MoSyncProject
 							.create(EmulatorLaunchConfigurationDelegate
 									.getProject(cfg));
 					IBuildVariant variant = EmulatorLaunchConfigurationDelegate
 							.getVariant(cfg, launch.getLaunchMode());
 					if ("debug".equals(launch.getLaunchMode())) {
-						if (EmulatorLaunchConfigurationDelegate.ID
-								.equals(cfgId)) {
-							launchJSODD(project, variant, false,
-									BuildVariant.toString(variant));
-						}
+						launchJSODD(project, variant, false,
+								BuildVariant.toString(variant));
 					} else if ("run".equals(launch.getLaunchMode())
 							&& canLaunchJSODD(project, variant)) {
 						launch.terminate();
