@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.ui.internal.properties;
 
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
@@ -20,6 +21,7 @@ import com.mobilesorcery.sdk.core.build.CommandLineBuildStep.Factory;
 import com.mobilesorcery.sdk.core.build.CopyBuildResultBuildStep;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
+import com.mobilesorcery.sdk.ui.BuildStepEditor;
 import com.mobilesorcery.sdk.ui.ParameterResolverContentProvider;
 import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.ui.UpdateListener;
@@ -31,10 +33,6 @@ public class CopyBuildStepEditor extends BuildStepEditor implements IUpdatableCo
 	private ComboViewer cfgs;
 	private Button allButton;
 	private Button oneButton;
-
-	protected CopyBuildStepEditor(Shell parentShell) {
-		super(parentShell);
-	}
 
 	private CopyBuildResultBuildStep.Factory getFactory() {
 		return (CopyBuildResultBuildStep.Factory) factory;
@@ -88,7 +86,7 @@ public class CopyBuildStepEditor extends BuildStepEditor implements IUpdatableCo
 		allButton.setEnabled(enableCfgs);
 		oneButton.setEnabled(enableCfgs);
 		boolean isValid = !oneButton.getSelection() || getCfgId() != null;
-		getButton(OK).setEnabled(isValid);
+		getButton(Dialog.OK).setEnabled(isValid);
 	}
 
 	private String getCfgId() {

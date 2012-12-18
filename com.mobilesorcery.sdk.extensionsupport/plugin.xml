@@ -8,6 +8,14 @@
                implementation="com.mobilesorcery.sdk.extensionsupport.ExtensionSupportBuildStepExtension">
          </factory>
       </extension>
+      <extension
+            point="com.mobilesorcery.sdk.ui.buildstepeditor">
+         <editor
+               id="com.mobilesorcery.sdk.extensionsupport"
+               implementation="com.mobilesorcery.sdk.extensionsupport.ui.ExtensionSupportBuildStepEditor">
+         </editor>
+      </extension>
+
            <extension
            point="com.mobilesorcery.sdk.templates.type.extension">
         <templateextension

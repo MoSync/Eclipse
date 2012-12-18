@@ -49,13 +49,21 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 		public String getName() {
 			return MessageFormat.format("Native Extensions ({0})", phase);
 		}
-		
+
 		public void setPhase(String phase) {
 			this.phase = phase;
 		}
 
+		public String getPhase() {
+			return phase;
+		}
+
 		public boolean shouldUpdateInstallation() {
 			return shouldUpdateInstallation;
+		}
+
+		public void shouldUpdateInstallation(boolean shouldUpdateInstallation) {
+			this.shouldUpdateInstallation = shouldUpdateInstallation;
 		}
 
 		public String getPlatformBundleLocation(String platform) {
@@ -65,11 +73,18 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 		@Override
 		public void load(IMemento memento) {
 			phase = memento.getString("phase");
+			Object shouldUpdateInstallationBool = memento
+					.getBoolean("should.update");
+			shouldUpdateInstallation = PACK_PHASE.equals(phase)
+					&& shouldUpdateInstallationBool != Boolean.FALSE;
 		}
 
 		@Override
 		public void store(IMemento memento) {
 			memento.putString("phase", phase);
+			if (PACK_PHASE.equals(phase)) {
+				memento.putBoolean("should.update", shouldUpdateInstallation);
+			}
 		}
 
 	}
@@ -135,8 +150,9 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 			}
 
 			// 4. Copy the manifest file
-			Util.copyFile(monitor, project.getWrappedProject().getLocation().append("extension.mf").toFile(), unzippedExtensionOutput);
-			
+			Util.copyFile(monitor, project.getWrappedProject().getLocation()
+					.append("extension.mf").toFile(), unzippedExtensionOutput);
+
 			// 5. Zip it!
 			File libDirectory = new File(unzippedExtensionOutput, "lib");
 			libDirectory.mkdirs();
@@ -156,7 +172,8 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 			// 5. If this setting is there, also update the extension library in
 			// the current mosync installation.
 			if (shouldUpdateInstallation()) {
-				MoSyncExtensionManager.getDefault().install(unzippedExtensionOutput, true);
+				MoSyncExtensionManager.getDefault().install(
+						unzippedExtensionOutput, true);
 			}
 
 			result.setBuildResult(IBuildResult.MAIN, extensionOutput.toFile());
