@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.core;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
@@ -12,28 +13,40 @@ public class MoSyncExtension {
 
 	private String name;
 	private Version version = new Version("1.0.0");
+	private String vendor = "<unknown vendor>";
 
-	MoSyncExtension(String name) {
+	public MoSyncExtension(String name) {
 		this.name = name;
 	}
 	
-	static MoSyncExtension findExtension(String filename) {
+	public void setName(String name) {
+		if (this.name != null) {
+			throw new IllegalStateException("Cannot only set extension name to uninitialized extension");
+		}
+		this.name = name;
+	}
+	
+	public static MoSyncExtension findExtension(String filename) {
 		MoSyncExtension potentialFind = new MoSyncExtension(filename);
 		if (potentialFind.getExtensionRoot().toFile().exists()) {
-			if (potentialFind.parseManifest()) {
+			if (potentialFind.parseManifest() == null) {
 				return potentialFind;
 			}
 		}
 		return null;
 	}
 	
-	private boolean parseManifest() {
-		IPath manifestFile = getExtensionRoot().append(new Path("extension.mf"));
-		if (!manifestFile.toFile().exists()) {
-			return true;
+	private String parseManifest() {
+		return parseManifest(getExtensionRoot().toFile());
+	}
+	
+	private String parseManifest(File manifestDir) {
+		File manifestFile = new File(manifestDir, "extension.mf");
+		if (!manifestFile.exists()) {
+			return "No manifest file (extension.mf)";
 		}
 		try {
-			SectionedPropertiesFile manifestProperties = SectionedPropertiesFile.parse(manifestFile.toFile());
+			SectionedPropertiesFile manifestProperties = SectionedPropertiesFile.parse(manifestFile);
 			Section defaultSection = manifestProperties.getDefaultSection();
 			Map<String, String> properties = defaultSection.getEntriesAsMap();
 			String versionStr = properties.get("version");
@@ -44,10 +57,14 @@ public class MoSyncExtension {
 			if (nameStr != null) {
 				this.name = nameStr;
 			}
+			String vendorStr = properties.get("vendor");
+			if (vendorStr != null) {
+				this.vendor = vendorStr;
+			}
 		} catch (Exception e) {
-			return false;
+			return "Could not parse manifest file: " + e.getMessage();
 		}
-		return true;
+		return null;
 	}
 
 	public String getName() {
@@ -57,9 +74,15 @@ public class MoSyncExtension {
 	public Version getVersion() {
 		return version;
 	}
+	
+	public String getVendor() {
+		return vendor;
+	}
 
 	public IPath getExtensionRoot() {
-		 return MoSyncTool.getDefault().getMoSyncExtensions().append(new Path(name)); 
+		 IPath result = MoSyncTool.getDefault().getMoSyncExtensions().append(new Path(name));
+		 validateInExtensionsDir(result.toFile());
+		 return result;
 	}
 	
 	public IPath getIncludePath() {
@@ -69,4 +92,19 @@ public class MoSyncExtension {
 	public IPath getLibPath() {
 		return getExtensionRoot().append("lib");
 	}
+	
+	static void validateInExtensionsDir(File installLocation) {
+		if (!Util.isParent(MoSyncTool.getDefault().getMoSyncExtensions().toFile(), installLocation)) {
+			throw new IllegalStateException("Illegal install location: " + installLocation);
+		}
+	}
+
+	static void validateInstallable(File installLocation) throws IOException {
+		MoSyncExtension throwaway = new MoSyncExtension(null);
+		String result = throwaway.parseManifest(installLocation);
+		if (result != null) {
+			throw new IOException(result);
+		}
+	}
+
 }

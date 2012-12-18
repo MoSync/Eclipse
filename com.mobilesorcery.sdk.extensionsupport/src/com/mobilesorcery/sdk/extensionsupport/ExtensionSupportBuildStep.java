@@ -134,7 +134,10 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 				}
 			}
 
-			// 4. Zip it!
+			// 4. Copy the manifest file
+			Util.copyFile(monitor, project.getWrappedProject().getLocation().append("extension.mf").toFile(), unzippedExtensionOutput);
+			
+			// 5. Zip it!
 			File libDirectory = new File(unzippedExtensionOutput, "lib");
 			libDirectory.mkdirs();
 			File incDirectory = new File(unzippedExtensionOutput, "inc");
@@ -153,7 +156,7 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 			// 5. If this setting is there, also update the extension library in
 			// the current mosync installation.
 			if (shouldUpdateInstallation()) {
-				MoSyncExtensionManager.getDefault().install(unzippedExtensionOutput);
+				MoSyncExtensionManager.getDefault().install(unzippedExtensionOutput, true);
 			}
 
 			result.setBuildResult(IBuildResult.MAIN, extensionOutput.toFile());

@@ -17,4 +17,13 @@
               type="ext">
         </templateextension>
      </extension>
+           <extension
+            point="org.eclipse.ui.preferencePages">
+         <page
+               class="com.mobilesorcery.sdk.extensions.ExtensionsPreferencePage"
+               category="com.mobilesorcery.sdk.preferences.main"
+               id="com.mobilesorcery.sdk.extensions.preferences"
+               name="Extensions">
+         </page>
+    </extension>
 </plugin>
