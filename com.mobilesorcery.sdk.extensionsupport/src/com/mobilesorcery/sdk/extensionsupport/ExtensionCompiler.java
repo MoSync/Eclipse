@@ -6,6 +6,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.AbstractTool;
+import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -28,6 +29,8 @@ public class ExtensionCompiler extends AbstractTool {
 		if (execute(new String[] { getToolPath().getAbsolutePath(), 
 				"--project", project.getWrappedProject().getLocation().toOSString(), 
 				"--extension", extensionName,
+				"--version", project.getProperty(MoSyncBuilder.PROJECT_VERSION),
+				"--vendor", project.getProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP),
 				"--android-package-name", androidPackageName,
 				"--android-class-name", androidClassName },
 				null, null, MoSyncBuilder.CONSOLE_ID, false) != 0) {
