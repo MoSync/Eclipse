@@ -26,8 +26,10 @@ public class ExtensionCompiler extends AbstractTool {
 		String androidPackageName = project.getProperty("android:package.name");
 		String androidClassName = "Extension";
 		if (execute(new String[] { getToolPath().getAbsolutePath(), 
-				project.getWrappedProject().getLocation().toOSString(), 
-				extensionName, androidPackageName, androidClassName },
+				"--project", project.getWrappedProject().getLocation().toOSString(), 
+				"--extension", extensionName,
+				"--android-package-name", androidPackageName,
+				"--android-class-name", androidClassName },
 				null, null, MoSyncBuilder.CONSOLE_ID, false) != 0) {
 			throw new CoreException(new Status(IStatus.ERROR, ExtensionSupportPlugin.PLUGIN_ID, "IDL compilation failed."));
 		}
