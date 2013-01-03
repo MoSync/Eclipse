@@ -28,7 +28,7 @@ public class MoSyncExtensionManager {
 	
 	private static final MoSyncExtensionManager INSTANCE = new MoSyncExtensionManager();
 	private TreeMap<String, MoSyncExtension> extensions = new TreeMap<String, MoSyncExtension>();
-
+	
 	private MoSyncExtensionManager() {
 		refresh();
 	}
@@ -36,11 +36,13 @@ public class MoSyncExtensionManager {
 	public void refresh() {
 		IPath extensionsPath = MoSyncTool.getDefault().getMoSyncExtensions();
 		File[] extensionPaths = extensionsPath.toFile().listFiles();
-		for (File extensionPath : extensionPaths) {
-			MoSyncExtension extension = MoSyncExtension.findExtension(extensionPath.getName());
-			if (extension != null) {
-				String name = extension.getName();
-				extensions.put(name, extension);
+		if (extensionPaths != null) {
+			for (File extensionPath : extensionPaths) {
+				MoSyncExtension extension = MoSyncExtension.findExtension(extensionPath.getName());
+				if (extension != null) {
+					String name = extension.getName();
+					extensions.put(name, extension);
+				}
 			}
 		}
 	}
