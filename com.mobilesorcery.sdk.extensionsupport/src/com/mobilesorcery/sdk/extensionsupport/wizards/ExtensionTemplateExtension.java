@@ -26,7 +26,7 @@ public class ExtensionTemplateExtension implements IProjectTemplateExtensionDele
 	@Override
 	public void configureProject(MoSyncProject project) throws CoreException {
 		ExtensionSupportPlugin.getDefault().addExtensionBuildsteps(project);
-		project.setProperty(MoSyncBuilder.PROJECT_TYPE, MoSyncBuilder.PROJECT_TYPE_LIBRARY);
+		project.setProperty(MoSyncBuilder.PROJECT_TYPE, MoSyncBuilder.PROJECT_TYPE_EXTENSION);
 	}
 
 }

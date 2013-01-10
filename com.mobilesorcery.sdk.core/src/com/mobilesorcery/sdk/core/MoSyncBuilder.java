@@ -139,7 +139,9 @@ public class MoSyncBuilder extends ACBuilder {
 	public static final String PROJECT_TYPE_APPLICATION = "app";
 
 	public static final String PROJECT_TYPE_LIBRARY = "lib";
-
+	
+	public static final String PROJECT_TYPE_EXTENSION = "ext";
+	
 	public static final String EXTRA_COMPILER_SWITCHES = BUILD_PREFS_PREFIX
 			+ "gcc.switches";
 
@@ -1371,9 +1373,12 @@ public class MoSyncBuilder extends ACBuilder {
 				".metadata");
 	}
 
-	public static boolean isLib(MoSyncProject mosyncProject) {
-		return PROJECT_TYPE_LIBRARY.equals(mosyncProject
-				.getProperty(PROJECT_TYPE));
+	public static boolean isLib(MoSyncProject project) {
+		return PROJECT_TYPE_LIBRARY.equals(project.getProperty(PROJECT_TYPE));
+	}
+
+	public static boolean isExtension(MoSyncProject project) {
+		return PROJECT_TYPE_EXTENSION.equals(project.getProperty(PROJECT_TYPE));
 	}
 	
 	public static boolean isResourceFile(IResource resource) {
@@ -1390,5 +1395,6 @@ public class MoSyncBuilder extends ACBuilder {
 		File resDir = project.getLocation().append("Resources").toFile();
 		return resDir.exists() && resDir.isDirectory() ? resDir : null;
 	}
+
 	
 }

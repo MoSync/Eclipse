@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -39,6 +40,7 @@ import java.util.TreeSet;
 import org.eclipse.core.resources.FileInfoMatcherDescription;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceFilterDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
@@ -634,6 +636,29 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		} catch (CoreException e) {
 			return null;
 		}
+	}
+	
+
+	/**
+	 * Extracts all {@code MoSyncProject}s that contains any one of the
+	 * provided {@code IResource}s.
+	 * @param projects
+	 * @return A list of {@code MoSyncProject}s, which may be empty but never {@code null}
+	 */
+	public static List<MoSyncProject> create(List<IResource> resources) {
+		ArrayList<MoSyncProject> result = new ArrayList<MoSyncProject>();
+		HashSet<IProject> alreadyCreated = new HashSet<IProject>();
+		for (IResource resource : resources) {
+			IProject project = resource.getProject();
+			if (!alreadyCreated.contains(project)) {
+				alreadyCreated.add(project);
+				MoSyncProject mosyncProject = MoSyncProject.create(project);
+				if (project != null) {
+					result.add(mosyncProject);
+				}
+			}
+		}
+		return result;
 	}
 
 	private static void upgrade(MoSyncProject project) throws CoreException {
@@ -1534,5 +1559,6 @@ public class MoSyncProject extends PropertyOwnerBase implements
 
 		return result;
 	}
+
 
 }

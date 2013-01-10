@@ -109,6 +109,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private Text gccFlags;
     private Button applicationProjectType;
     private Button libraryProjectType;
+    private Button extensionProjectType;
     private Text additionalLibrariesText;
     private Button ignoreDefaultLibraries;
     private Text extraRes;
@@ -159,7 +160,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         main.setLayout(new GridLayout(1, false));
 
         Group projectType = new Group(main, SWT.NONE);
-        projectType.setLayout(new GridLayout(2, false));
+        projectType.setLayout(new GridLayout(3, false));
         projectType.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         projectType.setText("Project &Type");
 
@@ -168,6 +169,9 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         libraryProjectType = new Button(projectType, SWT.RADIO);
         libraryProjectType.setText("&Library");
+        
+        extensionProjectType = new Button(projectType, SWT.RADIO);
+        extensionProjectType.setText("&Extension");
 
         Group buildStrategy = new Group(main, SWT.NONE);
         buildStrategy.setLayout(new GridLayout(2, false));
@@ -214,6 +218,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         applicationProjectType.addListener(SWT.Selection, listener);
         libraryProjectType.addListener(SWT.Selection, listener);
+        extensionProjectType.addListener(SWT.Selection, listener);
         applicationProjectType.addListener(SWT.Selection, listener);
         additionalIncludePathsText.addListener(SWT.Modify, listener);
         additionalLibrariesText.addListener(SWT.Modify, listener);
@@ -448,9 +453,12 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
     	IPropertyOwner projectWorkingCopy = getWorkingCopyOfBuildConfiguration(getProject());
 
-        boolean isLibraryProject = MoSyncBuilder.PROJECT_TYPE_LIBRARY.equals(projectWorkingCopy.getProperty(addBuildProperty(MoSyncBuilder.PROJECT_TYPE)));
+    	boolean isLibraryProject = MoSyncBuilder.PROJECT_TYPE_LIBRARY.equals(projectWorkingCopy.getProperty(addBuildProperty(MoSyncBuilder.PROJECT_TYPE)));
+    	boolean isExtensionProject = MoSyncBuilder.PROJECT_TYPE_EXTENSION.equals(projectWorkingCopy.getProperty(addBuildProperty(MoSyncBuilder.PROJECT_TYPE)));
+    	boolean isAppProject = !isLibraryProject && !isExtensionProject;
         libraryProjectType.setSelection(isLibraryProject);
-        applicationProjectType.setSelection(!isLibraryProject);
+        extensionProjectType.setSelection(isExtensionProject);
+        applicationProjectType.setSelection(isAppProject);
 
         incrementalBuildStrategy.select(PropertyUtil.getInteger(projectWorkingCopy, addBuildProperty(MoSyncProject.DEPENDENCY_STRATEGY), MoSyncProject.GCC_DEPENDENCY_STRATEGY));
 
@@ -553,10 +561,10 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 	public void updateUI() {
 		boolean wasActive = listener.isActive();
         listener.setActive(false);
-        boolean isLibraryProject = libraryProjectType.getSelection();
-        deadCodeElim.setEnabled(!isLibraryProject);
-        libOutputPath.setEnabled(isLibraryProject);
-        appOutputPath.setEnabled(!isLibraryProject);
+        boolean isLibOrExtProject = !applicationProjectType.getSelection();
+        deadCodeElim.setEnabled(!isLibOrExtProject);
+        libOutputPath.setEnabled(isLibOrExtProject);
+        appOutputPath.setEnabled(!isLibOrExtProject);
 
         super.updateUI();
 
@@ -577,7 +585,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         validateMemorySettings(message);
 
-        if (libraryProjectType.getSelection()) {
+        if (libraryProjectType.getSelection() || extensionProjectType.getSelection()) {
             if (libOutputPath.getText().length() > 0 && Util.getExtension(new File(libOutputPath.getText())).length() == 0) {
             	message.setMessage(libOutputPath, new DefaultMessageProvider("Output file has no extension", IMessageProvider.WARNING));
             }
@@ -720,7 +728,14 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.DEAD_CODE_ELIMINATION, deadCodeElim.getSelection());
 
-        changed |= getProject().setProperty(MoSyncBuilder.PROJECT_TYPE, libraryProjectType.getSelection() ? MoSyncBuilder.PROJECT_TYPE_LIBRARY : "");
+        String projectTypeProperty = MoSyncBuilder.PROJECT_TYPE_APPLICATION;
+        if (libraryProjectType.getSelection()) {
+        	projectTypeProperty = MoSyncBuilder.PROJECT_TYPE_LIBRARY;
+        }
+        if (extensionProjectType.getSelection()) {
+        	projectTypeProperty = MoSyncBuilder.PROJECT_TYPE_EXTENSION;
+        }
+        changed |= getProject().setProperty(MoSyncBuilder.PROJECT_TYPE, projectTypeProperty);
 
         changed |= configProperties.setProperty(MoSyncBuilder.EXTRA_COMPILER_SWITCHES, gccFlags.getText());
         changed |= configProperties.setProperty(MoSyncBuilder.EXTRA_RES_SWITCHES, extraRes.getText());

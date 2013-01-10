@@ -103,9 +103,9 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult result,
 			IProgressMonitor monitor) throws Exception {
 		// First make sure the project is ok...
-		if (!MoSyncBuilder.isLib(project)) {
+		if (!MoSyncBuilder.isExtension(project)) {
 			throw new IllegalStateException(
-					"Extension projects must be set to library build.");
+					"This is not an extension project.");
 		}
 
 		// Preparations:
@@ -126,7 +126,7 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 		// platforms)
 		// as well as platform specific stuff (such as android assets, etc).
 		if (IDL_PHASE.equals(phase)) {
-			ExtensionCompiler.getDefault().compile(project);
+			ExtensionCompiler.getDefault().compile(project, true);
 		} else {
 
 			// 3. Gather all platform libs

@@ -77,10 +77,10 @@ public class LinkBuildStep extends AbstractBuildStep {
 		IPath resource = MoSyncBuilder.getResourceOutputPath(project, variant);
 		ParameterResolver resolver = getParameterResolver();
 
-        boolean isLib = MoSyncBuilder.isLib(mosyncProject);
+        boolean isLibOrExt = MoSyncBuilder.isLib(mosyncProject) || MoSyncBuilder.isExtension(mosyncProject);
 		IPath program = MoSyncBuilder.getProgramOutputPath(project, variant);
         IPath programComb = MoSyncBuilder.getProgramCombOutputPath(project, variant);
-        IPath libraryOutput = isLib ? MoSyncBuilder.computeLibraryOutput(mosyncProject, buildProperties) : null;
+        IPath libraryOutput = isLibOrExt ? MoSyncBuilder.computeLibraryOutput(mosyncProject, buildProperties) : null;
 
         boolean librariesHaveChanged = haveLibrariesChanged(mosyncProject, variant, buildProperties, programComb);
         boolean requiresLinking = librariesHaveChanged || diff == null || !diff.isEmpty();
@@ -94,12 +94,12 @@ public class LinkBuildStep extends AbstractBuildStep {
         if (requiresLinking) {
             String[] objectFiles = getObjectFilesForProject(session);
             pipeTool.setInputFiles(objectFiles);
-            String pipeToolMode = MoSyncBuilder.getPipeToolMode(mosyncProject, targetProfile, isLib);
+            String pipeToolMode = MoSyncBuilder.getPipeToolMode(mosyncProject, targetProfile, isLibOrExt);
             pipeTool.setMode(pipeToolMode);
-            pipeTool.setOutputFile(isLib ? libraryOutput : program);
+            pipeTool.setOutputFile(isLibOrExt ? libraryOutput : program);
             pipeTool.setLibraryPaths(MoSyncBuilder.resolvePaths(MoSyncBuilder.getLibraryPaths(project, buildProperties), resolver));
             pipeTool.setLibraries(MoSyncBuilder.getLibraries(mosyncProject, variant, buildProperties));
-            boolean elim = !isLib && PropertyUtil.getBoolean(buildProperties, MoSyncBuilder.DEAD_CODE_ELIMINATION);
+            boolean elim = !isLibOrExt && PropertyUtil.getBoolean(buildProperties, MoSyncBuilder.DEAD_CODE_ELIMINATION);
             pipeTool.setDeadCodeElimination(elim);
             pipeTool.setCollectStabs(true);
 
@@ -109,7 +109,7 @@ public class LinkBuildStep extends AbstractBuildStep {
             continueFlag = (pipeTool.run() == PipeTool.SKIP_RETURN_CODE ? IBuildStep.SKIP : IBuildStep.CONTINUE);
 
             // If needed, run a second time to generate IL
-            if (isLib == false && pipeToolMode.equals(PipeTool.BUILD_C_MODE) == false) {
+            if (isLibOrExt == false && pipeToolMode.equals(PipeTool.BUILD_C_MODE) == false) {
             	pipeTool.setMode(PipeTool.BUILD_C_MODE);
         		pipeTool.run();
             }
@@ -132,7 +132,7 @@ public class LinkBuildStep extends AbstractBuildStep {
                 elimPipeTool.run();
             }
 
-            if (!isLib) {
+            if (!isLibOrExt) {
                 // Create "comb" file - program + resources in one. We'll
                 // always
                 // make one, even though no resources present.
@@ -152,7 +152,7 @@ public class LinkBuildStep extends AbstractBuildStep {
             }
         }
 
-        IPath buildResult = isLib ? libraryOutput : programComb;
+        IPath buildResult = isLibOrExt ? libraryOutput : programComb;
     	result.setIntermediateBuildResult(ID, buildResult.toFile());
 
         return continueFlag;

@@ -241,7 +241,12 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         }
 
         MoSyncProject mosyncProject = MoSyncProject.create(project);
-        if (MoSyncBuilder.PROJECT_TYPE_LIBRARY.equals(mosyncProject.getProperty(MoSyncBuilder.PROJECT_TYPE))) {
+        if (MoSyncBuilder.isLib(mosyncProject)) {
+            throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
+                    "Cannot execute a library; please compile as application"));
+        }
+        
+        if (MoSyncBuilder.isExtension(mosyncProject)) {
             throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
                     "Cannot execute a library; please compile as application"));
         }
