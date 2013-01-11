@@ -9,6 +9,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.build.BuildSequence;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
@@ -23,6 +24,14 @@ public class ExtensionSupportPlugin extends AbstractUIPlugin {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.mobilesorcery.sdk.extensionsupport"; //$NON-NLS-1$
+
+	private static final String EXT_PROP_PREFIX = MoSyncBuilder.BUILD_PREFS_PREFIX + "extensions.";
+	
+	public static final String PREFIX_PROP = EXT_PROP_PREFIX + "prefix";
+	
+	public static final String USE_CUSTOM_PREFIX_PROP = PREFIX_PROP + ".default";
+
+	public static final String GENERATE_JS_PROP = EXT_PROP_PREFIX + "js";
 
 	// The shared instance
 	private static ExtensionSupportPlugin plugin;

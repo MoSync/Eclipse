@@ -126,7 +126,7 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 		// platforms)
 		// as well as platform specific stuff (such as android assets, etc).
 		if (IDL_PHASE.equals(phase)) {
-			ExtensionCompiler.getDefault().compile(project, true);
+			ExtensionCompiler.getDefault().compile(project, false);
 		} else {
 
 			// 3. Gather all platform libs
