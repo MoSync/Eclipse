@@ -65,6 +65,9 @@ public class ExtensionCompiler extends AbstractTool {
 			Util.deleteFiles(stubsLoc, null, 8, new NullProgressMonitor());
 			commandLine.add("--generate-stubs");
 		}
+		if (PropertyUtil.getBoolean(project, ExtensionSupportPlugin.GENERATE_JS_PROP)) {
+			commandLine.add("--generate-js");
+		}
 		
 		if (execute(commandLine.toArray(new String[commandLine.size()]),
 				null, null, MoSyncBuilder.CONSOLE_ID, false) != 0) {

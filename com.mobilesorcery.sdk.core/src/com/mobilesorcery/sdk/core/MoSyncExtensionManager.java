@@ -51,8 +51,31 @@ public class MoSyncExtensionManager {
 		return INSTANCE;
 	}
 
+	/**
+	 * Returns the extension with a given name.
+	 * @param extensionName
+	 * @return {@code null} if the extension does not exist
+	 */
 	public MoSyncExtension getExtension(String extensionName) {
 		return extensions.get(extensionName);
+	}
+	
+	/**
+	 * Returns the {@code MoSyncExtension}s a project makes use of.
+	 * @param project
+	 * @return Never {@code null}
+	 */
+	public List<MoSyncExtension> getUsedExtensions(MoSyncProject project, IBuildVariant variant) {
+		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
+		ArrayList<MoSyncExtension> result = new ArrayList<MoSyncExtension>();
+		String[] extensionNames = PropertyUtil.getStrings(properties, MoSyncBuilder.EXTENSIONS);
+		for (String extensionName : extensionNames) {
+			MoSyncExtension extension = getExtension(extensionName);
+			if (extension != null) {
+				result.add(extension);
+			}
+		}
+		return result;
 	}
 	
 	public List<MoSyncExtension> getExtensions() {

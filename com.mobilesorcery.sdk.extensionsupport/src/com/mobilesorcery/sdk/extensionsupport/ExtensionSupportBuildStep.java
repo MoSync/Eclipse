@@ -18,6 +18,7 @@ import com.mobilesorcery.sdk.core.MoSyncExtensionManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.ProfileManager;
+import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.build.AbstractBuildStep;
 import com.mobilesorcery.sdk.core.build.AbstractBuildStepFactory;
@@ -167,6 +168,13 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 					1);
 
 			Util.copyFile(monitor, libOutput.toFile(), libDirectory);
+			
+			// If applicable, JavaScript should also go in there.
+			if (PropertyUtil.getBoolean(project, ExtensionSupportPlugin.GENERATE_JS_PROP)) {
+				String jsLibLocation = Util.replace(prototype.getPlatformBundleLocation("js"), getParameterResolver());
+				Util.copyDir(monitor, new File(jsLibLocation), new File(libDirectory, "js"), Util.getExtensionFilter("js"));
+			}
+			
 			Util.zip(unzippedExtensionOutput, extensionOutput.toFile());
 
 			// 5. If this setting is there, also update the extension library in
