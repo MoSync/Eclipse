@@ -1,5 +1,6 @@
 package com.mobilesorcery.sdk.builder.iphoneos;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 
 import org.eclipse.core.runtime.CoreException;
@@ -16,12 +17,40 @@ public class IPhoneSimulator extends AbstractTool {
 	public synchronized static IPhoneSimulator createDefault() {
 		XCodeBuild.refreshDefault();
 		Version xcodeVersion = XCodeBuild.getDefault().getVersion();
-		String binary = new Version("4.3").isNewer(xcodeVersion) ? "iphonesim42" : "iphonesim";
-		return new IPhoneSimulator(MoSyncTool.getDefault().getBinary(binary));
+		boolean legacyVersion = new Version("4.3").isNewer(xcodeVersion);
+		String binary = legacyVersion ? "iphonesim42" : "iphonesim";
+		IPhoneSimulator result = new IPhoneSimulator(MoSyncTool.getDefault().getBinary(binary), !legacyVersion);
+		return result;
 	}
 
-	protected IPhoneSimulator(IPath toolPath) {
+	private CoreException error;
+
+	protected IPhoneSimulator(IPath toolPath, boolean initEnv) {
 		super(toolPath);
+		if (initEnv) {
+			try {
+				initEnv();
+			} catch (CoreException e) {
+				error = e;
+			}
+		}
+	}
+	
+	public boolean isValid() {
+		return super.isValid() && error == null;
+	}
+	
+	public void assertValid() throws CoreException {
+		if (error != null) {
+			throw error;
+		}
+		super.assertValid();
+	}
+
+	private void initEnv() throws CoreException {
+		String xcodepath = XCodeSelect.getInstance().getCurrentXCodePath();
+		String dyldFrameworkEnv = MessageFormat.format("{0}/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks:{0}/../OtherFrameworks", xcodepath);
+		setAdditionalEnv("DYLD_FRAMEWORK_PATH", dyldFrameworkEnv);
 	}
 
 	/**
