@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import com.mobilesorcery.sdk.core.LineReader.LineAdapter;
 
@@ -13,6 +15,7 @@ public class CollectingLineHandler extends LineAdapter {
 
 	List<String> lines = new ArrayList<String>();
 	private boolean stopped;
+	private CountDownLatch stopLatch = new CountDownLatch(1);
 	private final int maxLines;
 	private Process process;
 
@@ -43,6 +46,7 @@ public class CollectingLineHandler extends LineAdapter {
 	@Override
 	public void stop(IOException e) {
 		stopped = true;
+		stopLatch.countDown();
 	}
 
 	public synchronized List<String> getLines() {
@@ -55,6 +59,10 @@ public class CollectingLineHandler extends LineAdapter {
 
 	public boolean isStopped() {
 		return stopped;
+	}
+
+	public void awaitStopped(int timeout, TimeUnit unit) throws InterruptedException {
+		stopLatch.await(timeout, unit);
 	}
 
 }
