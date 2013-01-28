@@ -19,6 +19,7 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
 import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.ParameterResolverException;
+import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 
@@ -57,6 +58,10 @@ public class AndroidPackager extends PackageToolPackager {
         commandLine.flag("--android-storepass", true).with(storepass);
         commandLine.flag("--android-alias").with(alias);
         commandLine.flag("--android-keypass", true).with(keypass);
+        
+        if (PropertyUtil.getBoolean(project, PropertyInitializer.ANDROID_LARGE_HEAP)) {
+        	commandLine.flag("--android-heap").with("large");
+        }
         
         String installLocation = project.getProperty(PropertyInitializer.ANDROID_INSTALL_LOCATION);
         if (!Util.isEmpty(installLocation)) {
