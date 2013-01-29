@@ -87,10 +87,12 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.actions.WorkspaceModifyOperation;
 import org.eclipse.ui.activities.ICategory;
 import org.eclipse.ui.activities.ICategoryActivityBinding;
 import org.eclipse.ui.activities.IWorkbenchActivitySupport;
 import org.eclipse.ui.ide.ResourceUtil;
+import org.eclipse.ui.ide.undo.AbstractWorkspaceOperation;
 import org.eclipse.ui.ide.undo.CreateProjectOperation;
 import org.eclipse.ui.intro.IIntroManager;
 import org.eclipse.ui.intro.IIntroPart;
@@ -404,16 +406,21 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 				.newProjectDescription(project.getName());
 		description.setLocationURI(location);
 
-		CreateProjectOperation op = new CreateProjectOperation(description,
-				"Create Project");
-		try {
-			op.execute(monitor, null);
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof CoreException) {
-				throw (CoreException) e.getCause();
-			} else {
-				throw new CoreException(new Status(IStatus.ERROR,
-						CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
+		if (CoreMoSyncPlugin.isHeadless()) {
+			project.create(description, monitor);
+		} else {
+			// Get undo for free.
+			CreateProjectOperation op = new CreateProjectOperation(description,
+					"Create Project");
+			try {
+				op.execute(monitor, null);
+			} catch (ExecutionException e) {
+				if (e.getCause() instanceof CoreException) {
+					throw (CoreException) e.getCause();
+				} else {
+					throw new CoreException(new Status(IStatus.ERROR,
+							CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
+				}
 			}
 		}
 

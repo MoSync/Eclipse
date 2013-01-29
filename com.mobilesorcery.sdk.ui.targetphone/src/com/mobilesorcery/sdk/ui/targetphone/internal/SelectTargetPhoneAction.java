@@ -32,6 +32,7 @@ import org.eclipse.jface.window.IShellProvider;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -129,9 +130,9 @@ public class SelectTargetPhoneAction implements
 		for (final ITargetPhoneTransport transport : transports) {
 			MenuItem select = new MenuItem(menu, SWT.PUSH);
 			select.setText(MessageFormat.format("Scan for {0} device", transport.getDescription("")));
-			ImageDescriptor icon = TargetPhonePlugin.getDefault().getImageRegistry().getDescriptor(transport.getId());
+			Image icon = TargetPhonePlugin.getDefault().getIcon(transport);
 			if (icon != null) {
-				select.setImage(TargetPhonePlugin.getDefault().getImageRegistry().get(transport.getId()));
+				select.setImage(icon);
 			}
 			select.addListener(SWT.Selection, new Listener() {
 				@Override
