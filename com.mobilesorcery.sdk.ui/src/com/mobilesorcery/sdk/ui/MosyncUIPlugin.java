@@ -19,6 +19,7 @@ import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
+import java.text.MessageFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -260,7 +261,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 				public void run() {
 					MessageDialog dialog = new MessageDialog(wb.getModalDialogShellProvider().getShell(),
 							"Fatal error", null,
-							"The environment variable MOSYNCDIR has not been properly set.\n\nMoSync will not work properly. Press Ok to quit, or Cancel to continue anyway.",
+							MessageFormat.format("The environment variable MOSYNCDIR has not been properly set, or some other serious error has occurred. (Reason: {0})\n\nMoSync will not work properly. Press Ok to quit, or Cancel to continue anyway.",
+									MoSyncTool.getDefault().validate()),
 							MessageDialog.ERROR,
 							new String[] { IDialogConstants.OK_LABEL, IDialogConstants.CANCEL_LABEL },
 							0);
