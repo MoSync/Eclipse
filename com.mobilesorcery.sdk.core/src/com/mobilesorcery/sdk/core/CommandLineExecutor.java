@@ -208,7 +208,7 @@ public class CommandLineExecutor {
 			if (dir == null && envs == null) {
 			    currentProcess = Runtime.getRuntime().exec(resolvedLine);
 			} else {
-			    currentProcess = Runtime.getRuntime().exec(resolvedLine, getEnv(), new File(dir));
+			    currentProcess = Runtime.getRuntime().exec(resolvedLine, getEnv(), dir == null ? null : new File(dir));
 			}
 
 			console.attachProcess(currentProcess, stdoutHandler, stderrHandler);
