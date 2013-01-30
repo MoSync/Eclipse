@@ -38,6 +38,7 @@ import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
+import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
@@ -154,8 +155,10 @@ public class IPhoneOSPackager extends PackageToolPackager
 		String target = getXcodeTarget(project, variant);
 		SDK sdk = getSDK(project, variant);
 		String xcodeTarget = target + "-" + sdk.getSDKType();
+		String appFileName = packager.resolve("/%app-name%.app").replace(" ", "");
+
 		// Hm, is this always true...?
-		File appFile = packager.resolveFile(xcodeProject.getAbsolutePath() + "/build/" + xcodeTarget + "/%app-name%.app");
+		File appFile = packager.resolveFile(xcodeProject.getAbsolutePath() + "/build/" + xcodeTarget + appFileName);
 		return appFile;
 	}
 

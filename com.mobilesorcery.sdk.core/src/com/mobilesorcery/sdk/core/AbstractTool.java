@@ -1,6 +1,8 @@
 package com.mobilesorcery.sdk.core;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -18,6 +20,7 @@ public abstract class AbstractTool {
 	private File toolPath;
 	private CascadingProperties parameters;
 	private File currentDir;
+	private Map<String, String> envs = new HashMap<String, String>();
 
 	protected AbstractTool(IPath toolPath) {
 		setToolPath(toolPath == null ? null : toolPath.toFile());
@@ -54,8 +57,6 @@ public abstract class AbstractTool {
 	public static boolean isMac() {
 		return System.getProperty("os.name").toLowerCase().indexOf("mac") >= 0;
 	}
-
-
 
 	protected void setToolPath(File toolPath) {
 		this.toolPath = toolPath;
@@ -97,6 +98,11 @@ public abstract class AbstractTool {
 			if (currentDir != null) {
 				executor.setExecutionDirectory(currentDir.getAbsolutePath());
 			}
+			if (envs != null) {
+				for (Map.Entry<String, String> env : envs.entrySet()) {
+					executor.addEnv(env.getKey(), env.getValue());
+				}
+			}
 			executor.setParameters(getParameters());
 			executor.setLineHandlers(stdoutLineHandler, stderrLineHandler);
 			executor.addCommandLine(commandLine);
@@ -107,6 +113,7 @@ public abstract class AbstractTool {
 				return executor.execute();
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			throw new CoreException(new Status(IStatus.ERROR,
 					CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
 		}
@@ -133,6 +140,10 @@ public abstract class AbstractTool {
 			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Expected a directory, this file is not:" + currentDir));
 		}
 		this.currentDir = currentDir;
+	}
+	
+	protected void setAdditionalEnv(String key, String value) {
+		this.envs.put(key, value);
 	}
 
 	protected abstract String getToolName();
