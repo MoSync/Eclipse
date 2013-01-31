@@ -34,6 +34,8 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 	public static class Factory extends AbstractBuildStepFactory {
 
 		private boolean shouldUpdateInstallation = true;
+		private boolean generateStubs = false;
+		
 		private String phase = IDL_PHASE;
 
 		@Override
@@ -66,6 +68,14 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 		public void shouldUpdateInstallation(boolean shouldUpdateInstallation) {
 			this.shouldUpdateInstallation = shouldUpdateInstallation;
 		}
+		
+		public boolean shouldGenerateStubs() {
+			return generateStubs;
+		}
+		
+		public void shouldGenerateStubs(boolean generateStubs) {
+			this.generateStubs = generateStubs;
+		}
 
 		public String getPlatformBundleLocation(String platform) {
 			return "%current-project%/" + platform;
@@ -76,8 +86,12 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 			phase = memento.getString("phase");
 			Object shouldUpdateInstallationBool = memento
 					.getBoolean("should.update");
+			Object shouldGenerateStubsBool = memento
+					.getBoolean("generate.stubs");
 			shouldUpdateInstallation = PACK_PHASE.equals(phase)
 					&& shouldUpdateInstallationBool != Boolean.FALSE;
+			generateStubs = IDL_PHASE.equals(phase) 
+					&& shouldGenerateStubsBool == Boolean.TRUE;
 		}
 
 		@Override
@@ -85,6 +99,9 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 			memento.putString("phase", phase);
 			if (PACK_PHASE.equals(phase)) {
 				memento.putBoolean("should.update", shouldUpdateInstallation);
+			}
+			if (IDL_PHASE.equals(phase)) {
+				memento.putBoolean("generate.stubs", generateStubs);
 			}
 		}
 
@@ -127,7 +144,7 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 		// platforms)
 		// as well as platform specific stuff (such as android assets, etc).
 		if (IDL_PHASE.equals(phase)) {
-			ExtensionCompiler.getDefault().compile(project, false);
+			ExtensionCompiler.getDefault().compile(project, shouldGenerateStubs());
 		} else {
 
 			// 3. Gather all platform libs
@@ -192,6 +209,10 @@ public class ExtensionSupportBuildStep extends AbstractBuildStep {
 
 	private boolean shouldUpdateInstallation() {
 		return prototype.shouldUpdateInstallation();
+	}
+	
+	private boolean shouldGenerateStubs() {
+		return prototype.shouldGenerateStubs();
 	}
 
 }

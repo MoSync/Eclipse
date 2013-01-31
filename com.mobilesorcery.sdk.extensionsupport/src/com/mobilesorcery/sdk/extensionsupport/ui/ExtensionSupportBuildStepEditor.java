@@ -15,6 +15,7 @@ import com.mobilesorcery.sdk.ui.BuildStepEditor;
 public class ExtensionSupportBuildStepEditor extends BuildStepEditor {
 
 	private Button doAutoInstall;
+	private Button doGenerateStubs;
 	
 	@Override
 	public void configureShell(Shell shell) {
@@ -27,21 +28,29 @@ public class ExtensionSupportBuildStepEditor extends BuildStepEditor {
 		Composite main = (Composite) super.createDialogArea(parent);
 		main.setLayoutData(new GridData(GridData.FILL));
 		main.setLayout(new GridLayout(2, false));
-		doAutoInstall = new Button(main, SWT.CHECK);
-		doAutoInstall.setText("&Automatically install extension");
-		doAutoInstall.setLayoutData(new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false, 2, 1));
-		doAutoInstall.setSelection(getFactory().shouldUpdateInstallation());
+		if (getFactory().getPhase().equals(ExtensionSupportBuildStep.PACK_PHASE)) {
+			doAutoInstall = new Button(main, SWT.CHECK);
+			doAutoInstall.setText("&Automatically install extension");
+			doAutoInstall.setLayoutData(new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false, 2, 1));
+			doAutoInstall.setSelection(getFactory().shouldUpdateInstallation());
+		} else {
+			doGenerateStubs = new Button(main, SWT.CHECK);
+			doGenerateStubs.setText("&Always Generate Stubs");
+			doGenerateStubs.setLayoutData(new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false, 2, 1));
+			doGenerateStubs.setSelection(getFactory().shouldGenerateStubs());
+		}
 		return main;
 	}
 
 	@Override
 	public void okPressed() {
-		getFactory().shouldUpdateInstallation(doAutoInstall.getSelection());
+		if (doAutoInstall != null) {
+			getFactory().shouldUpdateInstallation(doAutoInstall.getSelection());
+		}
+		if (doGenerateStubs != null) {
+			getFactory().shouldGenerateStubs(doGenerateStubs.getSelection());
+		}
 		super.okPressed();
-	}
-	
-	public boolean canEdit() {
-		return getFactory().getPhase().equals(ExtensionSupportBuildStep.PACK_PHASE);
 	}
 
 	private ExtensionSupportBuildStep.Factory getFactory() {
