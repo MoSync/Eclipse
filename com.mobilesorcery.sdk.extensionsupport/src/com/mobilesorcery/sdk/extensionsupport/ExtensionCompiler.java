@@ -47,9 +47,14 @@ public class ExtensionCompiler extends AbstractTool {
 				getDefaultPrefix(project);
 		IPath projectPath = project.getWrappedProject().getLocation();
 		ArrayList<String> commandLine = new ArrayList<String>();
+		String[] supportedPlatforms = PropertyUtil.getStrings(project, ExtensionSupportPlugin.SUPPORTED_PLATFORMS_PROP);
+		if (supportedPlatforms.length == 0) {
+			throw new CoreException(new Status(IStatus.ERROR, ExtensionSupportPlugin.PLUGIN_ID, "No supported platforms selected."));
+		}
 		commandLine.addAll(Arrays.asList(new String[] { getToolPath().getAbsolutePath(), 
 				"--project", projectPath.toOSString(), 
 				"--extension", extensionName,
+				"--platforms", Util.join(supportedPlatforms, ","),
 				"--version", project.getProperty(MoSyncBuilder.PROJECT_VERSION),
 				"--vendor", project.getProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP),
 				"--prefix", prefix,

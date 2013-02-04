@@ -32,6 +32,10 @@ public class ExtensionSupportPlugin extends AbstractUIPlugin {
 	public static final String USE_CUSTOM_PREFIX_PROP = PREFIX_PROP + ".default";
 
 	public static final String GENERATE_JS_PROP = EXT_PROP_PREFIX + "js";
+	
+	public static final String SUPPORTED_PLATFORMS_PROP = EXT_PROP_PREFIX + "platforms";
+	
+	public static final String EXTENSIONS_CAPABILITY = "Extensions";
 
 	// The shared instance
 	private static ExtensionSupportPlugin plugin;
