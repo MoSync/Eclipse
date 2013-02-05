@@ -122,7 +122,7 @@ public class TemplateManager {
 	    	IConfigurationElement[] extensionCfgs = Platform.getExtensionRegistry().getConfigurationElementsFor(ProjectTemplateExtension.EXTENSION_POINT_ID);
 	    	for (IConfigurationElement extensionCfg : extensionCfgs) {
 	    		ProjectTemplateExtension extensionImpl = new ProjectTemplateExtension(extensionCfg);
-	    		String extensionType = type = extensionImpl.getType();
+	    		String extensionType = extensionImpl.getType();
 	    		extensions.put(extensionType, extensionImpl);
 	    	}
 		}
