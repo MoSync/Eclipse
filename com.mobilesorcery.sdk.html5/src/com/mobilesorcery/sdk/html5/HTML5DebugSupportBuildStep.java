@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -131,7 +132,11 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 		@Override
 		public boolean doesAffectBuild(IResource resource) {
-			return JSODDSupport.isValidJavaScriptFile(resource.getLocation());
+			IPath localPath = resource.getFullPath();
+			if (resource.getType() == IResource.FILE) {
+				localPath = Html5Plugin.getDefault().getLocalPath((IFile) resource);
+			}
+			return localPath != null && JSODDSupport.isValidJavaScriptFile(resource.getLocation());
 		}
 
 		@Override
