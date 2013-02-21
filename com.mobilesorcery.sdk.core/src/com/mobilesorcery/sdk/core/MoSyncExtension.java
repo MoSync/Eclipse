@@ -2,18 +2,23 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 
 import com.mobilesorcery.sdk.core.SectionedPropertiesFile.Section;
+import com.mobilesorcery.sdk.profiles.IVendor;
 
 public class MoSyncExtension {
 
 	private String name;
 	private Version version = new Version("1.0.0");
 	private String vendor = "<unknown vendor>";
+	private List<IVendor> platforms;
 
 	public MoSyncExtension(String name) {
 		this.name = name;
@@ -61,6 +66,19 @@ public class MoSyncExtension {
 			if (vendorStr != null) {
 				this.vendor = vendorStr;
 			}
+			String platformNamesStr = properties.get("platforms");
+			if (platformNamesStr != null) {
+				String[] platformNames = platformNamesStr.split(",");
+				ArrayList<IVendor> platforms = new ArrayList<IVendor>();
+				ProfileManager mgr = MoSyncTool.getDefault().getProfileManager(MoSyncTool.DEFAULT_PROFILE_TYPE);
+				for (String platformName: platformNames) {
+					IVendor platform = mgr.getVendor(platformName);
+					if (platform != null) {
+						platforms.add(platform);
+					}
+				}
+				this.platforms = Collections.unmodifiableList(platforms);
+			}
 		} catch (Exception e) {
 			return "Could not parse manifest file: " + e.getMessage();
 		}
@@ -77,6 +95,10 @@ public class MoSyncExtension {
 	
 	public String getVendor() {
 		return vendor;
+	}
+	
+	public List<IVendor> getPlatforms() {
+		return platforms;
 	}
 
 	public IPath getExtensionRoot() {
