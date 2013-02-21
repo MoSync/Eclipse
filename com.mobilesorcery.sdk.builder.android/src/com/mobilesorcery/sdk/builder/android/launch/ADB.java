@@ -140,7 +140,8 @@ public class ADB extends AbstractTool {
 	}
 
 	public static ADB getDefault() {
-		return instance;
+		ADB external = getExternal();
+		return external != null && external.isValid() ? external : instance;
 	}
 
 	public static ADB getExternal() {
