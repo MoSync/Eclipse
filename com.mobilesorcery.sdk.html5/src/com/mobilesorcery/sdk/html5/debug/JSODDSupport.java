@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -748,7 +749,7 @@ public class JSODDSupport {
 			FileRedefinable fileRedefinable = new FileRedefinable(null, file);
 
 			if (isValidJavaScriptFile(filePath)) {
-				String source = Util.readFile(absoluteFile.getAbsolutePath());
+				String source = Util.readFile(absoluteFile.getAbsolutePath(), "UTF8");
 				String prunedSource = source;
 				TreeSet<Integer> scopeResetPoints = new TreeSet<Integer>();
 
@@ -778,7 +779,7 @@ public class JSODDSupport {
 				
 				try {
 					ASTNode ast = parser.createAST(new NullProgressMonitor());
-	
+
 					// 2. Instrument
 					visitor.setFileRedefinable(fileRedefinable);
 					visitor.setScopeResetPoints(scopeResetPoints);
@@ -850,6 +851,9 @@ public class JSODDSupport {
 	// spaces. The second value is the location of the first script tag.
 	private Pair<String, Integer> getEmbeddedJavaScript(IFile file,
 			NavigableSet<Integer> scopeResetPoints, ArrayList<Pair<Integer, Integer>> htmlRanges) throws Exception {
+		if (!"UTF-8".equals(file.getCharset())) {
+			throw new IllegalArgumentException(MessageFormat.format("File {0} is not UTF-8 encoded, cannot continue", file.getLocation().toFile().getAbsolutePath()));
+		}
 		final CountDownLatch latch = new CountDownLatch(1);
 		IModelManager modelManager = StructuredModelManager.getModelManager();
 		IStructuredDocument doc = modelManager
@@ -868,15 +872,15 @@ public class JSODDSupport {
 		// where to reset the scopes. Overly complicated...
 		org.eclipse.jface.text.Position[] htmlLocations = translator
 				.getHtmlLocations();
+
 		for (org.eclipse.jface.text.Position htmlLocation : htmlLocations) {
 			scopeResetPoints.add(htmlLocation.offset);
 		}
-		org.eclipse.jface.text.Position[] ranges = translator
-				.getHtmlLocations();
-		for (int i = 0; i <= ranges.length; i++) {
-			int start = i == 0 ? 0 : ranges[i - 1].offset
-					+ ranges[i - 1].length;
-			int end = i == ranges.length ? doc.getLength() : ranges[i].offset;
+		
+		for (int i = 0; i <= htmlLocations.length; i++) {
+			int start = i == 0 ? 0 : htmlLocations[i - 1].offset
+					+ htmlLocations[i - 1].length;
+			int end = i == htmlLocations.length ? doc.getLength() : htmlLocations[i].offset;
 			htmlRanges.add(new Pair<Integer, Integer>(start, end));
 		}
 		
