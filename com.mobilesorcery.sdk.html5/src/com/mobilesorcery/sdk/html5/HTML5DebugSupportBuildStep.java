@@ -1,9 +1,12 @@
 package com.mobilesorcery.sdk.html5;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -112,7 +115,8 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 				File outputFile = new File(outputRoot,
 						localPath.toOSString());
 				outputFile.getParentFile().mkdirs();
-				return new FileWriter(outputFile);
+				return new BufferedWriter(new OutputStreamWriter(
+					    new FileOutputStream(outputFile), "UTF-8"));
 			}
 		}
 
