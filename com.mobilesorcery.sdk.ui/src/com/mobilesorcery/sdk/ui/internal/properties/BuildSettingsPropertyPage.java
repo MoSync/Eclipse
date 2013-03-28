@@ -143,6 +143,10 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private Text version;
     private Text appName;
 
+	private Button interpreted;
+
+	private Button nativeCompilation;
+
     @Override
 	protected Control createContents(Composite parent) {
         placeHolder = new Composite(parent, SWT.NONE);
@@ -341,11 +345,23 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         useDebugRuntimesData.horizontalSpan = 2;
         useDebugRuntimes.setLayoutData(useDebugRuntimesData);
 
-        staticRecompilation = new Button(packaging, SWT.CHECK);
+        interpreted = new Button(packaging, SWT.RADIO);
+        interpreted.setText("Use interpreter");
+        GridData interpretedData = new GridData(GridData.FILL_HORIZONTAL);
+        interpretedData.horizontalSpan = 2;
+        interpreted.setLayoutData(interpretedData);
+        
+        staticRecompilation = new Button(packaging, SWT.RADIO);
         staticRecompilation.setText("Use static recompilation (if applicable)");
         GridData staticRecompilationData = new GridData(GridData.FILL_HORIZONTAL);
         staticRecompilationData.horizontalSpan = 2;
         staticRecompilation.setLayoutData(staticRecompilationData);
+        
+        nativeCompilation = new Button(packaging, SWT.RADIO);
+        nativeCompilation.setText("Compile to native (if applicable)");
+        GridData nativeCompilationData = new GridData(GridData.FILL_HORIZONTAL);
+        nativeCompilationData.horizontalSpan = 2;
+        nativeCompilation.setLayoutData(nativeCompilationData);
 
         Label versionLabel = new Label(packaging, SWT.NONE);
         versionLabel.setText("&Version:");
@@ -497,7 +513,10 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         setText(dataSize, configProperties.getProperty(addBuildProperty(MoSyncBuilder.MEMORY_DATASIZE_KB)));
 
         useDebugRuntimes.setSelection(PropertyUtil.getBoolean(configProperties, addBuildProperty(MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)));
-        staticRecompilation.setSelection(PropertyUtil.getBoolean(configProperties, addBuildProperty(MoSyncBuilder.USE_STATIC_RECOMPILATION)));
+        String outputType = configProperties.getProperty(addBuildProperty(MoSyncBuilder.OUTPUT_TYPE));
+        nativeCompilation.setSelection(MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType));
+        staticRecompilation.setSelection(MoSyncBuilder.OUTPUT_TYPE_STATIC_RECOMPILATION.equals(outputType));
+        interpreted.setSelection(MoSyncBuilder.OUTPUT_TYPE_INTERPRETED.equals(outputType));
         setText(version, configProperties.getProperty(addBuildProperty(MoSyncBuilder.PROJECT_VERSION)));
         setText(vendor, configProperties.getProperty(addBuildProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP)));
         setText(appName, configProperties.getProperty(addBuildProperty(MoSyncBuilder.APP_NAME)));
@@ -753,7 +772,13 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         changed |= configProperties.setProperty(MoSyncBuilder.MEMORY_DATASIZE_KB, dataSize.getText());
 
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS, useDebugRuntimes.getSelection());
-        changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.USE_STATIC_RECOMPILATION, staticRecompilation.getSelection());
+        String outputType = MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE;
+        if (staticRecompilation.getSelection()) {
+        	outputType = MoSyncBuilder.OUTPUT_TYPE_STATIC_RECOMPILATION;
+        } else if (interpreted.getSelection()) {
+        	outputType = MoSyncBuilder.OUTPUT_TYPE_INTERPRETED;
+        }
+        changed |= configProperties.setProperty(MoSyncBuilder.OUTPUT_TYPE, outputType);
         changed |= configProperties.setProperty(MoSyncBuilder.PROJECT_VERSION, version.getText());
         changed |= configProperties.setProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP, vendor.getText());
         changed |= configProperties.setProperty(MoSyncBuilder.APP_NAME, appName.getText());

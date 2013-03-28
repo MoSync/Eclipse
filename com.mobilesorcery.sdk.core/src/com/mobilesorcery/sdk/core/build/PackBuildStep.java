@@ -101,6 +101,6 @@ public class PackBuildStep extends AbstractBuildStep {
 
 	@Override
 	public String[] getDependees() {
-		return new String[] { LinkBuildStep.ID };
+		return new String[] { };
 	}
 }

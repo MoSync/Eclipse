@@ -4,6 +4,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.preference.DirectoryFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
+import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
@@ -47,7 +48,11 @@ public class AndroidSDKPreferencePage extends FieldEditorPreferencePage implemen
 	@Override
 	protected void createFieldEditors() {
 		SDKFieldEditor sdkLocation = new SDKFieldEditor(Activator.EXTERNAL_SDK_PATH, "&SDK Location", getFieldEditorParent());
+		DirectoryFieldEditor ndkLocation = new DirectoryFieldEditor(Activator.NDK_PATH, "&NDK Location", getFieldEditorParent());
+		IntegerFieldEditor platformVersion = new IntegerFieldEditor(Activator.NDK_PLATFORM_VERSION, "NDK &Platform Version", getFieldEditorParent());
 		addField(sdkLocation);
+		addField(ndkLocation);
+		addField(platformVersion);
 	}
 
 }

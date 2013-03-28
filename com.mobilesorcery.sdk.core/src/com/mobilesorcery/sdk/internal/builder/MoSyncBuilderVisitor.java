@@ -93,7 +93,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     	boolean shouldVisitChildren = super.visit(resource);
     	if (isBuildable(resource)) {
 	        IFile cFile = getCFile(resource, false);
-	        if (cFile != null) {
+	        if (cFile != null && outputPath != null) {
 	            objectFiles.add(mapFileToOutput(cFile).toOSString());
 	        }
     	}

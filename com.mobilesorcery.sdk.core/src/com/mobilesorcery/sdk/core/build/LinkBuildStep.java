@@ -65,6 +65,11 @@ public class LinkBuildStep extends AbstractBuildStep {
 	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff,
 			IBuildResult result, IProgressMonitor monitor) throws Exception {
+		if (MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(MoSyncBuilder.getPropertyOwner(mosyncProject, variant.getConfigurationId()).getProperty(MoSyncBuilder.OUTPUT_TYPE))) {
+			getConsole().addMessage("Native compilation");
+			return CONTINUE;
+		}
+		
 		int continueFlag = IBuildStep.CONTINUE;
 
 		IProcessConsole console = getConsole();

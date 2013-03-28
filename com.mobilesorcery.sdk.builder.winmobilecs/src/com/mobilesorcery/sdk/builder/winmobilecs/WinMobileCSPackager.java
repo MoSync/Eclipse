@@ -16,6 +16,7 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -98,7 +99,7 @@ public class WinMobileCSPackager extends PackageToolPackager {
 				.getConfigurationId());
 		boolean isDebugBuild = cfg != null
 				&& cfg.getTypes().contains(IBuildConfiguration.DEBUG_TYPE);
-		if (shouldUseStaticRecompile(project, variant)) {
+		if (MoSyncBuilder.OUTPUT_TYPE_STATIC_RECOMPILATION.equals(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()).getProperty(MoSyncBuilder.OUTPUT_TYPE))) {
 			return isDebugBuild ? "rebuild_debug" : "rebuild_release";
 		} else {
 			return isDebugBuild ? "Debug" : "Release";

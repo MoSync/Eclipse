@@ -28,7 +28,11 @@ public class Activator extends AbstractUIPlugin {
     // The plug-in ID
     public static final String PLUGIN_ID = "com.mobilesorcery.sdk.builder.android"; //$NON-NLS-1$
 
-	public static final String EXTERNAL_SDK_PATH = "android.sdk";
+    public static final String EXTERNAL_SDK_PATH = "android.sdk";
+    
+    public static final String NDK_PATH = "android.ndk";
+    
+    public static final String NDK_PLATFORM_VERSION = "android.platform.version";
 
     // The shared instance
     private static Activator plugin;

@@ -141,17 +141,13 @@ public abstract class PackageToolPackager extends AbstractPackager {
 				.with(vendor).flag("-n").with(appName).flag("--version")
 				.with(version.asCanonicalString());
 
-		boolean useStaticRecompile = shouldUseStaticRecompile(project, variant);
-
 		String[] extensions = PropertyUtil.getStrings(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()), MoSyncBuilder.EXTENSIONS);
 		if (extensions.length > 0) {
 			commandLine.flag("--extensions").with(Util.join(extensions, ","));
 		}
 		
-		if (!useStaticRecompile) {
-			commandLine.flag("--output-type").with("interpreted");
-		}
-
+		commandLine.flag("--output-type").with(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()).getProperty(MoSyncBuilder.OUTPUT_TYPE));
+	
 		if (!Util.isEmpty(permissionsStr)) {
 			commandLine.flag("--permissions").with(permissionsStr);
 		}
@@ -166,13 +162,6 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			commandLine.flag("--nfc").with(nfcDescription);
 		}
 
-	}
-
-	protected boolean shouldUseStaticRecompile(MoSyncProject project, IBuildVariant variant) {
-		return PropertyUtil.getBoolean(
-				MoSyncBuilder.getPropertyOwner(project,
-						variant.getConfigurationId()),
-				MoSyncBuilder.USE_STATIC_RECOMPILATION);
 	}
 
 	protected File getDefaultIconFile() {

@@ -114,7 +114,7 @@ public class MoSyncIncludePathContainer implements IPathEntryContainer {
     	}
     	String extraCompilerSwitchesLine = "";
 		try {
-			extraCompilerSwitchesLine = MoSyncBuilder.getExtraCompilerSwitches(mosyncProject);
+			extraCompilerSwitchesLine = MoSyncBuilder.getExtraCompilerSwitches(mosyncProject, MoSyncBuilder.getActiveVariant(mosyncProject));
 		} catch (ParameterResolverException e) {
 			CoreMoSyncPlugin.getDefault().logOnce(e, "qqeeww");
 		}

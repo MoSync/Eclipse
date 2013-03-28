@@ -97,10 +97,9 @@ public class BuildPropertiesInitializerDelegate extends AbstractPreferenceInitia
                     ICommonPermissions.VIBRATE,
                     ICommonPermissions.INTERNET,
                     ICommonPermissions.FILE_STORAGE);
-        } else if (MoSyncBuilder.USE_STATIC_RECOMPILATION.equals(namespacedKey)) {
-        	// The default is to use interpreted (=faster execution),
-        	// in debug mode, static recompile otherwise.
-        	return PropertyUtil.fromBoolean(!isDebugCfg);
+        } else if (MoSyncBuilder.OUTPUT_TYPE.equals(namespacedKey)) {
+        	// The default is to use the classical, interpreted version.
+        	return MoSyncBuilder.OUTPUT_TYPE_INTERPRETED;
         } else if (MoSyncBuilder.REBUILD_ON_ERROR.equals(namespacedKey)) {
         	return PropertyUtil.fromBoolean(CoreMoSyncPlugin.getDefault().getPreferenceStore().getBoolean(MoSyncBuilder.REBUILD_ON_ERROR));
         }

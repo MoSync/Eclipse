@@ -163,8 +163,14 @@ public class MoSyncBuilder extends ACBuilder {
 	public static final String USE_DEBUG_RUNTIME_LIBS = BUILD_PREFS_PREFIX
 			+ "runtime.debug";
 
-	public static final String USE_STATIC_RECOMPILATION = BUILD_PREFS_PREFIX
+	public static final String OUTPUT_TYPE = BUILD_PREFS_PREFIX
 			+ "output.static.recompilation";
+	
+	public static final String OUTPUT_TYPE_INTERPRETED = "interpreted";
+	
+	public static final String OUTPUT_TYPE_STATIC_RECOMPILATION = "rebuilt";
+	
+	public static final String OUTPUT_TYPE_NATIVE_COMPILE = "native";
 
 	public static final String PROJECT_VERSION = BUILD_PREFS_PREFIX
 			+ "app.version";
@@ -350,9 +356,8 @@ public class MoSyncBuilder extends ACBuilder {
 		return getFinalOutputPath(project, variant).append("package");
 	}
 
-	public static String getExtraCompilerSwitches(MoSyncProject project)
+	public static String getExtraCompilerSwitches(MoSyncProject project, IBuildVariant variant)
 			throws ParameterResolverException {
-		IBuildVariant variant = getActiveVariant(project);
 		ParameterResolver resolver = createParameterResolver(project, variant);
 		IPropertyOwner buildProperties = getPropertyOwner(project,
 				variant.getConfigurationId());
