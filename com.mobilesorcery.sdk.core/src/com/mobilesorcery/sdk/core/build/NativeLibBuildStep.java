@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
@@ -22,6 +23,7 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
+import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
@@ -64,7 +66,8 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 	public int incrementalBuild(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult result,
 			IProgressMonitor monitor) throws Exception {
-		if (!MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()).getProperty(MoSyncBuilder.OUTPUT_TYPE))) {
+		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
+		if (!MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(properties.getProperty(MoSyncBuilder.OUTPUT_TYPE))) {
 			getConsole().addMessage("Project does not use native compilation");
 			return CONTINUE;
 		}
@@ -76,8 +79,7 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 		commandLine.flag("--project").with(project.getWrappedProject().getLocation().toFile());
 		commandLine.flag("--dst").with(MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).removeLastSegments(1).toOSString());
 		commandLine.flag("--config").with(variant.getConfigurationId());
-		IBuildConfiguration cfg = project.getBuildConfiguration(variant.getConfigurationId());
-		boolean isDebug = cfg.getTypes().contains(IBuildConfiguration.DEBUG_TYPE);
+		boolean isDebug = PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS);
 		String libVariant = isDebug ? "debug" : "release";
 		commandLine.flag("--lib-variant").with(libVariant);
 		String[] modules = PropertyUtil.getStrings(project, MoSyncBuilder.EXTENSIONS);
@@ -103,6 +105,8 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 			listOfRelativeFiles.add(sourceFile.getProjectRelativePath().toOSString());
 			commandLine.flag("-S" + sourceFile.getProjectRelativePath().toOSString());
 		}
+		
+		commandLine.flag("-I" + MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant).toOSString());
 		//commandLine.flag("--source-files").with(Util.join(listOfRelativeFiles.toArray(), " "));
 		
 		commandLine.flag("--verbose");
@@ -119,7 +123,7 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 		}
 		commandLine.flag("--android-ndkbuild-cmd").with(new File(ndkLocation, "ndk-build"));
 		commandLine.flag("--android-version").with(Integer.toString(platformVersion));
-
+		
 		DefaultPackager internal = new DefaultPackager(project, variant);
 		internal.runCommandLine(commandLine.asArray(),
 				commandLine.toHiddenString());
