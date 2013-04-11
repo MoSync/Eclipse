@@ -31,7 +31,7 @@ public class BuildSequence implements IBuildSequence {
 	private ArrayList<IBuildStep> buildSteps;
 	
 	private final static String[] BASE_SEQUENCE = new String[] { 
-			ResourceBuildStep.ID, CompileBuildStep.ID,
+			ResourceBuildStep.ID, NativeLibBuildStep.ID, CompileBuildStep.ID,
 			LinkBuildStep.ID, PackBuildStep.ID,
 			CopyBuildResultBuildStep.ID
 		};
