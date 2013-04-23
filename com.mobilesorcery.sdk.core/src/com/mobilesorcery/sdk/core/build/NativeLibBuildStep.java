@@ -9,6 +9,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -77,7 +78,8 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 		//TODO: Spaces and special chars?
 		commandLine.flag("--name").with(project.getName());
 		commandLine.flag("--project").with(project.getWrappedProject().getLocation().toFile());
-		commandLine.flag("--dst").with(MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).removeLastSegments(1).toOSString());
+		IPath dst = MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).removeLastSegments(1);
+		commandLine.flag("--dst").with(dst.toOSString());
 		commandLine.flag("--config").with(variant.getConfigurationId());
 		boolean isDebug = PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS);
 		String libVariant = isDebug ? "debug" : "release";
@@ -123,6 +125,7 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 		}
 		commandLine.flag("--android-ndkbuild-cmd").with(new File(ndkLocation, "ndk-build"));
 		commandLine.flag("--android-version").with(Integer.toString(platformVersion));
+		commandLine.flag("--android-build-dir").with(dst.append(new Path("temp")).toOSString());
 		
 		DefaultPackager internal = new DefaultPackager(project, variant);
 		internal.runCommandLine(commandLine.asArray(),
