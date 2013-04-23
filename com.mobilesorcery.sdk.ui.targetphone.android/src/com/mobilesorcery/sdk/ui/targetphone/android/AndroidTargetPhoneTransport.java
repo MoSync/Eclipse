@@ -34,6 +34,7 @@ import com.mobilesorcery.sdk.builder.android.launch.ADB;
 import com.mobilesorcery.sdk.builder.android.launch.ADB.ProcessKiller;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiles.IDeviceFilter;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.ProfileDBManager;
@@ -107,7 +108,9 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 					Object[] dialogResult = dialog.getResult();
 					if (dialogResult.length > 0) {
 						String serialNumber = (String) dialogResult[0];
-						phone[0] = new AndroidTargetPhone(serialNumber, serialNumber, AndroidTargetPhoneTransport.ID);
+						String modelName = ADB.getDefault().getModelName(serialNumber);
+						String name = Util.isEmpty(modelName) ? serialNumber : modelName;
+						phone[0] = new AndroidTargetPhone(name, serialNumber, AndroidTargetPhoneTransport.ID);
 					}
 				}
 			}

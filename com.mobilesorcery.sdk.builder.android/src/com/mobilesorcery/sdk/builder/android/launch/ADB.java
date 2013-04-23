@@ -19,6 +19,8 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -36,6 +38,8 @@ import com.mobilesorcery.sdk.core.CollectingLineHandler;
 import com.mobilesorcery.sdk.core.CommandLineExecutor;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.LineReader;
+import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
+import com.mobilesorcery.sdk.core.LineReader.LineAdapter;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.LineReader.LineHandlerList;
@@ -125,6 +129,7 @@ public class ADB extends AbstractTool {
 	}
 
 	private static ADB instance = new ADB();
+	private static ADB external;
 	private boolean logcatStarted;
 	private IPropertyChangeListener logCatListener = null;
 	private ProcessKiller logcatProcessHandler;
@@ -146,7 +151,18 @@ public class ADB extends AbstractTool {
 
 	public static ADB getExternal() {
 		IPath sdkPath = Activator.getDefault().getExternalAndroidSDKPath();
-		return findADB(sdkPath);
+		if (external == null || !external.getToolPath().equals(sdkPath)) {
+			ADB oldExternal = external;
+			if (oldExternal != null) {
+				oldExternal.dispose();
+			}
+			external = findADB(sdkPath);	
+		}
+		return external;
+	}
+
+	private void dispose() {
+		stopLogCat();
 	}
 
 	/**
@@ -343,16 +359,27 @@ public class ADB extends AbstractTool {
 
 		logcatProcessHandler.killProcess();
 		if (!silent) {
-				// Then restart!
+			// Then restart!
 			ArrayList<String> commandLine = new ArrayList<String>();
 			commandLine.add(getToolPath().getAbsolutePath());
 			commandLine.add("logcat");
 			String[] args = CommandLineExecutor.parseCommandLine(prefs.getString(PropertyInitializer.ADB_LOGCAT_ARGS));
 			commandLine.addAll(Arrays.asList(args));
 			
+			// First clear
+			clearLogCat();
+			
 			// We never have more than one logcat process.
 			execute(commandLine.toArray(new String[0]), logcatProcessHandler, null, true);
 		}
+	}
+	
+	private void clearLogCat() throws CoreException {
+		ArrayList<String> commandLine = new ArrayList<String>();
+		commandLine.add(getToolPath().getAbsolutePath());
+		commandLine.add("logcat");
+		commandLine.add("-c");
+		execute(commandLine.toArray(new String[0]), null, null, false);
 	}
 	
 	private synchronized void stopLogCat() {
@@ -367,5 +394,35 @@ public class ADB extends AbstractTool {
 				"kill-server"
 		}, null, null, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
 		stopLogCat();
+	}
+
+	public String getModelName(String serialNumber) {
+		ArrayList<String> commandLine = new ArrayList<String>();
+		commandLine.add(getToolPath().getAbsolutePath());
+		commandLine.add("shell");
+		commandLine.add("cat");
+		commandLine.add("/system/build.prop");
+		final String[] model = new String[1];
+		LineAdapter handler = new LineAdapter() {
+			private final Pattern REGEX = Pattern.compile("(.*)=(.*)");
+			@Override
+			public void newLine(String line) {
+				Matcher m = REGEX.matcher(line);
+				if (model[0] == null && m.matches()) {
+					String property = m.group(1);
+					String value = m.group(2);
+					if (property.trim().equals("ro.product.model")) {
+						model[0] = value;
+					}
+				}
+			}
+		};
+		try {
+			execute(commandLine.toArray(new String[0]), handler, handler, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
+		} catch (CoreException e) {
+			e.printStackTrace();
+			return null;
+		}
+		return model[0];
 	}
 }
