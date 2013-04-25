@@ -19,6 +19,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -403,7 +404,7 @@ public class ADB extends AbstractTool {
 		commandLine.add("cat");
 		commandLine.add("/system/build.prop");
 		final String[] model = new String[1];
-		LineAdapter handler = new LineAdapter() {
+		CollectingLineHandler handler = new CollectingLineHandler() {
 			private final Pattern REGEX = Pattern.compile("(.*)=(.*)");
 			@Override
 			public void newLine(String line) {
@@ -418,8 +419,10 @@ public class ADB extends AbstractTool {
 			}
 		};
 		try {
-			execute(commandLine.toArray(new String[0]), handler, handler, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
-		} catch (CoreException e) {
+			execute(commandLine.toArray(new String[0]), handler, handler, CoreMoSyncPlugin.LOG_CONSOLE_NAME, true);
+			handler.awaitStopped(5, TimeUnit.SECONDS);
+		} catch (Exception e) {
+			// Just ignore.
 			e.printStackTrace();
 			return null;
 		}
