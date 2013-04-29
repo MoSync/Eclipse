@@ -113,6 +113,7 @@ public class NativeLibBuildStep extends AbstractBuildStep {
         List<IPath> includePaths = new ArrayList<IPath>();
         // Todo: how to handle additional includes
         //includePaths.addAll(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, variant)));
+        includePaths.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
         includePaths.add(MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant));
 		String[] includes = MoSyncBuilderVisitor.assembleIncludeString(includePaths.toArray(new IPath[0]));
 		for (String include : includes) {
