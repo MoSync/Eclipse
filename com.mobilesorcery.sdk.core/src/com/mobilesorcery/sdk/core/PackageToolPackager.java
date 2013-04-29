@@ -146,7 +146,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			commandLine.flag("--extensions").with(Util.join(extensions, ","));
 		}
 		
-		commandLine.flag("--output-type").with(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()).getProperty(MoSyncBuilder.OUTPUT_TYPE));
+		commandLine.flag("--output-type").with(project.getProperty(MoSyncBuilder.OUTPUT_TYPE));
 	
 		if (!Util.isEmpty(permissionsStr)) {
 			commandLine.flag("--permissions").with(permissionsStr);

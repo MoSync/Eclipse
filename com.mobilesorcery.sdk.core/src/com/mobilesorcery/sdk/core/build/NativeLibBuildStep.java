@@ -70,7 +70,7 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult result,
 			IProgressMonitor monitor) throws Exception {
 		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
-		if (!MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(project.getProperty(MoSyncBuilder.OUTPUT_TYPE))) {
+		if (!isOutputType(project, variant, MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE)) {
 			getConsole().addMessage("Project does not use native compilation");
 			return CONTINUE;
 		}
@@ -113,7 +113,7 @@ public class NativeLibBuildStep extends AbstractBuildStep {
         List<IPath> includePaths = new ArrayList<IPath>();
         // Todo: how to handle additional includes
         //includePaths.addAll(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, variant)));
-        includePaths.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
+        //includePaths.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
         includePaths.add(MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant));
 		String[] includes = MoSyncBuilderVisitor.assembleIncludeString(includePaths.toArray(new IPath[0]));
 		for (String include : includes) {

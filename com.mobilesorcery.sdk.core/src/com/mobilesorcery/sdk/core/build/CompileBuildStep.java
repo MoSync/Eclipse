@@ -61,7 +61,7 @@ public class CompileBuildStep extends AbstractBuildStep {
 	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff,
 			IBuildResult buildResult, IProgressMonitor monitor) throws CoreException, ParameterResolverException {
-		if (MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(MoSyncBuilder.getPropertyOwner(mosyncProject, variant.getConfigurationId()).getProperty(MoSyncBuilder.OUTPUT_TYPE))) {
+		if (isOutputType(mosyncProject, variant, MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE)) {
 			getConsole().addMessage("Native compilation");
 			return CONTINUE;
 		}
