@@ -1,6 +1,7 @@
 package com.mobilesorcery.sdk.core.build;
 
 import java.io.File;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -74,6 +75,8 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 			getConsole().addMessage("Project does not use native compilation");
 			return CONTINUE;
 		}
+
+		assertConfigId(variant);
 		
 		CommandLineBuilder commandLine = new CommandLineBuilder(MoSyncTool.getDefault().getBinary("nbuild").toOSString());
 		commandLine.flag("--platform").with(variant.getProfile().getVendor().getName());
@@ -144,5 +147,27 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Build failed."));
 		}
 		return IBuildStep.CONTINUE;
+	}
+	
+	private static void assertConfigId(IBuildVariant variant) throws CoreException {
+		String validatedConfig = validateConfigId(variant);
+		if (!Util.isEmpty(validatedConfig)) {
+			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
+				validatedConfig));
+		}
+	}
+	
+	public static String validateConfigId(IBuildVariant variant) {
+		String configId = variant.getConfigurationId();
+		for (int i = 0; i < configId.length(); i++) {
+			char ch = configId.charAt(i);
+			if (!Character.isLetter(ch) && !Character.isDigit(ch) &&
+				ch != '_' && ch !=  '_') {
+				return MessageFormat.format(
+						"Invalid configuration name: {0}. Only letters, digits, hyphen and underscored allowed.",
+						configId);
+			}
+		}
+		return null;
 	}
 }
