@@ -67,6 +67,8 @@ import com.mobilesorcery.sdk.ui.BuildConfigurationsContentProvider;
 import com.mobilesorcery.sdk.ui.BuildConfigurationsLabelProvider;
 import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 import com.mobilesorcery.sdk.ui.MoSyncPropertyPage;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
+import com.mobilesorcery.sdk.ui.Note;
 import com.mobilesorcery.sdk.ui.ParameterResolverContentProvider;
 import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.ui.UpdateListener;
@@ -101,6 +103,11 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
     private final static String[] INCREMENTAL_BUILD_STRATEGY_OPTIONS = new String[] { "Use GCC -MF Option", "Always perform FULL build" };
 
+    private static final String BINARY_TYPE_NATIVE = "Native";
+    private static final String BINARY_TYPE_INTERPRETED = "Interpreted";
+    private static final String BINARY_TYPE_RECOMPILED = "Statically Recompiled";
+	private static final String[] BINARY_TYPES = new String[] { BINARY_TYPE_NATIVE, BINARY_TYPE_INTERPRETED, BINARY_TYPE_RECOMPILED };
+
     private Text additionalIncludePathsText;
     private Button ignoreDefaultIncludePaths;
     private Text additionalLibraryPathsText;
@@ -124,7 +131,6 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private Button gccWextra;
     private Combo incrementalBuildStrategy;
     private Button useDebugRuntimes;
-	private Button staticRecompilation;
     private ComboViewer buildConfigurations;
     private String currentConfigId;
     private BuildConfigurationChangedListener buildConfigurationListener;
@@ -143,12 +149,13 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private Text version;
     private Text appName;
 
-	private Button interpreted;
+	private Combo binaryType;
 
-	private Button nativeCompilation;
+	private boolean supportsExtensions;
 
     @Override
 	protected Control createContents(Composite parent) {
+    	supportsExtensions = MoSyncExtensionManager.supportsExtensions();
         placeHolder = new Composite(parent, SWT.NONE);
         FillLayout placeHolderLayout = new FillLayout();
         placeHolderLayout.marginHeight = 0;
@@ -174,14 +181,30 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         libraryProjectType = new Button(projectType, SWT.RADIO);
         libraryProjectType.setText("&Library");
         
-        extensionProjectType = new Button(projectType, SWT.RADIO);
-        extensionProjectType.setText("&Extension");
+        if (supportsExtensions) {
+	        extensionProjectType = new Button(projectType, SWT.RADIO);
+	        extensionProjectType.setText("&Extension");
+        }
 
         Group buildStrategy = new Group(main, SWT.NONE);
         buildStrategy.setLayout(new GridLayout(2, false));
         buildStrategy.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        buildStrategy.setText("Incremental Build Strateg&y");
+        buildStrategy.setText("Building");
 
+        Label binaryTypeLabel = new Label(buildStrategy, SWT.NONE);
+        binaryTypeLabel.setText("Binary Type");
+        
+        binaryType = new Combo(buildStrategy, SWT.READ_ONLY);
+        binaryType.setItems(BINARY_TYPES);
+        binaryType.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false));
+        
+        Label binaryTypeInfo = new Label(buildStrategy, SWT.WRAP);
+        binaryTypeInfo.setText("The binary type indicates how building should take place.\n" +
+        		"If a certain binary type is not available for a platform, " +
+        		"the 'Interpreted' binary type will be used.");
+        binaryTypeInfo.setFont(MosyncUIPlugin.getDefault().getFont(MosyncUIPlugin.FONT_INFO_TEXT));
+        binaryTypeInfo.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
+        
         Label incrementalBuildStrategyLabel = new Label(buildStrategy, SWT.NONE);
         incrementalBuildStrategyLabel.setText("Incremental Build Strategy To Use:");
 
@@ -222,12 +245,12 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         applicationProjectType.addListener(SWT.Selection, listener);
         libraryProjectType.addListener(SWT.Selection, listener);
-        extensionProjectType.addListener(SWT.Selection, listener);
         applicationProjectType.addListener(SWT.Selection, listener);
+        incrementalBuildStrategy.addListener(SWT.Selection, listener);
+        binaryType.addListener(SWT.Selection, listener);
         additionalIncludePathsText.addListener(SWT.Modify, listener);
         additionalLibrariesText.addListener(SWT.Modify, listener);
         additionalLibraryPathsText.addListener(SWT.Modify, listener);
-        extensions.addListener(SWT.Modify, listener);
         libOutputPath.addListener(SWT.Modify, listener);
         appOutputPath.addListener(SWT.Modify, listener);
         stackSize.addListener(SWT.Modify, listener);
@@ -235,6 +258,11 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         dataSize.addListener(SWT.Modify, listener);
         version.addListener(SWT.Modify, listener);
         appName.addListener(SWT.Modify, listener);
+        
+        if (supportsExtensions) {
+            extensionProjectType.addListener(SWT.Selection, listener);
+        	extensions.addListener(SWT.Modify, listener);
+        }
 
         changeConfiguration(getProject().getActiveBuildConfiguration());
         if (getProject().areBuildConfigurationsSupported()) {
@@ -345,24 +373,6 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         useDebugRuntimesData.horizontalSpan = 2;
         useDebugRuntimes.setLayoutData(useDebugRuntimesData);
 
-        interpreted = new Button(packaging, SWT.RADIO);
-        interpreted.setText("Use interpreter");
-        GridData interpretedData = new GridData(GridData.FILL_HORIZONTAL);
-        interpretedData.horizontalSpan = 2;
-        interpreted.setLayoutData(interpretedData);
-        
-        staticRecompilation = new Button(packaging, SWT.RADIO);
-        staticRecompilation.setText("Use static recompilation (if applicable)");
-        GridData staticRecompilationData = new GridData(GridData.FILL_HORIZONTAL);
-        staticRecompilationData.horizontalSpan = 2;
-        staticRecompilation.setLayoutData(staticRecompilationData);
-        
-        nativeCompilation = new Button(packaging, SWT.RADIO);
-        nativeCompilation.setText("Compile to native (if applicable)");
-        GridData nativeCompilationData = new GridData(GridData.FILL_HORIZONTAL);
-        nativeCompilationData.horizontalSpan = 2;
-        nativeCompilation.setLayoutData(nativeCompilationData);
-
         Label versionLabel = new Label(packaging, SWT.NONE);
         versionLabel.setText("&Version:");
 
@@ -431,14 +441,16 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         excludeFilesData.horizontalSpan = 2;
         excludeFiles.setLayoutData(excludeFilesData);
 
-        Label extensionsLabel = new Label(buildPaths, SWT.NONE);
-        extensionsLabel.setText("Extensions");
-        extensionsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
-
-        extensions = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
-        GridData extensionsData = new GridData(GridData.FILL_HORIZONTAL);
-        extensionsData.horizontalSpan = 2;
-        extensions.setLayoutData(extensionsData);
+        if (supportsExtensions) {
+	        Label extensionsLabel = new Label(buildPaths, SWT.NONE);
+	        extensionsLabel.setText("Extensions");
+	        extensionsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
+	
+	        extensions = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
+	        GridData extensionsData = new GridData(GridData.FILL_HORIZONTAL);
+	        extensionsData.horizontalSpan = 2;
+	        extensions.setLayoutData(extensionsData);
+        }
         
         Label outputPathLabel = new Label(buildPaths, SWT.NONE);
         outputPathLabel.setText("&Output File (libraries only)");
@@ -473,9 +485,9 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     	boolean isExtensionProject = MoSyncBuilder.PROJECT_TYPE_EXTENSION.equals(projectWorkingCopy.getProperty(addBuildProperty(MoSyncBuilder.PROJECT_TYPE)));
     	boolean isAppProject = !isLibraryProject && !isExtensionProject;
         libraryProjectType.setSelection(isLibraryProject);
-        extensionProjectType.setSelection(isExtensionProject);
         applicationProjectType.setSelection(isAppProject);
 
+        binaryType.setText(getBinaryTypeLabel(getProject().getProperty(MoSyncBuilder.OUTPUT_TYPE)));
         incrementalBuildStrategy.select(PropertyUtil.getInteger(projectWorkingCopy, addBuildProperty(MoSyncProject.DEPENDENCY_STRATEGY), MoSyncProject.GCC_DEPENDENCY_STRATEGY));
 
     	IPropertyOwner configProperties = getWorkingCopyOfBuildConfiguration();
@@ -490,8 +502,6 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         setText(additionalLibrariesText, configProperties.getProperty(addBuildProperty(MoSyncBuilder.ADDITIONAL_LIBRARIES)));
 
         setText(excludeFiles, configProperties.getProperty(addBuildProperty(MoSyncProject.EXCLUDE_FILTER_KEY)));
-
-        setText(extensions, configProperties.getProperty(addBuildProperty(MoSyncBuilder.EXTENSIONS)));
         
         setText(libOutputPath, configProperties.getProperty(addBuildProperty(MoSyncBuilder.LIB_OUTPUT_PATH)));
         setText(appOutputPath, configProperties.getProperty(addBuildProperty(MoSyncBuilder.APP_OUTPUT_PATH)));
@@ -514,12 +524,16 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         useDebugRuntimes.setSelection(PropertyUtil.getBoolean(configProperties, addBuildProperty(MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS)));
         String outputType = configProperties.getProperty(addBuildProperty(MoSyncBuilder.OUTPUT_TYPE));
-        nativeCompilation.setSelection(MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType));
-        staticRecompilation.setSelection(MoSyncBuilder.OUTPUT_TYPE_STATIC_RECOMPILATION.equals(outputType));
-        interpreted.setSelection(MoSyncBuilder.OUTPUT_TYPE_INTERPRETED.equals(outputType));
         setText(version, configProperties.getProperty(addBuildProperty(MoSyncBuilder.PROJECT_VERSION)));
         setText(vendor, configProperties.getProperty(addBuildProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP)));
         setText(appName, configProperties.getProperty(addBuildProperty(MoSyncBuilder.APP_NAME)));
+        
+
+        if (supportsExtensions) {
+        	setText(extensions, configProperties.getProperty(addBuildProperty(MoSyncBuilder.EXTENSIONS)));
+            extensionProjectType.setSelection(isExtensionProject);
+        }
+        
         listener.setActive(true);
         updateUI();
     }
@@ -585,6 +599,20 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         libOutputPath.setEnabled(isLibOrExtProject);
         appOutputPath.setEnabled(!isLibOrExtProject);
 
+        boolean isInterpreted = getBinaryType().equals(MoSyncBuilder.OUTPUT_TYPE_INTERPRETED);
+        incrementalBuildStrategy.setEnabled(isInterpreted);
+        libraryProjectType.setEnabled(isInterpreted);
+        
+        boolean isNative = getBinaryType().equals(MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE);
+        additionalIncludePathsText.setEnabled(!isNative);
+        additionalIncludePathsText.setEchoChar(isNative ? ' ' : '\0');
+        additionalLibrariesText.setEnabled(!isNative);
+        additionalLibrariesText.setEchoChar(isNative ? ' ' : '\0');
+        additionalLibraryPathsText.setEnabled(!isNative);
+        additionalLibraryPathsText.setEchoChar(isNative ? ' ' : '\0');
+        ignoreDefaultIncludePaths.setEnabled(!isNative);
+        ignoreDefaultLibraries.setEnabled(!isNative);
+        ignoreDefaultLibraryPaths.setEnabled(!isNative);
         super.updateUI();
 
         listener.setActive(wasActive);
@@ -604,7 +632,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         validateMemorySettings(message);
 
-        if (libraryProjectType.getSelection() || extensionProjectType.getSelection()) {
+        if (libraryProjectType.getSelection() || (supportsExtensions && extensionProjectType.getSelection())) {
             if (libOutputPath.getText().length() > 0 && Util.getExtension(new File(libOutputPath.getText())).length() == 0) {
             	message.setMessage(libOutputPath, new DefaultMessageProvider("Output file has no extension", IMessageProvider.WARNING));
             }
@@ -614,12 +642,14 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
             }
         }
 
-        String[] extensionList = PropertyUtil.toStrings(extensions.getText());
-        for (String extensionName : extensionList) {
-        	MoSyncExtension extension = MoSyncExtensionManager.getDefault().getExtension(extensionName);
-        	if (extension == null) {
-        		message.setMessage(extensions, new DefaultMessageProvider("Extension does not exist: " + extensionName, IMessageProvider.WARNING));
-        	}
+        if (supportsExtensions) {
+	        String[] extensionList = PropertyUtil.toStrings(extensions.getText());
+	        for (String extensionName : extensionList) {
+	        	MoSyncExtension extension = MoSyncExtensionManager.getDefault().getExtension(extensionName);
+	        	if (extension == null) {
+	        		message.setMessage(extensions, new DefaultMessageProvider("Extension does not exist: " + extensionName, IMessageProvider.WARNING));
+	        	}
+	        }
         }
         
         setMessage(message);
@@ -729,6 +759,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         boolean changed = false;
         changed |= PropertyUtil.setInteger(getProject(), MoSyncProject.DEPENDENCY_STRATEGY, incrementalBuildStrategy.getSelectionIndex());
+        changed |= getProject().setProperty(MoSyncBuilder.OUTPUT_TYPE, getBinaryType());
 
         changed |= configProperties.setProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS, additionalIncludePathsText.getText().replace(';', ','));
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS, ignoreDefaultIncludePaths.getSelection());
@@ -743,15 +774,13 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         changed |= configProperties.setProperty(MoSyncBuilder.LIB_OUTPUT_PATH, libOutputPath.getText());
         changed |= configProperties.setProperty(MoSyncBuilder.APP_OUTPUT_PATH, appOutputPath.getText());
         
-        changed |= configProperties.setProperty(MoSyncBuilder.EXTENSIONS, extensions.getText());
-
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.DEAD_CODE_ELIMINATION, deadCodeElim.getSelection());
 
         String projectTypeProperty = MoSyncBuilder.PROJECT_TYPE_APPLICATION;
         if (libraryProjectType.getSelection()) {
         	projectTypeProperty = MoSyncBuilder.PROJECT_TYPE_LIBRARY;
         }
-        if (extensionProjectType.getSelection()) {
+        if (supportsExtensions && extensionProjectType.getSelection()) {
         	projectTypeProperty = MoSyncBuilder.PROJECT_TYPE_EXTENSION;
         }
         changed |= getProject().setProperty(MoSyncBuilder.PROJECT_TYPE, projectTypeProperty);
@@ -772,20 +801,39 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         changed |= configProperties.setProperty(MoSyncBuilder.MEMORY_DATASIZE_KB, dataSize.getText());
 
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS, useDebugRuntimes.getSelection());
-        String outputType = MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE;
-        if (staticRecompilation.getSelection()) {
-        	outputType = MoSyncBuilder.OUTPUT_TYPE_STATIC_RECOMPILATION;
-        } else if (interpreted.getSelection()) {
-        	outputType = MoSyncBuilder.OUTPUT_TYPE_INTERPRETED;
-        }
-        changed |= configProperties.setProperty(MoSyncBuilder.OUTPUT_TYPE, outputType);
         changed |= configProperties.setProperty(MoSyncBuilder.PROJECT_VERSION, version.getText());
         changed |= configProperties.setProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP, vendor.getText());
         changed |= configProperties.setProperty(MoSyncBuilder.APP_NAME, appName.getText());
+
+        if (supportsExtensions) {
+        	changed |= configProperties.setProperty(MoSyncBuilder.EXTENSIONS, extensions.getText());
+        }
+
         return changed;
     }
 
-    @Override
+    private String getBinaryTypeLabel(String binaryType) {
+    	if (MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(binaryType)) {
+    		return BINARY_TYPE_NATIVE;
+    	} else if (MoSyncBuilder.OUTPUT_TYPE_STATIC_RECOMPILATION.equals(binaryType)) {
+    		return BINARY_TYPE_RECOMPILED;
+    	} else {
+    		return BINARY_TYPE_INTERPRETED;
+    	}
+    }
+    
+    private String getBinaryType() {
+		String selectedType = binaryType.getText();
+		if (BINARY_TYPE_NATIVE.equals(selectedType)) {
+			return MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE;
+		} else if (BINARY_TYPE_RECOMPILED.equals(selectedType)) {
+			return MoSyncBuilder.OUTPUT_TYPE_STATIC_RECOMPILATION;
+		} else {
+			return MoSyncBuilder.OUTPUT_TYPE_INTERPRETED;
+		}
+	}
+
+	@Override
 	public void propertyChange(PropertyChangeEvent event) {
         String property = event.getPropertyName();
         if (MoSyncProject.BUILD_CONFIGURATION_SUPPORT_CHANGED.equals(property) || MoSyncProject.BUILD_CONFIGURATION_CHANGED.equals(property)) {

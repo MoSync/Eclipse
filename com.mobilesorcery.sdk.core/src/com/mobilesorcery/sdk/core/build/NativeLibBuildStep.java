@@ -2,6 +2,8 @@ package com.mobilesorcery.sdk.core.build;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
@@ -68,7 +70,7 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult result,
 			IProgressMonitor monitor) throws Exception {
 		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
-		if (!MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(properties.getProperty(MoSyncBuilder.OUTPUT_TYPE))) {
+		if (!MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(project.getProperty(MoSyncBuilder.OUTPUT_TYPE))) {
 			getConsole().addMessage("Project does not use native compilation");
 			return CONTINUE;
 		}
@@ -108,28 +110,38 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 			commandLine.flag("-S" + sourceFile.getProjectRelativePath().toOSString());
 		}
 		
-		commandLine.flag("-I" + MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant).toOSString());
-		//commandLine.flag("--source-files").with(Util.join(listOfRelativeFiles.toArray(), " "));
+        List<IPath> includePaths = new ArrayList<IPath>();
+        // Todo: how to handle additional includes
+        //includePaths.addAll(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, variant)));
+        includePaths.add(MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant));
+		String[] includes = MoSyncBuilderVisitor.assembleIncludeString(includePaths.toArray(new IPath[0]));
+		for (String include : includes) {
+			commandLine.flag(include);
+		}
 		
 		commandLine.flag("--verbose");
 
 		// Android specific stuff
-		IPreferenceStore androidPrefs = new ScopedPreferenceStore(InstanceScope.INSTANCE, "com.mobilesorcery.sdk.builder.android");
-		String ndkLocation = androidPrefs.getString("android.ndk");
-		int platformVersion = androidPrefs.getInt("android.platform.version");
-		if (Util.isEmpty(ndkLocation)) {
-			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Missing NDK location"));
+		if ("android".equalsIgnoreCase(variant.getProfile().getVendor().getName())) {
+			IPreferenceStore androidPrefs = new ScopedPreferenceStore(InstanceScope.INSTANCE, "com.mobilesorcery.sdk.builder.android");
+			String ndkLocation = androidPrefs.getString("android.ndk");
+			int platformVersion = androidPrefs.getInt("android.platform.version");
+			if (Util.isEmpty(ndkLocation)) {
+				throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Missing NDK location"));
+			}
+			if (platformVersion < 1) {
+				throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Missing NDK version"));
+			}
+			commandLine.flag("--android-ndk-location").with(new File(ndkLocation));
+			commandLine.flag("--android-version").with(Integer.toString(platformVersion));
+			commandLine.flag("--android-build-dir").with(dst.append(new Path("temp")).toOSString());
 		}
-		if (platformVersion < 1) {
-			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Missing NDK version"));
-		}
-		commandLine.flag("--android-ndkbuild-cmd").with(new File(ndkLocation, "ndk-build"));
-		commandLine.flag("--android-version").with(Integer.toString(platformVersion));
-		commandLine.flag("--android-build-dir").with(dst.append(new Path("temp")).toOSString());
 		
 		DefaultPackager internal = new DefaultPackager(project, variant);
-		internal.runCommandLine(commandLine.asArray(),
-				commandLine.toHiddenString());
+		if (internal.runCommandLine(commandLine.asArray(),
+				commandLine.toHiddenString()) != 0) {
+			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Build failed."));
+		}
 		return IBuildStep.CONTINUE;
 	}
 }

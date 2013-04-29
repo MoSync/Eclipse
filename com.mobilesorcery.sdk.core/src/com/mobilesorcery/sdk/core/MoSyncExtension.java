@@ -115,6 +115,19 @@ public class MoSyncExtension {
 		return getExtensionRoot().append("lib");
 	}
 	
+	public String getLicense() {
+		File licenseFile = getExtensionRoot().append("LICENSE").toFile();
+		if (licenseFile.exists()) {
+			try {
+				return Util.readFile(licenseFile.getAbsolutePath());
+			} catch (IOException e) {
+				// Mmm. Well... ok then.
+				return "Unable to read license";
+			}
+		}
+		return null;
+	}
+	
 	static void validateInExtensionsDir(File installLocation) {
 		if (!Util.isParent(MoSyncTool.getDefault().getMoSyncExtensions().toFile(), installLocation)) {
 			throw new IllegalStateException("Illegal install location: " + installLocation);

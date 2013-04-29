@@ -10,6 +10,7 @@ import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StyledCellLabelProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.StyledString.Styler;
@@ -17,24 +18,33 @@ import org.eclipse.jface.viewers.ViewerCell;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.program.Program;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.PlatformUI;
 
 import com.mobilesorcery.sdk.core.MoSyncExtension;
 import com.mobilesorcery.sdk.core.MoSyncExtensionManager;
 import com.mobilesorcery.sdk.core.MoSyncExtensionManager.ExtensionAlreadyExistsException;
 import com.mobilesorcery.sdk.extensionsupport.ExtensionSupportPlugin;
 import com.mobilesorcery.sdk.ui.SimpleListEditor;
+import com.mobilesorcery.sdk.ui.TextDialog;
 import com.mobilesorcery.sdk.ui.UIUtils;
 
 public class ExtensionsPreferencePage extends PreferencePage implements
 		IWorkbenchPreferencePage {
 
 	class InstalledExtensionsEditor extends SimpleListEditor<MoSyncExtension> {
+
+		private Button license;
+		private MoSyncExtension current;
 
 		public InstalledExtensionsEditor(Composite parent, int style) {
 			super(parent, style);
@@ -43,10 +53,30 @@ public class ExtensionsPreferencePage extends PreferencePage implements
 		protected int createButtons(Composite main) {
 			add = createButton(main, "&Install...");
 			remove = createButton(main, "&Uninstall");
-
-			return 2;
+			license = createButton(main, "&License");
+			return 3;
 		}
 
+		protected void updateButtons(IStructuredSelection selection) {
+			super.updateButtons(selection);
+			current = (MoSyncExtension)((IStructuredSelection)getSelection()).getFirstElement();
+			license.setEnabled(current != null && current.getLicense() != null);
+			license.addListener(SWT.Selection, new Listener() {
+				@Override
+				public void handleEvent(Event event) {
+					showLicense();
+				}				
+			});
+		}
+		
+		private void showLicense() {
+			if (current != null) {
+				TextDialog dialog = new TextDialog(getShell());
+				dialog.setText(current.getLicense());
+				dialog.open();
+			}
+		}
+		
 		public MoSyncExtension add(Object nextObject) {
 			FileDialog dialog = new FileDialog(getShell(), SWT.OPEN);
 			dialog.setFilterExtensions(new String[] { "*.ext" });

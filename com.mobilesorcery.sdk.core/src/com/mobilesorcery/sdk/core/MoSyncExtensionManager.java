@@ -145,5 +145,9 @@ public class MoSyncExtensionManager {
 	private boolean removeExtensionDir(File installLocation) {
 		return Util.deleteFiles(installLocation, null, 8, new NullProgressMonitor());
 	}
+	
+	public static boolean supportsExtensions() {
+		return MoSyncTool.getDefault().getBinary("extcomp").toFile().exists();
+	}
 
 }

@@ -149,7 +149,7 @@ public class SimpleListEditor<T> extends Composite {
 		updateButtons(getSelection());
 	}
 	
-	private IStructuredSelection getSelection() {
+	protected IStructuredSelection getSelection() {
 		return (IStructuredSelection) list.getSelection();
 	}
 	
