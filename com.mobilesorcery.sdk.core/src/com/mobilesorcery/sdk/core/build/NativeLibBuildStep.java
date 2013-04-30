@@ -72,7 +72,7 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 			IProgressMonitor monitor) throws Exception {
 		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
 		if (!isOutputType(project, variant, MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE)) {
-			getConsole().addMessage("Project does not use native compilation");
+			getConsole().addMessage("Project does not use native compilation (the platform may not support it)");
 			return CONTINUE;
 		}
 

@@ -120,4 +120,8 @@ public class AndroidPackager extends PackageToolPackager {
 
 		return null;
 	}
+	
+	protected boolean supportsOutputType(String outputType) {
+		return super.supportsOutputType(outputType) || MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
+	}
 }

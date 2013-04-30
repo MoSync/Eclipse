@@ -38,6 +38,14 @@ public interface IPackagerDelegate {
     void createPackage(MoSyncProject project, IBuildSession session, IBuildVariant targetProfile, IFileTreeDiff diff, IBuildResult buildResult) throws CoreException;
 
 	/**
+	 * Returns the output type for a project.
+	 * @see MoSyncBuilder#OUTPUT_TYPE
+	 * @param outputType the output type to test
+	 * @return {@code true} if i
+	 */
+    public String getOutputType(MoSyncProject project);
+	
+	/**
 	 * Returns the generate mode to be used during linking, as
 	 * per defined in the {@link IPackagerDelegate#BUILD_C_MODE},
 	 * {@link IPackagerDelegate#BUILD_GEN_CPP_MODE},

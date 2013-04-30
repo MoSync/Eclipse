@@ -127,5 +127,9 @@ public class WinMobileCSPackager extends PackageToolPackager {
 	public String getGenerateMode(IProfile profile) {
 		return BUILD_GEN_CS_MODE;
 	}
+	
+	protected boolean supportsOutputType(String outputType) {
+		return !MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
+	}
 
 }

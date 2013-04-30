@@ -36,6 +36,7 @@ import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IProcessConsole;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
 import com.mobilesorcery.sdk.core.ParameterResolverException;
@@ -236,5 +237,9 @@ public class IPhoneOSPackager extends PackageToolPackager
 		return PropertyUtil.getBoolean(project, PropertyInitializer.IPHONE_PROJECT_SPECIFIC_CERT) ?
         		project.getProperty(PropertyInitializer.IPHONE_CERT):
         		Activator.getDefault().getPreferenceStore().getString(PropertyInitializer.IPHONE_CERT);
+	}
+	
+	protected boolean supportsOutputType(String outputType) {
+		return super.supportsOutputType(outputType) || MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
 	}
 }

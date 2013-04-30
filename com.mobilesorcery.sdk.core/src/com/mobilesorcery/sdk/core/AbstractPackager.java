@@ -39,5 +39,30 @@ public abstract class AbstractPackager implements IPackagerDelegate {
 	protected static String getDefaultShortDescription(IProfile profile) {
 		return profile.getName();
 	}
+	
+	protected boolean supportsOutputType(String outputType) {
+		return MoSyncBuilder.OUTPUT_TYPE_INTERPRETED.equals(outputType);
+	}
+	
+	public String getOutputType(MoSyncProject project) {
+		String rawOutputType = project.getProperty(MoSyncBuilder.OUTPUT_TYPE);
+		boolean supportsStaticRecompile = supportsOutputType(MoSyncBuilder.OUTPUT_TYPE_STATIC_RECOMPILATION);
+		boolean supportsNative = supportsOutputType(MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE);
+
+		// At this point, the 'interpreted' must be supported by all platforms - may change in the future
+		if (MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(rawOutputType)) {
+			if (supportsNative) {
+				return MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE;
+			} else {
+				rawOutputType = MoSyncBuilder.OUTPUT_TYPE_STATIC_RECOMPILATION;
+			}
+		}
+		if (MoSyncBuilder.OUTPUT_TYPE_STATIC_RECOMPILATION.equals(rawOutputType)) {
+			if (supportsStaticRecompile) {
+				return MoSyncBuilder.OUTPUT_TYPE_STATIC_RECOMPILATION;
+			}
+		}
+		return MoSyncBuilder.OUTPUT_TYPE_INTERPRETED;
+	}
 
 }

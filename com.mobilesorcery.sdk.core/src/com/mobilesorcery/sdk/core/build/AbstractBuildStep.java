@@ -16,6 +16,7 @@ import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildState;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFilter;
+import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
@@ -27,6 +28,7 @@ import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
+import com.mobilesorcery.sdk.profiles.IProfile;
 
 public abstract class AbstractBuildStep implements IBuildStep {
 
@@ -181,8 +183,35 @@ public abstract class AbstractBuildStep implements IBuildStep {
     	return getId();
     }
     
+    /**
+     * Returns {@code true} if the <b>resolved</b> output type equals
+     * a certain value.
+     * @see {@link #getResolvedOutputType()}
+     * @param project
+     * @param variant
+     * @param outputType
+     * @return A boolean indicating whether this is, in fact, the requested
+     * output type.
+     */
     public boolean isOutputType(MoSyncProject project, IBuildVariant variant, String outputType) {
-    	return Util.equals(outputType, project.getProperty(MoSyncBuilder.OUTPUT_TYPE));
+    	return Util.equals(outputType, getOutputType(project, variant));
+    }
+    
+    /**
+     * Returns the <b>resolved</b> output type to use. Does not necessarily correspond to
+     * the project property ({@link MoSyncBuilder#OUTPUT_TYPE()}, since not all platforms
+     * support them.
+     * @return
+     */
+    protected String getOutputType(MoSyncProject project, IBuildVariant variant) {
+    	String rawOutputType = project.getProperty(MoSyncBuilder.OUTPUT_TYPE);
+    	IProfile profile = variant.getProfile();
+    	IPackager platform = profile.getPackager();
+    	if (platform == null) {
+    		return rawOutputType;
+    	} else {
+    		return platform.getOutputType(project);
+    	}
     }
 
 }
