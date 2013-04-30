@@ -40,6 +40,12 @@ public abstract class AbstractPackager implements IPackagerDelegate {
 		return profile.getName();
 	}
 	
+	@Override
+	public void buildNative(MoSyncProject project, IBuildSession session,
+			IBuildVariant variant) throws Exception {
+		// Do nothing - at this point, anyhoo.
+	}
+
 	protected boolean supportsOutputType(String outputType) {
 		return MoSyncBuilder.OUTPUT_TYPE_INTERPRETED.equals(outputType);
 	}

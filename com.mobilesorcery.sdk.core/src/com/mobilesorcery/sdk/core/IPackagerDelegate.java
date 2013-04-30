@@ -37,7 +37,10 @@ public interface IPackagerDelegate {
      */
     void createPackage(MoSyncProject project, IBuildSession session, IBuildVariant targetProfile, IFileTreeDiff diff, IBuildResult buildResult) throws CoreException;
 
-	/**
+    // TODO: Docs + move?
+    void buildNative(MoSyncProject project, IBuildSession session, IBuildVariant variant) throws Exception;
+
+    /**
 	 * Returns the output type for a project.
 	 * @see MoSyncBuilder#OUTPUT_TYPE
 	 * @param outputType the output type to test

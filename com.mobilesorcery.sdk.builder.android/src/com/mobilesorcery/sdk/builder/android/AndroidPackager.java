@@ -6,12 +6,18 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.dialogs.IMessageProvider;
+import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
@@ -121,6 +127,23 @@ public class AndroidPackager extends PackageToolPackager {
 		return null;
 	}
 	
+	protected void addNativePlatformSpecifics(MoSyncProject project,
+			IBuildVariant variant, CommandLineBuilder commandLine) throws Exception {
+		IPreferenceStore androidPrefs = Activator.getDefault().getPreferenceStore();
+		String ndkLocation = androidPrefs.getString(Activator.NDK_PATH);
+		int platformVersion = androidPrefs.getInt(Activator.NDK_PLATFORM_VERSION);
+		if (Util.isEmpty(ndkLocation)) {
+			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Missing NDK location"));
+		}
+		if (platformVersion < 1) {
+			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Missing NDK version"));
+		}
+		commandLine.flag("--android-ndk-location").with(new File(ndkLocation));
+		commandLine.flag("--android-version").with(Integer.toString(platformVersion));
+		IPath dst = MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).removeLastSegments(1);
+		commandLine.flag("--android-build-dir").with(dst.append(new Path("temp")).toOSString());
+	}
+
 	protected boolean supportsOutputType(String outputType) {
 		return super.supportsOutputType(outputType) || MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
 	}

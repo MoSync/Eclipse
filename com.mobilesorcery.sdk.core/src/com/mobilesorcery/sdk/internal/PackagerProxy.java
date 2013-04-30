@@ -70,6 +70,13 @@ public class PackagerProxy implements IPackager {
 			return profile.getName();
 		}
 	}
+
+	@Override
+	public void buildNative(MoSyncProject project, IBuildSession session,
+			IBuildVariant variant) throws Exception {
+		initDelegate();
+		delegate.buildNative(project, session, variant);
+	}
 	
 	@Override
 	public String getOutputType(MoSyncProject project) {

@@ -53,4 +53,10 @@ public class NullPackager extends AbstractPackager implements IPackager {
 		return getId();
 	}
 
+	@Override
+	public void buildNative(MoSyncProject project, IBuildSession session,
+			IBuildVariant variant) throws Exception {
+		// Do nothing - at this point, anyhoo.
+	}
+
 }

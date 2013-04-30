@@ -27,6 +27,7 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
+import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
@@ -37,6 +38,7 @@ import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.internal.builder.IncrementalBuilderVisitor;
 import com.mobilesorcery.sdk.internal.builder.MoSyncBuilderVisitor;
+import com.mobilesorcery.sdk.profiles.IProfile;
 
 // TODO: Move this -- this is quite android specific as of now. Also,
 // we should use workfiles later on. So no bug reports on this one, please :)
@@ -71,7 +73,6 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 	public int incrementalBuild(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult result,
 			IProgressMonitor monitor) throws Exception {
-		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
 		boolean setNative = MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(project.getProperty(MoSyncBuilder.OUTPUT_TYPE));
 		if (setNative && project.getProfileManagerType() != MoSyncTool.DEFAULT_PROFILE_TYPE) {
 			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
@@ -87,74 +88,11 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 
 		assertConfigId(variant);
 		
-		CommandLineBuilder commandLine = new CommandLineBuilder(MoSyncTool.getDefault().getBinary("nbuild").toOSString());
-		commandLine.flag("--platform").with(variant.getProfile().getVendor().getName());
-		//TODO: Spaces and special chars?
-		commandLine.flag("--name").with(project.getName());
-		commandLine.flag("--project").with(project.getWrappedProject().getLocation().toFile());
-		IPath dst = MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).removeLastSegments(1);
-		commandLine.flag("--dst").with(dst.toOSString());
-		commandLine.flag("--config").with(variant.getConfigurationId());
-		boolean isDebug = PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS);
-		String libVariant = isDebug ? "debug" : "release";
-		commandLine.flag("--lib-variant").with(libVariant);
-		String[] modules = PropertyUtil.getStrings(project, MoSyncBuilder.EXTENSIONS);
-		if (modules.length > 0) {
-			commandLine.flag("--modules").with(Util.join(modules, ","));
-		}
-	
-		String compilerSwitches = MoSyncBuilder.getExtraCompilerSwitches(project, variant);
-		// TODO: Platform independent!?
-		commandLine.flag("--compiler-switches").with(compilerSwitches);
+		IProfile profile = variant.getProfile();
+		IPackager packager = profile.getPackager();
 		
-		// This one makes sure that exclusions, wild cards, etc work as before!
-		IncrementalBuilderVisitor visitor = new IncrementalBuilderVisitor() {
-			public boolean doesAffectBuild(IResource resource) {
-				return super.doesAffectBuild(resource) && MoSyncBuilderVisitor.hasExtension(resource, MoSyncBuilderVisitor.C_SOURCE_FILE_EXTS);
-			}
-		};
-		visitor.setProject(project.getWrappedProject());
-		visitor.setDiff(null);
-		Set<IResource> sourceFiles = visitor.computeResourcesToRebuild(null);
-		ArrayList<String> listOfRelativeFiles = new ArrayList<String>();
-		for (IResource sourceFile : sourceFiles) {
-			listOfRelativeFiles.add(sourceFile.getProjectRelativePath().toOSString());
-			commandLine.flag("-S" + sourceFile.getProjectRelativePath().toOSString());
-		}
+		packager.buildNative(project, session, variant);
 		
-        List<IPath> includePaths = new ArrayList<IPath>();
-        // Todo: how to handle additional includes
-        includePaths.addAll(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, variant)));
-        //includePaths.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
-        //includePaths.add(MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant));
-		String[] includes = MoSyncBuilderVisitor.assembleIncludeString(includePaths.toArray(new IPath[0]));
-		for (String include : includes) {
-			commandLine.flag(include);
-		}
-		
-		commandLine.flag("--verbose");
-
-		// Android specific stuff
-		if ("android".equalsIgnoreCase(variant.getProfile().getVendor().getName())) {
-			IPreferenceStore androidPrefs = new ScopedPreferenceStore(InstanceScope.INSTANCE, "com.mobilesorcery.sdk.builder.android");
-			String ndkLocation = androidPrefs.getString("android.ndk");
-			int platformVersion = androidPrefs.getInt("android.platform.version");
-			if (Util.isEmpty(ndkLocation)) {
-				throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Missing NDK location"));
-			}
-			if (platformVersion < 1) {
-				throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Missing NDK version"));
-			}
-			commandLine.flag("--android-ndk-location").with(new File(ndkLocation));
-			commandLine.flag("--android-version").with(Integer.toString(platformVersion));
-			commandLine.flag("--android-build-dir").with(dst.append(new Path("temp")).toOSString());
-		}
-		
-		DefaultPackager internal = new DefaultPackager(project, variant);
-		if (internal.runCommandLine(commandLine.asArray(),
-				commandLine.toHiddenString()) != 0) {
-			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Build failed."));
-		}
 		return IBuildStep.CONTINUE;
 	}
 	
