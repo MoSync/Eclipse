@@ -27,6 +27,7 @@ import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
+import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -71,8 +72,16 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 			IBuildVariant variant, IFileTreeDiff diff, IBuildResult result,
 			IProgressMonitor monitor) throws Exception {
 		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
+		boolean setNative = MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(project.getProperty(MoSyncBuilder.OUTPUT_TYPE));
+		if (setNative && project.getProfileManagerType() != MoSyncTool.DEFAULT_PROFILE_TYPE) {
+			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
+					"Native compilation is only supported for projects using the platform profile database."));
+		}
 		if (!isOutputType(project, variant, MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE)) {
-			getConsole().addMessage("Project does not use native compilation (the platform may not support it)");
+			getConsole().addMessage("Project does not use native compilation");
+			if (setNative) {
+				getConsole().addMessage(IProcessConsole.ERR, "The platform does not support native compilation");
+			}
 			return CONTINUE;
 		}
 
@@ -115,9 +124,9 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 		
         List<IPath> includePaths = new ArrayList<IPath>();
         // Todo: how to handle additional includes
-        //includePaths.addAll(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, variant)));
+        includePaths.addAll(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, variant)));
         //includePaths.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
-        includePaths.add(MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant));
+        //includePaths.add(MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant));
 		String[] includes = MoSyncBuilderVisitor.assembleIncludeString(includePaths.toArray(new IPath[0]));
 		for (String include : includes) {
 			commandLine.flag(include);
@@ -162,7 +171,7 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 		for (int i = 0; i < configId.length(); i++) {
 			char ch = configId.charAt(i);
 			if (!Character.isLetter(ch) && !Character.isDigit(ch) &&
-				ch != '_' && ch !=  '_') {
+				ch != '-' && ch !=  '_') {
 				return MessageFormat.format(
 						"Invalid configuration name: {0}. Only letters, digits, hyphen and underscored allowed.",
 						configId);

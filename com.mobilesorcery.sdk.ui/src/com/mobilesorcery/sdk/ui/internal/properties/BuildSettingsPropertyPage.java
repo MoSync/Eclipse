@@ -604,13 +604,10 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         libraryProjectType.setEnabled(isInterpreted);
         
         boolean isNative = getBinaryType().equals(MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE);
-        additionalIncludePathsText.setEnabled(!isNative);
-        additionalIncludePathsText.setEchoChar(isNative ? ' ' : '\0');
         additionalLibrariesText.setEnabled(!isNative);
         additionalLibrariesText.setEchoChar(isNative ? ' ' : '\0');
         additionalLibraryPathsText.setEnabled(!isNative);
         additionalLibraryPathsText.setEchoChar(isNative ? ' ' : '\0');
-        ignoreDefaultIncludePaths.setEnabled(!isNative);
         ignoreDefaultLibraries.setEnabled(!isNative);
         ignoreDefaultLibraryPaths.setEnabled(!isNative);
         super.updateUI();
