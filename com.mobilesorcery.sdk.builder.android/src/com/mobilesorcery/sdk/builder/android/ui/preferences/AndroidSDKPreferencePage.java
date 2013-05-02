@@ -50,6 +50,7 @@ public class AndroidSDKPreferencePage extends FieldEditorPreferencePage implemen
 		SDKFieldEditor sdkLocation = new SDKFieldEditor(Activator.EXTERNAL_SDK_PATH, "&SDK Location", getFieldEditorParent());
 		DirectoryFieldEditor ndkLocation = new DirectoryFieldEditor(Activator.NDK_PATH, "&NDK Location", getFieldEditorParent());
 		IntegerFieldEditor platformVersion = new IntegerFieldEditor(Activator.NDK_PLATFORM_VERSION, "NDK &Platform Version", getFieldEditorParent());
+		platformVersion.setValidRange(9, 100);
 		addField(sdkLocation);
 		addField(ndkLocation);
 		addField(platformVersion);
