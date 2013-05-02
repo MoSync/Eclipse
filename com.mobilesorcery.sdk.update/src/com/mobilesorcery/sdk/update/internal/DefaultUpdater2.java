@@ -510,6 +510,18 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 		}
 	}
 
+	private final static int readUntilEOF(byte[] buffer, InputStream input) throws IOException {
+		int len = 0;
+		int res;
+		while(len < buffer.length) {
+			res = input.read(buffer, len, buffer.length - len);
+			if(res <= 0)
+				break;
+			len += res;
+		}
+		return len;
+	}
+
 	public final static int USER_NOT_CONFIRMED = 0;
 
 	public final static int USER_ACTIVATED = 1;
@@ -524,7 +536,7 @@ public class DefaultUpdater2 extends UpdateManagerBase implements IUpdater {
 		byte[] buffer = new byte[MAX_KEY_LENGTH];
 		try {
 			InputStream input = response.getContent();
-			int len = input.read(buffer);
+			int len = readUntilEOF(buffer, input);
 			return new String(buffer, 0, len);
 		} finally {
 			response.close();
