@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.util.Util;
 
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
@@ -18,6 +19,7 @@ import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
@@ -128,8 +130,18 @@ public class WinMobileCSPackager extends PackageToolPackager {
 		return BUILD_GEN_CS_MODE;
 	}
 	
+	public void buildNative(MoSyncProject project, IBuildSession session, 
+			IBuildVariant variant) throws Exception {
+		// All native building is performed in the package tool for WP.
+	}
+	
+	// Temporary thing, remove after beta
+	private Boolean hasNativeSupport = null;
 	protected boolean supportsOutputType(String outputType) {
-		return !MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
+		if (hasNativeSupport == null) {
+			hasNativeSupport = MoSyncTool.getDefault().getMoSyncLib().append(new Path("windowsphone8")).toFile().exists();
+		}
+		return hasNativeSupport || !MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
 	}
 
 }

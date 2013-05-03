@@ -150,12 +150,14 @@ public abstract class PackageToolPackager extends AbstractPackager {
 				.with(vendor).flag("-n").with(appName).flag("--version")
 				.with(version.asCanonicalString());
 
+		commandLine.flag("--project").with(project.getWrappedProject().getLocation().toFile());
+		
 		String[] extensions = PropertyUtil.getStrings(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()), MoSyncBuilder.EXTENSIONS);
 		if (extensions.length > 0) {
 			commandLine.flag("--extensions").with(Util.join(extensions, ","));
 		}
 		
-		commandLine.flag("--output-type").with(project.getProperty(MoSyncBuilder.OUTPUT_TYPE));
+		commandLine.flag("--output-type").with(getOutputType(project));
 	
 		if (!Util.isEmpty(permissionsStr)) {
 			commandLine.flag("--permissions").with(permissionsStr);
