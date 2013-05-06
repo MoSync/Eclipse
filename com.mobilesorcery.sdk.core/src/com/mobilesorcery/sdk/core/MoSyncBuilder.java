@@ -1063,8 +1063,11 @@ public class MoSyncBuilder extends ACBuilder {
 				variant.getConfigurationId());
 
 		ArrayList<IPath> result = new ArrayList<IPath>();
-		if (!PropertyUtil.getBoolean(buildProperties,
-				IGNORE_DEFAULT_INCLUDE_PATHS)) {
+		
+		boolean ignoreDefault = PropertyUtil.getBoolean(buildProperties,
+				IGNORE_DEFAULT_INCLUDE_PATHS);
+		
+		if (!ignoreDefault) {
 			result.addAll(Arrays.asList(MoSyncTool.getDefault()
 					.getMoSyncDefaultIncludes()));
 		}
@@ -1100,8 +1103,37 @@ public class MoSyncBuilder extends ACBuilder {
 			}
 		}
 		
-		return resolvePaths(result.toArray(new IPath[0]),
+		IPath[] paths = resolvePaths(result.toArray(new IPath[0]),
 				createParameterResolver(project, variant));
+		ArrayList<IPath> filteredPaths = new ArrayList<IPath>();
+		
+		// Filter out some paths.
+		IPackager packager = variant.getProfile().getPackager();
+		String outputType = packager.getOutputType(project);
+		for (int i = 0; i < paths.length; i++) {
+			IPath path = paths[i];
+			if (isValidIncludePath(path, outputType)) {
+				filteredPaths.add(path);
+			}
+		}
+		
+		return filteredPaths.toArray(new IPath[0]);
+	}
+	
+	private static boolean isValidIncludePath(IPath path, String outputType) {
+		boolean isNativeOutput = MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
+		if (!isNativeOutput) {
+			return true;
+		}
+		// Native uses their own default paths -- and we actually need to
+		// filter the default path out from the additional paths.
+		IPath[] defaultIncludes = MoSyncTool.getDefault().getMoSyncDefaultIncludes();
+		for (IPath defaultInclude : defaultIncludes) {
+			if (defaultInclude.equals(path)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public static IPath[] getProfileIncludes(IProfile profile) {
