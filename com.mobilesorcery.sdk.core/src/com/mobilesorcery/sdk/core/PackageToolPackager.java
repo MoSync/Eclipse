@@ -224,7 +224,10 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			commandLine.flag(include);
 		}
 		
-		commandLine.flag("--verbose");
+		// TODO: Preference?
+		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+			commandLine.flag("--verbose");
+		}
 
 		addNativePlatformSpecifics(project, variant, commandLine);
 
