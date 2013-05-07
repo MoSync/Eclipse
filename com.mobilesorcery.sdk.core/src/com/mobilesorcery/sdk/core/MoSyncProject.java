@@ -55,7 +55,6 @@ import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.SecureProperties;
 import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_2;
 import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_4;
-import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_6;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
@@ -666,7 +665,6 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		// TODO: Whenever the need arises we may want to fix something smarter
 		MoSyncProjectConverter1_2.getInstance().convert(project);
 		MoSyncProjectConverter1_4.getInstance().convert(project);
-		MoSyncProjectConverter1_6.getInstance().convert(project);
 		project.setFormatVersion(CURRENT_VERSION);
 	}
 
