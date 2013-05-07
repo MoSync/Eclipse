@@ -225,7 +225,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		}
 		
 		// TODO: Preference?
-		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
+		if (CoreMoSyncPlugin.getDefault().getPreferenceStore().getBoolean(MoSyncBuilder.VERBOSE_BUILDS)) {
 			commandLine.flag("--verbose");
 		}
 

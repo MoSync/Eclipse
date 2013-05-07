@@ -182,6 +182,8 @@ public class MoSyncBuilder extends ACBuilder {
 	public static final String REBUILD_ON_ERROR = BUILD_PREFS_PREFIX + "rebuild.on.error";
 
 	private static final String APP_CODE = "app.code";
+	
+	public static final String VERBOSE_BUILDS = "verbose.builds";
 
 	private static final String CONSOLE_PREPARED = "console.prepared";
 
