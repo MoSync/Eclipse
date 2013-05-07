@@ -123,6 +123,7 @@ public class BuildPropertiesInitializerDelegate extends AbstractPreferenceInitia
     public void initializeDefaultPreferences() {
         IPreferenceStore store = CoreMoSyncPlugin.getDefault().getPreferenceStore();
         store.setDefault(MoSyncBuilder.REBUILD_ON_ERROR, true);
+        store.setDefault(MoSyncBuilder.VERBOSE_BUILDS, true);
     }
 
 }
