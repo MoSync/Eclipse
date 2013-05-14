@@ -1,47 +1,38 @@
+/*  Copyright (C) 2013 Mobile Sorcery AB
+
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the Eclipse Public License v1.0.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE. See the Eclipse Public License v1.0 for
+    more details.
+
+    You should have received a copy of the Eclipse Public License v1.0 along
+    with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
+ */
 package com.mobilesorcery.sdk.core.build;
 
-import java.io.File;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
 
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
-import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
-import com.mobilesorcery.sdk.core.DefaultPackager;
-import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.IProcessConsole;
-import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
-import com.mobilesorcery.sdk.core.ParameterResolver;
-import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
-import com.mobilesorcery.sdk.internal.builder.IncrementalBuilderVisitor;
-import com.mobilesorcery.sdk.internal.builder.MoSyncBuilderVisitor;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
-// TODO: Move this -- this is quite android specific as of now. Also,
-// we should use workfiles later on. So no bug reports on this one, please :)
 public class NativeLibBuildStep extends AbstractBuildStep {
 
 	public static class Factory extends AbstractBuildStepFactory {

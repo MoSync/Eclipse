@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1434,6 +1435,34 @@ public class MoSyncBuilder extends ACBuilder {
 		File resDir = project.getLocation().append("Resources").toFile();
 		return resDir.exists() && resDir.isDirectory() ? resDir : null;
 	}
+	
+    public static Map<String, String> extractMacroDefinesFromGCCArgs(MoSyncProject project, IBuildVariant variant) {
+    	LinkedHashMap<String, String> result = new LinkedHashMap<String, String>();
+    	
+    	String extraCompilerSwitchesLine = "";
+		try {
+			extraCompilerSwitchesLine = MoSyncBuilder.getExtraCompilerSwitches(project, variant);
+		} catch (ParameterResolverException e) {
+			CoreMoSyncPlugin.getDefault().logOnce(e, "qqeeww");
+		}
+        
+        if (!Util.isEmpty(extraCompilerSwitchesLine)) {
+            String[] extraCompilerSwitches = Util.parseCommandLine(extraCompilerSwitchesLine);
+
+        	for (int i = 0; i < extraCompilerSwitches.length; i++) {
+        		String extraCompilerSwitch = extraCompilerSwitches[i];
+        		if (extraCompilerSwitch.startsWith("-D") && extraCompilerSwitch.length() > 2) {
+        			String trimmedExtraCompilerSwitch = extraCompilerSwitch.substring(2);
+        			String[] keyAndValue = trimmedExtraCompilerSwitch.split("=", 2);
+        			String key = keyAndValue[0];
+        			String value = keyAndValue.length > 1 ? keyAndValue[1] : "";
+        			result.put(key, value);
+        		}
+        	}
+        }
+
+    	return result;
+    }
 
 	
 }

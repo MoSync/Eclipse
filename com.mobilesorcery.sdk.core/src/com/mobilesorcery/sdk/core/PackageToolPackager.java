@@ -190,10 +190,6 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		boolean isDebug = PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS);
 		String libVariant = isDebug ? "debug" : "release";
 		commandLine.flag("--lib-variant").with(libVariant);
-		String[] modules = PropertyUtil.getStrings(project, MoSyncBuilder.EXTENSIONS);
-		if (modules.length > 0) {
-			commandLine.flag("--modules").with(Util.join(modules, ","));
-		}
 	
 		String compilerSwitches = MoSyncBuilder.getExtraCompilerSwitches(project, variant);
 		// TODO: Platform independent!?
@@ -213,15 +209,19 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			listOfRelativeFiles.add(sourceFile.getProjectRelativePath().toOSString());
 			commandLine.flag("-S" + sourceFile.getProjectRelativePath().toOSString());
 		}
+
+		ArrayList<String> modules = new ArrayList<String>();
+		ArrayList<IPath> includePaths = new ArrayList<IPath>();
 		
-        List<IPath> includePaths = new ArrayList<IPath>();
-        // Todo: how to handle additional includes
-        includePaths.add(MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant));
-		includePaths.addAll(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, variant)));
-        //includePaths.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
+		getNativeIncludePaths(project, variant, includePaths, modules);
+		
         String[] includes = MoSyncBuilderVisitor.assembleIncludeString(includePaths.toArray(new IPath[0]));
 		for (String include : includes) {
 			commandLine.flag(include);
+		}
+		
+		if (modules.size() > 0) {
+			commandLine.flag("--modules").with(Util.join(modules.toArray(), ","));
 		}
 		
 		// TODO: Preference?
@@ -236,6 +236,34 @@ public abstract class PackageToolPackager extends AbstractPackager {
 				commandLine.toHiddenString()) != 0) {
 			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Build failed."));
 		}
+	}
+	
+	protected void getNativeIncludePaths(MoSyncProject project, IBuildVariant variant, ArrayList<IPath> includePaths, ArrayList<String> modules) throws ParameterResolverException {
+		if (modules == null) {
+			// We allow nulls, so this one's here to avoid NPEs
+			modules = new ArrayList<String>();
+		}
+		modules.addAll(Arrays.asList(PropertyUtil.getStrings(project, MoSyncBuilder.EXTENSIONS)));
+		
+        // Todo: how to handle additional includes
+        includePaths.add(MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant));
+		includePaths.addAll(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, variant)));
+        //includePaths.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
+		
+		// newlib includes are 'special'
+		List<IPath> filteredIncludePaths = new ArrayList<IPath>();
+		IPath newLibPath = MoSyncTool.getDefault().getMoSyncHome().append("include/newlib");
+		boolean addedSTL = false;
+		for (IPath includePath : includePaths) {
+			if (includePath.matchingFirstSegments(newLibPath) == newLibPath.segmentCount()) {
+				if (!addedSTL) {
+					addedSTL = true;
+					modules.add("STL");
+				}
+			} else {
+				filteredIncludePaths.add(includePath);
+			}
+		}	
 	}
 
 	protected File getDefaultIconFile() {

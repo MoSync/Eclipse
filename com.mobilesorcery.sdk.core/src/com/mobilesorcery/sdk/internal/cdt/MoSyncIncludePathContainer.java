@@ -16,7 +16,10 @@ package com.mobilesorcery.sdk.internal.cdt;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.cdt.core.model.CModelException;
 import org.eclipse.cdt.core.model.CoreModel;
@@ -108,34 +111,16 @@ public class MoSyncIncludePathContainer implements IPathEntryContainer {
      * @return
      */
     public static List<IMacroEntry> extractCompilerSymbolsFromGCCArgs(IProject project) {
+    	ArrayList<IMacroEntry> compilerSymbols = new ArrayList<IMacroEntry>();
     	MoSyncProject mosyncProject = MoSyncProject.create(project);
     	if (mosyncProject == null) {
     		throw new IllegalStateException("Project does not have MoSync Nature");
     	}
-    	String extraCompilerSwitchesLine = "";
-		try {
-			extraCompilerSwitchesLine = MoSyncBuilder.getExtraCompilerSwitches(mosyncProject, MoSyncBuilder.getActiveVariant(mosyncProject));
-		} catch (ParameterResolverException e) {
-			CoreMoSyncPlugin.getDefault().logOnce(e, "qqeeww");
-		}
-        ArrayList<IMacroEntry> compilerSymbols = new ArrayList<IMacroEntry>();
-
-        if (!Util.isEmpty(extraCompilerSwitchesLine)) {
-            String[] extraCompilerSwitches = Util.parseCommandLine(extraCompilerSwitchesLine);
-
-        	for (int i = 0; i < extraCompilerSwitches.length; i++) {
-        		String extraCompilerSwitch = extraCompilerSwitches[i];
-        		if (extraCompilerSwitch.startsWith("-D") && extraCompilerSwitch.length() > 2) {
-        			String trimmedExtraCompilerSwitch = extraCompilerSwitch.substring(2);
-        			String[] keyAndValue = trimmedExtraCompilerSwitch.split("=", 2);
-        			String key = keyAndValue[0];
-        			String value = keyAndValue.length > 1 ? keyAndValue[1] : "";
-        			IMacroEntry macroEntry = CoreModel.newMacroEntry(Path.EMPTY, key, value);
-        			compilerSymbols.add(macroEntry);
-        		}
-        	}
-        }
-
+    	Map<String, String> defines = MoSyncBuilder.extractMacroDefinesFromGCCArgs(mosyncProject, MoSyncBuilder.getActiveVariant(mosyncProject));
+    	for (Map.Entry<String, String> define : defines.entrySet()) {
+			IMacroEntry macroEntry = CoreModel.newMacroEntry(Path.EMPTY, define.getKey(), define.getValue());
+			compilerSymbols.add(macroEntry);
+    	}
     	return compilerSymbols;
     }
 

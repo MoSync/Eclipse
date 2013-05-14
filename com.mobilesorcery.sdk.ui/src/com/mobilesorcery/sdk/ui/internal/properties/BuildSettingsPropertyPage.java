@@ -142,6 +142,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private Composite placeHolder;
 
     private Text excludeFiles;
+    
+	private Group memoryGroup;
     private Text heapSize;
     private Text stackSize;
     private Text dataSize;
@@ -152,6 +154,10 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 	private Combo binaryType;
 
 	private boolean supportsExtensions;
+
+	private Label librariesLabel;
+	private Label excludeFilesLabel;
+	private Label libraryPathsLabel;
 
     @Override
 	protected Control createContents(Composite parent) {
@@ -327,7 +333,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         gccWextra = new Button(compilerFlags, SWT.CHECK);
         gccWextra.setText("E&xtra Warnings");
 
-        Group memoryGroup = new Group(compilerFlags, SWT.NONE);
+        memoryGroup = new Group(compilerFlags, SWT.NONE);
         memoryGroup.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
         memoryGroup.setText("&Memory Settings");
         memoryGroup.setLayout(new GridLayout(3, false));
@@ -411,7 +417,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         ignoreDefaultIncludePaths = new Button(buildPaths, SWT.CHECK);
         ignoreDefaultIncludePaths.setText("Ignore &Default");
 
-        Label libraryPathsLabel = new Label(buildPaths, SWT.NONE);
+        libraryPathsLabel = new Label(buildPaths, SWT.NONE);
         libraryPathsLabel.setText("Additional &Library Paths:");
         libraryPathsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 
@@ -422,7 +428,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         ignoreDefaultLibraryPaths = new Button(buildPaths, SWT.CHECK);
         ignoreDefaultLibraryPaths.setText("Ignore De&fault");
 
-        Label librariesLabel = new Label(buildPaths, SWT.NONE);
+        librariesLabel = new Label(buildPaths, SWT.NONE);
         librariesLabel.setText("Additional &Libraries:");
         librariesLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 
@@ -432,7 +438,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         ignoreDefaultLibraries = new Button(buildPaths, SWT.CHECK);
         ignoreDefaultLibraries.setText("I&gnore Default");
 
-        Label excludeFilesLabel = new Label(buildPaths, SWT.NONE);
+        excludeFilesLabel = new Label(buildPaths, SWT.NONE);
         excludeFilesLabel.setText("Exclude file pattern");
         excludeFilesLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 
@@ -604,12 +610,19 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         libraryProjectType.setEnabled(isInterpreted);
         
         boolean isNative = getBinaryType().equals(MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE);
-        additionalLibrariesText.setEnabled(!isNative);
+        librariesLabel.setVisible(!isNative);
+        excludeFilesLabel.setVisible(!isNative);
+        libraryPathsLabel.setVisible(!isNative);
+        additionalLibrariesText.setVisible(!isNative);
         additionalLibrariesText.setEchoChar(isNative ? ' ' : '\0');
-        additionalLibraryPathsText.setEnabled(!isNative);
+        additionalLibraryPathsText.setVisible(!isNative);
         additionalLibraryPathsText.setEchoChar(isNative ? ' ' : '\0');
-        ignoreDefaultLibraries.setEnabled(!isNative);
+        ignoreDefaultLibraries.setVisible(!isNative);
         ignoreDefaultLibraryPaths.setEnabled(!isNative);
+        excludeFiles.setVisible(!isNative);
+        additionalLibraryPathsText.setEchoChar(isNative ? ' ' : '\0');
+        deadCodeElim.setVisible(false);
+        memoryGroup.setVisible(!isNative);
         super.updateUI();
 
         listener.setActive(wasActive);
