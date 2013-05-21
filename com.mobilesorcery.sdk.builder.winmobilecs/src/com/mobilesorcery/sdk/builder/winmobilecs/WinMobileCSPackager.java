@@ -102,7 +102,7 @@ public class WinMobileCSPackager extends PackageToolPackager {
 		if (getOutputType(project) == MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE)  {
 			ArrayList<IPath> includePaths = new ArrayList<IPath>();
 			getNativeIncludePaths(project, variant, includePaths, null);
-			commandLine.flag("--wp-include-paths").with(Util.join(includePaths.toArray(), ","));
+			commandLine.flag("--wp-include-paths").with(Util.join(includePaths.toArray(), ";"));
 			
 			Map<String, String> defines = MoSyncBuilder.extractMacroDefinesFromGCCArgs(project, variant);
 			for (Map.Entry<String, String> define : defines.entrySet()) {
