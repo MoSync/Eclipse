@@ -1619,8 +1619,8 @@ public class MoSyncProject extends PropertyOwnerBase implements
 				PropertyUtil.setPaths(getBuildConfiguration(cfg).getProperties(),
 						MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS, nativePaths.second.toArray(new IPath[0]));
 			}
-			result |= setProperty(MoSyncBuilder.OUTPUT_TYPE, binaryType);
 		}
+		result |= setProperty(MoSyncBuilder.OUTPUT_TYPE, binaryType);
 		return result;
 	}
 

@@ -2,6 +2,7 @@ package com.mobilesorcery.sdk.builder.android;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,7 @@ import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
 import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.ParameterResolverException;
@@ -151,10 +153,14 @@ public class AndroidPackager extends PackageToolPackager {
 	
 	protected List<String> getExtensionModules(MoSyncProject project, IBuildVariant variant) {
 		// TODO: This should obviously not be hard coded. Order is important too.
-		return Arrays.asList(new String[] { 
-				"mautil", "yajl", "maui", "mafs",
-				"map", "ads", "nativeui", "Facebook", "Purchase",
-				"matest", "mtxml", "testify", "Notification", "Wormhole", "MoGraph"
-		});
+		if (getOutputType(project).equals(MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE)) {
+			return Arrays.asList(new String[] { 
+					"mautil", "yajl", "maui", "mafs",
+					"map", "ads", "nativeui", "Facebook", "Purchase",
+					"matest", "mtxml", "testify", "Notification", "Wormhole", "MoGraph"
+			});
+		} else {
+			return new ArrayList<String>();
+		}
 	}
 }
