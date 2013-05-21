@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.jface.dialogs.IMessageProvider;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.AbstractListViewer;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -48,11 +49,13 @@ import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
+import com.mobilesorcery.sdk.core.IsExperimentalTester;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncExtension;
 import com.mobilesorcery.sdk.core.MoSyncExtensionManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncProjectParameterResolver;
+import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
 import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.PropertyOwnerWorkingCopy;
@@ -161,7 +164,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
     @Override
 	protected Control createContents(Composite parent) {
-    	supportsExtensions = MoSyncExtensionManager.supportsExtensions();
+    	supportsExtensions = MoSyncExtensionManager.supportsExtensions() || Boolean.TRUE.equals(IsExperimentalTester.isExperimental());
         placeHolder = new Composite(parent, SWT.NONE);
         FillLayout placeHolderLayout = new FillLayout();
         placeHolderLayout.marginHeight = 0;
@@ -610,19 +613,25 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         libraryProjectType.setEnabled(isInterpreted);
         
         boolean isNative = getBinaryType().equals(MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE);
-        librariesLabel.setVisible(!isNative);
-        excludeFilesLabel.setVisible(!isNative);
-        libraryPathsLabel.setVisible(!isNative);
-        additionalLibrariesText.setVisible(!isNative);
+        librariesLabel.setEnabled(!isNative);
+        excludeFilesLabel.setEnabled(!isNative);
+        libraryPathsLabel.setEnabled(!isNative);
+        additionalLibrariesText.setEnabled(!isNative);
         additionalLibrariesText.setEchoChar(isNative ? ' ' : '\0');
-        additionalLibraryPathsText.setVisible(!isNative);
+        additionalLibraryPathsText.setEnabled(!isNative);
         additionalLibraryPathsText.setEchoChar(isNative ? ' ' : '\0');
-        ignoreDefaultLibraries.setVisible(!isNative);
+        ignoreDefaultLibraries.setEnabled(!isNative);
         ignoreDefaultLibraryPaths.setEnabled(!isNative);
-        excludeFiles.setVisible(!isNative);
+        excludeFiles.setEnabled(!isNative);
         additionalLibraryPathsText.setEchoChar(isNative ? ' ' : '\0');
-        deadCodeElim.setVisible(false);
-        memoryGroup.setVisible(!isNative);
+        deadCodeElim.setEnabled(false);
+        memoryGroup.setEnabled(!isNative);
+        heapSize.setEnabled(!isNative);
+        stackSize.setEnabled(!isNative);
+        dataSize.setEnabled(!isNative);
+        heapSize.setEchoChar(isNative ? ' ' : '\0');
+        stackSize.setEchoChar(isNative ? ' ' : '\0');
+        dataSize.setEchoChar(isNative ? ' ' : '\0');
         super.updateUI();
 
         listener.setActive(wasActive);
@@ -755,6 +764,20 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         updateCurrentBuildConfiguration();
         // Then, apply.
         boolean changed = applyWorkingCopies();
+        changed |= !getBinaryType().equals(getProject().getProperty(MoSyncBuilder.OUTPUT_TYPE));
+        try {
+        	if (changed) {
+        		getProject().setOutputType(getBinaryType());
+        	}
+        } catch (IllegalArgumentException e) {
+        	String message = MessageFormat.format(
+        			"The current project build settings are not suitable for {0} projects.\n{1}\nDo you want to automatically adjust the project?",
+        			getBinaryType(), e.getMessage());
+        	if (MessageDialog.openQuestion(getShell(), "Change project?", message)) {
+        		getProject().forceOutputType(getBinaryType());
+        	}
+        }
+
         return true;
     }
 
@@ -769,7 +792,6 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         boolean changed = false;
         changed |= PropertyUtil.setInteger(getProject(), MoSyncProject.DEPENDENCY_STRATEGY, incrementalBuildStrategy.getSelectionIndex());
-        changed |= getProject().setProperty(MoSyncBuilder.OUTPUT_TYPE, getBinaryType());
 
         changed |= configProperties.setProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS, additionalIncludePathsText.getText().replace(';', ','));
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS, ignoreDefaultIncludePaths.getSelection());

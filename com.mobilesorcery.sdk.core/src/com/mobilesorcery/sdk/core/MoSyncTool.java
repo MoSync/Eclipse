@@ -249,8 +249,10 @@ public class MoSyncTool {
 		return getMoSyncExamplesDirectory().append("workspace");
 	}
 
-	public IPath[] getMoSyncDefaultIncludes() {
-		return new IPath[] { getMoSyncHome().append("include") };
+	public IPath[] getMoSyncDefaultIncludes(boolean isNativeOutput) {
+		return isNativeOutput ?
+				new IPath[] { getMoSyncHome().append("include").append("MAStdNative") } :
+				new IPath[] { getMoSyncHome().append("include") };
 	}
 
 	public IPath[] getMoSyncDefaultLibraryPaths() {

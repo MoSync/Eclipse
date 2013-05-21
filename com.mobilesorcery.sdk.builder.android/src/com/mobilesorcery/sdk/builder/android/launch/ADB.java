@@ -119,7 +119,8 @@ public class ADB extends AbstractTool {
 		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			if (PropertyInitializer.ADB_DEBUG_LOG.equals(event.getProperty()) ||
-				PropertyInitializer.ADB_LOGCAT_ARGS.equals(event.getProperty())) {
+				PropertyInitializer.ADB_LOGCAT_ARGS.equals(event.getProperty()) ||
+				PropertyInitializer.ADB_USE_NDK_STACK.equals(event.getProperty())) {
 				try {
 					adb.startLogCat();
 				} catch (CoreException e) {

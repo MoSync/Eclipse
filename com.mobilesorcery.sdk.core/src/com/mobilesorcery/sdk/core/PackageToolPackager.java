@@ -152,9 +152,11 @@ public abstract class PackageToolPackager extends AbstractPackager {
 
 		commandLine.flag("--project").with(project.getWrappedProject().getLocation().toFile());
 		
-		String[] extensions = PropertyUtil.getStrings(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()), MoSyncBuilder.EXTENSIONS);
-		if (extensions.length > 0) {
-			commandLine.flag("--extensions").with(Util.join(extensions, ","));
+		List<String> extensions = new ArrayList<String>(Arrays.asList(PropertyUtil.getStrings(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()), MoSyncBuilder.EXTENSIONS)));
+		getNativeIncludePaths(project, variant, null, extensions);
+
+		if (!extensions.isEmpty()) {
+			commandLine.flag("--extensions").with(Util.join(extensions.toArray(), ","));
 		}
 		
 		commandLine.flag("--output-type").with(getOutputType(project));
@@ -238,32 +240,20 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		}
 	}
 	
-	protected void getNativeIncludePaths(MoSyncProject project, IBuildVariant variant, ArrayList<IPath> includePaths, ArrayList<String> modules) throws ParameterResolverException {
+	protected void getNativeIncludePaths(MoSyncProject project, IBuildVariant variant, List<IPath> filteredIncludePaths, List<String> modules) throws ParameterResolverException {
 		if (modules == null) {
 			// We allow nulls, so this one's here to avoid NPEs
 			modules = new ArrayList<String>();
 		}
-		modules.addAll(Arrays.asList(PropertyUtil.getStrings(project, MoSyncBuilder.EXTENSIONS)));
 		
-        // Todo: how to handle additional includes
-        includePaths.add(MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant));
-		includePaths.addAll(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, variant)));
-        //includePaths.addAll(Arrays.asList(MoSyncTool.getDefault().getMoSyncDefaultIncludes()));
-		
-		// newlib includes are 'special'
-		List<IPath> filteredIncludePaths = new ArrayList<IPath>();
-		IPath newLibPath = MoSyncTool.getDefault().getMoSyncHome().append("include/newlib");
-		boolean addedSTL = false;
-		for (IPath includePath : includePaths) {
-			if (includePath.matchingFirstSegments(newLibPath) == newLibPath.segmentCount()) {
-				if (!addedSTL) {
-					addedSTL = true;
-					modules.add("STL");
-				}
-			} else {
-				filteredIncludePaths.add(includePath);
-			}
-		}	
+		if (filteredIncludePaths == null) {
+			// We allow nulls, so this one's here to avoid NPEs
+			filteredIncludePaths = new ArrayList<IPath>();
+		}
+		modules.addAll(Arrays.asList(PropertyUtil.getStrings(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()), MoSyncBuilder.EXTENSIONS)));
+        
+		filteredIncludePaths.add(MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant));
+		filteredIncludePaths.addAll(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, variant, true)));
 	}
 
 	protected File getDefaultIconFile() {

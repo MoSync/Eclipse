@@ -1060,19 +1060,58 @@ public class MoSyncBuilder extends ACBuilder {
 		}
 	}
 
+	/**
+	 * Filters out additional include paths to make it buildable
+	 * using native builders
+	 * @param project
+	 * @param variant
+	 * @return
+	 */
+	public static Pair<Boolean, List<IPath>> filterNativeIncludePaths(MoSyncProject project, IBuildVariant variant) {
+		String cfg = variant.getConfigurationId();
+		IPath[] includePaths = PropertyUtil.getPaths(project.getBuildConfiguration(cfg).getProperties(),
+				ADDITIONAL_INCLUDE_PATHS);
+		// null profile is ok, but beware in the future!
+		IPath[] resolvedPaths;
+		try {
+			resolvedPaths = resolvePaths(includePaths,
+					createParameterResolver(project, variant));
+		} catch (ParameterResolverException e) {
+			resolvedPaths = new IPath[0];
+		}
+		ArrayList<IPath> result = new ArrayList<IPath>();
+		for (IPath resolvedPath : resolvedPaths) {
+			// Keep it simple, for the beta we just remove anything
+			// not project-relative.
+			IPath relPath = project.getWrappedProject().getLocation().append(resolvedPath);
+			if (relPath.toFile().exists()) {
+				result.add(resolvedPath);
+			}
+		}
+		boolean changed = result.size() != includePaths.length;
+		return new Pair<Boolean, List<IPath>>(changed, result);
+	}
+
 	public static IPath[] getBaseIncludePaths(MoSyncProject project,
 			IBuildVariant variant) throws ParameterResolverException {
+		return getBaseIncludePaths(project, variant, false);
+	}
+	public static IPath[] getBaseIncludePaths(MoSyncProject project,
+			IBuildVariant variant, boolean neverIncludeDefaults) throws ParameterResolverException {
 		IPropertyOwner buildProperties = getPropertyOwner(project,
 				variant.getConfigurationId());
 
 		ArrayList<IPath> result = new ArrayList<IPath>();
 		
-		boolean ignoreDefault = PropertyUtil.getBoolean(buildProperties,
+		boolean ignoreDefault = neverIncludeDefaults || PropertyUtil.getBoolean(buildProperties,
 				IGNORE_DEFAULT_INCLUDE_PATHS);
 		
+		IPackager packager = variant.getProfile().getPackager();
+		String outputType = packager.getOutputType(project);
+		boolean isNativeOutput = MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
 		if (!ignoreDefault) {
 			result.addAll(Arrays.asList(MoSyncTool.getDefault()
-					.getMoSyncDefaultIncludes()));
+					.getMoSyncDefaultIncludes(isNativeOutput)));
 		}
 
 		if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
@@ -1111,8 +1150,6 @@ public class MoSyncBuilder extends ACBuilder {
 		ArrayList<IPath> filteredPaths = new ArrayList<IPath>();
 		
 		// Filter out some paths.
-		IPackager packager = variant.getProfile().getPackager();
-		String outputType = packager.getOutputType(project);
 		for (int i = 0; i < paths.length; i++) {
 			IPath path = paths[i];
 			if (isValidIncludePath(path, outputType)) {
@@ -1130,7 +1167,7 @@ public class MoSyncBuilder extends ACBuilder {
 		}
 		// Native uses their own default paths -- and we actually need to
 		// filter the default path out from the additional paths.
-		IPath[] defaultIncludes = MoSyncTool.getDefault().getMoSyncDefaultIncludes();
+		IPath[] defaultIncludes = MoSyncTool.getDefault().getMoSyncDefaultIncludes(false);
 		for (IPath defaultInclude : defaultIncludes) {
 			if (defaultInclude.equals(path)) {
 				return false;

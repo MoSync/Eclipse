@@ -48,6 +48,8 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
     public static final String ADB_DEBUG_LOG = PREFIX + "adb.debug";
     
     public static final String ADB_LOGCAT_ARGS = PREFIX + "adb.logcat.args";
+    
+	public static final String ADB_USE_NDK_STACK = PREFIX + "adb.logcat.ndk.stack";
 
 	public static final String ADB_UNINSTALL_FIRST = PREFIX + "uninstall.first";
 

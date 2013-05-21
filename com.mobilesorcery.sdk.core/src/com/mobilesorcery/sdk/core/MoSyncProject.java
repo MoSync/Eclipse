@@ -1412,7 +1412,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 				.firePropertyChange(BUILD_CONFIGURATION_CHANGED, removed, null);
 	}
 
-	public void setBuildConfigurationsSupported(
+	public boolean setBuildConfigurationsSupported(
 			boolean isBuildConfigurationsSupported) {
 		if (this.isBuildConfigurationsSupported != isBuildConfigurationsSupported) {
 			this.isBuildConfigurationsSupported = isBuildConfigurationsSupported;
@@ -1420,7 +1420,9 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			listeners.firePropertyChange(BUILD_CONFIGURATION_SUPPORT_CHANGED,
 					!isBuildConfigurationsSupported,
 					isBuildConfigurationsSupported);
+			return true;
 		}
+		return false;
 	}
 
 	public boolean areBuildConfigurationsSupported() {
@@ -1557,6 +1559,68 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			}
 		}
 
+		return result;
+	}
+
+	/**
+	 * Sets the (preferred) output type of this project.
+	 * Will throw an exception with a detailed, user-friendly
+	 * message if this operation cannot be performed.
+	 * Use {@link #forceOutputType(String)} to ignore any
+	 * exceptions -- this will cause changes to the project
+	 * that will make it possible to build natively but
+	 * may also make the project un-buildable. (This is by design)
+	 * @param binaryType
+	 * @return
+	 * @throws IllegalArgumentException
+	 */
+	public boolean setOutputType(String binaryType) throws IllegalArgumentException {
+		ArrayList<String> errors = new ArrayList<String>();
+		
+		if (MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(binaryType)) {
+			if (getProfileManagerType() != MoSyncTool.DEFAULT_PROFILE_TYPE) {
+				errors.add("Native projects must make use of the platform based profile type.");
+			}
+			if (!isBuildConfigurationsSupported) {
+				errors.add("Native projects require build configuration support");
+			}
+			
+			boolean changedIncludes = false;
+			for (String cfg : getBuildConfigurations()) {
+				Pair<Boolean, List<IPath>> nativePaths = filteredNativePaths(cfg);
+				changedIncludes |= nativePaths.first;
+			}
+			
+			if (changedIncludes) {
+				errors.add("Native projects only supports include paths relative to the project.");
+				errors.add("In particular, projects that need STL are not supported.");
+			}
+		}
+		
+		if (errors.isEmpty()) {
+			return forceOutputType(binaryType);
+		} else {
+			String errorMsg = "* " + Util.join(errors.toArray(), "\n* ");
+			throw new IllegalArgumentException(errorMsg);
+		}
+	}
+	
+	private Pair<Boolean, List<IPath>> filteredNativePaths(String cfg) {
+		return MoSyncBuilder.filterNativeIncludePaths(this, new BuildVariant(getTargetProfile(), cfg));
+	}
+	
+	public boolean forceOutputType(String binaryType) {
+		boolean result = false;
+		if (MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(binaryType)) {
+			result = setBuildConfigurationsSupported(true);
+			setProfileManagerType(MoSyncTool.DEFAULT_PROFILE_TYPE);
+			for (String cfg : getBuildConfigurations()) {
+				Pair<Boolean, List<IPath>> nativePaths = filteredNativePaths(cfg);
+				PropertyUtil.setPaths(getBuildConfiguration(cfg).getProperties(),
+						MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS, nativePaths.second.toArray(new IPath[0]));
+			}
+			result |= setProperty(MoSyncBuilder.OUTPUT_TYPE, binaryType);
+		}
 		return result;
 	}
 
