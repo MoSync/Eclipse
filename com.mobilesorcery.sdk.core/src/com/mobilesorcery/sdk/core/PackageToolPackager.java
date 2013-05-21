@@ -152,8 +152,8 @@ public abstract class PackageToolPackager extends AbstractPackager {
 
 		commandLine.flag("--project").with(project.getWrappedProject().getLocation().toFile());
 		
-		List<String> extensions = new ArrayList<String>(Arrays.asList(PropertyUtil.getStrings(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()), MoSyncBuilder.EXTENSIONS)));
-		getNativeIncludePaths(project, variant, null, extensions);
+		List<String> extensions = new ArrayList<String>();
+		getNativePathsAndModules(project, variant, null, extensions);
 
 		if (!extensions.isEmpty()) {
 			commandLine.flag("--extensions").with(Util.join(extensions.toArray(), ","));
@@ -215,7 +215,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		ArrayList<String> modules = new ArrayList<String>();
 		ArrayList<IPath> includePaths = new ArrayList<IPath>();
 		
-		getNativeIncludePaths(project, variant, includePaths, modules);
+		getNativePathsAndModules(project, variant, includePaths, modules);
 		
         String[] includes = MoSyncBuilderVisitor.assembleIncludeString(includePaths.toArray(new IPath[0]));
 		for (String include : includes) {
@@ -240,7 +240,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		}
 	}
 	
-	protected void getNativeIncludePaths(MoSyncProject project, IBuildVariant variant, List<IPath> filteredIncludePaths, List<String> modules) throws ParameterResolverException {
+	protected void getNativePathsAndModules(MoSyncProject project, IBuildVariant variant, List<IPath> filteredIncludePaths, List<String> modules) throws ParameterResolverException {
 		if (modules == null) {
 			// We allow nulls, so this one's here to avoid NPEs
 			modules = new ArrayList<String>();
@@ -250,10 +250,14 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			// We allow nulls, so this one's here to avoid NPEs
 			filteredIncludePaths = new ArrayList<IPath>();
 		}
-		modules.addAll(Arrays.asList(PropertyUtil.getStrings(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()), MoSyncBuilder.EXTENSIONS)));
+		modules.addAll(getExtensionModules(project, variant));
         
 		filteredIncludePaths.add(MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant));
 		filteredIncludePaths.addAll(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, variant, true)));
+	}
+	
+	protected List<String> getExtensionModules(MoSyncProject project, IBuildVariant variant) {
+		return Arrays.asList(PropertyUtil.getStrings(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()), MoSyncBuilder.EXTENSIONS));
 	}
 
 	protected File getDefaultIconFile() {

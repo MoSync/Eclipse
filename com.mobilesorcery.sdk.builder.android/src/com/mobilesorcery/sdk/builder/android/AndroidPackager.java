@@ -2,6 +2,7 @@ package com.mobilesorcery.sdk.builder.android;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -146,5 +147,14 @@ public class AndroidPackager extends PackageToolPackager {
 
 	protected boolean supportsOutputType(String outputType) {
 		return super.supportsOutputType(outputType) || MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
+	}
+	
+	protected List<String> getExtensionModules(MoSyncProject project, IBuildVariant variant) {
+		// TODO: This should obviously not be hard coded. Order is important too.
+		return Arrays.asList(new String[] { 
+				"mautil", "yajl", "maui", "mafs",
+				"map", "ads", "nativeui", "Facebook", "Purchase",
+				"matest", "mtxml", "testify", "Notification", "Wormhole", "MoGraph"
+		});
 	}
 }
