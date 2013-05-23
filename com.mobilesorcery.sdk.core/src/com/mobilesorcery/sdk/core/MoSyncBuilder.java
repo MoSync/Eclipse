@@ -100,6 +100,8 @@ public class MoSyncBuilder extends ACBuilder {
 
 	public final static String ADDITIONAL_INCLUDE_PATHS = BUILD_PREFS_PREFIX
 			+ "additional.include.paths";
+	
+	public static final String ADDITIONAL_NATIVE_INCLUDE_PATHS = ADDITIONAL_INCLUDE_PATHS + ".native";
 
 	public final static String IGNORE_DEFAULT_INCLUDE_PATHS = BUILD_PREFS_PREFIX
 			+ "ignore.default.include.paths";
@@ -1070,7 +1072,7 @@ public class MoSyncBuilder extends ACBuilder {
 	public static Pair<Boolean, List<IPath>> filterNativeIncludePaths(MoSyncProject project, IBuildVariant variant) {
 		String cfg = variant.getConfigurationId();
 		IPath[] includePaths = PropertyUtil.getPaths(project.getBuildConfiguration(cfg).getProperties(),
-				ADDITIONAL_INCLUDE_PATHS);
+				ADDITIONAL_NATIVE_INCLUDE_PATHS);
 		// null profile is ok, but beware in the future!
 		IPath[] resolvedPaths;
 		try {
@@ -1101,14 +1103,16 @@ public class MoSyncBuilder extends ACBuilder {
 		IPropertyOwner buildProperties = getPropertyOwner(project,
 				variant.getConfigurationId());
 
-		ArrayList<IPath> result = new ArrayList<IPath>();
-		
-		boolean ignoreDefault = neverIncludeDefaults || PropertyUtil.getBoolean(buildProperties,
-				IGNORE_DEFAULT_INCLUDE_PATHS);
-		
 		IPackager packager = variant.getProfile().getPackager();
 		String outputType = packager.getOutputType(project);
 		boolean isNativeOutput = MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
+
+		ArrayList<IPath> result = new ArrayList<IPath>();
+		
+		boolean ignoreDefault = !isNativeOutput &&
+				(neverIncludeDefaults || PropertyUtil.getBoolean(buildProperties,
+				IGNORE_DEFAULT_INCLUDE_PATHS));
+		
 		if (!ignoreDefault) {
 			result.addAll(Arrays.asList(MoSyncTool.getDefault()
 					.getMoSyncDefaultIncludes(isNativeOutput)));
@@ -1120,7 +1124,7 @@ public class MoSyncBuilder extends ACBuilder {
 		}
 
 		IPath[] additionalIncludePaths = PropertyUtil.getPaths(buildProperties,
-				ADDITIONAL_INCLUDE_PATHS);
+				isNativeOutput ? ADDITIONAL_NATIVE_INCLUDE_PATHS : ADDITIONAL_INCLUDE_PATHS);
 		for (int i = 0; i < additionalIncludePaths.length; i++) {
 			if (additionalIncludePaths[i].getDevice() == null) {
 				// Then might be project relative path.

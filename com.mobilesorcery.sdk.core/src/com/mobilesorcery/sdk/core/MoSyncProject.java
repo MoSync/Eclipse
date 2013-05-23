@@ -55,6 +55,7 @@ import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.SecureProperties;
 import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_2;
 import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_4;
+import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_7;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
@@ -229,7 +230,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	 *
 	 * @see MoSyncProject#getFormatVersion()
 	 */
-	public static final Version CURRENT_VERSION = new Version("1.6");
+	public static final Version CURRENT_VERSION = new Version("1.7");
 
 	private static final Version VERSION_1_0 = new Version("1");
 
@@ -665,6 +666,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		// TODO: Whenever the need arises we may want to fix something smarter
 		MoSyncProjectConverter1_2.getInstance().convert(project);
 		MoSyncProjectConverter1_4.getInstance().convert(project);
+		MoSyncProjectConverter1_7.getInstance().convert(project);
 		project.setFormatVersion(CURRENT_VERSION);
 	}
 
@@ -1593,14 +1595,13 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			
 			if (changedIncludes) {
 				errors.add("Native projects only supports include paths relative to the project.");
-				errors.add("In particular, projects that need STL are not supported.");
 			}
 		}
 		
 		if (errors.isEmpty()) {
 			return forceOutputType(binaryType);
 		} else {
-			String errorMsg = "* " + Util.join(errors.toArray(), "\n* ");
+			String errorMsg = "  * " + Util.join(errors.toArray(), "\n  * ");
 			throw new IllegalArgumentException(errorMsg);
 		}
 	}
@@ -1617,7 +1618,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			for (String cfg : getBuildConfigurations()) {
 				Pair<Boolean, List<IPath>> nativePaths = filteredNativePaths(cfg);
 				PropertyUtil.setPaths(getBuildConfiguration(cfg).getProperties(),
-						MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS, nativePaths.second.toArray(new IPath[0]));
+						MoSyncBuilder.ADDITIONAL_NATIVE_INCLUDE_PATHS, nativePaths.second.toArray(new IPath[0]));
 			}
 		}
 		result |= setProperty(MoSyncBuilder.OUTPUT_TYPE, binaryType);

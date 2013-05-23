@@ -32,6 +32,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -111,7 +112,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private static final String BINARY_TYPE_RECOMPILED = "Statically Recompiled";
 	private static final String[] BINARY_TYPES = new String[] { BINARY_TYPE_NATIVE, BINARY_TYPE_INTERPRETED, BINARY_TYPE_RECOMPILED };
 
-    private Text additionalIncludePathsText;
+	private Text additionalIncludePathsText;
+	private Text additionalNativeIncludePathsText;
     private Button ignoreDefaultIncludePaths;
     private Text additionalLibraryPathsText;
     private Button ignoreDefaultLibraryPaths;
@@ -144,6 +146,11 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 	private Composite main;
     private Composite placeHolder;
 
+	private StackLayout buildPathsLayout;
+	private Composite buildPathsInterpreted;
+	private Composite buildPathsNative;
+	private Composite buildPaths;
+	
     private Text excludeFiles;
     
 	private Group memoryGroup;
@@ -258,6 +265,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         incrementalBuildStrategy.addListener(SWT.Selection, listener);
         binaryType.addListener(SWT.Selection, listener);
         additionalIncludePathsText.addListener(SWT.Modify, listener);
+        additionalNativeIncludePathsText.addListener(SWT.Modify, listener);
         additionalLibrariesText.addListener(SWT.Modify, listener);
         additionalLibraryPathsText.addListener(SWT.Modify, listener);
         libOutputPath.addListener(SWT.Modify, listener);
@@ -404,80 +412,97 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private void createPathsTab(TabFolder tabs) {
         TabItem buildPathsTab = new TabItem(tabs, SWT.NONE);
         buildPathsTab.setText("&Paths and Files");
-        Composite buildPaths = new Composite(tabs, SWT.NONE);
+        buildPaths = new Composite(tabs, SWT.NONE);
         buildPathsTab.setControl(buildPaths);
 
-        buildPaths.setLayout(new GridLayout(2, false));
-        buildPaths.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-        Label includePathsLabel = new Label(buildPaths, SWT.NONE);
+        buildPathsLayout = new StackLayout();
+        buildPaths.setLayout(buildPathsLayout);
+
+        buildPathsInterpreted = new Composite(buildPaths, SWT.NONE);
+       
+        buildPathsInterpreted.setLayout(new GridLayout(2, false));
+        buildPathsInterpreted.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        Label includePathsLabel = new Label(buildPathsInterpreted, SWT.NONE);
         includePathsLabel.setText("Additional &Include Paths:");
         includePathsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 
-        additionalIncludePathsText = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
+        additionalIncludePathsText = new Text(buildPathsInterpreted, SWT.BORDER | SWT.SINGLE);
         additionalIncludePathsText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         addContentAssist(additionalIncludePathsText);
 
-        ignoreDefaultIncludePaths = new Button(buildPaths, SWT.CHECK);
+        ignoreDefaultIncludePaths = new Button(buildPathsInterpreted, SWT.CHECK);
         ignoreDefaultIncludePaths.setText("Ignore &Default");
 
-        libraryPathsLabel = new Label(buildPaths, SWT.NONE);
+        libraryPathsLabel = new Label(buildPathsInterpreted, SWT.NONE);
         libraryPathsLabel.setText("Additional &Library Paths:");
         libraryPathsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 
-        additionalLibraryPathsText = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
+        additionalLibraryPathsText = new Text(buildPathsInterpreted, SWT.BORDER | SWT.SINGLE);
         additionalLibraryPathsText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         addContentAssist(additionalLibraryPathsText);
 
-        ignoreDefaultLibraryPaths = new Button(buildPaths, SWT.CHECK);
+        ignoreDefaultLibraryPaths = new Button(buildPathsInterpreted, SWT.CHECK);
         ignoreDefaultLibraryPaths.setText("Ignore De&fault");
 
-        librariesLabel = new Label(buildPaths, SWT.NONE);
+        librariesLabel = new Label(buildPathsInterpreted, SWT.NONE);
         librariesLabel.setText("Additional &Libraries:");
         librariesLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 
-        additionalLibrariesText = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
+        additionalLibrariesText = new Text(buildPathsInterpreted, SWT.BORDER | SWT.SINGLE);
         additionalLibrariesText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-        ignoreDefaultLibraries = new Button(buildPaths, SWT.CHECK);
+        ignoreDefaultLibraries = new Button(buildPathsInterpreted, SWT.CHECK);
         ignoreDefaultLibraries.setText("I&gnore Default");
 
-        excludeFilesLabel = new Label(buildPaths, SWT.NONE);
+        excludeFilesLabel = new Label(buildPathsInterpreted, SWT.NONE);
         excludeFilesLabel.setText("Exclude file pattern");
         excludeFilesLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 
-        excludeFiles = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
+        excludeFiles = new Text(buildPathsInterpreted, SWT.BORDER | SWT.SINGLE);
         GridData excludeFilesData = new GridData(GridData.FILL_HORIZONTAL);
         excludeFilesData.horizontalSpan = 2;
         excludeFiles.setLayoutData(excludeFilesData);
-
-        if (supportsExtensions) {
-	        Label extensionsLabel = new Label(buildPaths, SWT.NONE);
-	        extensionsLabel.setText("Extensions");
-	        extensionsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
-	
-	        extensions = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
-	        GridData extensionsData = new GridData(GridData.FILL_HORIZONTAL);
-	        extensionsData.horizontalSpan = 2;
-	        extensions.setLayoutData(extensionsData);
-        }
         
-        Label outputPathLabel = new Label(buildPaths, SWT.NONE);
+        Label outputPathLabel = new Label(buildPathsInterpreted, SWT.NONE);
         outputPathLabel.setText("&Output File (libraries only)");
         outputPathLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 
-        libOutputPath = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
+        libOutputPath = new Text(buildPathsInterpreted, SWT.BORDER | SWT.SINGLE);
         GridData outputPathData = new GridData(GridData.FILL_HORIZONTAL);
         outputPathData.horizontalSpan = 2;
         libOutputPath.setLayoutData(outputPathData);
 
-        Label appPathLabel = new Label(buildPaths, SWT.NONE);
+        Label appPathLabel = new Label(buildPathsInterpreted, SWT.NONE);
         appPathLabel.setText("&Output Directory (applications only)");
         appPathLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
 
-        appOutputPath = new Text(buildPaths, SWT.BORDER | SWT.SINGLE);
+        appOutputPath = new Text(buildPathsInterpreted, SWT.BORDER | SWT.SINGLE);
         GridData appPathData = new GridData(GridData.FILL_HORIZONTAL);
         appPathData.horizontalSpan = 2;
         appOutputPath.setLayoutData(appPathData);
+       
+        buildPathsNative = new Composite(buildPaths, SWT.NONE);
+        buildPathsNative.setLayout(new GridLayout(2, false));
+        buildPathsNative.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+ 
+        Label includeNativePathsLabel = new Label(buildPathsNative, SWT.NONE);
+        includeNativePathsLabel.setText("Additional &Include Paths (relative to project):");
+        includeNativePathsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
+
+        additionalNativeIncludePathsText = new Text(buildPathsNative, SWT.BORDER | SWT.SINGLE);
+        additionalNativeIncludePathsText.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));
+        addContentAssist(additionalIncludePathsText);
+
+        if (supportsExtensions) {
+	        Label extensionsLabel = new Label(buildPathsNative, SWT.NONE);
+	        extensionsLabel.setText("Extensions");
+	        extensionsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
+	
+	        extensions = new Text(buildPathsNative, SWT.BORDER | SWT.SINGLE);
+	        GridData extensionsData = new GridData(GridData.FILL_HORIZONTAL);
+	        extensionsData.horizontalSpan = 2;
+	        extensions.setLayoutData(extensionsData);
+        }
     }
 
     protected void reinitUI() {
@@ -504,6 +529,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         ignoreDefaultIncludePaths.setSelection(PropertyUtil.getBoolean(configProperties, addBuildProperty(MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS)));
         setText(additionalIncludePathsText, configProperties.getProperty(addBuildProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS)));
 
+        setText(additionalNativeIncludePathsText, configProperties.getProperty(addBuildProperty(MoSyncBuilder.ADDITIONAL_NATIVE_INCLUDE_PATHS)));
+        
         ignoreDefaultLibraryPaths.setSelection(PropertyUtil.getBoolean(configProperties, addBuildProperty(MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS)));
         setText(additionalLibraryPathsText, configProperties.getProperty(addBuildProperty(MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS)));
 
@@ -537,7 +564,6 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         setText(vendor, configProperties.getProperty(addBuildProperty(DefaultPackager.APP_VENDOR_NAME_BUILD_PROP)));
         setText(appName, configProperties.getProperty(addBuildProperty(MoSyncBuilder.APP_NAME)));
         
-
         if (supportsExtensions) {
         	setText(extensions, configProperties.getProperty(addBuildProperty(MoSyncBuilder.EXTENSIONS)));
             extensionProjectType.setSelection(isExtensionProject);
@@ -632,6 +658,14 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         heapSize.setEchoChar(isNative ? ' ' : '\0');
         stackSize.setEchoChar(isNative ? ' ' : '\0');
         dataSize.setEchoChar(isNative ? ' ' : '\0');
+        
+        Control oldTop = buildPathsLayout.topControl;
+        Control newTop = isNative ? buildPathsNative : buildPathsInterpreted;
+        if (oldTop != newTop) {
+        	buildPathsLayout.topControl = newTop;
+        	buildPaths.layout();
+        }
+        
         super.updateUI();
 
         listener.setActive(wasActive);
@@ -771,7 +805,7 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         	}
         } catch (IllegalArgumentException e) {
         	String message = MessageFormat.format(
-        			"The current project build settings are not suitable for {0} projects.\n{1}\nDo you want to automatically adjust the project?",
+        			"The current project build settings are not suitable for {0} projects:\n\n{1}\n\nDo you want to automatically adjust the project?",
         			getBinaryType(), e.getMessage());
         	if (MessageDialog.openQuestion(getShell(), "Change project?", message)) {
         		getProject().forceOutputType(getBinaryType());
@@ -795,6 +829,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         changed |= configProperties.setProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS, additionalIncludePathsText.getText().replace(';', ','));
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS, ignoreDefaultIncludePaths.getSelection());
+
+        changed |= configProperties.setProperty(MoSyncBuilder.ADDITIONAL_NATIVE_INCLUDE_PATHS, additionalNativeIncludePathsText.getText().replace(';', ','));
 
         changed |= configProperties.setProperty(MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS, additionalLibraryPathsText.getText().replace(';', ','));
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS, ignoreDefaultLibraryPaths.getSelection());
