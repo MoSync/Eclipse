@@ -130,7 +130,6 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private Text appOutputPath;
     private Text extensions;
     private UpdateListener listener;
-    private String currentOutputPath;
     private Button gccWall;
     private Button gccWerror;
     private Button gccWextra;
@@ -168,6 +167,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 	private Label librariesLabel;
 	private Label excludeFilesLabel;
 	private Label libraryPathsLabel;
+	private Label gccWarningsLabel;
+	private Label extraLinkLabel;
 
     @Override
 	protected Control createContents(Composite parent) {
@@ -311,10 +312,6 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         compilerFlags.setLayout(new GridLayout(2, false));
         compilerFlags.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-        deadCodeElim = new Button(compilerFlags, SWT.CHECK);
-        deadCodeElim.setText("Activate Dead Code &Elimination");
-        deadCodeElim.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
-
         Label gccFlagsLabel = new Label(compilerFlags, SWT.NONE);
         gccFlagsLabel.setText("Additional GCC &Switches:");
         gccFlags = new Text(compilerFlags, SWT.BORDER | SWT.SINGLE);
@@ -327,13 +324,17 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         extraRes.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         addContentAssist(extraRes);
 
-        Label extraLinkLabel = new Label(compilerFlags, SWT.NONE);
+        extraLinkLabel = new Label(compilerFlags, SWT.NONE);
         extraLinkLabel.setText("Extra &Linker Switches:");
         extraLink = new Text(compilerFlags, SWT.BORDER | SWT.SINGLE);
         extraLink.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
         addContentAssist(extraLink);
 
-        Label gccWarningsLabel = new Label(compilerFlags, SWT.NONE);
+        deadCodeElim = new Button(compilerFlags, SWT.CHECK);
+        deadCodeElim.setText("Activate Dead Code &Elimination");
+        deadCodeElim.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
+
+        gccWarningsLabel = new Label(compilerFlags, SWT.NONE);
         gccWarningsLabel.setText("GCC &Warnings:");
         gccWarningsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 1, 3));
 
@@ -650,8 +651,14 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         ignoreDefaultLibraryPaths.setEnabled(!isNative);
         excludeFiles.setEnabled(!isNative);
         additionalLibraryPathsText.setEchoChar(isNative ? ' ' : '\0');
-        deadCodeElim.setEnabled(false);
-        memoryGroup.setEnabled(!isNative);
+        extraLinkLabel.setVisible(!isNative);
+        extraLink.setVisible(!isNative);
+        deadCodeElim.setVisible(!isNative);
+        gccWarningsLabel.setVisible(!isNative);
+        gccWall.setVisible(!isNative);
+        gccWerror.setVisible(!isNative);
+        gccWextra.setVisible(!isNative);
+        memoryGroup.setVisible(!isNative);
         heapSize.setEnabled(!isNative);
         stackSize.setEnabled(!isNative);
         dataSize.setEnabled(!isNative);
