@@ -513,7 +513,9 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			IMemento propertiesMemento = root.createChild(PROPERTIES);
 			saveProperties(propertiesMemento, getProperties(store));
 
-			root.putString(VERSION_KEY, formatVersion.asCanonicalString());
+			if (store == SHARED_PROPERTY) {
+				root.putString(VERSION_KEY, formatVersion.asCanonicalString());
+			}
 			root.save(output);
 			output.close();
 		} catch (IOException e) {
@@ -1564,6 +1566,10 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		return result;
 	}
 
+	public String getOutputType() {
+		return getProperty(MoSyncBuilder.OUTPUT_TYPE); 
+	}
+	
 	/**
 	 * Sets the (preferred) output type of this project.
 	 * Will throw an exception with a detailed, user-friendly

@@ -26,6 +26,10 @@ public class MoSyncProjectConverter1_7 implements IConverter {
 				cfgProperties.setProperty(MoSyncBuilder.ADDITIONAL_NATIVE_INCLUDE_PATHS,
 						cfgProperties.getProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS));
 			}
+			// Minor hack -- we want to adjust the native paths.
+			String outputType = project.getOutputType();
+			project.forceOutputType(MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE);
+			project.forceOutputType(outputType);
 		}
 	}
 }
