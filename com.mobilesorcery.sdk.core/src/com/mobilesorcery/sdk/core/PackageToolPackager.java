@@ -185,9 +185,15 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		commandLine.flag("--platform").with(variant.getProfile().getVendor().getName());
 		//TODO: Spaces and special chars?
 		commandLine.flag("--name").with(project.getName());
-		commandLine.flag("--project").with(project.getWrappedProject().getLocation().toFile());
+		File location = project.getWrappedProject().getLocation().toFile();
+		commandLine.flag("--project").with(location);
 		IPath dst = MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).removeLastSegments(1);
 		commandLine.flag("--dst").with(dst.toOSString());
+		if (location.getAbsolutePath().indexOf(' ') != -1 || dst.toFile().getAbsolutePath().indexOf(' ') != -1) {
+			throw new IllegalArgumentException(MessageFormat.format(
+					"Project or output path cannot have spaces: {0}",
+					location.getAbsolutePath()));
+		}
 		commandLine.flag("--config").with(variant.getConfigurationId());
 		boolean isDebug = PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS);
 		String libVariant = isDebug ? "debug" : "release";
