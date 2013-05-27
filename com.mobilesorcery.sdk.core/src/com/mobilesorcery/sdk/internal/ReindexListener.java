@@ -134,7 +134,8 @@ public class ReindexListener implements PropertyChangeListener
 			|| propertyName.startsWith(MoSyncBuilder.EXTRA_COMPILER_SWITCHES)
 			|| propertyName.startsWith(MoSyncProject.BUILD_CONFIGURATION_CHANGED)
 			|| propertyName.startsWith(MoSyncProject.BUILD_CONFIGURATION_SUPPORT_CHANGED)
-			|| propertyName.startsWith(MoSyncBuilder.EXTENSIONS);
+			|| propertyName.startsWith(MoSyncBuilder.EXTENSIONS)
+			|| propertyName.startsWith(MoSyncBuilder.OUTPUT_TYPE);
 	}
 	
 	/**
