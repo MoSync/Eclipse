@@ -72,7 +72,7 @@ public class ADB extends AbstractTool {
 				public void run() {
 					try {
 						IProgressMonitor monitorRef = monitor;
-						while (monitorRef != null && !monitorRef.isCanceled()) {
+						while (process != null && monitorRef != null && !monitorRef.isCanceled()) {
 							Thread.sleep(500);	
 						}
 						
