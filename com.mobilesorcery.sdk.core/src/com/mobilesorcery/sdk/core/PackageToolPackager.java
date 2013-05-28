@@ -14,11 +14,8 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 import com.mobilesorcery.sdk.core.apisupport.nfc.NFCSupport;
 import com.mobilesorcery.sdk.core.build.AbstractBuildStep;
@@ -104,6 +101,11 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			IBuildVariant variant) throws ParameterResolverException, CoreException {
 		return null;
 	}
+	
+	protected List<File> computeNativeBuildResult(MoSyncProject project,
+			IBuildVariant variant) throws ParameterResolverException, CoreException {
+		return null;
+	}
 
 	private void addGeneralParameters(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, CommandLineBuilder commandLine)
@@ -178,7 +180,7 @@ public abstract class PackageToolPackager extends AbstractPackager {
 	}
 	
 	public void buildNative(MoSyncProject project, IBuildSession session, 
-			IBuildVariant variant) throws Exception {
+			IBuildVariant variant, IBuildResult result) throws Exception {
 		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
 		
 		CommandLineBuilder commandLine = new CommandLineBuilder(MoSyncTool.getDefault().getBinary("nbuild").toOSString());
@@ -189,11 +191,18 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		commandLine.flag("--project").with(location);
 		IPath dst = MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).removeLastSegments(1);
 		commandLine.flag("--dst").with(dst.toOSString());
-		if (location.getAbsolutePath().indexOf(' ') != -1 || dst.toFile().getAbsolutePath().indexOf(' ') != -1) {
-			throw new IllegalArgumentException(MessageFormat.format(
-					"Project or output path cannot have spaces: {0}",
-					location.getAbsolutePath()));
+		
+		List<String> argumentList = Arrays.asList(Platform.getApplicationArgs());
+    	boolean useNdkStl = !AbstractTool.isWindows();
+		if (argumentList.contains("-android-stl-support:true")) {
+			useNdkStl = true;
+		} else if (argumentList.contains("-android-stl-support:false")) {
+			useNdkStl = false;
 		}
+		if (useNdkStl) {
+    		commandLine.flag("--android-stl-support");	
+    	}
+		
 		commandLine.flag("--config").with(variant.getConfigurationId());
 		boolean isDebug = PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS);
 		String libVariant = isDebug ? "debug" : "release";
@@ -243,6 +252,11 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		if (internal.runCommandLine(commandLine.asArray(),
 				commandLine.toHiddenString()) != 0) {
 			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Build failed."));
+		}
+		
+		List<File> nativeBuildResult = computeNativeBuildResult(project, variant);
+		if (nativeBuildResult != null) {
+			result.setBuildResult(NATIVE_LIBS, nativeBuildResult.toArray(new File[0]));
 		}
 	}
 	

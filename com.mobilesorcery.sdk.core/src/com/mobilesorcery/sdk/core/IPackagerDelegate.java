@@ -20,6 +20,8 @@ public interface IPackagerDelegate {
 	final static String BUILD_GEN_JAVA_MODE = PipeTool.BUILD_GEN_JAVA_MODE;
 	final static String BUILD_GEN_CS_MODE = PipeTool.BUILD_GEN_CS_MODE;
 
+	final static String NATIVE_LIBS = "native.libs";
+	
     final static String EXTENSION_POINT = "com.mobilesorcery.core.packagers";
 
     /**
@@ -38,7 +40,7 @@ public interface IPackagerDelegate {
     void createPackage(MoSyncProject project, IBuildSession session, IBuildVariant targetProfile, IFileTreeDiff diff, IBuildResult buildResult) throws CoreException;
 
     // TODO: Docs + move?
-    void buildNative(MoSyncProject project, IBuildSession session, IBuildVariant variant) throws Exception;
+    void buildNative(MoSyncProject project, IBuildSession session, IBuildVariant variant, IBuildResult result) throws Exception;
 
     /**
 	 * Returns the output type for a project.

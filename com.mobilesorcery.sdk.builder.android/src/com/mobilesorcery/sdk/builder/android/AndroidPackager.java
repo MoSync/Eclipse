@@ -21,6 +21,9 @@ import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.DefaultPackager;
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
+import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -89,6 +92,34 @@ public class AndroidPackager extends PackageToolPackager {
 		DefaultPackager intern = new DefaultPackager(project, variant);
 		return createBuildResult(new File(intern.get(DefaultPackager.PACKAGE_OUTPUT_DIR), intern.get(DefaultPackager.APP_NAME) + ".apk"));
 	}
+	
+	public void buildNative(MoSyncProject project, IBuildSession session, 
+			IBuildVariant variant, IBuildResult result) throws Exception {
+		File location = project.getWrappedProject().getLocation().toFile();
+		IPath dst = MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).removeLastSegments(1);
+		
+		if (location.getAbsolutePath().indexOf(' ') != -1 || dst.toFile().getAbsolutePath().indexOf(' ') != -1) {
+			throw new IllegalArgumentException(MessageFormat.format(
+					"Project or output path cannot have spaces: {0}",
+					location.getAbsolutePath()));
+		}
+		
+		super.buildNative(project, session, variant, result);
+	}
+	
+	protected List<File> computeNativeBuildResult(MoSyncProject project,
+			IBuildVariant variant) throws ParameterResolverException, CoreException {
+		// armeabi and armeabi-v7a
+		IPath outputRoot = MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant);
+		// Hm, only shared right now.
+		String cfgQualifier = shouldUseDebugRuntimes(project, variant) ? "debug" : "release";
+		ArrayList<File> result = new ArrayList<File>();
+		IPath armLib = outputRoot.append("android_armeabi_" + cfgQualifier + "/lib" + project.getName() + ".so");
+		IPath armv7aLib = outputRoot.append("android_armeabi-v7a_" + cfgQualifier + "/lib" + project.getName() + ".so");
+		result.add(armLib.toFile());
+		result.add(armv7aLib.toFile());
+		return result;
+	}
 
 	/**
 	 * Validates a package name (is it a proper android package name?)
@@ -153,14 +184,16 @@ public class AndroidPackager extends PackageToolPackager {
 	
 	protected List<String> getExtensionModules(MoSyncProject project, IBuildVariant variant) {
 		// TODO: This should obviously not be hard coded. Order is important too.
+		ArrayList<String> result = new ArrayList<String>();
 		if (getOutputType(project).equals(MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE)) {
-			return Arrays.asList(new String[] { 
+			result.addAll(Arrays.asList(new String[] { 
 					"mautil", "yajl", "maui", "mafs",
 					"map", "ads", "nativeui", "Facebook", "Purchase",
 					"matest", "mtxml", "testify", "Notification", "Wormhole", "MoGraph"
-			});
-		} else {
-			return new ArrayList<String>();
+			}));
 		}
+		
+		result.addAll(super.getExtensionModules(project, variant));
+		return result;
 	}
 }

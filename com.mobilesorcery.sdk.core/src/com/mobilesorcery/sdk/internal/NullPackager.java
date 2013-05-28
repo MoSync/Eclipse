@@ -55,7 +55,7 @@ public class NullPackager extends AbstractPackager implements IPackager {
 
 	@Override
 	public void buildNative(MoSyncProject project, IBuildSession session,
-			IBuildVariant variant) throws Exception {
+			IBuildVariant variant, IBuildResult result) throws Exception {
 		// Do nothing - at this point, anyhoo.
 	}
 

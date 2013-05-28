@@ -76,17 +76,22 @@ public class NativeLibBuildStep extends AbstractBuildStep {
 			}
 			return CONTINUE;
 		}
-
+		
+		build(project, session, variant, result);
+		
+		return IBuildStep.CONTINUE;
+	}
+	
+	public void build(MoSyncProject project, IBuildSession session,
+			IBuildVariant variant, IBuildResult result) throws Exception {
 		assertConfigId(variant);
 		
 		IProfile profile = variant.getProfile();
 		IPackager packager = profile.getPackager();
 		
-		packager.buildNative(project, session, variant);
-		
-		return IBuildStep.CONTINUE;
+		packager.buildNative(project, session, variant, result);
 	}
-	
+
 	private static void assertConfigId(IBuildVariant variant) throws CoreException {
 		String validatedConfig = validateConfigId(variant);
 		if (!Util.isEmpty(validatedConfig)) {

@@ -73,9 +73,9 @@ public class PackagerProxy implements IPackager {
 
 	@Override
 	public void buildNative(MoSyncProject project, IBuildSession session,
-			IBuildVariant variant) throws Exception {
+			IBuildVariant variant, IBuildResult result) throws Exception {
 		initDelegate();
-		delegate.buildNative(project, session, variant);
+		delegate.buildNative(project, session, variant, result);
 	}
 	
 	@Override

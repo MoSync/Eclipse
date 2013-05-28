@@ -227,7 +227,7 @@ public class MoSyncTool {
 	 * Returns the extension directory
 	 */
 	public IPath getMoSyncExtensions() {
-		return getMoSyncHome().append("extensions");
+		return getMoSyncHome().append("modules");
 	}
 
 	/**
