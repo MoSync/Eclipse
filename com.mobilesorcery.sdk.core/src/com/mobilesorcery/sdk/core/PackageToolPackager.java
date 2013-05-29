@@ -192,17 +192,6 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		IPath dst = MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).removeLastSegments(1);
 		commandLine.flag("--dst").with(dst.toOSString());
 		
-		List<String> argumentList = Arrays.asList(Platform.getApplicationArgs());
-    	boolean useNdkStl = !AbstractTool.isWindows();
-		if (argumentList.contains("-android-stl-support:true")) {
-			useNdkStl = true;
-		} else if (argumentList.contains("-android-stl-support:false")) {
-			useNdkStl = false;
-		}
-		if (useNdkStl) {
-    		commandLine.flag("--android-stl-support");	
-    	}
-		
 		commandLine.flag("--config").with(variant.getConfigurationId());
 		boolean isDebug = PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS);
 		String libVariant = isDebug ? "debug" : "release";

@@ -11,6 +11,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.dialogs.IMessageProvider;
@@ -18,6 +19,7 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
+import com.mobilesorcery.sdk.core.AbstractTool;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.DefaultPackager;
@@ -176,6 +178,17 @@ public class AndroidPackager extends PackageToolPackager {
 		commandLine.flag("--android-version").with(Integer.toString(platformVersion));
 		IPath dst = MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).removeLastSegments(1);
 		commandLine.flag("--android-build-dir").with(dst.append(new Path("temp")).toOSString());
+		
+		List<String> argumentList = Arrays.asList(Platform.getApplicationArgs());
+    	boolean useNdkStl = !AbstractTool.isWindows();
+		if (argumentList.contains("-android-stl-support:true")) {
+			useNdkStl = true;
+		} else if (argumentList.contains("-android-stl-support:false")) {
+			useNdkStl = false;
+		}
+		if (useNdkStl) {
+    		commandLine.flag("--android-stl-support");	
+    	}
 	}
 
 	protected boolean supportsOutputType(String outputType) {
