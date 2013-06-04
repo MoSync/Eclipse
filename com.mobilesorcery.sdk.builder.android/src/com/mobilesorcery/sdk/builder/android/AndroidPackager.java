@@ -205,7 +205,7 @@ public class AndroidPackager extends PackageToolPackager {
 			result.addAll(Arrays.asList(new String[] { 
 					"mautil", "yajl", "maui", "mafs",
 					"map", "ads", "nativeui", "Facebook", "Purchase",
-					"matest", "mtxml", "testify", "Notification", "Wormhole", "MoGraph"
+					"matest", "testify", "Notification", "Wormhole", "MoGraph"
 			}));
 		}
 		
