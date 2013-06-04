@@ -18,7 +18,10 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,6 +55,8 @@ import com.mobilesorcery.sdk.core.LineReader.LineHandlerList;
  *
  */
 public class ADB extends AbstractTool {
+
+	private static final String LIB_GDBSERVER = "lib/gdbserver";
 
 	public static class ProcessKiller extends LineReader.LineAdapter {
 		private Process process;
@@ -129,12 +134,47 @@ public class ADB extends AbstractTool {
 			}
 		}
 	}
+	
+	private static class PidFinder extends CollectingLineHandler {
+		private int lineCount = 0;
+		private int pidCol = 2; // <== Fallback value
+		private Map<String, String> pids = new HashMap<String, String>();
+		
+		public void newLine(String line) {
+			String[] cols = columns(line);
+			if (lineCount == 0) {
+				for (int i = 0; i < cols.length; i++) {
+					if (cols[i].trim().equalsIgnoreCase("pid")) {
+						pidCol = i;
+					}
+				}
+			} else {
+				// Last col is the process name
+				String name = cols[cols.length - 1].trim();
+				String pid = cols[pidCol];
+				pids.put(name, pid);
+			}
+			lineCount++;
+		}
+		
+		private String[] columns(String line) {
+			return line.split("\\s+");
+		}
+		
+		public Map<String, String> getPids() {
+			return pids;
+		}
+	}
 
 	private static ADB instance = new ADB();
 	private static ADB external;
 	private boolean logcatStarted;
 	private IPropertyChangeListener logCatListener = null;
 	private ProcessKiller logcatProcessHandler;
+
+	public static final String ARMEABI = "armeabi";
+	public static final String ARMEABI_V7A = "armeabi-v7a";
+	public static final String[] ABIS = new String[] { ARMEABI, ARMEABI_V7A };
 
 	private ADB() {
 		this(MoSyncTool.getDefault().getBinary("android/adb"));
@@ -343,6 +383,66 @@ public class ADB extends AbstractTool {
 		String reply = cl.getFirstLine().trim();
 		return reply;
 	}
+	
+	public Map<String, String> getPids(String serialNumberOfDevice) throws CoreException {
+		PidFinder pf = new PidFinder();
+		execute(new String[] { getToolPath().getAbsolutePath(), "-s",
+				serialNumberOfDevice, "shell", "ps"
+		}, pf, pf, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
+		return pf.getPids();
+	}
+	
+	public void kill9(String serialNumberOfDevice, String packageName, String pid) throws CoreException {
+		ArrayList<String> cmd = new ArrayList<String>();
+		cmd.add(getToolPath().getAbsolutePath());
+		cmd.add("-s");
+		cmd.add(serialNumberOfDevice);
+		cmd.add("shell");
+		if (packageName != null) {
+			cmd.add("run-as");
+			cmd.add(packageName);
+		}
+		cmd.add("kill");
+		cmd.add("-9");
+		cmd.add(pid);
+		execute(cmd.toArray(new String[cmd.size()]), null, null, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
+	}
+	
+	public String getDataDirectory(String serialNumberOfDevice, String packageName) throws CoreException {
+		CollectingLineHandler cl = new CollectingLineHandler();
+		execute(new String[] { getToolPath().getAbsolutePath(), "-s",
+				serialNumberOfDevice, "shell", "run-as", packageName,
+				"/system/bin/sh", "-c", "pwd"
+		}, cl, cl, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
+		String reply = cl.getFirstLine().trim();
+		return reply;
+	}
+	
+	public void setupGdb(String serialNumberOfDevice, String packageName, int debugPort) throws CoreException {
+		Map<String, String> pids = getPids(serialNumberOfDevice);
+		String packagePid = pids.get(packageName);
+		if (packagePid == null) {
+			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID,
+					MessageFormat.format("No package with name {0} found on device.", packageName)));
+		}
+		
+		String gdbserverPid = pids.get(LIB_GDBSERVER);
+		if (gdbserverPid != null) {
+			kill9(serialNumberOfDevice, packageName, gdbserverPid);
+		}
+		
+		// Start the debugger.
+		execute(new String[] { getToolPath().getAbsolutePath(), "-s",
+				serialNumberOfDevice, "shell", "run-as", packageName,
+				LIB_GDBSERVER, "+debug-socket", "--attach", packagePid
+		}, null, null, CoreMoSyncPlugin.LOG_CONSOLE_NAME, true);
+		// Start forwarding.
+		String dataDirectory = getDataDirectory(serialNumberOfDevice, packageName);
+		execute(new String[] { getToolPath().getAbsolutePath(), "-s",
+				serialNumberOfDevice, "forward", "tcp:" + debugPort,
+				"localfilesystem:" + dataDirectory + "/debug-socket",
+		}, null, null, CoreMoSyncPlugin.LOG_CONSOLE_NAME, true);
+	}
 
 	public void setProp(String serialNumberOfDevice, String propKey, String propValue) throws CoreException {
 		CollectingLineHandler cl = new CollectingLineHandler();
@@ -397,8 +497,31 @@ public class ADB extends AbstractTool {
 		}, null, null, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
 		stopLogCat();
 	}
+	
+	public String matchAbi(String serialNumberOfDevice, String[] abis) throws CoreException {
+		String abi1 = getProp(serialNumberOfDevice, "ro.product.cpu.abi");
+		String abi2 = getProp(serialNumberOfDevice, "ro.product.cpu.abi2");
+		HashSet<String> abisOnDevice = new HashSet<String>(Arrays.asList(abi1, abi2));
+		HashSet<String> availableAbis = new HashSet<String>(Arrays.asList(abis));
+		
+		if (abisOnDevice.contains(ADB.ARMEABI_V7A) &&
+			availableAbis.contains(ADB.ARMEABI_V7A)) {
+			return ADB.ARMEABI_V7A;
+		} if (abisOnDevice.contains(ADB.ARMEABI) &&
+			availableAbis.contains(ADB.ARMEABI)) {
+			return ADB.ARMEABI;
+		} else {
+			return null;
+		}
+	}
 
 	public String getModelName(String serialNumber) {
+		try {
+			getPids(serialNumber);
+		} catch (CoreException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		ArrayList<String> commandLine = new ArrayList<String>();
 		commandLine.add(getToolPath().getAbsolutePath());
 		commandLine.add("shell");
@@ -428,5 +551,16 @@ public class ADB extends AbstractTool {
 			return null;
 		}
 		return model[0];
+	}
+	
+	public void pull(String serialNumberOfDevice, String pathOnDevice, String destination) throws CoreException {
+		File sourceFile = new File(pathOnDevice);
+		File destinationFile = new File(destination);
+		if (destinationFile.isDirectory()) {
+			destination = new File(destinationFile, sourceFile.getName()).getAbsolutePath();
+		}
+		execute(new String[] { getToolPath().getAbsolutePath(),
+				"pull", pathOnDevice, destination
+		}, null, null, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
 	}
 }
