@@ -248,7 +248,7 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
         
         if (MoSyncBuilder.isExtension(mosyncProject)) {
             throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID,
-                    "Cannot execute a library; please compile as application"));
+                    "Cannot execute an extension; please compile as application"));
         }
 
         launchDelegate(launchConfig, mode, launch, emulatorId, monitor);

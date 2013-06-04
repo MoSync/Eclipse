@@ -119,14 +119,14 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
         return configuration;
     }
 
-    /**
-     * Clients may override.
-     * @return
-     */
+    private static ILaunchConfigurationType getMoreConfigType() {
+    	 ILaunchManager lm = DebugPlugin.getDefault().getLaunchManager();
+         ILaunchConfigurationType configType = lm.getLaunchConfigurationType(EmulatorLaunchConfigurationDelegate.ID);
+         return configType;
+    }
+    
     protected ILaunchConfigurationType getConfigType() {
-        ILaunchManager lm = DebugPlugin.getDefault().getLaunchManager();
-        ILaunchConfigurationType configType = lm.getLaunchConfigurationType(EmulatorLaunchConfigurationDelegate.ID);
-        return configType;
+       return getMoreConfigType();
     }
 
     /**
@@ -137,10 +137,14 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
     	return AutomaticEmulatorLauncher.ID;
     }
 
-    private ILaunchConfiguration createConfiguration(IProject project, String mode) {
+    public ILaunchConfiguration createConfiguration(IProject project, String mode) {
+    	return createConfiguration(project, mode, getPreferredLauncherId(), false, false);
+    }
+    
+    public static ILaunchConfiguration createConfiguration(IProject project, String mode, String launcherId, boolean onDevice, boolean privateLaunch) {
         ILaunchConfiguration config = null;
         try {
-            ILaunchConfigurationType configType = getConfigType();
+            ILaunchConfigurationType configType = getMoreConfigType();
 
             String launchConfigName = DebugPlugin.getDefault().getLaunchManager().generateLaunchConfigurationName(project.getName());
             ILaunchConfigurationWorkingCopy wc = configType.newInstance(null, launchConfigName);
@@ -153,20 +157,19 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
 
             EmulatorLaunchConfigurationDelegate.configureLaunchConfigForSourceLookup(wc);
 
-            String initialCfg = getInitialConfigurationId(project, mode);
-            if (initialCfg != null) {
-                String key = "run".equals(mode) ? ILaunchConstants.BUILD_CONFIG : ILaunchConstants.BUILD_CONFIG_DEBUG;
-                wc.setAttribute(key, initialCfg);
-            }
-
             wc.setAttribute(ILaunchConstants.PROJECT, project.getName());
 
             // Let the launcher add its own attributes
-            String launcherId = getPreferredLauncherId();
             IEmulatorLauncher launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(launcherId);
             wc.setAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, launcherId);
             launcher.setDefaultAttributes(wc);
 
+            if (privateLaunch) {
+            	wc.setAttribute(IDebugUIConstants.ATTR_PRIVATE, true);
+            }
+            if (onDevice) {
+            	wc.setAttribute(ILaunchConstants.ON_DEVICE, true);
+            }
             config = wc.doSave();
         } catch (CoreException ce) {
             CoreMoSyncPlugin.getDefault().getLog().log(

@@ -18,12 +18,17 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransportListener;
+import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
+import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
+import com.mobilesorcery.sdk.ui.targetphone.android.AndroidTargetPhone;
 
 /**
  * The activator class controls the plug-in life cycle
  */
-public class Activator extends AbstractUIPlugin {
+public class Activator extends AbstractUIPlugin implements ITargetPhoneTransportListener {
 
     // The plug-in ID
     public static final String PLUGIN_ID = "com.mobilesorcery.sdk.builder.android"; //$NON-NLS-1$
@@ -50,6 +55,7 @@ public class Activator extends AbstractUIPlugin {
     @Override
 	public void start(BundleContext context) throws Exception {
         super.start(context);
+        TargetPhonePlugin.getDefault().addTargetPhoneTransportListener(this);
         plugin = this;
     }
 
@@ -60,6 +66,7 @@ public class Activator extends AbstractUIPlugin {
     @Override
 	public void stop(BundleContext context) throws Exception {
         plugin = null;
+        TargetPhonePlugin.getDefault().removeTargetPhoneTransportListener(this);
         super.stop(context);
     }
 
@@ -82,5 +89,15 @@ public class Activator extends AbstractUIPlugin {
 		String activityName = packageName + ".MoSync";
 		String androidComponent = packageName + "/" + activityName;
 		return androidComponent;
+	}
+
+	@Override
+	public void handleEvent(TargetPhoneTransportEvent event) {
+		// TODO: This should be centralized!
+		if (event.phone instanceof AndroidTargetPhone) {
+			if (event.project.getActiveBuildConfiguration().isType(IBuildConfiguration.DEBUG_TYPE)) {
+				
+			}
+		}
 	}
 }

@@ -87,25 +87,10 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 		return createSession(variant, sessionType, gdb, factory, program, extraArgs, usePty, null, monitor);
 	}
 	
-	protected Session createSession(IBuildVariant variant, int sessionType, String gdb, CommandFactory factory, File program, String[] extraArgs, boolean usePty, IProject project, IProgressMonitor monitor) throws IOException, MIException {
-		if (monitor == null) {
-			monitor = new NullProgressMonitor();
-		}
-		
+	protected String[] getGDBCommandLine(String gdb, String[] extraArgs, File executable, IProject project, IBuildVariant variant, CommandFactory factory, boolean usePty) {
 		if (gdb == null || gdb.length() == 0) {
 			gdb = MoSyncTool.getDefault().getBinary("mdb").toOSString();
 		}
-
-		IMITTY pty = null;
-
-		/*if (usePty) {
-			try {
-				PTY pseudo = new PTY();
-				pty = new MITTYAdapter(pseudo);
-			} catch (IOException e) {
-				// Should we not print/log this ?
-			}
-		}*/
 
 		ArrayList<String> argList = new ArrayList<String>(extraArgs.length + 8);
 		argList.add(gdb);
@@ -115,9 +100,9 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 			IBuildConfiguration buildConfiguration = mosyncProject.getBuildConfiguration(variant.getConfigurationId());
 			IPath sldPath = mosyncProject.getSLD(buildConfiguration).getSLDPath();
 
-			if (program != null) {
+			if (executable != null) {
 				argList.add("-p");
-				argList.add(program.getAbsolutePath());
+				argList.add(executable.getAbsolutePath());
 			}
 			
 			if (sldPath.toFile().exists()) {
@@ -132,6 +117,14 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 			}
 		}
 		
+		return (String[])argList.toArray(new String[argList.size()]);
+	}
+	
+	protected Session createSession(IBuildVariant variant, int sessionType, String gdb, CommandFactory factory, File program, String[] extraArgs, boolean usePty, IProject project, IProgressMonitor monitor) throws IOException, MIException {
+		if (monitor == null) {
+			monitor = new NullProgressMonitor();
+		}
+		
 		//argList.add("-q"); //$NON-NLS-1$
 		//argList.add("-nw"); //$NON-NLS-1$
 		//argList.add("-i"); //$NON-NLS-1$
@@ -142,9 +135,20 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 		}*/
 		//argList.addAll(Arrays.asList(extraArgs));
 
-		String[] args = (String[])argList.toArray(new String[argList.size()]);
-		int launchTimeout = MIPlugin.getDefault().getPluginPreferences().getInt(IMIConstants.PREF_REQUEST_LAUNCH_TIMEOUT);		
+		String[] args = getGDBCommandLine(gdb, extraArgs, program, project, variant, factory, usePty);
+		int launchTimeout = MIPlugin.getDefault().getPluginPreferences().getInt(IMIConstants.PREF_REQUEST_LAUNCH_TIMEOUT);
 
+		IMITTY pty = null;
+
+		/*if (usePty) {
+			try {
+				PTY pseudo = new PTY();
+				pty = new MITTYAdapter(pseudo);
+			} catch (IOException e) {
+				// Should we not print/log this ?
+			}
+		}*/
+		
 		MISession miSession = null;
 		MIProcess pgdb = null;
 		boolean failed = false;
@@ -198,14 +202,19 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 		return true;
 	}
 
-	private MISession createMISession0(int type, MIProcess process, CommandFactory commandFactory, IMITTY pty, int timeout) throws MIException {
+	protected MISession createMISession0(int type, MIProcess process, CommandFactory commandFactory, IMITTY pty, int timeout) throws MIException {
 		return new MoSyncMISession(process, pty, type, commandFactory, timeout);
 	}
 	
 	protected void doStartSession( ILaunch launch, Session session, IProgressMonitor monitor ) throws CoreException {
+		initializeLibraries(launch.getLaunchConfiguration(), session);
 		session.getSharedLibraryManager().setAutoUpdate(false);
 	}
 
+	protected CommandFactory getDefaultCommandFactory(ILaunchConfiguration config) throws CoreException {
+		return super.getCommandFactory(config);
+	}
+	
 	protected CommandFactory getCommandFactory(ILaunchConfiguration config) throws CoreException {
 		String miVersion = getMIVersion(config);
 		return new MoSyncCommandFactory(miVersion);

@@ -2,19 +2,26 @@ package com.mobilesorcery.sdk.builder.android.launch;
 
 import java.io.File;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.cdt.core.IBinaryParser.IBinaryObject;
+import org.eclipse.cdt.debug.core.cdi.ICDISession;
+import org.eclipse.cdt.internal.core.model.CModelManager;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
+import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -26,12 +33,17 @@ import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 import com.mobilesorcery.sdk.builder.android.launch.ADB.ProcessKiller;
 import com.mobilesorcery.sdk.builder.android.launch.Emulator.IAndroidEmulatorProcess;
 import com.mobilesorcery.sdk.builder.android.ui.dialogs.ConfigureAndroidSDKDialog;
+import com.mobilesorcery.sdk.core.AbstractPackager;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IBuildResult;
+import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.ILaunchConstants;
 import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.launch.AbstractEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
+import com.mobilesorcery.sdk.internal.debug.MoSyncCDebugTarget;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
 
 public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
@@ -82,11 +94,45 @@ public class AndroidEmulatorLauncher extends AbstractEmulatorLauncher {
 		}
 	}
 
+	// Small hack to get odd up and running!
+	private void launchOnDevice(ADB adb, ILaunchConfiguration launchConfig, String mode,
+			ILaunch launch, IProgressMonitor monitor) throws CoreException {
+		String serialNumberOfDevice = launchConfig.getAttribute("serialno", "none");
+		MoSyncProject project = MoSyncProject.create(EmulatorLaunchConfigurationDelegate.getProject(launchConfig));
+		
+		String arch = adb.matchAbi(serialNumberOfDevice, ADB.ABIS);
+		
+		IBuildVariant variant = EmulatorLaunchConfigurationDelegate.getVariant(launchConfig, mode);
+		File executable = project.getBuildState(variant).getBuildResult().getBuildResult().get(IBuildResult.MAIN).get(0);
+		
+		boolean debug = AbstractPackager.shouldUseDebugRuntimes(project, variant);
+		File binary = new File(AndroidPackager.computeNativeBuildResult(project, variant, arch, debug).getParentFile(), "app_process");
+		AndroidNDKDebugger dbg = new AndroidNDKDebugger();
+		dbg.setSerialNumber(serialNumberOfDevice);
+    	ICDISession targetSession = dbg.createSession(launch, executable, new NullProgressMonitor());
+    	
+    	IFile[] binaryFiles = ResourcesPlugin.getWorkspace().getRoot().findFilesForLocation(new Path(binary.getAbsolutePath()));
+    	IFile binaryFile = null;
+    	for (int i = 0; binaryFile == null && i < binaryFiles.length; i++) {
+    		if (binaryFiles[i].getProject().equals(project.getWrappedProject())) {
+    			binaryFile = binaryFiles[i];
+    		}
+    	}
+    	IBinaryObject binaryObject = (IBinaryObject) CModelManager.getDefault().createBinaryFile(binaryFile);
+    	IDebugTarget debugTarget = MoSyncCDebugTarget.newDebugTarget(launch, project.getWrappedProject(),
+    			targetSession.getTargets()[0], launch.getLaunchConfiguration().getName(),
+    			null, binaryObject, true, false, null, true);
+	}
+	
 	@Override
 	public void launch(ILaunchConfiguration launchConfig, String mode,
 			ILaunch launch, int emulatorId, IProgressMonitor monitor)
 			throws CoreException {
 		ADB adb = ADB.getExternal();
+		if (launchConfig.getAttribute(ILaunchConstants.ON_DEVICE, false)) {
+			launchOnDevice(adb, launchConfig, mode, launch, monitor);
+			return;
+		}
 		Android android = Android.getExternal();
 		android.refresh();
 		Emulator emulator = Emulator.getExternal();

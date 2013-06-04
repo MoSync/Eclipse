@@ -3,7 +3,6 @@ package com.mobilesorcery.sdk.core.launch;
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;

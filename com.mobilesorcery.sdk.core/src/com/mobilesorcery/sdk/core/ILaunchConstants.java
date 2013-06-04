@@ -61,4 +61,9 @@ public interface ILaunchConstants {
 	 */
 	String LAUNCH_DELEGATE_ID = "launch.delegate";
 
+	/**
+	 * An attribute indicating the launch should take place on an actual device.
+	 */
+	String ON_DEVICE = "on.device";
+
 }
