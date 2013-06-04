@@ -187,7 +187,10 @@ public class AndroidPackager extends PackageToolPackager {
 			useNdkStl = false;
 		}
 		if (useNdkStl) {
-    		commandLine.flag("--android-stl-support");	
+			// There are situations where this does not work;
+			// if a project has no explicit link to the STL lib,
+			// it will all fail...
+			//commandLine.flag("--android-stl-support");	
     	}
 	}
 
