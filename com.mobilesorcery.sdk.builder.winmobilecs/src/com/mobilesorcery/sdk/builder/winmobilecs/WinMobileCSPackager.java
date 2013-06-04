@@ -149,8 +149,9 @@ public class WinMobileCSPackager extends PackageToolPackager {
 		return BUILD_GEN_CS_MODE;
 	}
 	
+	@Override
 	public void buildNative(MoSyncProject project, IBuildSession session, 
-			IBuildVariant variant) throws Exception {
+			IBuildVariant variant, IBuildResult result) throws Exception {
 		// All native building is performed in the package tool for WP.
 	}
 	
