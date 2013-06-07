@@ -35,7 +35,7 @@ public class BuildSequence implements IBuildSequence {
 	private final MoSyncProject project;
 	private ArrayList<IBuildStepFactory> buildStepFactories = new ArrayList<IBuildStepFactory>();
 	private ArrayList<IBuildStep> buildSteps;
-	private Version formatVersion;
+	private Version formatVersion = CURRENT_VERSION;
 	
 	private final static String[] BASE_SEQUENCE = new String[] { 
 			ResourceBuildStep.ID, NativeLibBuildStep.ID, CompileBuildStep.ID,
