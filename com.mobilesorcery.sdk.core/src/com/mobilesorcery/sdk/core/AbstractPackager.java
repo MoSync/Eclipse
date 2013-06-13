@@ -18,7 +18,7 @@ import com.mobilesorcery.sdk.profiles.IProfile;
 
 public abstract class AbstractPackager implements IPackagerDelegate {
 
-	public boolean shouldUseDebugRuntimes(MoSyncProject project, IBuildVariant variant) {
+	public static boolean shouldUseDebugRuntimes(MoSyncProject project, IBuildVariant variant) {
 		IPropertyOwner buildProperties = MoSyncBuilder.getPropertyOwner(
 				project, variant.getConfigurationId());
 		

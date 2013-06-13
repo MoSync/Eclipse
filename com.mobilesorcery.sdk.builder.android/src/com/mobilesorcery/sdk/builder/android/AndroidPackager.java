@@ -18,6 +18,7 @@ import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
+import com.mobilesorcery.sdk.builder.android.launch.Android;
 import com.mobilesorcery.sdk.builder.java.KeystoreCertificateInfo;
 import com.mobilesorcery.sdk.core.AbstractTool;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
@@ -40,7 +41,7 @@ import com.mobilesorcery.sdk.ui.DefaultMessageProvider;
 public class AndroidPackager extends PackageToolPackager {
 
 	public final static String ID = "com.mobilesorcery.sdk.build.android.packager";
-
+	
 	public AndroidPackager() {
 		super();
 	}
@@ -86,6 +87,11 @@ public class AndroidPackager extends PackageToolPackager {
         if (!Util.isEmpty(manifestTemplate)) {
         	commandLine.flag("--android-manifest-template").with(manifestTemplate);
         }
+        
+        Android external = Android.getExternal();
+        if (external.isValid()) {
+        	commandLine.flag("--android-sdk-location").with(Activator.getDefault().getExternalAndroidSDKPath().toFile());
+        }
 	}
 
 	@Override
@@ -112,15 +118,27 @@ public class AndroidPackager extends PackageToolPackager {
 	protected List<File> computeNativeBuildResult(MoSyncProject project,
 			IBuildVariant variant) throws ParameterResolverException, CoreException {
 		// armeabi and armeabi-v7a
+		boolean debug = shouldUseDebugRuntimes(project, variant);
+		ArrayList<File> result = new ArrayList<File>();
+		File armLib = computeNativeBuildResult(project, variant, "armeabi", debug);
+		File armv7aLib = computeNativeBuildResult(project, variant, "armeabi-v7a", debug);
+		result.add(armLib);
+		result.add(armv7aLib);
+		return result;
+	}
+	
+	public static File computeNativeBuildResult(MoSyncProject project,
+			IBuildVariant variant, String arch, boolean debug) {
 		IPath outputRoot = MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant);
 		// Hm, only shared right now.
-		String cfgQualifier = shouldUseDebugRuntimes(project, variant) ? "debug" : "release";
-		ArrayList<File> result = new ArrayList<File>();
-		IPath armLib = outputRoot.append("android_armeabi_" + cfgQualifier + "/lib" + project.getName() + ".so");
-		IPath armv7aLib = outputRoot.append("android_armeabi-v7a_" + cfgQualifier + "/lib" + project.getName() + ".so");
-		result.add(armLib.toFile());
-		result.add(armv7aLib.toFile());
-		return result;
+		String cfgQualifier = debug ? "debug" : "release";
+		IPath lib = outputRoot.append("android_" + arch + "_" + cfgQualifier + "/lib" + project.getName() + ".so");
+		return lib.toFile();
+	}
+	
+	public static File computeNativeDebugLib(MoSyncProject project, IBuildVariant variant, String arch) {
+		File tempBuildDir = getTempBuildDir(project, variant);
+		return new File(tempBuildDir, "Debug/obj/local/" + arch + "/lib" + project.getName() + ".so");
 	}
 
 	/**
@@ -176,8 +194,7 @@ public class AndroidPackager extends PackageToolPackager {
 		}
 		commandLine.flag("--android-ndk-location").with(new File(ndkLocation));
 		commandLine.flag("--android-version").with(Integer.toString(platformVersion));
-		IPath dst = MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).removeLastSegments(1);
-		commandLine.flag("--android-build-dir").with(dst.append(new Path("temp")).toOSString());
+		commandLine.flag("--android-build-dir").with(getTempBuildDir(project, variant));
 		
 		List<String> argumentList = Arrays.asList(Platform.getApplicationArgs());
     	boolean useNdkStl = !AbstractTool.isWindows();
@@ -192,6 +209,11 @@ public class AndroidPackager extends PackageToolPackager {
 			// it will all fail...
 			//commandLine.flag("--android-stl-support");	
     	}
+	}
+
+	private static File getTempBuildDir(MoSyncProject project, IBuildVariant variant) {
+		IPath dst = MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).removeLastSegments(1);
+		return dst.append(new Path("temp")).toFile();
 	}
 
 	protected boolean supportsOutputType(String outputType) {
