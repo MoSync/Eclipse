@@ -321,6 +321,10 @@ public class MoSyncBuilder extends ACBuilder {
 	private static IPath getFinalOutputPath(IProject project,
 			IBuildVariant variant) {
 		IProfile targetProfile = variant.getProfile();
+		if (targetProfile == null) {
+			// Just to avoid NPEs
+			targetProfile = MoSyncProject.create(project).getTargetProfile();
+		}
 		String outputPath = getPropertyOwner(MoSyncProject.create(project),
 				variant.getConfigurationId()).getProperty(APP_OUTPUT_PATH);
 		if (outputPath == null) {

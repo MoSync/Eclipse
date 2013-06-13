@@ -83,11 +83,11 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 	}
 
 	// Copied 'n' modified from MIPlugin
-	protected Session createSession(IBuildVariant variant, int sessionType, String gdb, CommandFactory factory, File program, String[] extraArgs, boolean usePty, IProgressMonitor monitor) throws IOException, MIException {
+	protected Session createSession(IBuildVariant variant, int sessionType, String gdb, CommandFactory factory, File program, String[] extraArgs, boolean usePty, IProgressMonitor monitor) throws IOException, MIException, CoreException {
 		return createSession(variant, sessionType, gdb, factory, program, extraArgs, usePty, null, monitor);
 	}
 	
-	protected String[] getGDBCommandLine(String gdb, String[] extraArgs, File executable, IProject project, IBuildVariant variant, CommandFactory factory, boolean usePty) {
+	protected String[] getGDBCommandLine(String gdb, String[] extraArgs, File executable, IProject project, IBuildVariant variant, CommandFactory factory, boolean usePty) throws CoreException {
 		if (gdb == null || gdb.length() == 0) {
 			gdb = MoSyncTool.getDefault().getBinary("mdb").toOSString();
 		}
@@ -120,7 +120,7 @@ public class MoSyncDebugger extends GDBCDIDebugger2 {
 		return (String[])argList.toArray(new String[argList.size()]);
 	}
 	
-	protected Session createSession(IBuildVariant variant, int sessionType, String gdb, CommandFactory factory, File program, String[] extraArgs, boolean usePty, IProject project, IProgressMonitor monitor) throws IOException, MIException {
+	protected Session createSession(IBuildVariant variant, int sessionType, String gdb, CommandFactory factory, File program, String[] extraArgs, boolean usePty, IProject project, IProgressMonitor monitor) throws IOException, MIException, CoreException {
 		if (monitor == null) {
 			monitor = new NullProgressMonitor();
 		}

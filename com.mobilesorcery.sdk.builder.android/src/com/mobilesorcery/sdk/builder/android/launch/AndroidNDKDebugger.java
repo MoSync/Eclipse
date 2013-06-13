@@ -3,6 +3,7 @@ package com.mobilesorcery.sdk.builder.android.launch;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.cdt.debug.mi.core.IMITTY;
 import org.eclipse.cdt.debug.mi.core.MIException;
@@ -16,12 +17,14 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
-import org.eclipse.jface.preference.IPreferenceStore;
 
 import com.mobilesorcery.sdk.builder.android.Activator;
+import com.mobilesorcery.sdk.builder.android.AndroidPackager;
+import com.mobilesorcery.sdk.builder.android.NdkToolchain;
 import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.MoSyncProject;
@@ -36,16 +39,16 @@ public class AndroidNDKDebugger extends MoSyncDebugger {
 		this.serialNumber = serialNumber;
 	}
 	
-	protected IPath getGDBPath(ILaunch launch) {
-		IPreferenceStore androidPrefs = Activator.getDefault().getPreferenceStore();
-		String ndkLocation = androidPrefs.getString(Activator.NDK_PATH);
-		// We ignore the gdb thing and use our own.
-		// TODO!!!
-		IPath gdb = new Path(ndkLocation).append("toolchains/arm-linux-androideabi-4.6/prebuilt/darwin-x86_64/bin/arm-linux-androideabi-gdb");
+	protected IPath getGDBPath(ILaunch launch) throws CoreException {
+		NdkToolchain toolchain = Activator.getDefault().getPreferredNdkToolchain();
+		if (toolchain == null) {
+			throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "No ndk toolchain found!"));
+		}
+		IPath gdb = toolchain.getTool(null, "gdb");
 		return gdb;
 	}
 	
-	protected String[] getGDBCommandLine(String gdb, String[] extraArgs, File executable, IProject project, IBuildVariant variant, CommandFactory factory, boolean usePty) {
+	protected String[] getGDBCommandLine(String gdb, String[] extraArgs, File executable, IProject project, IBuildVariant variant, CommandFactory factory, boolean usePty) throws CoreException {
 		gdb = getGDBPath(null).toOSString();	
 		
 		IMITTY pty = null;
@@ -72,7 +75,7 @@ public class AndroidNDKDebugger extends MoSyncDebugger {
 		return argList.toArray(new String[argList.size()]);
 	}
 	
-	protected Session createSession(IBuildVariant variant, int sessionType, String gdb, CommandFactory factory, File program, String[] extraArgs, boolean usePty, IProject project, IProgressMonitor monitor) throws IOException, MIException {
+	protected Session createSession(IBuildVariant variant, int sessionType, String gdb, CommandFactory factory, File program, String[] extraArgs, boolean usePty, IProject project, IProgressMonitor monitor) throws IOException, MIException, CoreException {
 		MoSyncProject mosyncProject = MoSyncProject.create(project);
 		String packageName = mosyncProject.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME);
 		try {
@@ -92,4 +95,17 @@ public class AndroidNDKDebugger extends MoSyncDebugger {
 		session.setSerialNumber(serialNumber);
 		return session;
 	}
+
+	public static List<String> getLibraryPaths(MoSyncProject project, IBuildVariant variant, String serialNumber) throws CoreException {
+		// NOTE NOTE NOTE: The .so with debug info is located in a different place!
+		ArrayList<String> solibPaths = new ArrayList<String>();
+		ADB adb = ADB.getDefault();
+		String arch = adb.matchAbi(serialNumber, ADB.ABIS);
+		String buildPath = AndroidPackager.computeNativeDebugLib(project, variant, arch).getParentFile().getAbsolutePath();
+		solibPaths.add(buildPath);
+		String libsPath = MoSyncTool.getDefault().getMoSyncLib().append("android_" + arch + "_debug").toOSString();
+		solibPaths.add(libsPath);
+		return solibPaths;
+	}
+
 }

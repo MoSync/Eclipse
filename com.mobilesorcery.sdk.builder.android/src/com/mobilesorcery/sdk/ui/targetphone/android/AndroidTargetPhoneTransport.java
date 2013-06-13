@@ -15,6 +15,7 @@ package com.mobilesorcery.sdk.ui.targetphone.android;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -27,6 +28,7 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.ui.DebugUITools;
+import org.eclipse.debug.ui.IDebugUIConstants;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.window.IShellProvider;
@@ -38,11 +40,13 @@ import com.mobilesorcery.sdk.builder.android.Activator;
 import com.mobilesorcery.sdk.builder.android.AndroidPackager;
 import com.mobilesorcery.sdk.builder.android.PropertyInitializer;
 import com.mobilesorcery.sdk.builder.android.launch.ADB;
+import com.mobilesorcery.sdk.builder.android.launch.AndroidNDKDebugger;
 import com.mobilesorcery.sdk.builder.android.launch.ADB.ProcessKiller;
 import com.mobilesorcery.sdk.builder.android.launch.AndroidEmulatorLauncher;
 import com.mobilesorcery.sdk.core.AbstractTool;
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.ILaunchConstants;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.Util;
@@ -59,7 +63,7 @@ import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
 
 public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegate {
 
-	private static final String ID = "android";
+	public static final String ID = "android";
 
 	static final Pattern androidPlatformRegexp = Pattern.compile("^profiles\\\\runtimes\\\\android.*");
 	private static final IDeviceFilter ANDROID_DEVICE_FILTER = new AbstractDeviceFilter() {
@@ -133,47 +137,31 @@ public class AndroidTargetPhoneTransport implements ITargetPhoneTransportDelegat
 	}
 
 	@Override
-	public void send(IShellProvider shell, MoSyncProject project, IBuildVariant variant, ITargetPhone phone, File packageToSend, IProgressMonitor monitor)
+	public void send(IShellProvider shell, final MoSyncProject project, final IBuildVariant variant, ITargetPhone phone, File packageToSend, IProgressMonitor monitor)
 			throws CoreException {
 		if (phone instanceof AndroidTargetPhone) {
 			AndroidTargetPhone androidPhone = (AndroidTargetPhone) phone;
-			String serialNumberOfDevice = androidPhone.getSerialNumber();
-			ADB adb = ADB.getDefault();
-			adb.install(packageToSend, project.getProperty(PropertyInitializer.ANDROID_PACKAGE_NAME), serialNumberOfDevice, new ProcessKiller(monitor));
-			String androidComponent = Activator.getAndroidComponentName(project);
-			if (!monitor.isCanceled()) {
-				TargetPhonePlugin.getDefault().notifyListeners(new TargetPhoneTransportEvent(TargetPhoneTransportEvent.ABOUT_TO_LAUNCH, phone, project, variant));
-				adb.launch(androidComponent, serialNumberOfDevice, new ProcessKiller(monitor));
-			}
-			if (!monitor.isCanceled()) {
-				adb.startLogCat();
-			}
-			
-			// Some hack to get odd working
-			String mode = project.getBuildConfiguration(variant.getConfigurationId()).getTypes().contains(IBuildConfiguration.DEBUG_TYPE) ?
+			final String serialNumberOfDevice = androidPhone.getSerialNumber();
+			final String mode = project.getBuildConfiguration(variant.getConfigurationId()).getTypes().contains(IBuildConfiguration.DEBUG_TYPE) ?
 					"debug" : "run";
-			if (mode.equals("debug") && AbstractTool.isMac()) {
-				ILaunchConfiguration cfg = MoreLaunchShortCut.createConfiguration(project.getWrappedProject(), mode, AndroidEmulatorLauncher.ID, true, true);
-				// These obviously should not be here...
-				ILaunchConfigurationWorkingCopy wc = cfg.getWorkingCopy();
-				wc.setAttribute("serialno", serialNumberOfDevice);
-				ArrayList<String> solibPaths = new ArrayList<String>();
-				String arch = adb.matchAbi(serialNumberOfDevice, ADB.ABIS);
-				// NOTE NOTE NOTE: The .so with debug info is located in a different place!
-				String buildPath = AndroidPackager.computeNativeDebugLib(project, variant, arch).getParentFile().getAbsolutePath();
-				solibPaths.add(buildPath);
-				String libsPath = MoSyncTool.getDefault().getMoSyncLib().append("android_" + arch + "_debug").toOSString();
-				solibPaths.add(libsPath);
-				wc.setAttribute(IMILaunchConfigurationConstants.ATTR_DEBUGGER_SOLIB_PATH, solibPaths);
-				cfg = wc.doSave();
+			final ILaunchConfiguration[] cfg = new ILaunchConfiguration[1];
+			final CoreException[] exception = new CoreException[1];
+			shell.getShell().getDisplay().syncExec(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						cfg[0] = AndroidEmulatorLauncher.findLaunchConfiguration(project, variant, mode, true, serialNumberOfDevice);
+					} catch (CoreException e) {
+						exception[0] = e;
+					}
+				}
 				
-				// We need to pull some things to help the debugger.
-				adb.pull(serialNumberOfDevice, "/system/bin/app_process", buildPath);
-				adb.pull(serialNumberOfDevice, "/system/bin/linker", buildPath);
-				adb.pull(serialNumberOfDevice, "/system/lib/libc.so", buildPath);
-				
-				cfg.launch(mode, monitor, false);
-				//cfg.delete();
+			});
+			if (exception[0] != null) {
+				throw exception[0];
+			}
+			if (cfg[0] != null) {
+				cfg[0].launch(mode, monitor, false);	
 			}
 		} else {
 			throw new CoreException(new Status(IStatus.ERROR, TargetPhonePlugin.PLUGIN_ID, "Can only send to android phones"));

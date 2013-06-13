@@ -11,7 +11,7 @@ modes="run,debug"
 class=
 "com.mobilesorcery.sdk.ui.internal.launch.MoreLaunchShortCut"
 label=
-"Run MoRE Emulator"
+"Run MoSync App"
 icon="icons/launchshortcut.png">
                      <contextualLaunch>
             <enablement>

@@ -13,6 +13,12 @@
 */
 package com.mobilesorcery.sdk.builder.android;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.TreeMap;
+
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -20,6 +26,7 @@ import org.osgi.framework.BundleContext;
 
 import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.ui.targetphone.ITargetPhoneTransportListener;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhonePlugin;
 import com.mobilesorcery.sdk.ui.targetphone.TargetPhoneTransportEvent;
@@ -41,6 +48,8 @@ public class Activator extends AbstractUIPlugin implements ITargetPhoneTransport
 
     // The shared instance
     private static Activator plugin;
+
+	private List<NdkToolchain> ndkToolchains;
 
     /**
      * The constructor
@@ -99,5 +108,44 @@ public class Activator extends AbstractUIPlugin implements ITargetPhoneTransport
 				
 			}
 		}
+	}
+
+	public NdkToolchain getPreferredNdkToolchain() {
+		List<NdkToolchain> toolchains = getNdkToolchains();
+		// TODO: These could be preferences!
+		TreeMap<Integer, NdkToolchain> toolchainScores = new TreeMap<Integer, NdkToolchain>();
+		for (NdkToolchain toolchain : toolchains) {
+			int toolchainScore = 0;
+			if (toolchain.isCompatible()) {
+				if (toolchain.getVersion().equals(new Version("4.6"))) {
+					toolchainScore += 2;
+				}
+				if (toolchain.getVersion().equals(new Version("4.7"))) {
+					toolchainScore += 1;
+				}
+			}
+			toolchainScores.put(toolchainScore, toolchain);
+		}
+		return toolchainScores.isEmpty() ? null : toolchainScores.lastEntry().getValue();
+	}
+	
+	public synchronized List<NdkToolchain> getNdkToolchains() {
+		if (ndkToolchains == null) {
+			ArrayList<NdkToolchain> ndkToolchainsWrite = new ArrayList<NdkToolchain>();
+			String ndkLocation = getPreferenceStore().getString(Activator.NDK_PATH);
+			File toolchainDir = new File(ndkLocation, "toolchains");
+			String[] toolchains = toolchainDir.list();
+			for (String toolchain : toolchains) {
+				int ixVersion = toolchain.lastIndexOf("-");
+				if (ixVersion != -1) {
+					String versionStr = toolchain.substring(ixVersion + 1);
+					Version version = new Version(versionStr);
+					String arch = toolchain.substring(0, ixVersion);
+					ndkToolchainsWrite.add(new NdkToolchain(new Path(toolchainDir.getAbsolutePath()).append(toolchain), arch, version));
+				}
+			}
+			ndkToolchains = Collections.unmodifiableList(ndkToolchainsWrite);
+		}
+		return ndkToolchains;
 	}
 }

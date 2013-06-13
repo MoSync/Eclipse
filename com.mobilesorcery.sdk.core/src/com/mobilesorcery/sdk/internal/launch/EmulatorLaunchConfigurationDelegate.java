@@ -55,6 +55,7 @@ import com.mobilesorcery.sdk.core.MoSyncBuildJob;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncNature;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.launch.IEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.internal.BuildSession;
@@ -408,14 +409,28 @@ public class EmulatorLaunchConfigurationDelegate extends LaunchConfigurationDele
 	}
 
 	public static boolean doesConfigMatch(ILaunchConfiguration config,
-			IProject project, String mode) throws CoreException {
+			IProject project, String mode, Map<String, Object> matchingParams) throws CoreException {
     	boolean sameProject = config.getAttribute(ILaunchConstants.PROJECT, "").equals(project.getName());
     	if (!sameProject) {
     		return false;
     	} // else, interesting...
 
     	IEmulatorLauncher emulator = EmulatorLaunchConfigurationDelegate.getEmulatorLauncher(config, mode);
-		return (emulator.isLaunchable(config, mode) != IEmulatorLauncher.UNLAUNCHABLE);
+		if (emulator.isLaunchable(config, mode) == IEmulatorLauncher.UNLAUNCHABLE) {
+			return false;
+		}
+		
+		if (matchingParams != null) {
+			Map configParams = config.getAttributes();
+			for (Map.Entry<String, Object> matchingParam : matchingParams.entrySet()) {
+				Object configValue = configParams.get(matchingParam.getKey());
+				if (!Util.equals(configValue, matchingParam.getValue())) {
+					return false;
+				}
+			}
+		}
+		
+		return true;
 	}
 
 }
