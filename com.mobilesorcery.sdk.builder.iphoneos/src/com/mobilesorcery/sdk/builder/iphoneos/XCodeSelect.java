@@ -10,6 +10,7 @@ import org.eclipse.core.runtime.Path;
 
 import com.mobilesorcery.sdk.core.AbstractTool;
 import com.mobilesorcery.sdk.core.CollectingLineHandler;
+import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
 import com.mobilesorcery.sdk.core.LineReader.LineAdapter;
 
@@ -35,7 +36,7 @@ public class XCodeSelect extends AbstractTool {
 		ArrayList<String> commandLine = new ArrayList<String>();
 		commandLine.add("xcode-select");
 		commandLine.add("--print-path");
-		execute(commandLine.toArray(new String[0]), handler, handler, false);
+		execute(commandLine.toArray(new String[0]), handler, handler, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
 		try {
 			handler.awaitStopped(5, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {

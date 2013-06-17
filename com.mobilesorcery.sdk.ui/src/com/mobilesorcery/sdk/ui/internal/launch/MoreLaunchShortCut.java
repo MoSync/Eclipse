@@ -14,8 +14,11 @@
 package com.mobilesorcery.sdk.ui.internal.launch;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -49,6 +52,12 @@ import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate
 
 public class MoreLaunchShortCut implements ILaunchShortcut2 {
 
+	private static MoreLaunchShortCut instance = new MoreLaunchShortCut();
+
+	public static MoreLaunchShortCut getDefault() {
+		return instance;
+	}
+	
     @Override
 	public void launch(ISelection selection, String mode) {
         launch(getProjectFromSelection(selection), mode);
@@ -100,13 +109,23 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
         launch(getProjectFromSelection(new Object[] { part }), mode);
     }
 
+    private Map<String, Object> getDefaultParams() {
+    	Map<String, Object> emulator = new HashMap<String, Object>();
+    	emulator.put(ILaunchConstants.ON_DEVICE, false);
+    	return emulator;
+    }
+    
     private ILaunchConfiguration findLaunchConfiguration(IProject project, String mode) {
+		return findLaunchConfiguration(project, mode, getDefaultParams());
+    }
+    
+    public ILaunchConfiguration findLaunchConfiguration(IProject project, String mode, Map<String, Object> matchingParameters) {
         ILaunchConfiguration configuration = null;
-        List candidateConfigs = getCandidateConfigs(project, mode);
+        List candidateConfigs = getCandidateConfigs(project, mode, matchingParameters);
 
         int candidateCount = candidateConfigs.size();
         if (candidateCount < 1) {
-            configuration = createConfiguration(project, mode);
+            configuration = createConfiguration(project, mode, matchingParameters);
         } else if (candidateCount == 1) {
             configuration = (ILaunchConfiguration) candidateConfigs.get(0);
         } else {
@@ -119,14 +138,14 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
         return configuration;
     }
 
-    /**
-     * Clients may override.
-     * @return
-     */
+    private static ILaunchConfigurationType getMoreConfigType() {
+    	 ILaunchManager lm = DebugPlugin.getDefault().getLaunchManager();
+         ILaunchConfigurationType configType = lm.getLaunchConfigurationType(EmulatorLaunchConfigurationDelegate.ID);
+         return configType;
+    }
+    
     protected ILaunchConfigurationType getConfigType() {
-        ILaunchManager lm = DebugPlugin.getDefault().getLaunchManager();
-        ILaunchConfigurationType configType = lm.getLaunchConfigurationType(EmulatorLaunchConfigurationDelegate.ID);
-        return configType;
+       return getMoreConfigType();
     }
 
     /**
@@ -137,12 +156,18 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
     	return AutomaticEmulatorLauncher.ID;
     }
 
-    private ILaunchConfiguration createConfiguration(IProject project, String mode) {
-        ILaunchConfiguration config = null;
+    public ILaunchConfiguration createConfiguration(IProject project, String mode, Map<String, Object> parameters) {
+    	return createConfiguration(project, mode, getPreferredLauncherId(), parameters);
+    }
+    
+    public ILaunchConfiguration createConfiguration(IProject project, String mode, String launcherId, Map<String, Object> parameters) {
+    	ILaunchConfiguration config = null;
         try {
             ILaunchConfigurationType configType = getConfigType();
 
-            String launchConfigName = DebugPlugin.getDefault().getLaunchManager().generateLaunchConfigurationName(project.getName());
+            boolean onDevice = Boolean.TRUE.equals(parameters.get(ILaunchConstants.ON_DEVICE));
+            String basename = project.getName() + (onDevice ? " - On device" : "");
+            String launchConfigName = DebugPlugin.getDefault().getLaunchManager().generateLaunchConfigurationName(basename);
             ILaunchConfigurationWorkingCopy wc = configType.newInstance(null, launchConfigName);
 
             if ("run".equals(mode)) {
@@ -153,20 +178,28 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
 
             EmulatorLaunchConfigurationDelegate.configureLaunchConfigForSourceLookup(wc);
 
-            String initialCfg = getInitialConfigurationId(project, mode);
-            if (initialCfg != null) {
-                String key = "run".equals(mode) ? ILaunchConstants.BUILD_CONFIG : ILaunchConstants.BUILD_CONFIG_DEBUG;
-                wc.setAttribute(key, initialCfg);
-            }
-
             wc.setAttribute(ILaunchConstants.PROJECT, project.getName());
 
             // Let the launcher add its own attributes
-            String launcherId = getPreferredLauncherId();
             IEmulatorLauncher launcher = CoreMoSyncPlugin.getDefault().getEmulatorLauncher(launcherId);
             wc.setAttribute(ILaunchConstants.LAUNCH_DELEGATE_ID, launcherId);
             launcher.setDefaultAttributes(wc);
 
+            // Bah. Only booleans and strings for now
+            for (Map.Entry<String, Object> parameter : parameters.entrySet()) {
+            	Object value = parameter.getValue();
+            	String key = parameter.getKey();
+            	if (value instanceof Boolean) {
+            		wc.setAttribute(key, (Boolean) value);
+            	} else if (value instanceof String) {
+            		wc.setAttribute(key, (String) value);
+            	} else if (value instanceof List) {
+            		wc.setAttribute(key, (List) value);
+            	} else {
+            		throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Illegal type"));
+            	}
+            }
+            
             config = wc.doSave();
         } catch (CoreException ce) {
             CoreMoSyncPlugin.getDefault().getLog().log(
@@ -184,7 +217,7 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
         return null;
     }
 
-    private List<ILaunchConfiguration> getCandidateConfigs(IProject project, String mode) {
+    public List<ILaunchConfiguration> getCandidateConfigs(IProject project, String mode, Map<String, Object> matchingParameters) {
         ILaunchConfigurationType configType = getConfigType();
 
         List<ILaunchConfiguration> candidateConfigs = Collections.EMPTY_LIST;
@@ -194,7 +227,7 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
                 candidateConfigs = new ArrayList<ILaunchConfiguration>(configs.length);
                 for (int i = 0; i < configs.length; i++) {
                     ILaunchConfiguration config = configs[i];
-                    if (doesConfigMatch(config, project, mode)) {
+                    if (doesConfigMatch(config, project, mode, matchingParameters)) {
                         candidateConfigs.add(config);
                     }
                 }
@@ -207,8 +240,8 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
         return candidateConfigs;
     }
 
-    private boolean doesConfigMatch(ILaunchConfiguration config, IProject project, String mode) throws CoreException {
-    	return EmulatorLaunchConfigurationDelegate.doesConfigMatch(config, project, mode);
+    private boolean doesConfigMatch(ILaunchConfiguration config, IProject project, String mode, Map<String, Object> matchingParameters) throws CoreException {
+    	return EmulatorLaunchConfigurationDelegate.doesConfigMatch(config, project, mode, matchingParameters);
 	}
 
 	private ILaunchConfiguration chooseConfiguration(List configList, String mode) {
@@ -241,12 +274,12 @@ public class MoreLaunchShortCut implements ILaunchShortcut2 {
     // ILaunchShortcut2
     @Override
 	public ILaunchConfiguration[] getLaunchConfigurations(ISelection selection) {
-        return getCandidateConfigs(getProjectFromSelection(selection), "run").toArray(new ILaunchConfiguration[0]);
+        return getCandidateConfigs(getProjectFromSelection(selection), "run", getDefaultParams()).toArray(new ILaunchConfiguration[0]);
     }
 
     @Override
 	public ILaunchConfiguration[] getLaunchConfigurations(IEditorPart editorpart) {
-        return getCandidateConfigs(getProjectFromSelection(new Object[] { editorpart }), "run").toArray(new ILaunchConfiguration[0]);
+        return getCandidateConfigs(getProjectFromSelection(new Object[] { editorpart }), "run", getDefaultParams()).toArray(new ILaunchConfiguration[0]);
     }
 
     @Override

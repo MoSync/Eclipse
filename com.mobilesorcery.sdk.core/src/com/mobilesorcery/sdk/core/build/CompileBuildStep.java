@@ -61,6 +61,11 @@ public class CompileBuildStep extends AbstractBuildStep {
 	public int incrementalBuild(MoSyncProject mosyncProject, IBuildSession session,
 			IBuildVariant variant, IFileTreeDiff diff,
 			IBuildResult buildResult, IProgressMonitor monitor) throws CoreException, ParameterResolverException {
+		if (isOutputType(mosyncProject, variant, MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE)) {
+			getConsole().addMessage("Native compilation");
+			return CONTINUE;
+		}
+		
 		IProject project = mosyncProject.getWrappedProject();
 
         MoSyncBuilderVisitor compilerVisitor = new MoSyncBuilderVisitor();
@@ -72,7 +77,7 @@ public class CompileBuildStep extends AbstractBuildStep {
         ILineHandler lineHandler = getDefaultLineHandler();
 
         compilerVisitor.setConsole(getConsole());
-        compilerVisitor.setExtraCompilerSwitches(MoSyncBuilder.getExtraCompilerSwitches(mosyncProject));
+        compilerVisitor.setExtraCompilerSwitches(MoSyncBuilder.getExtraCompilerSwitches(mosyncProject, variant));
         Integer gccWarnings = PropertyUtil.getInteger(buildProperties, MoSyncBuilder.GCC_WARNINGS);
         compilerVisitor.setGCCWarnings(gccWarnings == null ? 0 : gccWarnings.intValue());
         compilerVisitor.setOutputPath(MoSyncBuilder.getOutputPath(project, variant));

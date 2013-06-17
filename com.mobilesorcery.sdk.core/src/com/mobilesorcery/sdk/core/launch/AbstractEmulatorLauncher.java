@@ -3,7 +3,6 @@ package com.mobilesorcery.sdk.core.launch;
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -18,6 +17,7 @@ import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildState;
 import com.mobilesorcery.sdk.core.IBuildVariant;
+import com.mobilesorcery.sdk.core.ILaunchConstants;
 import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate;
@@ -117,6 +117,14 @@ public abstract class AbstractEmulatorLauncher implements IEmulatorLauncher {
 		IBuildConfiguration cfg = EmulatorLaunchConfigurationDelegate
 				.getAutoSwitchBuildConfiguration(launchConfig, mode);
 		return new BuildVariant(mosyncProject.getTargetProfile(), cfg);
+	}
+	
+	protected boolean isOnDevice(ILaunchConfiguration config) {
+		try {
+			return config.getAttribute(ILaunchConstants.ON_DEVICE, false);
+		} catch (CoreException e) {
+			return false;
+		}
 	}
 
 	@Override

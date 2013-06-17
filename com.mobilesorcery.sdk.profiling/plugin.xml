@@ -8,7 +8,7 @@
             delegate="com.mobilesorcery.sdk.profiling.emulator.EmulatorProfilingLaunchConfigurationDelegate"
             id="com.mobilesorcery.profiling.launchconfigurationtype"
             modes="profile"
-            name="Profiled MoSync Emulated App"/>
+            name="Profiled MoSync App"/>
    </extension>
    
       <extension point="org.eclipse.debug.ui.launchShortcuts">

@@ -46,6 +46,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.ISafeRunnable;
 import org.eclipse.core.runtime.IStatus;
@@ -86,10 +87,12 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.actions.WorkspaceModifyOperation;
 import org.eclipse.ui.activities.ICategory;
 import org.eclipse.ui.activities.ICategoryActivityBinding;
 import org.eclipse.ui.activities.IWorkbenchActivitySupport;
 import org.eclipse.ui.ide.ResourceUtil;
+import org.eclipse.ui.ide.undo.AbstractWorkspaceOperation;
 import org.eclipse.ui.ide.undo.CreateProjectOperation;
 import org.eclipse.ui.intro.IIntroManager;
 import org.eclipse.ui.intro.IIntroPart;
@@ -107,6 +110,10 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
+import com.mobilesorcery.sdk.core.build.CommandLineBuildStep;
+import com.mobilesorcery.sdk.core.build.CopyBuildResultBuildStep;
+import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
+import com.mobilesorcery.sdk.core.build.IBuildStepFactoryExtension;
 import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
 import com.mobilesorcery.sdk.core.launch.MoReLauncher;
 import com.mobilesorcery.sdk.core.memory.MemoryLowListener;
@@ -120,6 +127,8 @@ import com.mobilesorcery.sdk.ui.internal.decorators.ExcludedResourceDecorator;
 import com.mobilesorcery.sdk.ui.internal.launch.AutomaticEmulatorLauncherPart;
 import com.mobilesorcery.sdk.ui.internal.launch.EmulatorLaunchConfigurationPartProxy;
 import com.mobilesorcery.sdk.ui.internal.launch.MoreLauncherPart;
+import com.mobilesorcery.sdk.ui.internal.properties.CommandLineBuildStepEditor;
+import com.mobilesorcery.sdk.ui.internal.properties.CopyBuildStepEditor;
 import com.mobilesorcery.sdk.ui.launch.IEmulatorLaunchConfigurationPart;
 
 /**
@@ -209,6 +218,8 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 	private LegacyProfileViewOpener legacyProfileViewOpener;
 
 	private boolean isUpdating;
+
+	private HashMap<String, IConfigurationElement> buildStepEditorsExtensions;
 
 	/**
 	 * The constructor
@@ -395,16 +406,21 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 				.newProjectDescription(project.getName());
 		description.setLocationURI(location);
 
-		CreateProjectOperation op = new CreateProjectOperation(description,
-				"Create Project");
-		try {
-			op.execute(monitor, null);
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof CoreException) {
-				throw (CoreException) e.getCause();
-			} else {
-				throw new CoreException(new Status(IStatus.ERROR,
-						CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
+		if (CoreMoSyncPlugin.isHeadless()) {
+			project.create(description, monitor);
+		} else {
+			// Get undo for free.
+			CreateProjectOperation op = new CreateProjectOperation(description,
+					"Create Project");
+			try {
+				op.execute(monitor, null);
+			} catch (ExecutionException e) {
+				if (e.getCause() instanceof CoreException) {
+					throw (CoreException) e.getCause();
+				} else {
+					throw new CoreException(new Status(IStatus.ERROR,
+							CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
+				}
 			}
 		}
 
@@ -994,6 +1010,51 @@ public class MosyncUIPlugin extends AbstractUIPlugin implements
 
 	public boolean isWorkbenchStarted() {
 		return PlatformUI.isWorkbenchRunning() && !PlatformUI.getWorkbench().isStarting() && !PlatformUI.getWorkbench().isClosing();
+	}
+
+	public IBuildStepEditor createBuildStepEditor(MoSyncProject project, IBuildStepFactory factory) {
+		if (factory == null) {
+			return null;
+		}
+		
+		IBuildStepEditor editor = null;
+		
+		if (factory instanceof CommandLineBuildStep.Factory) {
+			editor = new CommandLineBuildStepEditor();
+		} else if (factory instanceof CopyBuildResultBuildStep.Factory) {
+			editor = new CopyBuildStepEditor();
+		} else {
+			editor = createBuildStepEditorExtension(factory.getId());
+		}
+		
+		if (editor != null) {
+			editor.setProject(project);
+			editor.setBuildStepFactory(factory);
+		}
+		
+		return editor;
+	}
+	
+	private IBuildStepEditor createBuildStepEditorExtension(String id) {
+		if (buildStepEditorsExtensions == null) {
+			buildStepEditorsExtensions = new HashMap<String, IConfigurationElement>();
+			IExtensionRegistry registry = Platform.getExtensionRegistry();
+			IConfigurationElement[] elements = registry
+					.getConfigurationElementsFor(IBuildStepEditor.EXTENSION_ID);
+			for (IConfigurationElement element : elements) {
+					String extId = element.getAttribute("id");
+					buildStepEditorsExtensions.put(extId,  element);
+			}
+		}
+		try {
+			IConfigurationElement ext = buildStepEditorsExtensions.get(id);
+			if (ext != null) {
+				return (IBuildStepEditor) ext.createExecutableExtension("implementation");
+			}
+		} catch (CoreException e) {
+			CoreMoSyncPlugin.getDefault().log(e);
+		}
+		return null;
 	}
 
 }

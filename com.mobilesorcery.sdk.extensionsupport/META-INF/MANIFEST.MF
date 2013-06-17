@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: MoSync Extension Support
+Bundle-SymbolicName: com.mobilesorcery.sdk.extensionsupport;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.mobilesorcery.sdk.extensionsupport.ExtensionSupportPlugin
+Bundle-Vendor: MOSYNC AB
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ com.mobilesorcery.sdk.core;bundle-version="1.0.0",
+ org.eclipse.core.resources;bundle-version="3.8.0",
+ org.eclipse.cdt.core,
+ com.mobilesorcery.sdk.ui;bundle-version="1.0.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy

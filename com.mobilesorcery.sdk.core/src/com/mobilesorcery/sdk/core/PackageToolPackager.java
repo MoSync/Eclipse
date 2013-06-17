@@ -2,21 +2,27 @@ package com.mobilesorcery.sdk.core;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 
 import com.mobilesorcery.sdk.core.apisupport.nfc.NFCSupport;
 import com.mobilesorcery.sdk.core.build.AbstractBuildStep;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
+import com.mobilesorcery.sdk.internal.builder.IncrementalBuilderVisitor;
+import com.mobilesorcery.sdk.internal.builder.MoSyncBuilderVisitor;
 import com.mobilesorcery.sdk.profiles.IProfile;
 import com.mobilesorcery.sdk.profiles.Profile;
 
@@ -95,6 +101,11 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			IBuildVariant variant) throws ParameterResolverException, CoreException {
 		return null;
 	}
+	
+	protected List<File> computeNativeBuildResult(MoSyncProject project,
+			IBuildVariant variant) throws ParameterResolverException, CoreException {
+		return null;
+	}
 
 	private void addGeneralParameters(MoSyncProject project, IBuildSession session,
 			IBuildVariant variant, CommandLineBuilder commandLine)
@@ -141,12 +152,17 @@ public abstract class PackageToolPackager extends AbstractPackager {
 				.with(vendor).flag("-n").with(appName).flag("--version")
 				.with(version.asCanonicalString());
 
-		boolean useStaticRecompile = shouldUseStaticRecompile(project, variant);
+		commandLine.flag("--project").with(project.getWrappedProject().getLocation().toFile());
+		
+		List<String> extensions = new ArrayList<String>();
+		getNativePathsAndModules(project, variant, null, extensions);
 
-		if (!useStaticRecompile) {
-			commandLine.flag("--output-type").with("interpreted");
+		if (!extensions.isEmpty()) {
+			commandLine.flag("--extensions").with(Util.join(extensions.toArray(), ","));
 		}
-
+		
+		commandLine.flag("--output-type").with(getOutputType(project));
+	
 		if (!Util.isEmpty(permissionsStr)) {
 			commandLine.flag("--permissions").with(permissionsStr);
 		}
@@ -162,12 +178,95 @@ public abstract class PackageToolPackager extends AbstractPackager {
 		}
 
 	}
+	
+	public void buildNative(MoSyncProject project, IBuildSession session, 
+			IBuildVariant variant, IBuildResult result) throws Exception {
+		IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId());
+		
+		CommandLineBuilder commandLine = new CommandLineBuilder(MoSyncTool.getDefault().getBinary("nbuild").toOSString());
+		commandLine.flag("--platform").with(variant.getProfile().getVendor().getName());
+		//TODO: Spaces and special chars?
+		commandLine.flag("--name").with(project.getName());
+		File location = project.getWrappedProject().getLocation().toFile();
+		commandLine.flag("--project").with(location);
+		IPath dst = MoSyncBuilder.getPackageOutputPath(project.getWrappedProject(), variant).removeLastSegments(1);
+		commandLine.flag("--dst").with(dst.toOSString());
+		
+		commandLine.flag("--config").with(variant.getConfigurationId());
+		boolean isDebug = PropertyUtil.getBoolean(properties, MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS);
+		String libVariant = isDebug ? "debug" : "release";
+		commandLine.flag("--lib-variant").with(libVariant);
+	
+		String compilerSwitches = MoSyncBuilder.getExtraCompilerSwitches(project, variant);
+		// TODO: Platform independent!?
+		commandLine.flag("--compiler-switches").with(compilerSwitches);
+		
+		// This one makes sure that exclusions, wild cards, etc work as before!
+		IncrementalBuilderVisitor visitor = new IncrementalBuilderVisitor() {
+			public boolean doesAffectBuild(IResource resource) {
+				return super.doesAffectBuild(resource) && MoSyncBuilderVisitor.hasExtension(resource, MoSyncBuilderVisitor.C_SOURCE_FILE_EXTS);
+			}
+		};
+		visitor.setProject(project.getWrappedProject());
+		visitor.setDiff(null);
+		Set<IResource> sourceFiles = visitor.computeResourcesToRebuild(null);
+		ArrayList<String> listOfRelativeFiles = new ArrayList<String>();
+		for (IResource sourceFile : sourceFiles) {
+			listOfRelativeFiles.add(sourceFile.getProjectRelativePath().toOSString());
+			commandLine.flag("-S" + sourceFile.getProjectRelativePath().toOSString());
+		}
 
-	protected boolean shouldUseStaticRecompile(MoSyncProject project, IBuildVariant variant) {
-		return PropertyUtil.getBoolean(
-				MoSyncBuilder.getPropertyOwner(project,
-						variant.getConfigurationId()),
-				MoSyncBuilder.USE_STATIC_RECOMPILATION);
+		ArrayList<String> modules = new ArrayList<String>();
+		ArrayList<IPath> includePaths = new ArrayList<IPath>();
+		
+		getNativePathsAndModules(project, variant, includePaths, modules);
+		
+        String[] includes = MoSyncBuilderVisitor.assembleIncludeString(includePaths.toArray(new IPath[0]));
+		for (String include : includes) {
+			commandLine.flag(include);
+		}
+		
+		if (modules.size() > 0) {
+			commandLine.flag("--modules").with(Util.join(modules.toArray(), ","));
+		}
+		
+		// TODO: Preference?
+		if (CoreMoSyncPlugin.getDefault().getPreferenceStore().getBoolean(MoSyncBuilder.VERBOSE_BUILDS)) {
+			commandLine.flag("--verbose");
+		}
+
+		addNativePlatformSpecifics(project, variant, commandLine);
+
+		DefaultPackager internal = new DefaultPackager(project, variant);
+		if (internal.runCommandLine(commandLine.asArray(),
+				commandLine.toHiddenString()) != 0) {
+			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Build failed."));
+		}
+		
+		List<File> nativeBuildResult = computeNativeBuildResult(project, variant);
+		if (nativeBuildResult != null) {
+			result.setBuildResult(NATIVE_LIBS, nativeBuildResult.toArray(new File[0]));
+		}
+	}
+	
+	protected void getNativePathsAndModules(MoSyncProject project, IBuildVariant variant, List<IPath> filteredIncludePaths, List<String> modules) throws ParameterResolverException {
+		if (modules == null) {
+			// We allow nulls, so this one's here to avoid NPEs
+			modules = new ArrayList<String>();
+		}
+		
+		if (filteredIncludePaths == null) {
+			// We allow nulls, so this one's here to avoid NPEs
+			filteredIncludePaths = new ArrayList<IPath>();
+		}
+		modules.addAll(getExtensionModules(project, variant));
+        
+		filteredIncludePaths.add(MoSyncBuilder.getOutputPath(project.getWrappedProject(), variant));
+		filteredIncludePaths.addAll(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, variant, true)));
+	}
+	
+	protected List<String> getExtensionModules(MoSyncProject project, IBuildVariant variant) {
+		return Arrays.asList(PropertyUtil.getStrings(MoSyncBuilder.getPropertyOwner(project, variant.getConfigurationId()), MoSyncBuilder.EXTENSIONS));
 	}
 
 	protected File getDefaultIconFile() {
@@ -181,6 +280,11 @@ public abstract class PackageToolPackager extends AbstractPackager {
 			throws Exception {
 
 	}
+	
+	protected void addNativePlatformSpecifics(MoSyncProject project,
+			IBuildVariant variant, CommandLineBuilder commandLine) throws Exception {
+	}
+
 
 	protected Map<String, List<File>> createBuildResult(File file) {
 		HashMap<String, List<File>> result = new HashMap<String, List<File>>();

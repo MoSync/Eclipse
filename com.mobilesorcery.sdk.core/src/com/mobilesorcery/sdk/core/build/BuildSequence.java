@@ -22,16 +22,23 @@ import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Pair;
 import com.mobilesorcery.sdk.core.Util;
+import com.mobilesorcery.sdk.core.Version;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactoryExtension.Position;
 
 public class BuildSequence implements IBuildSequence {
 
+	public final static String BUILD_DESC_FILE_NAME = ".build";
+	private static final String VERSION_KEY = "version";
+	private static final Version VERSION_1_0 = new Version("1.0");
+	private static final Version CURRENT_VERSION = new Version("1.1");
+	
 	private final MoSyncProject project;
 	private ArrayList<IBuildStepFactory> buildStepFactories = new ArrayList<IBuildStepFactory>();
 	private ArrayList<IBuildStep> buildSteps;
+	private Version formatVersion = CURRENT_VERSION;
 	
 	private final static String[] BASE_SEQUENCE = new String[] { 
-			ResourceBuildStep.ID, CompileBuildStep.ID,
+			ResourceBuildStep.ID, NativeLibBuildStep.ID, CompileBuildStep.ID,
 			LinkBuildStep.ID, PackBuildStep.ID,
 			CopyBuildResultBuildStep.ID
 		};
@@ -142,6 +149,9 @@ public class BuildSequence implements IBuildSequence {
             	buildStepFactories.clear();
             	input = new FileReader(buildFilePath.toFile());
                 XMLMemento memento = XMLMemento.createReadRoot(input);
+                String formatVersionStr = memento.getString(VERSION_KEY);
+                formatVersion = formatVersionStr == null ? VERSION_1_0 :
+                	new Version(formatVersionStr);
                 IMemento[] buildSteps = memento.getChildren("buildStep");
                 for (int i = 0; i < buildSteps.length; i++) {
                 	IMemento buildStep = buildSteps[i];
@@ -154,6 +164,7 @@ public class BuildSequence implements IBuildSequence {
                 		CoreMoSyncPlugin.getDefault().getLog().log(new Status(IStatus.INFO, CoreMoSyncPlugin.PLUGIN_ID, MessageFormat.format("Build step factory {0} missing", buildStepId)));
                 	}
                 }
+                upgrade();
             } else {
             	initDefaultFactories();
             }
@@ -162,6 +173,28 @@ public class BuildSequence implements IBuildSequence {
         } finally {
         	Util.safeClose(input);
         }
+	}
+	
+	public void upgrade() throws CoreException, IOException {
+		if (CURRENT_VERSION.isNewer(formatVersion)) {
+			if (getBuildStepFactories(NativeLibBuildStep.Factory.class).isEmpty()) {
+				List<IBuildStepFactory> factories = getBuildStepFactories();
+				ArrayList<IBuildStepFactory> newFactories = new ArrayList<IBuildStepFactory>();
+				for (IBuildStepFactory factory : factories) {
+					if (CompileBuildStep.ID.equals(factory.getId())) {
+						newFactories.add(new NativeLibBuildStep.Factory());
+					}
+					newFactories.add(factory);
+				}
+				try {
+					apply(newFactories);
+				} catch (IOException e) {
+					throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, e.getMessage(), e));
+				}
+			}
+			formatVersion = CURRENT_VERSION;
+			save();
+		}
 	}
 
 	public void save() throws IOException {
@@ -172,6 +205,7 @@ public class BuildSequence implements IBuildSequence {
     			buildFilePath.delete();
 	    	} else {
                 XMLMemento memento = XMLMemento.createWriteRoot("buildSequence");
+                memento.putString(VERSION_KEY, formatVersion.asCanonicalString());
                 for (IBuildStepFactory buildStepFactory : buildStepFactories) {
                 	IMemento buildStepMemento = memento.createChild("buildStep");
                 	buildStepMemento.putString("type", buildStepFactory.getId());
@@ -188,7 +222,7 @@ public class BuildSequence implements IBuildSequence {
 	}
 
 	private IPath getBuildFilePath() {
-		return project.getWrappedProject().getLocation().append(".build");
+		return project.getWrappedProject().getLocation().append(BUILD_DESC_FILE_NAME);
 	}
 
 	@Override

@@ -17,6 +17,8 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.viewers.StyledString;
+import org.eclipse.jface.viewers.StyledString.Styler;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
@@ -28,6 +30,7 @@ import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.graphics.TextStyle;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
@@ -318,4 +321,19 @@ public class UIUtils {
 		}
 	}
 
+	public static StyledString.Styler createStyler(final Font font, final Color fgColor) {
+        Styler result = new StyledString.Styler() {
+            @Override
+			public void applyStyles(TextStyle textstyle) {
+                if (fgColor != null) {
+                    textstyle.foreground = fgColor;
+                }
+                if (font != null) {
+                    textstyle.font = font;
+                }
+            }
+         };
+
+         return result;
+    }
 }

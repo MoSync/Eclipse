@@ -3,11 +3,13 @@ package com.mobilesorcery.sdk.ui;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jface.viewers.IBaseLabelProvider;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.ListViewer;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -35,7 +37,7 @@ import org.eclipse.swt.widgets.Widget;
  */
 public class SimpleListEditor<T> extends Composite {
 
-	private ListViewer list;
+	private TableViewer list;
 	protected Button add;
 	protected Button edit;
 	protected Button remove;
@@ -57,7 +59,12 @@ public class SimpleListEditor<T> extends Composite {
 		layout.marginHeight = 0;
 		layout.marginWidth = 0;
 		setLayout(layout);
-		list = new ListViewer(this);
+		list = new TableViewer(this);
+		buttonListener = new Listener() {
+			public void handleEvent(Event event) {
+				buttonPressed(event.widget);
+			}			
+		};
 		int numButtons = createButtons(this);
 		list.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, numButtons));
 		list.setContentProvider(new ListContentProvider());
@@ -70,6 +77,10 @@ public class SimpleListEditor<T> extends Composite {
 		});
 		
 		updateButtons(getSelection());
+	}
+	
+	public void setLabelProvider(IBaseLabelProvider labelProvider) {
+		this.list.setLabelProvider(labelProvider);
 	}
 	
 	public void setEditAfterAdd(boolean editAfterAdd) {
@@ -96,11 +107,6 @@ public class SimpleListEditor<T> extends Composite {
 	 */
 	protected int createButtons(Composite main) {
 		int numButtons = 3;
-		buttonListener = new Listener() {
-			public void handleEvent(Event event) {
-				buttonPressed(event.widget);
-			}			
-		};
 		
 		add = createButton(main, "&Add");
 		edit = createButton(main, "&Edit");
@@ -114,7 +120,7 @@ public class SimpleListEditor<T> extends Composite {
 		return numButtons;
 	}
 	
-	private Button createButton(Composite main, String caption) {
+	protected Button createButton(Composite main, String caption) {
 		Button button = new Button(main, SWT.PUSH);
 		button.setText(caption);
 		button.setLayoutData(new GridData(GridData.FILL, SWT.DEFAULT, true, false, 1, 1));
@@ -143,7 +149,7 @@ public class SimpleListEditor<T> extends Composite {
 		updateButtons(getSelection());
 	}
 	
-	private IStructuredSelection getSelection() {
+	protected IStructuredSelection getSelection() {
 		return (IStructuredSelection) list.getSelection();
 	}
 	
@@ -225,9 +231,21 @@ public class SimpleListEditor<T> extends Composite {
 	 * @param selection
 	 */
 	protected void remove(IStructuredSelection selection) {
-		for (Object element : selection.toArray()) {
-			input.remove(element);
+		Object[] toBeRemoved = selection.toArray();
+		if (remove(toBeRemoved)) {
+			for (Object element : selection.toArray()) {
+				input.remove(element);
+			}
 		}
+	}
+	
+	/**
+	 * Removes the current selection. Clients may override.
+	 * @param selection The objects to remove
+	 * @return <code>true</code> if they should be removed
+	 */
+	protected boolean remove(Object[] selection) {
+		return true;
 	}
 
 	/**
@@ -269,7 +287,7 @@ public class SimpleListEditor<T> extends Composite {
 		return null;
 	}
 	
-	protected ListViewer getList() {
+	protected TableViewer getList() {
 		return list;
 	}
 
