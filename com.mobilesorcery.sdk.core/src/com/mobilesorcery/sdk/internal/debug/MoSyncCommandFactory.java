@@ -37,7 +37,7 @@ public class MoSyncCommandFactory extends CommandFactory {
 	
 	public MIProcess createMIProcess(String[] args, int launchTimeout, IProgressMonitor monitor) throws IOException {
 		if (CoreMoSyncPlugin.getDefault().isDebugging()) {
-			CoreMoSyncPlugin.trace("MDB command line: " + Util.join(Util.ensureQuoted(args), " "));		
+			CoreMoSyncPlugin.trace("GDB/MDB command line: " + Util.join(Util.ensureQuoted(args), " "));		
 		}
 				
 		return new MoSyncMIProcessAdapter(args, launchTimeout, monitor);

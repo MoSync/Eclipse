@@ -43,7 +43,7 @@
             delegate="com.mobilesorcery.sdk.internal.launch.EmulatorLaunchConfigurationDelegate"
             id="com.mobilesorcery.launchconfigurationtype"
             modes="run,debug"
-            name="MoSync Emulated App"/>
+            name="MoSync App"/>
    </extension>   
 
 

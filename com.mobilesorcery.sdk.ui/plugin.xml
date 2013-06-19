@@ -2,6 +2,7 @@
 <?eclipse version="3.4"?>
 <plugin>
    <extension-point id="com.mobilesorcery.sdk.ui.launcher" name="Launcher UI" schema="schema/com.mobilesorcery.sdk.ui.launcher.exsd"/>
+   <extension-point id="com.mobilesorcery.sdk.ui.buildstepeditor" name="Build Step Editor" schema="schema/com.mobilesorcery.sdk.ui.buildstepeditor.exsd"/>
    
 
    <extension point="org.eclipse.debug.ui.launchShortcuts">
@@ -10,7 +11,7 @@ modes="run,debug"
 class=
 "com.mobilesorcery.sdk.ui.internal.launch.MoreLaunchShortCut"
 label=
-"Run MoRE Emulator"
+"Run MoSync App"
 icon="icons/launchshortcut.png">
                      <contextualLaunch>
             <enablement>

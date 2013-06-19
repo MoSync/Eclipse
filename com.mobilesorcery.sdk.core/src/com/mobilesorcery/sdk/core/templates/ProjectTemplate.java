@@ -37,6 +37,8 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.MoSyncProjectParameterResolver;
+import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.profiles.filter.DeviceCapabilitiesFilter;
 
@@ -115,11 +117,19 @@ public class ProjectTemplate {
 			throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, Messages.ProjectTemplate_ProjectInitFailed_1));
 		}
 
+		MoSyncProjectParameterResolver resolver = MoSyncProjectParameterResolver.create(mosyncProject, null);
+		
 		List<String> templateFiles = desc.getTemplateFiles();
 		List<String> generatedFiles = desc.getGeneratedFiles();
+		String generatedFile = "";
 		for (int i = 0; i < templateFiles.size(); i++) {
 			String templateFile = templateFiles.get(i);
-			String generatedFile = generatedFiles.get(i);
+			try {
+				generatedFile = Util.replace(generatedFiles.get(i), resolver);
+			} catch (ParameterResolverException e) {
+				throw new CoreException(new Status(IStatus.ERROR, CoreMoSyncPlugin.PLUGIN_ID, "Could not init project", e));
+			}
+			
 			IFile file = project.getFile(new Path(generatedFile));
 			FileInputStream fis = null;
 	        try {
@@ -149,7 +159,7 @@ public class ProjectTemplate {
         mosyncProject.setProperty(MoSyncProject.TEMPLATE_ID, getId());
 
         if (generatedFiles.size() > 0) {
-        	return project.getFile(new Path(generatedFiles.get(0)));
+        	return project.getFile(new Path(generatedFile));
         }
 
         return null;

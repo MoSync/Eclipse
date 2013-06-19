@@ -20,9 +20,7 @@ public class TargetPhoneTransportLabelProvider extends LabelProvider {
 	public Image getImage(Object element) {
 		if (element instanceof ITargetPhoneTransport) {
 			ITargetPhoneTransport transport = (ITargetPhoneTransport) element;
-			if (TargetPhonePlugin.getDefault().getImageRegistry().getDescriptor(transport.getId()) != null) {
-				return TargetPhonePlugin.getDefault().getImageRegistry().get(transport.getId());
-			}
+			return TargetPhonePlugin.getDefault().getIcon(transport);
 		} 
 		
 		return null;

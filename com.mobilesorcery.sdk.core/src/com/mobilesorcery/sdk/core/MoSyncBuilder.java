@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -99,6 +100,8 @@ public class MoSyncBuilder extends ACBuilder {
 
 	public final static String ADDITIONAL_INCLUDE_PATHS = BUILD_PREFS_PREFIX
 			+ "additional.include.paths";
+	
+	public static final String ADDITIONAL_NATIVE_INCLUDE_PATHS = ADDITIONAL_INCLUDE_PATHS + ".native";
 
 	public final static String IGNORE_DEFAULT_INCLUDE_PATHS = BUILD_PREFS_PREFIX
 			+ "ignore.default.include.paths";
@@ -139,7 +142,9 @@ public class MoSyncBuilder extends ACBuilder {
 	public static final String PROJECT_TYPE_APPLICATION = "app";
 
 	public static final String PROJECT_TYPE_LIBRARY = "lib";
-
+	
+	public static final String PROJECT_TYPE_EXTENSION = "ext";
+	
 	public static final String EXTRA_COMPILER_SWITCHES = BUILD_PREFS_PREFIX
 			+ "gcc.switches";
 
@@ -161,17 +166,27 @@ public class MoSyncBuilder extends ACBuilder {
 	public static final String USE_DEBUG_RUNTIME_LIBS = BUILD_PREFS_PREFIX
 			+ "runtime.debug";
 
-	public static final String USE_STATIC_RECOMPILATION = BUILD_PREFS_PREFIX
+	public static final String OUTPUT_TYPE = BUILD_PREFS_PREFIX
 			+ "output.static.recompilation";
+	
+	public static final String OUTPUT_TYPE_INTERPRETED = "interpreted";
+	
+	public static final String OUTPUT_TYPE_STATIC_RECOMPILATION = "rebuilt";
+	
+	public static final String OUTPUT_TYPE_NATIVE_COMPILE = "native";
 
 	public static final String PROJECT_VERSION = BUILD_PREFS_PREFIX
 			+ "app.version";
 
 	public static final String APP_NAME = BUILD_PREFS_PREFIX + "app.name";
 	
+	public static final String EXTENSIONS = BUILD_PREFS_PREFIX + "ext";
+	
 	public static final String REBUILD_ON_ERROR = BUILD_PREFS_PREFIX + "rebuild.on.error";
 
 	private static final String APP_CODE = "app.code";
+	
+	public static final String VERBOSE_BUILDS = "verbose.builds";
 
 	private static final String CONSOLE_PREPARED = "console.prepared";
 
@@ -306,6 +321,10 @@ public class MoSyncBuilder extends ACBuilder {
 	private static IPath getFinalOutputPath(IProject project,
 			IBuildVariant variant) {
 		IProfile targetProfile = variant.getProfile();
+		if (targetProfile == null) {
+			// Just to avoid NPEs
+			targetProfile = MoSyncProject.create(project).getTargetProfile();
+		}
 		String outputPath = getPropertyOwner(MoSyncProject.create(project),
 				variant.getConfigurationId()).getProperty(APP_OUTPUT_PATH);
 		if (outputPath == null) {
@@ -346,9 +365,8 @@ public class MoSyncBuilder extends ACBuilder {
 		return getFinalOutputPath(project, variant).append("package");
 	}
 
-	public static String getExtraCompilerSwitches(MoSyncProject project)
+	public static String getExtraCompilerSwitches(MoSyncProject project, IBuildVariant variant)
 			throws ParameterResolverException {
-		IBuildVariant variant = getActiveVariant(project);
 		ParameterResolver resolver = createParameterResolver(project, variant);
 		IPropertyOwner buildProperties = getPropertyOwner(project,
 				variant.getConfigurationId());
@@ -1048,16 +1066,60 @@ public class MoSyncBuilder extends ACBuilder {
 		}
 	}
 
+	/**
+	 * Filters out additional include paths to make it buildable
+	 * using native builders
+	 * @param project
+	 * @param variant
+	 * @return
+	 */
+	public static Pair<Boolean, List<IPath>> filterNativeIncludePaths(MoSyncProject project, IBuildVariant variant) {
+		String cfg = variant.getConfigurationId();
+		IPath[] includePaths = PropertyUtil.getPaths(project.getBuildConfiguration(cfg).getProperties(),
+				ADDITIONAL_NATIVE_INCLUDE_PATHS);
+		// null profile is ok, but beware in the future!
+		IPath[] resolvedPaths;
+		try {
+			resolvedPaths = resolvePaths(includePaths,
+					createParameterResolver(project, variant));
+		} catch (ParameterResolverException e) {
+			resolvedPaths = new IPath[0];
+		}
+		ArrayList<IPath> result = new ArrayList<IPath>();
+		for (IPath resolvedPath : resolvedPaths) {
+			// Keep it simple, for the beta we just remove anything
+			// not project-relative.
+			IPath relPath = project.getWrappedProject().getLocation().append(resolvedPath);
+			if (relPath.toFile().exists()) {
+				result.add(resolvedPath);
+			}
+		}
+		boolean changed = result.size() != includePaths.length;
+		return new Pair<Boolean, List<IPath>>(changed, result);
+	}
+
 	public static IPath[] getBaseIncludePaths(MoSyncProject project,
 			IBuildVariant variant) throws ParameterResolverException {
+		return getBaseIncludePaths(project, variant, false);
+	}
+	public static IPath[] getBaseIncludePaths(MoSyncProject project,
+			IBuildVariant variant, boolean neverIncludeDefaults) throws ParameterResolverException {
 		IPropertyOwner buildProperties = getPropertyOwner(project,
 				variant.getConfigurationId());
 
+		IPackager packager = variant.getProfile().getPackager();
+		String outputType = packager.getOutputType(project);
+		boolean isNativeOutput = MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
+
 		ArrayList<IPath> result = new ArrayList<IPath>();
-		if (!PropertyUtil.getBoolean(buildProperties,
-				IGNORE_DEFAULT_INCLUDE_PATHS)) {
+		
+		boolean ignoreDefault = !isNativeOutput &&
+				(neverIncludeDefaults || PropertyUtil.getBoolean(buildProperties,
+				IGNORE_DEFAULT_INCLUDE_PATHS));
+		
+		if (!ignoreDefault) {
 			result.addAll(Arrays.asList(MoSyncTool.getDefault()
-					.getMoSyncDefaultIncludes()));
+					.getMoSyncDefaultIncludes(isNativeOutput)));
 		}
 
 		if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
@@ -1066,7 +1128,7 @@ public class MoSyncBuilder extends ACBuilder {
 		}
 
 		IPath[] additionalIncludePaths = PropertyUtil.getPaths(buildProperties,
-				ADDITIONAL_INCLUDE_PATHS);
+				isNativeOutput ? ADDITIONAL_NATIVE_INCLUDE_PATHS : ADDITIONAL_INCLUDE_PATHS);
 		for (int i = 0; i < additionalIncludePaths.length; i++) {
 			if (additionalIncludePaths[i].getDevice() == null) {
 				// Then might be project relative path.
@@ -1083,8 +1145,43 @@ public class MoSyncBuilder extends ACBuilder {
 			result.addAll(Arrays.asList(additionalIncludePaths));
 		}
 
-		return resolvePaths(result.toArray(new IPath[0]),
+		String[] extensionNames = PropertyUtil.getStrings(buildProperties, MoSyncBuilder.EXTENSIONS);
+		for (String extensionName : extensionNames) {
+			MoSyncExtension extension = MoSyncExtensionManager.getDefault().getExtension(extensionName);
+			if (extension != null) {
+				result.add(extension.getIncludePath());
+			}
+		}
+		
+		IPath[] paths = resolvePaths(result.toArray(new IPath[0]),
 				createParameterResolver(project, variant));
+		ArrayList<IPath> filteredPaths = new ArrayList<IPath>();
+		
+		// Filter out some paths.
+		for (int i = 0; i < paths.length; i++) {
+			IPath path = paths[i];
+			if (isValidIncludePath(path, outputType)) {
+				filteredPaths.add(path);
+			}
+		}
+		
+		return filteredPaths.toArray(new IPath[0]);
+	}
+	
+	private static boolean isValidIncludePath(IPath path, String outputType) {
+		boolean isNativeOutput = MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
+		if (!isNativeOutput) {
+			return true;
+		}
+		// Native uses their own default paths -- and we actually need to
+		// filter the default path out from the additional paths.
+		IPath[] defaultIncludes = MoSyncTool.getDefault().getMoSyncDefaultIncludes(false);
+		for (IPath defaultInclude : defaultIncludes) {
+			if (defaultInclude.equals(path)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public static IPath[] getProfileIncludes(IProfile profile) {
@@ -1108,6 +1205,12 @@ public class MoSyncBuilder extends ACBuilder {
 			result.addAll(Arrays.asList(additionalLibraryPaths));
 		}
 
+		String[] extensions = PropertyUtil.getStrings(buildProperties, MoSyncBuilder.EXTENSIONS);
+		for (String extension : extensions) {
+			String extensionLibraryPath = "%mosync-home%/extensions/" + extension + "/lib";
+			result.add(new Path(extensionLibraryPath));
+		}
+		
 		return result.toArray(new IPath[0]);
 	}
 
@@ -1127,7 +1230,11 @@ public class MoSyncBuilder extends ACBuilder {
 		if (additionalLibraries != null) {
 			result.addAll(Arrays.asList(additionalLibraries));
 		}
-
+		
+		String[] extensions = PropertyUtil.getStrings(buildProperties, MoSyncBuilder.EXTENSIONS);
+		for (String extension : extensions) {
+			result.add(new Path(extension + ".lib"));
+		}
 		return result.toArray(new IPath[0]);
 	}
 
@@ -1351,9 +1458,12 @@ public class MoSyncBuilder extends ACBuilder {
 				".metadata");
 	}
 
-	public static boolean isLib(MoSyncProject mosyncProject) {
-		return PROJECT_TYPE_LIBRARY.equals(mosyncProject
-				.getProperty(PROJECT_TYPE));
+	public static boolean isLib(MoSyncProject project) {
+		return PROJECT_TYPE_LIBRARY.equals(project.getProperty(PROJECT_TYPE));
+	}
+
+	public static boolean isExtension(MoSyncProject project) {
+		return PROJECT_TYPE_EXTENSION.equals(project.getProperty(PROJECT_TYPE));
 	}
 	
 	public static boolean isResourceFile(IResource resource) {
@@ -1370,5 +1480,34 @@ public class MoSyncBuilder extends ACBuilder {
 		File resDir = project.getLocation().append("Resources").toFile();
 		return resDir.exists() && resDir.isDirectory() ? resDir : null;
 	}
+	
+    public static Map<String, String> extractMacroDefinesFromGCCArgs(MoSyncProject project, IBuildVariant variant) {
+    	LinkedHashMap<String, String> result = new LinkedHashMap<String, String>();
+    	
+    	String extraCompilerSwitchesLine = "";
+		try {
+			extraCompilerSwitchesLine = MoSyncBuilder.getExtraCompilerSwitches(project, variant);
+		} catch (ParameterResolverException e) {
+			CoreMoSyncPlugin.getDefault().logOnce(e, "qqeeww");
+		}
+        
+        if (!Util.isEmpty(extraCompilerSwitchesLine)) {
+            String[] extraCompilerSwitches = Util.parseCommandLine(extraCompilerSwitchesLine);
+
+        	for (int i = 0; i < extraCompilerSwitches.length; i++) {
+        		String extraCompilerSwitch = extraCompilerSwitches[i];
+        		if (extraCompilerSwitch.startsWith("-D") && extraCompilerSwitch.length() > 2) {
+        			String trimmedExtraCompilerSwitch = extraCompilerSwitch.substring(2);
+        			String[] keyAndValue = trimmedExtraCompilerSwitch.split("=", 2);
+        			String key = keyAndValue[0];
+        			String value = keyAndValue.length > 1 ? keyAndValue[1] : "";
+        			result.put(key, value);
+        		}
+        	}
+        }
+
+    	return result;
+    }
+
 	
 }

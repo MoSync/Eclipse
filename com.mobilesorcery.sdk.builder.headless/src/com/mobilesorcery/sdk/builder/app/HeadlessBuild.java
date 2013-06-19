@@ -13,17 +13,21 @@
  */
 package com.mobilesorcery.sdk.builder.app;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Date;
 
 import org.eclipse.core.internal.jobs.JobManager;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.equinox.app.IApplication;
@@ -37,6 +41,7 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.finalizer.core.FinalizerParser;
 import com.mobilesorcery.sdk.finalizer.ui.FinalizeJob;
+import com.mobilesorcery.sdk.ui.ImportProjectsRunnable;
 
 /* Rudimentary headless build
  */
@@ -132,6 +137,7 @@ public class HeadlessBuild implements IApplication {
 		int i = 0;
 
 		String projectName = null;
+		String importProject = null;
 		String finalizerScript = null;
 		String cfgId = null;
 
@@ -141,6 +147,9 @@ public class HeadlessBuild implements IApplication {
 
 			if ("-project".equals(arg)) { //$NON-NLS-1$
 				projectName = nextArg;
+				i++;
+			} else if ("-import".equals(arg)) { 
+				importProject = nextArg;
 				i++;
 			} else if ("-f".equals(arg)) { //$NON-NLS-1$
 				finalizerScript = nextArg;
@@ -152,11 +161,24 @@ public class HeadlessBuild implements IApplication {
 			i++;
 		}
 
-		if (projectName == null) {
+		if (projectName == null && importProject == null) {
 			printUsage();
 			throw new Exception(Messages.HeadlessBuild_Usage);
 		}
 
+		if (importProject != null) {
+			IPath projectDescriptionFile = new Path(importProject).append(".project");
+			IPath projectMetaDataFile = new Path(importProject).append(MoSyncProject.MOSYNC_PROJECT_META_DATA_FILENAME);
+			
+			if (projectName == null) {
+				IProjectDescription desc = ResourcesPlugin.getWorkspace().loadProjectDescription(projectDescriptionFile);
+				projectName = desc.getName();
+			}		
+			ImportProjectsRunnable importer = new ImportProjectsRunnable(new File[] {
+					projectMetaDataFile.toFile() }, new String[] { projectName }, ImportProjectsRunnable.DO_NOT_COPY);
+			importer.createJob(true).join();
+		}
+		
 		IProject project = ws.getRoot().getProject(projectName);
 		if (!project.exists() || !project.isOpen()) {
 			throw new IOException(Messages.HeadlessBuild_IllegalProjectState);

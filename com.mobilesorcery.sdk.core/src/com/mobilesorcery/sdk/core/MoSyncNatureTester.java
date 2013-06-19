@@ -17,11 +17,22 @@ import org.eclipse.core.expressions.PropertyTester;
 
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
 import com.mobilesorcery.sdk.core.MoSyncProject;
+import com.mobilesorcery.sdk.core.build.BuildSequence;
 
 public class MoSyncNatureTester extends PropertyTester {
 
+	public static final String LIB = "lib";
+	public static final String EXT = "extension";
+	
 	public boolean test(Object receiver, String property, Object[] args, Object expectedValue) {
-		return extractProject(receiver, property, args, expectedValue) != null;
+		MoSyncProject project = extractProject(receiver, property, args, expectedValue);
+		if (project != null && LIB.equals(expectedValue)) {
+			return MoSyncBuilder.isLib(project);
+		}
+		if (project != null && EXT.equals(expectedValue)) {
+			return MoSyncBuilder.isExtension(project);
+		}
+		return project != null;
 	}
 	
 	/**

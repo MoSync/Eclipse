@@ -8,6 +8,8 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.build.CommandLineBuildStep;
 import com.mobilesorcery.sdk.core.build.CopyBuildResultBuildStep;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
+import com.mobilesorcery.sdk.ui.IBuildStepEditor;
+import com.mobilesorcery.sdk.ui.MosyncUIPlugin;
 import com.mobilesorcery.sdk.ui.SimpleListEditor;
 
 final class BuildStepListEditor extends
@@ -36,33 +38,23 @@ final class BuildStepListEditor extends
 
 	@Override
 	protected boolean edit(Object selection, boolean add) {
-		BuildStepEditor editor = getEditor((IBuildStepFactory) selection);
+		IBuildStepEditor editor = MosyncUIPlugin.getDefault().createBuildStepEditor(project, (IBuildStepFactory) selection);
 		if (editor != null) {
-			boolean doAdd = CommandLineBuildStepEditor.OK == editor.open();
+			boolean doAdd = IBuildStepEditor.OK == editor.edit();
 			return doAdd;
 		}
 
 		return false;
 	}
 
-	private BuildStepEditor getEditor(IBuildStepFactory factory) {
-		Shell shell = getParent().getShell();
-		BuildStepEditor editor = null;
-		if (factory instanceof CommandLineBuildStep.Factory) {
-			editor = new CommandLineBuildStepEditor(shell);
-		} else if (factory instanceof CopyBuildResultBuildStep.Factory) {
-			editor = new CopyBuildStepEditor(shell);
-		}
-		if (editor != null) {
-			editor.setBuildStepFactory(factory);
-			editor.setProject(project);
-		}
-		return editor;
-	}
-
 	@Override
 	protected boolean canEdit(Object element) {
-		return CopyBuildResultBuildStep.ID.equals(((IBuildStepFactory) element).getId()) || isRearrangable(element);
+		IBuildStepFactory factory = (IBuildStepFactory) element;
+		IBuildStepEditor editor = MosyncUIPlugin.getDefault().createBuildStepEditor(project, factory);
+		if (editor != null && editor.canEdit()) {
+			return true;
+		}
+		return CopyBuildResultBuildStep.ID.equals(factory.getId()) || isRearrangable(element);
 	}
 
 	@Override

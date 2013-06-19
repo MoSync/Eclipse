@@ -22,6 +22,7 @@ import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IPackager;
 import com.mobilesorcery.sdk.core.IPackagerDelegate;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
@@ -71,6 +72,24 @@ public class PackagerProxy implements IPackager {
 	}
 
 	@Override
+	public void buildNative(MoSyncProject project, IBuildSession session,
+			IBuildVariant variant, IBuildResult result) throws Exception {
+		initDelegate();
+		delegate.buildNative(project, session, variant, result);
+	}
+	
+	@Override
+	public String getOutputType(MoSyncProject project) {
+		try {
+			initDelegate();
+			return delegate.getOutputType(project);
+		} catch (CoreException e) {
+			return MoSyncBuilder.OUTPUT_TYPE_INTERPRETED;
+		}
+		
+	}
+
+	@Override
 	public String getId() {
 		return id;
 	}
@@ -79,5 +98,6 @@ public class PackagerProxy implements IPackager {
 	public String getPlatform() {
 		return platform;
 	}
+
 
 }

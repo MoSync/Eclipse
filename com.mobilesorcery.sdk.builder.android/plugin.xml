@@ -89,4 +89,13 @@
                implementation="com.mobilesorcery.sdk.builder.android.launch.AndroidEmulatorLauncher">
          </launcher>
       </extension>
+      
+         <extension
+         point="com.mobilesorcery.sdk.targetphonetransports">
+      <transport
+            icon="icons/droid.png"
+            id="android"
+            implementation="com.mobilesorcery.sdk.ui.targetphone.android.AndroidTargetPhoneTransport">
+      </transport>
+   </extension>
 </plugin>

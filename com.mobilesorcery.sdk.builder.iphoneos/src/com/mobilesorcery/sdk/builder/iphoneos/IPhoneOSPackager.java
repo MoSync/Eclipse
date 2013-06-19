@@ -24,7 +24,10 @@ import java.util.Map;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.dialogs.IMessageProvider;
+import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 import com.mobilesorcery.sdk.core.BuildResult;
 import com.mobilesorcery.sdk.core.CommandLineBuilder;
@@ -36,6 +39,7 @@ import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IProcessConsole;
+import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.PackageToolPackager;
 import com.mobilesorcery.sdk.core.ParameterResolverException;
@@ -236,5 +240,19 @@ public class IPhoneOSPackager extends PackageToolPackager
 		return PropertyUtil.getBoolean(project, PropertyInitializer.IPHONE_PROJECT_SPECIFIC_CERT) ?
         		project.getProperty(PropertyInitializer.IPHONE_CERT):
         		Activator.getDefault().getPreferenceStore().getString(PropertyInitializer.IPHONE_CERT);
+	}
+	
+	protected void addNativePlatformSpecifics(MoSyncProject project,
+			IBuildVariant variant, CommandLineBuilder commandLine) throws Exception {
+		SDK sdk = getSDK(project, variant);
+		commandLine.flag("--ios-sdk").with(sdk.getId());
+		commandLine.flag("--ios-sdk-version").with(sdk.getVersion().asCanonicalString());
+		String target = getXcodeTarget(project, variant);
+		commandLine.flag("--ios-xcode-target").with(target);
+		commandLine.flag("--ios-xcode-location").with(XCodeSelect.getInstance().getCurrentXCodePath());
+	}
+	
+	protected boolean supportsOutputType(String outputType) {
+		return super.supportsOutputType(outputType) || MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
 	}
 }

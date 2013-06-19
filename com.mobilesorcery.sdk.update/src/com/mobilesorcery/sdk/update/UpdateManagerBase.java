@@ -85,7 +85,8 @@ public abstract class UpdateManagerBase {
 
     protected URL getRequestURL(String serviceName, Map<String, String> params) throws MalformedURLException {
         String service = getServiceURL(serviceName);
-        return new URL(Util.toGetUrl(service, params));
+        URL url = new URL(Util.toGetUrl(service, params));
+        return url;
     }
 
     protected boolean getBooleanResponse(Response response, String errmsg) throws IOException {
