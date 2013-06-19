@@ -14,6 +14,7 @@ import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.build.CommandLineBuildStep;
 import com.mobilesorcery.sdk.core.build.CommandLineBuildStep.Factory;
+import com.mobilesorcery.sdk.ui.BuildStepEditor;
 import com.mobilesorcery.sdk.ui.ParameterResolverContentProvider;
 import com.mobilesorcery.sdk.ui.UIUtils;
 import com.mobilesorcery.sdk.ui.UpdateListener;
@@ -27,11 +28,6 @@ public final class CommandLineBuildStepEditor extends BuildStepEditor implements
 	private Text script;
 	private Text name;
 	private Button failOnError;
-
-	public CommandLineBuildStepEditor(Shell shell) {
-		// TODO: We may want more types of build steps, maybe a wizard-like thingy?
-		super(shell);
-	}
 
 	private CommandLineBuildStep.Factory getFactory() {
 		return (Factory) factory;

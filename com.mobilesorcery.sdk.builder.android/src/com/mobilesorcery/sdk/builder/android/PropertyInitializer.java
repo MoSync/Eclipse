@@ -48,6 +48,8 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
     public static final String ADB_DEBUG_LOG = PREFIX + "adb.debug";
     
     public static final String ADB_LOGCAT_ARGS = PREFIX + "adb.logcat.args";
+    
+	public static final String ADB_USE_NDK_STACK = PREFIX + "adb.logcat.ndk.stack";
 
 	public static final String ADB_UNINSTALL_FIRST = PREFIX + "uninstall.first";
 
@@ -56,6 +58,8 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
 	public static final String ANDROID_INSTALL_LOCATION_DEFAULT = "internalOnly";
 	
 	public static final String ANDROID_MANIFEST_TEMPLATE = PREFIX + "manifest.template";
+	
+	public static final String ANDROID_LARGE_HEAP = PREFIX + "large.heap";
 
 	public static final String[] ANDROID_INSTALL_LOCATIONS = new String[] { ANDROID_INSTALL_LOCATION_DEFAULT, "auto", "preferExternal" };
 
@@ -77,6 +81,8 @@ public class PropertyInitializer extends AbstractPreferenceInitializer implement
             return "com.mosync.app_" + name;
         } else if (key.equals(ANDROID_VERSION_CODE)) {
             return "1";
+        } else if (key.equals(ANDROID_LARGE_HEAP)) { 
+        	return PropertyUtil.fromBoolean(false);
         } else {
             return Activator.getDefault().getPreferenceStore().getString(key);
         }

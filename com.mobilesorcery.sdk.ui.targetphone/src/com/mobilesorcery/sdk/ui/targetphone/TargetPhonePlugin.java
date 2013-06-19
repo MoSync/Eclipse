@@ -31,6 +31,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.XMLMemento;
@@ -167,7 +168,6 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 
 	private void addTransport(ITargetPhoneTransport transport) {
 		transports.put(transport.getId(), transport);
-		getImageRegistry().put(transport.getId(), transport.getIcon());
 	}
 
 	public ITargetPhoneTransport getTargetPhoneTransport(String transportId) {
@@ -318,5 +318,17 @@ public class TargetPhonePlugin extends AbstractUIPlugin {
 		for (ITargetPhoneTransportListener listener : listeners) {
 			listener.handleEvent(event);
 		}
+	}
+
+	public Image getIcon(ITargetPhoneTransport transport) {
+		if (transport == null) { 
+			return null;
+		}
+		String id = transport.getId();
+		Image image = getImageRegistry().get(id);
+		if (image == null) {
+			getImageRegistry().put(transport.getId(), transport.getIcon());
+		}
+		return getImageRegistry().get(id);
 	}
 }

@@ -11,9 +11,11 @@ import java.io.Writer;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -33,6 +35,8 @@ import com.mobilesorcery.sdk.core.IFileTreeDiff;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
+import com.mobilesorcery.sdk.core.MoSyncExtension;
+import com.mobilesorcery.sdk.core.MoSyncExtensionManager;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.PropertyUtil;
@@ -132,7 +136,11 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 
 		@Override
 		public boolean doesAffectBuild(IResource resource) {
-			return JSODDSupport.isValidJavaScriptFile(resource.getLocation());
+			IPath localPath = resource.getFullPath();
+			if (resource.getType() == IResource.FILE) {
+				localPath = Html5Plugin.getDefault().getLocalPath((IFile) resource);
+			}
+			return localPath != null && JSODDSupport.isValidJavaScriptFile(resource.getLocation());
 		}
 
 		@Override
@@ -307,8 +315,10 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 			IProgressMonitor monitor) throws Exception {
 		IProject wrappedProject = project.getWrappedProject();
 		IPath inputRootPath = Html5Plugin.getHTML5Folder(wrappedProject);
-		IFolder inputRoot = wrappedProject.getFolder(inputRootPath);
-		if (inputRoot.exists()) {
+		IFolder inputRootFolder = wrappedProject.getFolder(inputRootPath);
+		File inputRoot = inputRootFolder.getLocation().toFile();
+		
+		if (inputRootFolder.exists()) {
 			IResource outputFile = getResourceBundleLocation(wrappedProject);
 			File outputResource = outputFile.getLocation().toFile();
 			IPropertyOwner properties = MoSyncBuilder.getPropertyOwner(project,
@@ -317,42 +327,52 @@ public class HTML5DebugSupportBuildStep extends AbstractBuildStep {
 					.getDependencyManager();
 			
 			// MOSYNC-2326 & MOSYNC-2327
-			deps.addDependency(outputFile, inputRoot);
+			deps.addDependency(outputFile, inputRootFolder);	
+			
+			File instrOutputRoot = MoSyncBuilder
+					.getOutputPath(wrappedProject, variant)
+					.append(inputRootPath).toFile();
+
+			List<MoSyncExtension> extensions = MoSyncExtensionManager.getDefault().getUsedExtensions(project, variant);
+			boolean useOutputFolderForBundling = !extensions.isEmpty();
+			for (MoSyncExtension extension : extensions) {
+				// Copy the JavaScript libs.
+				File jsLibs = extension.getLibPath().append("js").toFile();
+				if (jsLibs.exists()) {
+					Util.copy(new SubProgressMonitor(monitor, 1), jsLibs, new File(instrOutputRoot, "ext"), Util.getExtensionFilter("js"));
+				}
+			}
 			
 			if (PropertyUtil.getBoolean(properties,
 					MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS) && Html5Plugin.getDefault().isJSODDEnabled(project)) {
+				useOutputFolderForBundling = true;
 				monitor.beginTask("Instrumenting JavaScript source files", 10);
-				File outputRoot = MoSyncBuilder
-						.getOutputPath(wrappedProject, variant)
-						.append(inputRootPath).toFile();
+
 				// Ok, do NOT copy files that we may want to instrument
 				// Do not uncomment this until we have a strategy --
 				// for various reasons (fixed file systems for example)
 				// we keep a conservative view at this point.
 				//if (!Html5Plugin.getDefault().shouldFetchRemotely()) {
-					copyUninstrumentedFiles(monitor, inputRoot.getLocation()
-							.toFile(), outputRoot);
+					copyUninstrumentedFiles(monitor, inputRoot, instrOutputRoot);
 				//}
 
 				InstrumentationBuilderVisitor visitor = new InstrumentationBuilderVisitor(
-						inputRoot, outputRoot);
+						inputRootFolder, instrOutputRoot);
 				visitor.setProject(wrappedProject);
 				visitor.setDiff(diff);
 
 				visitor.instrument(new SubProgressMonitor(monitor, 7), deps,
 						getConsole());
-				// TODO -- would prefer it not to always output there... Since
-				// we'll get build problems for sure!
-				BundleBuildStep.bundle(outputRoot, outputResource);
 				
 				// We need internet permissions.
 				IApplicationPermissions modifiedPermissions = project.getPermissions().createWorkingCopy();
 				modifiedPermissions.setRequestedPermission(ICommonPermissions.INTERNET, true);
 				session.getProperties().put(MODIFIED_PERMISSIONS, modifiedPermissions);
-			} else {
-				BundleBuildStep.bundle(inputRoot.getLocation().toFile(),
-						outputResource);
+			} else if (useOutputFolderForBundling) {
+				Util.copyDir(new SubProgressMonitor(monitor, 1), inputRoot, instrOutputRoot, null);
 			}
+			
+			BundleBuildStep.bundle(useOutputFolderForBundling ? instrOutputRoot : inputRoot, outputResource);
 		}
 		monitor.done();
 		return CONTINUE;

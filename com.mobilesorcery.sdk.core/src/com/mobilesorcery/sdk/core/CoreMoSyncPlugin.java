@@ -68,6 +68,7 @@ import com.mobilesorcery.sdk.core.build.CopyBuildResultBuildStep;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.core.build.IBuildStepFactoryExtension;
 import com.mobilesorcery.sdk.core.build.LinkBuildStep;
+import com.mobilesorcery.sdk.core.build.NativeLibBuildStep;
 import com.mobilesorcery.sdk.core.build.PackBuildStep;
 import com.mobilesorcery.sdk.core.build.ResourceBuildStep;
 import com.mobilesorcery.sdk.core.launch.AutomaticEmulatorLauncher;
@@ -723,6 +724,8 @@ public class CoreMoSyncPlugin extends AbstractUIPlugin implements IPropertyChang
 			return new BundleBuildStep.Factory();
 		} else if (CopyBuildResultBuildStep.ID.equals(id)) {
 			return new CopyBuildResultBuildStep.Factory();
+		} else if (NativeLibBuildStep.ID.equals(id)) {
+			return new NativeLibBuildStep.Factory();
 		}
 
 		IBuildStepFactoryExtension extension = getBuildStepFactoryExtension(id);

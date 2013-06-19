@@ -67,5 +67,10 @@ public class ErrorPackager extends AbstractPackager implements IPackager {
 		return getId();
 	}
 
+	@Override
+	public void buildNative(MoSyncProject project, IBuildSession session,
+			IBuildVariant variant, IBuildResult result) throws Exception {
+	}
+
 
 }

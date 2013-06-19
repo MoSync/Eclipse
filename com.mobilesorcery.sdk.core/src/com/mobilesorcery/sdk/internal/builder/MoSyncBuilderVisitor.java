@@ -93,7 +93,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     	boolean shouldVisitChildren = super.visit(resource);
     	if (isBuildable(resource)) {
 	        IFile cFile = getCFile(resource, false);
-	        if (cFile != null) {
+	        if (cFile != null && outputPath != null) {
 	            objectFiles.add(mapFileToOutput(cFile).toOSString());
 	        }
     	}
@@ -299,7 +299,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
         }
     }
 
-    private static String[] assembleIncludeString(IPath[] includePaths) {
+    public static String[] assembleIncludeString(IPath[] includePaths) {
         String[] strs = new String[includePaths.length];
         for (int i = 0; i < strs.length; i++) {
             strs[i] = assembleIncludeString(includePaths[i]);

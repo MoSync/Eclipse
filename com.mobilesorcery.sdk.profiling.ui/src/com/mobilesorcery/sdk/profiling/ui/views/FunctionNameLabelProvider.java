@@ -31,9 +31,9 @@ public class FunctionNameLabelProvider extends StyledCellLabelProvider {
         lastNameFont = UIUtils.modifyFont(null, SWT.BOLD);
         Color disabledColor = Display.getCurrent().getSystemColor(SWT.COLOR_GRAY);
 
-        prefixStyler = createStyler(prefixFont, null);
-        lastNameStyle = createStyler(lastNameFont, null);
-        disabledStyle = createStyler(null, disabledColor);
+        prefixStyler = UIUtils.createStyler(prefixFont, null);
+        lastNameStyle = UIUtils.createStyler(lastNameFont, null);
+        disabledStyle = UIUtils.createStyler(null, disabledColor);
     }
 
     @Override
@@ -65,22 +65,6 @@ public class FunctionNameLabelProvider extends StyledCellLabelProvider {
         result.append(shortName, enabled ? lastNameStyle : disabledStyle);
         result.append(name.getSignature(), disabledStyle);
         return result;
-    }
-
-    private StyledString.Styler createStyler(final Font font, final Color fgColor) {
-        Styler result = new StyledString.Styler() {
-            @Override
-			public void applyStyles(TextStyle textstyle) {
-                if (fgColor != null) {
-                    textstyle.foreground = fgColor;
-                }
-                if (font != null) {
-                    textstyle.font = font;
-                }
-            }
-         };
-
-         return result;
     }
 
     public void setSession(IProfilingSession session) {

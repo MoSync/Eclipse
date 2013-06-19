@@ -91,7 +91,7 @@ public class PackBuildStep extends AbstractBuildStep {
 
 	@Override
 	public boolean shouldBuild(MoSyncProject project, IBuildSession session, IBuildResult buildResult) {
-		return super.shouldBuild(project, session, buildResult) && !MoSyncBuilder.isLib(project);
+		return super.shouldBuild(project, session, buildResult) && !MoSyncBuilder.isLib(project) && !MoSyncBuilder.isExtension(project);
 	}
 
 	@Override
@@ -101,6 +101,6 @@ public class PackBuildStep extends AbstractBuildStep {
 
 	@Override
 	public String[] getDependees() {
-		return new String[] { LinkBuildStep.ID };
+		return new String[] { };
 	}
 }

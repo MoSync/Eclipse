@@ -10,7 +10,8 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.debug.core;bundle-version="3.7.0",
  com.mobilesorcery.sdk.core;bundle-version="1.0.0",
  com.mobilesorcery.sdk.ui;bundle-version="1.0.0",
- com.mobilesorcery.sdk.lib;bundle-version="1.0.0"
+ com.mobilesorcery.sdk.lib;bundle-version="1.0.0",
+ org.eclipse.cdt.core;bundle-version="5.4.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Import-Package: com.mobilesorcery.sdk.core,

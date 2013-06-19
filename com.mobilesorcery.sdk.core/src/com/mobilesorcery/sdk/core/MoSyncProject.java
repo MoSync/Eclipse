@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -39,6 +40,7 @@ import java.util.TreeSet;
 import org.eclipse.core.resources.FileInfoMatcherDescription;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceFilterDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
@@ -53,6 +55,7 @@ import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.SecureProperties;
 import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_2;
 import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_4;
+import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_7;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
@@ -227,7 +230,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	 *
 	 * @see MoSyncProject#getFormatVersion()
 	 */
-	public static final Version CURRENT_VERSION = new Version("1.5");
+	public static final Version CURRENT_VERSION = new Version("1.7");
 
 	private static final Version VERSION_1_0 = new Version("1");
 
@@ -510,7 +513,9 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			IMemento propertiesMemento = root.createChild(PROPERTIES);
 			saveProperties(propertiesMemento, getProperties(store));
 
-			root.putString(VERSION_KEY, formatVersion.asCanonicalString());
+			if (store == SHARED_PROPERTY) {
+				root.putString(VERSION_KEY, formatVersion.asCanonicalString());
+			}
 			root.save(output);
 			output.close();
 		} catch (IOException e) {
@@ -635,11 +640,35 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			return null;
 		}
 	}
+	
+
+	/**
+	 * Extracts all {@code MoSyncProject}s that contains any one of the
+	 * provided {@code IResource}s.
+	 * @param projects
+	 * @return A list of {@code MoSyncProject}s, which may be empty but never {@code null}
+	 */
+	public static List<MoSyncProject> create(List<IResource> resources) {
+		ArrayList<MoSyncProject> result = new ArrayList<MoSyncProject>();
+		HashSet<IProject> alreadyCreated = new HashSet<IProject>();
+		for (IResource resource : resources) {
+			IProject project = resource.getProject();
+			if (!alreadyCreated.contains(project)) {
+				alreadyCreated.add(project);
+				MoSyncProject mosyncProject = MoSyncProject.create(project);
+				if (project != null) {
+					result.add(mosyncProject);
+				}
+			}
+		}
+		return result;
+	}
 
 	private static void upgrade(MoSyncProject project) throws CoreException {
 		// TODO: Whenever the need arises we may want to fix something smarter
 		MoSyncProjectConverter1_2.getInstance().convert(project);
 		MoSyncProjectConverter1_4.getInstance().convert(project);
+		MoSyncProjectConverter1_7.getInstance().convert(project);
 		project.setFormatVersion(CURRENT_VERSION);
 	}
 
@@ -1387,7 +1416,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 				.firePropertyChange(BUILD_CONFIGURATION_CHANGED, removed, null);
 	}
 
-	public void setBuildConfigurationsSupported(
+	public boolean setBuildConfigurationsSupported(
 			boolean isBuildConfigurationsSupported) {
 		if (this.isBuildConfigurationsSupported != isBuildConfigurationsSupported) {
 			this.isBuildConfigurationsSupported = isBuildConfigurationsSupported;
@@ -1395,7 +1424,9 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			listeners.firePropertyChange(BUILD_CONFIGURATION_SUPPORT_CHANGED,
 					!isBuildConfigurationsSupported,
 					isBuildConfigurationsSupported);
+			return true;
 		}
+		return false;
 	}
 
 	public boolean areBuildConfigurationsSupported() {
@@ -1534,5 +1565,71 @@ public class MoSyncProject extends PropertyOwnerBase implements
 
 		return result;
 	}
+
+	public String getOutputType() {
+		return getProperty(MoSyncBuilder.OUTPUT_TYPE); 
+	}
+	
+	/**
+	 * Sets the (preferred) output type of this project.
+	 * Will throw an exception with a detailed, user-friendly
+	 * message if this operation cannot be performed.
+	 * Use {@link #forceOutputType(String)} to ignore any
+	 * exceptions -- this will cause changes to the project
+	 * that will make it possible to build natively but
+	 * may also make the project un-buildable. (This is by design)
+	 * @param binaryType
+	 * @return
+	 * @throws IllegalArgumentException
+	 */
+	public boolean setOutputType(String binaryType) throws IllegalArgumentException {
+		ArrayList<String> errors = new ArrayList<String>();
+		
+		if (MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(binaryType)) {
+			if (getProfileManagerType() != MoSyncTool.DEFAULT_PROFILE_TYPE) {
+				errors.add("Native projects must make use of the platform based profile type.");
+			}
+			if (!isBuildConfigurationsSupported) {
+				errors.add("Native projects require build configuration support");
+			}
+			
+			boolean changedIncludes = false;
+			for (String cfg : getBuildConfigurations()) {
+				Pair<Boolean, List<IPath>> nativePaths = filteredNativePaths(cfg);
+				changedIncludes |= nativePaths.first;
+			}
+			
+			if (changedIncludes) {
+				errors.add("Native projects only supports include paths relative to the project.");
+			}
+		}
+		
+		if (errors.isEmpty()) {
+			return forceOutputType(binaryType);
+		} else {
+			String errorMsg = "  * " + Util.join(errors.toArray(), "\n  * ");
+			throw new IllegalArgumentException(errorMsg);
+		}
+	}
+	
+	private Pair<Boolean, List<IPath>> filteredNativePaths(String cfg) {
+		return MoSyncBuilder.filterNativeIncludePaths(this, new BuildVariant(getTargetProfile(), cfg));
+	}
+	
+	public boolean forceOutputType(String binaryType) {
+		boolean result = false;
+		if (MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(binaryType)) {
+			result = setBuildConfigurationsSupported(true);
+			setProfileManagerType(MoSyncTool.DEFAULT_PROFILE_TYPE);
+			for (String cfg : getBuildConfigurations()) {
+				Pair<Boolean, List<IPath>> nativePaths = filteredNativePaths(cfg);
+				PropertyUtil.setPaths(getBuildConfiguration(cfg).getProperties(),
+						MoSyncBuilder.ADDITIONAL_NATIVE_INCLUDE_PATHS, nativePaths.second.toArray(new IPath[0]));
+			}
+		}
+		result |= setProperty(MoSyncBuilder.OUTPUT_TYPE, binaryType);
+		return result;
+	}
+
 
 }

@@ -998,13 +998,15 @@ public class JSODDSupport {
 			Writer remoteFetchOutput) throws CoreException {
 		Map<String, String> additionalProperties = new HashMap<String, String>();
 		if (resource instanceof IFile) {
-			additionalProperties.put("FILE_PATH", Html5Plugin.getDefault().getLocalPath((IFile) resource).toPortableString());
-			if (isEmbeddedJavaScriptFile(resource.getFullPath())) {
-				writeTemplate(project, "/templates/hcr.template", additionalProperties, remoteFetchOutput);	
-			} else {
-				writeTemplate(project, "/templates/hcrjs.template", additionalProperties, remoteFetchOutput);
+			IPath filePath = Html5Plugin.getDefault().getLocalPath((IFile) resource);
+			if (filePath != null) {
+				additionalProperties.put("FILE_PATH", filePath.toPortableString());
+				if (isEmbeddedJavaScriptFile(resource.getFullPath())) {
+					writeTemplate(project, "/templates/hcr.template", additionalProperties, remoteFetchOutput);	
+				} else {
+					writeTemplate(project, "/templates/hcrjs.template", additionalProperties, remoteFetchOutput);
+				}
 			}
-			
 		}
 	}
 

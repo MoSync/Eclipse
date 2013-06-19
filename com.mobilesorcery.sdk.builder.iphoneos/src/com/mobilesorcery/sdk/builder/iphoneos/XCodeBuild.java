@@ -13,6 +13,7 @@ import org.eclipse.core.runtime.Status;
 import com.mobilesorcery.sdk.core.AbstractTool;
 import com.mobilesorcery.sdk.core.CollectingLineHandler;
 import com.mobilesorcery.sdk.core.CoreMoSyncPlugin;
+import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.LineReader.LineAdapter;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.Version;
@@ -87,7 +88,7 @@ public class XCodeBuild extends AbstractTool {
 			try {
 				XCodeBuildHandler handler = new XCodeBuildHandler();
 				execute(new String[] { pathToCommand, "-version" }, handler,
-						handler, false);
+						handler, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
 				this.version = handler.getVersion();
 				this.canExecute = true;
 			} catch (CoreException e) {
@@ -123,7 +124,7 @@ public class XCodeBuild extends AbstractTool {
 			cmd.add("-sdk");
 			cmd.add(sdk);
 		}
-		if (execute(cmd.toArray(new String[cmd.size()]), null, null, false) != 0) {
+		if (execute(cmd.toArray(new String[cmd.size()]), null, null, CoreMoSyncPlugin.LOG_CONSOLE_NAME, false) != 0) {
 			throw new CoreException(new Status(IStatus.ERROR,
 					"com.mobilesorcery.sdk.builder.iphoneos",
 					"xcodebuild failed to build"));
@@ -155,7 +156,7 @@ public class XCodeBuild extends AbstractTool {
 			CollectingLineHandler lh = new CollectingLineHandler();
 			try {
 				execute(new String[] { pathToCommand, "-showsdks" }, lh, lh,
-						false);
+						CoreMoSyncPlugin.LOG_CONSOLE_NAME, false);
 				List<String> sdksOutput = lh.getLines();
 				cachedSDKs.addAll(extractSDKs(sdksOutput));
 			} catch (CoreException e) {
