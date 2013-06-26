@@ -59,23 +59,18 @@ public class MoSyncProjectConverter1_2 implements MoSyncProject.IConverter {
     	}
 
 		if (!getBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES, false)) {
-        	IPath stdLib = IBuildConfiguration.DEBUG_ID.equals(id) ? new Path("mastdD.lib") : new Path("mastd.lib");
-    		prependPaths(project, id, MoSyncBuilder.ADDITIONAL_LIBRARIES, new IPath[] { stdLib });
-    	}
+			prependPaths(project, id, MoSyncBuilder.ADDITIONAL_LIBRARIES, new IPath[] { new Path("mastd.lib") });
+		}
 
 		if (!getBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS, false)) {
-    		prependPaths(project, id, MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS, new IPath[] { new Path("%mosync-home%/lib/pipe") });
-    	}
+			String dir = IBuildConfiguration.DEBUG_ID.equals(id) ? "mapip2_debug_4.6.3" : "mapip2_release_4.6.3";
+			prependPaths(project, id, MoSyncBuilder.ADDITIONAL_LIBRARY_PATHS, new IPath[] { new Path("%mosync-home%/lib/"+dir) });
+		}
 
 		// ...and then make sure to ignore default paths
 		PropertyUtil.setBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS, true);
 		PropertyUtil.setBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES, true);
 		PropertyUtil.setBoolean(properties, MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS, true);
-
-		// DCE should be disabled for old projects unless they say they want it
-		if (!getBoolean(properties, MoSyncBuilder.DEAD_CODE_ELIMINATION, false)) {
-			PropertyUtil.setBoolean(properties, MoSyncBuilder.DEAD_CODE_ELIMINATION, false);
-		}
     }
 
 	private static boolean getBoolean(IPropertyOwner properties, String key, boolean overrideDefault) {

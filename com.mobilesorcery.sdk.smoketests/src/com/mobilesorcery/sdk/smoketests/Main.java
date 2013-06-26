@@ -108,8 +108,6 @@ public class Main {
 		MoSyncProject project = createProjectWithFiles("debug",
 				new String[] { "/files/bp_test.c" },
 				new String[] { "bp_test.c" });
-		project.setProperty(MoSyncBuilder.DEAD_CODE_ELIMINATION, Boolean.TRUE
-				.toString());
 		defaultInit(project);
 
 		// Add breakpoints

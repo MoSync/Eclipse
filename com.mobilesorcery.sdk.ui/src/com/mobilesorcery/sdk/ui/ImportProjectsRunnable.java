@@ -488,7 +488,6 @@ public class ImportProjectsRunnable extends WorkspaceModifyOperation {
 		result.put("additionalDependencies", MoSyncBuilder.ADDITIONAL_LIBRARIES); //$NON-NLS-1$
 
 		result.put("extraCmd", MoSyncBuilder.EXTRA_COMPILER_SWITCHES); //$NON-NLS-1$
-		result.put("deadCodeElim", MoSyncBuilder.DEAD_CODE_ELIMINATION); //$NON-NLS-1$
 
 		result.put("extraResourcer", MoSyncBuilder.EXTRA_RES_SWITCHES); //$NON-NLS-1$
 		result.put("extraLinker", MoSyncBuilder.EXTRA_LINK_SWITCHES); //$NON-NLS-1$

@@ -222,7 +222,7 @@ public class MoSyncTool {
 	public IPath getMoSyncLib() {
 		return getMoSyncHome().append("lib");
 	}
-	
+
 	/**
 	 * Returns the extension directory
 	 */
@@ -256,7 +256,8 @@ public class MoSyncTool {
 	}
 
 	public IPath[] getMoSyncDefaultLibraryPaths() {
-		return new IPath[] { getMoSyncLib().append("pipe") };
+		String dir = "mapip2_release_4.6.3";
+		return new IPath[] { getMoSyncLib().append(dir) };
 	}
 
 	public IPath getProfilesPath() {

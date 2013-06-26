@@ -29,6 +29,7 @@ import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.security.ICommonPermissions;
+import com.mobilesorcery.sdk.internal.Binutils;
 import com.mobilesorcery.sdk.internal.PipeTool;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 
@@ -80,12 +81,10 @@ public class BuildPropertiesInitializerDelegate extends AbstractPreferenceInitia
         		MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS.equals(namespacedKey) ||
         		MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES.equals(namespacedKey)) {
         	return PropertyUtil.fromBoolean(false);
-        } else if (MoSyncBuilder.MEMORY_HEAPSIZE_KB.equals(namespacedKey)) {
-        	return PropertyUtil.fromInteger(PipeTool.DEFAULT_HEAP_SIZE_KB);
-        } else if (MoSyncBuilder.MEMORY_STACKSIZE_KB.equals(namespacedKey)) {
-        	return PropertyUtil.fromInteger(PipeTool.DEFAULT_STACK_SIZE_KB);
-        } else if (MoSyncBuilder.MEMORY_DATASIZE_KB.equals(namespacedKey)) {
-        	return PropertyUtil.fromInteger(PipeTool.DEFAULT_DATA_SIZE_KB);
+				} else if (MoSyncBuilder.MEMORY_HEAPSIZE_KB.equals(namespacedKey)) {
+					return PropertyUtil.fromInteger(Binutils.DEFAULT_HEAP_SIZE_KB);
+				} else if (MoSyncBuilder.MEMORY_STACKSIZE_KB.equals(namespacedKey)) {
+					return PropertyUtil.fromInteger(Binutils.DEFAULT_STACK_SIZE_KB);
         } else if (DefaultPackager.APP_VENDOR_NAME_BUILD_PROP.equals(namespacedKey)) {
             return "BuiltWithMoSyncSDK";
         } else if (MoSyncBuilder.PROJECT_VERSION.equals(namespacedKey)) {
@@ -112,14 +111,14 @@ public class BuildPropertiesInitializerDelegate extends AbstractPreferenceInitia
     	if (debug) {
     		result.append("-O0");
     	} else {
-    		result.append("-O2");
+				result.append("-O2 -fomit-frame-pointer");
     	}
     	if (profileManagerType == MoSyncTool.DEFAULT_PROFILE_TYPE) {
     		result.append(" -DPLATFORM_%platform-family% -DVARIANT_%platform-variant%");
     	}
     	return result.toString();
 	}
-	
+
     public void initializeDefaultPreferences() {
         IPreferenceStore store = CoreMoSyncPlugin.getDefault().getPreferenceStore();
         store.setDefault(MoSyncBuilder.REBUILD_ON_ERROR, true);

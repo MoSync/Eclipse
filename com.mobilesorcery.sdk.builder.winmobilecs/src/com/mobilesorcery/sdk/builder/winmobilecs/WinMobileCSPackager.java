@@ -89,9 +89,6 @@ public class WinMobileCSPackager extends PackageToolPackager {
 		} else {
 			commandLine.flag("--wp-vs-build-path").with(MSBuild.getDefault().getToolPath());
 		}
-		String target = isEmulatorBuild(project, variant) ? "emulator"
-				: "device";
-		commandLine.flag("--wp-target").with(target);
 
 		String config = getConfig(project, variant);
 		commandLine.flag("--wp-config").with(config);

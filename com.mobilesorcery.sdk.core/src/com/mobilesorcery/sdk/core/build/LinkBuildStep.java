@@ -1,36 +1,27 @@
 package com.mobilesorcery.sdk.core.build;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.ui.IMemento;
 
-import com.mobilesorcery.sdk.core.DefaultPackager;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
-import com.mobilesorcery.sdk.core.IBuildState;
 import com.mobilesorcery.sdk.core.IBuildVariant;
 import com.mobilesorcery.sdk.core.IFileTreeDiff;
-import com.mobilesorcery.sdk.core.IFilter;
 import com.mobilesorcery.sdk.core.IProcessConsole;
 import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
-import com.mobilesorcery.sdk.core.MoSyncProjectParameterResolver;
 import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.PropertyUtil;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
-import com.mobilesorcery.sdk.internal.PipeTool;
-import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
+import com.mobilesorcery.sdk.internal.Binutils;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 public class LinkBuildStep extends AbstractBuildStep {
@@ -74,8 +65,8 @@ public class LinkBuildStep extends AbstractBuildStep {
 
 		IProcessConsole console = getConsole();
 		IPropertyOwner buildProperties = getBuildProperties();
-		PipeTool pipeTool = getPipeTool();
-		pipeTool.setParameterResolver(getParameterResolver());
+		Binutils binutils = getBinutils();
+		binutils.setParameterResolver(getParameterResolver());
 		ILineHandler lineHandler = getDefaultLineHandler();
 		IProject project = mosyncProject.getWrappedProject();
 		IProfile targetProfile = variant.getProfile();
@@ -98,44 +89,18 @@ public class LinkBuildStep extends AbstractBuildStep {
          */
         if (requiresLinking) {
             String[] objectFiles = getObjectFilesForProject(session);
-            pipeTool.setInputFiles(objectFiles);
-            String pipeToolMode = MoSyncBuilder.getPipeToolMode(mosyncProject, targetProfile, isLibOrExt);
-            pipeTool.setMode(pipeToolMode);
-            pipeTool.setOutputFile(isLibOrExt ? libraryOutput : program);
-            pipeTool.setLibraryPaths(MoSyncBuilder.resolvePaths(MoSyncBuilder.getLibraryPaths(project, buildProperties), resolver));
-            pipeTool.setLibraries(MoSyncBuilder.getLibraries(mosyncProject, variant, buildProperties));
-            boolean elim = !isLibOrExt && PropertyUtil.getBoolean(buildProperties, MoSyncBuilder.DEAD_CODE_ELIMINATION);
-            pipeTool.setDeadCodeElimination(elim);
-            pipeTool.setCollectStabs(true);
+            binutils.setInputFiles(objectFiles);
+            String binutilsMode = MoSyncBuilder.getBinutilsMode(mosyncProject, targetProfile, isLibOrExt);
+            binutils.setMode(binutilsMode);
+            binutils.setOutputFile(isLibOrExt ? libraryOutput : program);
+            binutils.setLibraryPaths(MoSyncBuilder.resolvePaths(MoSyncBuilder.getLibraryPaths(project, buildProperties), resolver));
+            binutils.setLibraries(MoSyncBuilder.getLibraries(mosyncProject, variant, buildProperties));
+            binutils.setLineHandler(lineHandler);
 
             String[] extraLinkerSwitches = PropertyUtil.getStrings(buildProperties, MoSyncBuilder.EXTRA_LINK_SWITCHES);
-            pipeTool.setExtraSwitches(extraLinkerSwitches);
+            binutils.setExtraSwitches(extraLinkerSwitches);
 
-            continueFlag = (pipeTool.run() == PipeTool.SKIP_RETURN_CODE ? IBuildStep.SKIP : IBuildStep.CONTINUE);
-
-            // If needed, run a second time to generate IL
-            if (isLibOrExt == false && pipeToolMode.equals(PipeTool.BUILD_C_MODE) == false) {
-            	pipeTool.setMode(PipeTool.BUILD_C_MODE);
-        		pipeTool.run();
-            }
-
-            if (elim) {
-                PipeTool elimPipeTool = new PipeTool();
-                elimPipeTool.setProject(project);
-                elimPipeTool.setVariant(variant);
-                elimPipeTool.setLineHandler(lineHandler);
-                elimPipeTool.setNoVerify(true);
-                elimPipeTool.setGenerateSLD(false);
-                elimPipeTool.setMode(PipeTool.BUILD_C_MODE);
-                elimPipeTool.setOutputFile(program);
-                elimPipeTool.setConsole(console);
-                elimPipeTool.setExtraSwitches(extraLinkerSwitches);
-                elimPipeTool.setAppCode(MoSyncBuilder.getCurrentAppCode(session));
-                elimPipeTool.setArguments(buildProperties);
-                File rebuildFile = new File(elimPipeTool.getExecDir(), "rebuild.s");
-                elimPipeTool.setInputFiles(new String[] { rebuildFile.getAbsolutePath() });
-                elimPipeTool.run();
-            }
+            continueFlag = binutils.run();
 
             if (!isLibOrExt) {
                 // Create "comb" file - program + resources in one. We'll

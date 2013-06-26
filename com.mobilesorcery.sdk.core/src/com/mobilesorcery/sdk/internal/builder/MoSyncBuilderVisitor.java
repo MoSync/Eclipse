@@ -39,12 +39,7 @@ import com.mobilesorcery.sdk.core.MoSyncTool;
 import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.LineReader.ILineHandler;
-import com.mobilesorcery.sdk.internal.dependencies.CompoundDependencyProvider;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
-import com.mobilesorcery.sdk.internal.dependencies.GCCDependencyProvider;
-import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
-import com.mobilesorcery.sdk.internal.dependencies.ProjectResourceDependencyProvider;
-import com.mobilesorcery.sdk.internal.dependencies.ResourceFileDependencyProvider;
 
 // TODO: The main responsibility of this class is no longer to
 // visit projects - split into 2 classes!
@@ -53,14 +48,20 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
     private static final String GCC_WALL_STR = "-Wall";
 
-    private static final String GCC_WEXTRA_STR = "-Wextra";
+    private static final String GCC_WEXTRA_STR[] = {"-Wextra", "-Wno-unused-parameter"};
 
     private static final String GCC_WERROR_STR = "-Werror";
+
+    private static final String GCC_WMOAR_STR[] = {
+		"-Wwrite-strings", "-Wshadow", "-Wpointer-arith", "-Wundef", "-Wfloat-equal",
+		"-Winit-self", "-Wmissing-noreturn", "-Wmissing-format-attribute",
+		"-Wvariadic-macros", "-Wmissing-include-dirs", "-Wmissing-declarations", "-Wlogical-op",
+    };
 
     /**
      * The standard extensions for C/C++ files
      */
-    public static final String[] C_SOURCE_FILE_EXTS = new String[] { "cpp", "c++", "c" };
+    public static final String[] C_SOURCE_FILE_EXTS = new String[] { "cpp", "c++", "c", "cc" };
 
     /**
      * The standard extensions for C++ files (no C file extensions)
@@ -85,8 +86,6 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     private ILineHandler linehandler;
     private int gccWarnings;
 	private boolean generateDependencies = true;
-
-	private CompoundDependencyProvider<IResource> dependencyProvider;
 
     @Override
 	public boolean visit(IResource resource) throws CoreException {
@@ -211,7 +210,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             // Assume unique filenames.
             IPath output = mapFileToOutput(cFile);
 
-            IPath xgcc = MoSyncTool.getDefault().getBinary("xgcc");
+            IPath xgcc = MoSyncTool.getDefault().getBinary("../mapip2/xgcc");
 
             MoSyncProject project = MoSyncProject.create(resource.getProject());
             List<IPath> includePaths = new ArrayList<IPath>(Arrays.asList(MoSyncBuilder.getBaseIncludePaths(project, getVariant())));
@@ -224,10 +223,9 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
             ArrayList<String> args = new ArrayList<String>();
             args.add(xgcc.toOSString());
-            args.add("-o");
-            args.add(output.toOSString());
-            args.add("-S");
+            args.add("-c");
             args.add("-g");
+            args.add("-std=gnu++0x");
 
             if (generateDependencies) {
             	args.add("-MMD");
@@ -236,11 +234,14 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             }
 
             addGccWarnings(args);
-            args.add("-DMAPIP");
             String[] extra = extraSwitches == null ? new String[0] : Util.parseCommandLine(resolve(extraSwitches));
             args.addAll(Arrays.asList(extra));
             args.add(cFile.getLocation().toOSString());
             args.addAll(Arrays.asList(includeStr));
+
+            // Put output last, so all the flags will affect it.
+            args.add("-o");
+            args.add(output.toOSString());
 
             // Create output if it does not exist
             output.toFile().getParentFile().mkdirs();
@@ -291,11 +292,15 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
         }
 
         if ((gccWarnings & MoSyncBuilder.GCC_WEXTRA) != 0) {
-            args.add(GCC_WEXTRA_STR);
+            args.addAll(Arrays.asList(GCC_WEXTRA_STR));
         }
 
         if ((gccWarnings & MoSyncBuilder.GCC_WERROR) != 0) {
             args.add(GCC_WERROR_STR);
+        }
+
+        if ((gccWarnings & MoSyncBuilder.GCC_WMOAR) != 0) {
+            args.addAll(Arrays.asList(GCC_WMOAR_STR));
         }
     }
 
@@ -319,7 +324,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
 
     public static IPath mapFileToOutput(IResource file, IPath outputPath) {
         String name = file.getName();
-        String newName = Util.replaceExtension(name, "s");
+        String newName = Util.replaceExtension(name, "o");
         return outputPath.append(newName);
     }
 

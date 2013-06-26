@@ -28,7 +28,7 @@ public class MoSyncProjectTestManager {
 
     private static final String TEST_LIBRARY = "testify.lib";
     private static final String TEST_LIBRARY_DEBUG = "testifyD.lib";
-	
+
 	private MoSyncProject project;
 	private Set<IPath> testResources = new HashSet<IPath>();
     private IBuildConfiguration prototypeDebugCfg;
@@ -38,7 +38,7 @@ public class MoSyncProjectTestManager {
 		this.project = project;
 		init();
 	}
-	
+
 	private void init() {
 	    testResources = new HashSet<IPath>(Arrays.asList(PropertyUtil.getPaths(project, TEST_RESOURCES)));
     }
@@ -51,11 +51,11 @@ public class MoSyncProjectTestManager {
 	public boolean isTestProject() {
 		return isTestProject(project);
 	}
-	
+
 	private static boolean isTestProject(MoSyncProject project) {
 		return PropertyUtil.getBoolean(project, IS_TEST_PROJECT);
 	}
-	
+
 	/**
 	 * Configures a project to become a test project
 	 */
@@ -65,18 +65,18 @@ public class MoSyncProjectTestManager {
 	    // that the only plugin that will ever modify this property is the testing
 	    // plugin. Kind of ugly, so FIXME. Maybe even time to implement path containers...
 	    project.setProperty(MoSyncProject.STANDARD_EXCLUDES_FILTER_KEY, "%" + TEST_RESOURCES + "%");
-        
+
 	    configureBuildConfiguration(true);
 	    configureBuildConfiguration(false);
 	}
 
 	private void configureBuildConfiguration(boolean isDebug) {
         IBuildConfiguration testCfg = ensureHasTestConfigs(isDebug);
-        
+
         // Now we just brutally set the standard excludes to be the test resources
         testCfg.getProperties().setProperty(MoSyncProject.STANDARD_EXCLUDES_FILTER_KEY, "%EMPTY%");
         PropertyUtil.setPaths(project, TEST_RESOURCES, testResources.toArray(new IPath[0]));
-        
+
         addRequiredLibraries(testCfg.getProperties(), isDebug);
         setMinimumMemorySizes(testCfg);
     }
@@ -85,10 +85,8 @@ public class MoSyncProjectTestManager {
 	    // The framework itself requires a certain amount of memory.
         setMinimumMemorySize(testCfg.getProperties(), MoSyncBuilder.MEMORY_HEAPSIZE_KB, 128);
         setMinimumMemorySize(testCfg.getProperties(), MoSyncBuilder.MEMORY_STACKSIZE_KB, 64);
-        setMinimumMemorySize(testCfg.getProperties(), MoSyncBuilder.MEMORY_DATASIZE_KB, 256);
-	    
 	}
-	
+
 	private void setMinimumMemorySize(NameSpacePropertyOwner properties, String key, int minMemSizeInKb) {
 	    Integer currentMemSize = PropertyUtil.getInteger(properties, key);
 	    if (currentMemSize == null || currentMemSize < minMemSizeInKb) {
@@ -102,7 +100,7 @@ public class MoSyncProjectTestManager {
 	    for (int i = 0; i < libs.length; i++) {
 	        hasTestLibrary |= isTestLibrary(libs[i]);
 	    }
-	    
+
 	    if (!hasTestLibrary) {
 	        IPath[] newLibs = new IPath[libs.length + 1];
 	        System.arraycopy(libs, 0, newLibs, 0, libs.length);
@@ -114,7 +112,7 @@ public class MoSyncProjectTestManager {
     public static boolean isTestConfig(IBuildConfiguration cfg) {
     	return cfg != null && cfg.getTypes().contains(TestPlugin.TEST_BUILD_CONFIGURATION_TYPE);
     }
-    
+
     private boolean isTestLibrary(IPath lib) {
         return TEST_LIBRARY.equalsIgnoreCase(lib.toPortableString()) || TEST_LIBRARY_DEBUG.equalsIgnoreCase(lib.toPortableString());
     }
@@ -122,7 +120,7 @@ public class MoSyncProjectTestManager {
     public List<IBuildConfiguration> getTestConfigs(boolean isDebug) {
         return new ArrayList<IBuildConfiguration>(project.getBuildConfigurations(project.getBuildConfigurationsOfType(getTypes(isDebug))));
 	}
-	
+
     public void setPrototypeConfiguration(IBuildConfiguration prototypeCfg, boolean isDebug) {
         if (isDebug) {
             prototypeDebugCfg = prototypeCfg;
@@ -130,24 +128,24 @@ public class MoSyncProjectTestManager {
             prototypeReleaseCfg = prototypeCfg;
         }
     }
-    
+
 	private IBuildConfiguration ensureHasTestConfigs(boolean isDebug) {
 		project.activateBuildConfigurations();
 		List<IBuildConfiguration> cfgs = getTestConfigs(isDebug);
 		if (!cfgs.isEmpty()) {
 		    return cfgs.get(0);
 		}
-		
+
 		String cfgName = isDebug ? "Test_Debug" : "Test";
 		String testCfgId = BuildConfiguration.createUniqueId(project, cfgName);
-		
+
 		// We try to create the test configuration to be as close as possible to existing configurations.
 		IBuildConfiguration prototype = isDebug ? prototypeDebugCfg : prototypeReleaseCfg;
 		if (prototype == null) {
 		    List<String> prototypes = new ArrayList<String>(project.getBuildConfigurationsOfType(isDebug ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE));
 	        prototype = prototypes.isEmpty() ? null : project.getBuildConfiguration(prototypes.get(0));
 		}
-		
+
 		String[] types = getTypes(isDebug);
 		IBuildConfiguration testCfg = null;
 		if (prototype == null) {
@@ -163,9 +161,9 @@ public class MoSyncProjectTestManager {
     private String[] getTypes(boolean isDebug) {
         String baseCfgType = isDebug ? IBuildConfiguration.DEBUG_TYPE : IBuildConfiguration.RELEASE_TYPE;
         String[] types = new String[] { baseCfgType , TestPlugin.TEST_BUILD_CONFIGURATION_TYPE };
-        return types; 
+        return types;
 	}
-	
+
 	public void assignTestResource(IPath path, boolean assign) {
 		if (assign) {
 			testResources.add(path);
@@ -173,17 +171,17 @@ public class MoSyncProjectTestManager {
 			testResources.remove(path);
 		}
 	}
-	
+
 	public boolean isTestResource(IResource resource) {
 		return testResources.contains(resource.getProjectRelativePath());
 	}
-	
+
 	public Set<IPath> getTestResources() {
 	    return Collections.unmodifiableSet(testResources);
 	}
-	
+
 	/**
-	 * Utility method to check whether a project can 
+	 * Utility method to check whether a project can
 	 * be configured as a test project
 	 * @param project
 	 * @return

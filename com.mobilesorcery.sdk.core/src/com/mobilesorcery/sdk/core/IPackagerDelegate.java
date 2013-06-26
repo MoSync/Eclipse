@@ -2,7 +2,7 @@ package com.mobilesorcery.sdk.core;
 
 import org.eclipse.core.runtime.CoreException;
 
-import com.mobilesorcery.sdk.internal.PipeTool;
+import com.mobilesorcery.sdk.internal.Binutils;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 /**
@@ -15,10 +15,9 @@ import com.mobilesorcery.sdk.profiles.IProfile;
  */
 public interface IPackagerDelegate {
 
-	final static String BUILD_C_MODE = PipeTool.BUILD_C_MODE;
-	final static String BUILD_GEN_CPP_MODE = PipeTool.BUILD_GEN_CPP_MODE;
-	final static String BUILD_GEN_JAVA_MODE = PipeTool.BUILD_GEN_JAVA_MODE;
-	final static String BUILD_GEN_CS_MODE = PipeTool.BUILD_GEN_CS_MODE;
+	final static String BUILD_MX_MODE = Binutils.BUILD_MX_MODE;
+	final static String BUILD_GEN_CPP_MODE = Binutils.BUILD_GEN_CPP_MODE;
+	final static String BUILD_GEN_CS_MODE = Binutils.BUILD_GEN_CS_MODE;
 
 	final static String NATIVE_LIBS = "native.libs";
 	
