@@ -56,6 +56,7 @@ import com.mobilesorcery.sdk.internal.SecureProperties;
 import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_2;
 import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_4;
 import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_7;
+import com.mobilesorcery.sdk.internal.convert.MoSyncProjectConverter1_8;
 import com.mobilesorcery.sdk.internal.dependencies.LibraryLookup;
 import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 import com.mobilesorcery.sdk.profiles.ICompositeDeviceFilter;
@@ -230,7 +231,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	 *
 	 * @see MoSyncProject#getFormatVersion()
 	 */
-	public static final Version CURRENT_VERSION = new Version("1.7");
+	public static final Version CURRENT_VERSION = new Version("1.8");
 
 	private static final Version VERSION_1_0 = new Version("1");
 
@@ -640,7 +641,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			return null;
 		}
 	}
-	
+
 
 	/**
 	 * Extracts all {@code MoSyncProject}s that contains any one of the
@@ -669,6 +670,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		MoSyncProjectConverter1_2.getInstance().convert(project);
 		MoSyncProjectConverter1_4.getInstance().convert(project);
 		MoSyncProjectConverter1_7.getInstance().convert(project);
+		MoSyncProjectConverter1_8.getInstance().convert(project);
 		project.setFormatVersion(CURRENT_VERSION);
 	}
 
@@ -1470,11 +1472,13 @@ public class MoSyncProject extends PropertyOwnerBase implements
 		return securePropertyOwner;
 	}
 
-	public LibraryLookup getLibraryLookup(IBuildVariant variant, IPropertyOwner buildProperties) {
+	public LibraryLookup getLibraryLookup(IBuildVariant variant, IPropertyOwner buildProperties,
+		boolean debug)
+	{
 		// TODO: cache?
 		return new LibraryLookup(MoSyncBuilder.getLibraryPaths(
-				getWrappedProject(), buildProperties),
-				MoSyncBuilder.getLibraries(this, variant, buildProperties));
+			getWrappedProject(), buildProperties, debug),
+			MoSyncBuilder.getLibraries(this, variant, buildProperties));
 	}
 
 	public IApplicationPermissions getPermissions() {
@@ -1567,9 +1571,9 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	}
 
 	public String getOutputType() {
-		return getProperty(MoSyncBuilder.OUTPUT_TYPE); 
+		return getProperty(MoSyncBuilder.OUTPUT_TYPE);
 	}
-	
+
 	/**
 	 * Sets the (preferred) output type of this project.
 	 * Will throw an exception with a detailed, user-friendly
@@ -1584,7 +1588,7 @@ public class MoSyncProject extends PropertyOwnerBase implements
 	 */
 	public boolean setOutputType(String binaryType) throws IllegalArgumentException {
 		ArrayList<String> errors = new ArrayList<String>();
-		
+
 		if (MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(binaryType)) {
 			if (getProfileManagerType() != MoSyncTool.DEFAULT_PROFILE_TYPE) {
 				errors.add("Native projects must make use of the platform based profile type.");
@@ -1592,18 +1596,18 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			if (!isBuildConfigurationsSupported) {
 				errors.add("Native projects require build configuration support");
 			}
-			
+
 			boolean changedIncludes = false;
 			for (String cfg : getBuildConfigurations()) {
 				Pair<Boolean, List<IPath>> nativePaths = filteredNativePaths(cfg);
 				changedIncludes |= nativePaths.first;
 			}
-			
+
 			if (changedIncludes) {
 				errors.add("Native projects only supports include paths relative to the project.");
 			}
 		}
-		
+
 		if (errors.isEmpty()) {
 			return forceOutputType(binaryType);
 		} else {
@@ -1611,11 +1615,11 @@ public class MoSyncProject extends PropertyOwnerBase implements
 			throw new IllegalArgumentException(errorMsg);
 		}
 	}
-	
+
 	private Pair<Boolean, List<IPath>> filteredNativePaths(String cfg) {
 		return MoSyncBuilder.filterNativeIncludePaths(this, new BuildVariant(getTargetProfile(), cfg));
 	}
-	
+
 	public boolean forceOutputType(String binaryType) {
 		boolean result = false;
 		if (MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(binaryType)) {

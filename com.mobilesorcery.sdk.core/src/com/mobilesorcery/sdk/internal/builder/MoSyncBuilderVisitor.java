@@ -66,7 +66,7 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
     /**
      * The standard extensions for C++ files (no C file extensions)
      */
-    public static final String[] CPP_SOURCE_FILE_EXTS = new String[] { "cpp", "c++" };
+    public static final String[] CPP_SOURCE_FILE_EXTS = new String[] { "cpp", "c++", "cc" };
 
     public static final String[] C_HEADER_FILE_EXTS = new String[] { "hpp", "h++", "h" };
 
@@ -225,7 +225,11 @@ public class MoSyncBuilderVisitor extends IncrementalBuilderVisitor {
             args.add(xgcc.toOSString());
             args.add("-c");
             args.add("-g");
-            args.add("-std=gnu++0x");
+						if (hasExtension(resource, CPP_SOURCE_FILE_EXTS)) {
+							args.add("-std=gnu++0x");
+						} else {
+							args.add("-std=gnu99");
+						}
 
             if (generateDependencies) {
             	args.add("-MMD");

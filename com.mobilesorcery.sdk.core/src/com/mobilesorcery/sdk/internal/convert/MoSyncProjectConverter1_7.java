@@ -9,7 +9,7 @@ import com.mobilesorcery.sdk.core.MoSyncProject.IConverter;
 import com.mobilesorcery.sdk.core.Version;
 
 public class MoSyncProjectConverter1_7 implements IConverter {
-	
+
 	public final static Version VERSION = new Version("1.7");
 
 	private static IConverter instance = new MoSyncProjectConverter1_7();

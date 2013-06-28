@@ -29,6 +29,7 @@ import java.util.TreeMap;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
@@ -249,14 +250,22 @@ public class MoSyncTool {
 		return getMoSyncExamplesDirectory().append("workspace");
 	}
 
-	public IPath[] getMoSyncDefaultIncludes(boolean isNativeOutput) {
-		return isNativeOutput ?
-				new IPath[] { getMoSyncHome().append("include").append("MAStdNative") } :
-				new IPath[] { getMoSyncHome().append("include") };
+	public IPath[] getMoSyncDefaultIncludes(boolean isNativeOutput, boolean hasNewlib, boolean hasStlport) {
+		IPath p = getMoSyncHome().append("include");
+		if(isNativeOutput)
+			return new IPath[] { p.append("MAStdNative") };
+		if(hasNewlib)
+			p = p.append("newlib");
+		if(hasStlport)
+			return new IPath[] { p.append("stlport"), p };
+		else
+			return new IPath[] { p };
 	}
 
-	public IPath[] getMoSyncDefaultLibraryPaths() {
-		String dir = "mapip2_release_4.6.3";
+	public IPath[] getMoSyncDefaultLibraryPaths(boolean debug, boolean hasNewlib) {
+		String d = debug ? "_debug" : "_release";
+		String n = hasNewlib ? "_newlib" : "";
+		String dir = "mapip2"+n+d+"_4.6.3";
 		return new IPath[] { getMoSyncLib().append(dir) };
 	}
 

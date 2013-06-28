@@ -10,7 +10,7 @@
 
     You should have received a copy of the Eclipse Public License v1.0 along
     with this program. It is also available at http://www.eclipse.org/legal/epl-v10.html
-*/
+ */
 package com.mobilesorcery.sdk.internal.builder;
 
 import org.eclipse.core.runtime.IPath;
@@ -35,94 +35,91 @@ import com.mobilesorcery.sdk.internal.security.ApplicationPermissions;
 
 public class BuildPropertiesInitializerDelegate extends AbstractPreferenceInitializer implements IPropertyInitializerDelegate {
 
-    public BuildPropertiesInitializerDelegate() {
-    }
+	public BuildPropertiesInitializerDelegate() {
+	}
 
-    @Override
+	@Override
 	public String getDefaultValue(IPropertyOwner p, String key) {
-    	// TODO: Some of these should be set in an initialization step instead,
-    	// lo prio though.
+		// TODO: Some of these should be set in an initialization step instead,
+		// lo prio though.
 
-    	String namespacedKey = NameSpacePropertyOwner.getKey(key);
-    	String namespace = NameSpacePropertyOwner.getFullNamespace(key);
-    	String namespaceSegment = "";
-    	String projectName = "";
+		String namespacedKey = NameSpacePropertyOwner.getKey(key);
+		String namespace = NameSpacePropertyOwner.getFullNamespace(key);
+		String namespaceSegment = "";
+		String projectName = "";
 
-    	boolean isDebugCfg = IBuildConfiguration.DEBUG_ID.equals(namespace);
+		boolean isDebugCfg = IBuildConfiguration.DEBUG_ID.equals(namespace);
 
-    	int profileManagerType = MoSyncTool.LEGACY_PROFILE_TYPE;
-    	if (p instanceof MoSyncProject) {
-    		MoSyncProject project = (MoSyncProject) p;
-    		profileManagerType = project.getProfileManagerType();
-    		projectName = project.getName();
-    		// Config = namespace
-    		namespaceSegment = project.areBuildConfigurationsSupported() ? namespace + "/" : "";
-    	}
+		int profileManagerType = MoSyncTool.LEGACY_PROFILE_TYPE;
+		if (p instanceof MoSyncProject) {
+			MoSyncProject project = (MoSyncProject) p;
+			profileManagerType = project.getProfileManagerType();
+			projectName = project.getName();
+			// Config = namespace
+			namespaceSegment = project.areBuildConfigurationsSupported() ? namespace + "/" : "";
+		}
 
-        if (MoSyncBuilder.EXTRA_COMPILER_SWITCHES.equals(namespacedKey)) {
-        	return createDefaultExtraCompilerSwitches(profileManagerType, isDebugCfg);
-        } else if (MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS.equals(namespacedKey)) {
-        	if (IBuildConfiguration.DEBUG_ID.equals(namespace)) {
-        		return PropertyUtil.fromBoolean(true);
-        	} else {
-        		return PropertyUtil.fromBoolean(false);
-        	}
-        } else if (MoSyncBuilder.LIB_OUTPUT_PATH.equals(namespacedKey) && namespaceSegment != null) {
-    		return namespaceSegment + projectName + ".lib";
-        } else if (MoSyncBuilder.APP_OUTPUT_PATH.equals(namespacedKey) && namespaceSegment != null) {
-    		return namespaceSegment;
-        } else if (MoSyncBuilder.DEFAULT_LIBRARIES.equals(namespacedKey)) {
-        	if (IBuildConfiguration.DEBUG_ID.equals(namespace)) {
-        		return PropertyUtil.fromPaths(new IPath[] { new Path("mastdD.lib") });
-        	} else {
-        		return PropertyUtil.fromPaths(new IPath[] { new Path("mastd.lib") });
-        	}
-        } else if (MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS.equals(namespacedKey) ||
-        		MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS.equals(namespacedKey) ||
-        		MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES.equals(namespacedKey)) {
-        	return PropertyUtil.fromBoolean(false);
-				} else if (MoSyncBuilder.MEMORY_HEAPSIZE_KB.equals(namespacedKey)) {
-					return PropertyUtil.fromInteger(Binutils.DEFAULT_HEAP_SIZE_KB);
-				} else if (MoSyncBuilder.MEMORY_STACKSIZE_KB.equals(namespacedKey)) {
-					return PropertyUtil.fromInteger(Binutils.DEFAULT_STACK_SIZE_KB);
-        } else if (DefaultPackager.APP_VENDOR_NAME_BUILD_PROP.equals(namespacedKey)) {
-            return "BuiltWithMoSyncSDK";
-        } else if (MoSyncBuilder.PROJECT_VERSION.equals(namespacedKey)) {
-            return "1.0";
-        } else if (MoSyncBuilder.APP_NAME.equals(namespacedKey)) {
-            return projectName;
-        } else if (ApplicationPermissions.APPLICATION_PERMISSIONS_PROP.equals(namespacedKey)) {
-            return ApplicationPermissions.toPropertyString(
-                    ICommonPermissions.VIBRATE,
-                    ICommonPermissions.INTERNET,
-                    ICommonPermissions.FILE_STORAGE);
-        } else if (MoSyncBuilder.OUTPUT_TYPE.equals(namespacedKey)) {
-        	// The default is to use the classical, interpreted version.
-        	return MoSyncBuilder.OUTPUT_TYPE_INTERPRETED;
-        } else if (MoSyncBuilder.REBUILD_ON_ERROR.equals(namespacedKey)) {
-        	return PropertyUtil.fromBoolean(CoreMoSyncPlugin.getDefault().getPreferenceStore().getBoolean(MoSyncBuilder.REBUILD_ON_ERROR));
-        }
+		if (MoSyncBuilder.EXTRA_COMPILER_SWITCHES.equals(namespacedKey)) {
+			return createDefaultExtraCompilerSwitches(profileManagerType, isDebugCfg);
+		} else if (MoSyncBuilder.USE_DEBUG_RUNTIME_LIBS.equals(namespacedKey)) {
+			if (isDebugCfg) {
+				return PropertyUtil.fromBoolean(true);
+			} else {
+				return PropertyUtil.fromBoolean(false);
+			}
+		} else if (MoSyncBuilder.LIB_OUTPUT_PATH.equals(namespacedKey) && namespaceSegment != null) {
+			return namespaceSegment + projectName + ".lib";
+		} else if (MoSyncBuilder.APP_OUTPUT_PATH.equals(namespacedKey) && namespaceSegment != null) {
+			return namespaceSegment;
+		} else if (MoSyncBuilder.STANDARD_LIBRARIES.equals(namespacedKey)) {
+			return MoSyncBuilder.STANDARD_LIBRARIES_MASTD;
+		} else if (MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS.equals(namespacedKey) ||
+			MoSyncBuilder.IGNORE_DEFAULT_LIBRARY_PATHS.equals(namespacedKey) ||
+			MoSyncBuilder.IGNORE_DEFAULT_LIBRARIES.equals(namespacedKey))
+		{
+			return PropertyUtil.fromBoolean(false);
+		} else if (MoSyncBuilder.MEMORY_HEAPSIZE_KB.equals(namespacedKey)) {
+			return PropertyUtil.fromInteger(Binutils.DEFAULT_HEAP_SIZE_KB);
+		} else if (MoSyncBuilder.MEMORY_STACKSIZE_KB.equals(namespacedKey)) {
+			return PropertyUtil.fromInteger(Binutils.DEFAULT_STACK_SIZE_KB);
+		} else if (DefaultPackager.APP_VENDOR_NAME_BUILD_PROP.equals(namespacedKey)) {
+			return "BuiltWithMoSyncSDK";
+		} else if (MoSyncBuilder.PROJECT_VERSION.equals(namespacedKey)) {
+			return "1.0";
+		} else if (MoSyncBuilder.APP_NAME.equals(namespacedKey)) {
+			return projectName;
+		} else if (ApplicationPermissions.APPLICATION_PERMISSIONS_PROP.equals(namespacedKey)) {
+			return ApplicationPermissions.toPropertyString(
+				ICommonPermissions.VIBRATE,
+				ICommonPermissions.INTERNET,
+				ICommonPermissions.FILE_STORAGE);
+		} else if (MoSyncBuilder.OUTPUT_TYPE.equals(namespacedKey)) {
+			// The default is to use the classical, interpreted version.
+			return MoSyncBuilder.OUTPUT_TYPE_INTERPRETED;
+		} else if (MoSyncBuilder.REBUILD_ON_ERROR.equals(namespacedKey)) {
+			return PropertyUtil.fromBoolean(CoreMoSyncPlugin.getDefault().getPreferenceStore().getBoolean(MoSyncBuilder.REBUILD_ON_ERROR));
+		}
 
-        return null;
-    }
+		return null;
+	}
 
 	private String createDefaultExtraCompilerSwitches(int profileManagerType, boolean debug) {
 		StringBuffer result = new StringBuffer();
-    	if (debug) {
-    		result.append("-O0");
-    	} else {
-				result.append("-O2 -fomit-frame-pointer");
-    	}
-    	if (profileManagerType == MoSyncTool.DEFAULT_PROFILE_TYPE) {
-    		result.append(" -DPLATFORM_%platform-family% -DVARIANT_%platform-variant%");
-    	}
-    	return result.toString();
+		if (debug) {
+			result.append("-O0");
+		} else {
+			result.append("-O2 -fomit-frame-pointer");
+		}
+		if (profileManagerType == MoSyncTool.DEFAULT_PROFILE_TYPE) {
+			result.append(" -DPLATFORM_%platform-family% -DVARIANT_%platform-variant%");
+		}
+		return result.toString();
 	}
 
-    public void initializeDefaultPreferences() {
-        IPreferenceStore store = CoreMoSyncPlugin.getDefault().getPreferenceStore();
-        store.setDefault(MoSyncBuilder.REBUILD_ON_ERROR, true);
-        store.setDefault(MoSyncBuilder.VERBOSE_BUILDS, true);
-    }
+	public void initializeDefaultPreferences() {
+		IPreferenceStore store = CoreMoSyncPlugin.getDefault().getPreferenceStore();
+		store.setDefault(MoSyncBuilder.REBUILD_ON_ERROR, true);
+		store.setDefault(MoSyncBuilder.VERBOSE_BUILDS, true);
+	}
 
 }

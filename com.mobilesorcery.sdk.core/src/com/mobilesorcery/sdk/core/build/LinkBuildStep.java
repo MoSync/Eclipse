@@ -9,6 +9,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 
+import com.mobilesorcery.sdk.core.IBuildConfiguration;
 import com.mobilesorcery.sdk.core.IBuildResult;
 import com.mobilesorcery.sdk.core.IBuildSession;
 import com.mobilesorcery.sdk.core.IBuildVariant;
@@ -60,7 +61,7 @@ public class LinkBuildStep extends AbstractBuildStep {
 			getConsole().addMessage("Native compilation");
 			return CONTINUE;
 		}
-		
+
 		int continueFlag = IBuildStep.CONTINUE;
 
 		IProcessConsole console = getConsole();
@@ -93,7 +94,10 @@ public class LinkBuildStep extends AbstractBuildStep {
             String binutilsMode = MoSyncBuilder.getBinutilsMode(mosyncProject, targetProfile, isLibOrExt);
             binutils.setMode(binutilsMode);
             binutils.setOutputFile(isLibOrExt ? libraryOutput : program);
-            binutils.setLibraryPaths(MoSyncBuilder.resolvePaths(MoSyncBuilder.getLibraryPaths(project, buildProperties), resolver));
+            binutils.setLibraryPaths(MoSyncBuilder.resolvePaths(
+							MoSyncBuilder.getLibraryPaths(project, buildProperties,
+								mosyncProject.getActiveBuildConfiguration().isType(IBuildConfiguration.DEBUG_TYPE)),
+							resolver));
             binutils.setLibraries(MoSyncBuilder.getLibraries(mosyncProject, variant, buildProperties));
             binutils.setLineHandler(lineHandler);
 
@@ -148,12 +152,15 @@ public class LinkBuildStep extends AbstractBuildStep {
      * @param programComb Latest built program file.
      * @return true if any of the libraries have changed, false otherwise.
      */
-    private boolean haveLibrariesChanged(MoSyncProject mosyncProject, IBuildVariant variant, IPropertyOwner buildProperties, IPath programComb)
-    {
-        long librariesTouched = mosyncProject.getLibraryLookup(variant, buildProperties).getLastTouched();
-        long programCombTouched = programComb.toFile().exists() ? programComb.toFile().lastModified() : Long.MAX_VALUE;
-        return librariesTouched > programCombTouched;
-    }
+	private boolean haveLibrariesChanged(MoSyncProject mosyncProject, IBuildVariant variant,
+		IPropertyOwner buildProperties, IPath programComb)
+	{
+		long librariesTouched = mosyncProject.getLibraryLookup(variant, buildProperties,
+			mosyncProject.getActiveBuildConfiguration().isType(IBuildConfiguration.DEBUG_TYPE)
+			).getLastTouched();
+		long programCombTouched = programComb.toFile().exists() ? programComb.toFile().lastModified() : Long.MAX_VALUE;
+		return librariesTouched > programCombTouched;
+	}
 
 	@Override
 	public boolean shouldAdd(IBuildSession session) {

@@ -115,14 +115,16 @@ public class MoSyncBuilder extends ACBuilder {
 	public final static String IGNORE_DEFAULT_LIBRARY_PATHS = BUILD_PREFS_PREFIX
 			+ "ignore.default.library.paths";
 
-	public static final String DEFAULT_LIBRARIES = BUILD_PREFS_PREFIX
-			+ "default.libraries";
-
 	public final static String ADDITIONAL_LIBRARIES = BUILD_PREFS_PREFIX
 			+ "additional.libraries";
 
 	public final static String IGNORE_DEFAULT_LIBRARIES = BUILD_PREFS_PREFIX
 			+ "ignore.default.libraries";
+
+	public final static String STANDARD_LIBRARIES = BUILD_PREFS_PREFIX + "standard.libraries";
+	public final static String STANDARD_LIBRARIES_MASTD = "mastd";
+	public final static String STANDARD_LIBRARIES_LIBC = "libc";
+	public final static String STANDARD_LIBRARIES_STL = "stl";	// implies libc.
 
 	public static final String LIB_OUTPUT_PATH = BUILD_PREFS_PREFIX
 			+ "lib.output.path";
@@ -1121,9 +1123,17 @@ public class MoSyncBuilder extends ACBuilder {
 				(neverIncludeDefaults || PropertyUtil.getBoolean(buildProperties,
 				IGNORE_DEFAULT_INCLUDE_PATHS));
 
+		boolean hasNewlib = false;
+		boolean hasStlport = false;
+		String stl = buildProperties.getProperty(STANDARD_LIBRARIES);
+		if(stl.equals(STANDARD_LIBRARIES_LIBC))
+			hasNewlib = true;
+		if(stl.equals(STANDARD_LIBRARIES_STL))
+			hasNewlib = hasStlport = true;
+
 		if (!ignoreDefault) {
 			result.addAll(Arrays.asList(MoSyncTool.getDefault()
-					.getMoSyncDefaultIncludes(isNativeOutput)));
+					.getMoSyncDefaultIncludes(isNativeOutput, hasNewlib, hasStlport)));
 		}
 
 		if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
@@ -1179,7 +1189,7 @@ public class MoSyncBuilder extends ACBuilder {
 		}
 		// Native uses their own default paths -- and we actually need to
 		// filter the default path out from the additional paths.
-		IPath[] defaultIncludes = MoSyncTool.getDefault().getMoSyncDefaultIncludes(false);
+		IPath[] defaultIncludes = MoSyncTool.getDefault().getMoSyncDefaultIncludes(false, false, false);
 		for (IPath defaultInclude : defaultIncludes) {
 			if (defaultInclude.equals(path)) {
 				return false;
@@ -1194,12 +1204,16 @@ public class MoSyncBuilder extends ACBuilder {
 	}
 
 	public static IPath[] getLibraryPaths(IProject project,
-			IPropertyOwner buildProperties) {
+		IPropertyOwner buildProperties, boolean debug)
+	{
 		ArrayList<IPath> result = new ArrayList<IPath>();
 		if (!PropertyUtil.getBoolean(buildProperties,
-				IGNORE_DEFAULT_LIBRARY_PATHS)) {
+			IGNORE_DEFAULT_LIBRARY_PATHS))
+		{
 			result.addAll(Arrays.asList(MoSyncTool.getDefault()
-					.getMoSyncDefaultLibraryPaths()));
+				.getMoSyncDefaultLibraryPaths(debug,
+					!buildProperties.getProperty(MoSyncBuilder.STANDARD_LIBRARIES).
+						equals(MoSyncBuilder.STANDARD_LIBRARIES_MASTD))));
 		}
 
 		IPath[] additionalLibraryPaths = PropertyUtil.getPaths(buildProperties,
@@ -1224,8 +1238,20 @@ public class MoSyncBuilder extends ACBuilder {
 		ArrayList<IPath> result = new ArrayList<IPath>();
 
 		if (!PropertyUtil.getBoolean(buildProperties, IGNORE_DEFAULT_LIBRARIES)) {
-			result.addAll(Arrays.asList(PropertyUtil.getPaths(buildProperties,
-					DEFAULT_LIBRARIES)));
+			String stl = buildProperties.getProperty(STANDARD_LIBRARIES);
+			// If compiling natively, newlib and stlport are unavailable and replaced by
+			// the native platform's default libs, which we don't need to specify.
+			if(buildProperties.getProperty(OUTPUT_TYPE).equals(OUTPUT_TYPE_NATIVE_COMPILE)) {
+				stl = STANDARD_LIBRARIES_MASTD;
+			}
+			if(stl.equals(STANDARD_LIBRARIES_LIBC)) {
+				result.add(new Path("newlib.lib"));
+			} else if(stl.equals(STANDARD_LIBRARIES_STL)) {
+				result.add(new Path("newlib.lib"));
+				result.add(new Path("stlport.lib"));
+			} else {
+				result.add(new Path("mastd.lib"));
+			}
 		}
 
 		IPath[] additionalLibraries = PropertyUtil.getPaths(buildProperties,

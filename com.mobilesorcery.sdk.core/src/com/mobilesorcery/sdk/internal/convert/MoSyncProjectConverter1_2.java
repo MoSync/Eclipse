@@ -14,7 +14,6 @@ import com.mobilesorcery.sdk.core.IPropertyOwner;
 import com.mobilesorcery.sdk.core.MoSyncBuilder;
 import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.MoSyncProjectParameterResolver;
-import com.mobilesorcery.sdk.core.NameSpacePropertyOwner;
 import com.mobilesorcery.sdk.core.ParameterResolver;
 import com.mobilesorcery.sdk.core.ParameterResolverException;
 import com.mobilesorcery.sdk.core.PropertyUtil;

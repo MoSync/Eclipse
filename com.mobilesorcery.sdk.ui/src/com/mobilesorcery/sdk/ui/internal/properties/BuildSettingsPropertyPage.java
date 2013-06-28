@@ -103,6 +103,15 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private static final String BINARY_TYPE_RECOMPILED = "Statically Recompiled";
 	private static final String[] BINARY_TYPES = new String[] { BINARY_TYPE_NATIVE, BINARY_TYPE_INTERPRETED, BINARY_TYPE_RECOMPILED };
 
+    private static final String STANDARD_LIBRARIES_MASTD = "MAStd";
+    private static final String STANDARD_LIBRARIES_LIBC = "newlib";
+    private static final String STANDARD_LIBRARIES_STL = "stlport";
+	private static final String[] STANDARD_LIBRARIES = new String[] {
+		STANDARD_LIBRARIES_MASTD,
+		STANDARD_LIBRARIES_LIBC,
+		STANDARD_LIBRARIES_STL,
+	};
+
 	private Text additionalIncludePathsText;
 	private Text additionalNativeIncludePathsText;
     private Button ignoreDefaultIncludePaths;
@@ -132,6 +141,9 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
     private final HashMap<Object, IPropertyOwner> workingCopies = new HashMap<Object, IPropertyOwner>();
     private IWorkingCopy projectWorkingCopy;
 	private final HashSet<String> buildProperties = new HashSet<String>();
+
+    private Label standardLibrariesLabel;
+    private Combo standardLibraries;
 
 	private Composite main;
     private Composite placeHolder;
@@ -402,6 +414,14 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 
         buildPathsInterpreted.setLayout(new GridLayout(2, false));
         buildPathsInterpreted.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+        standardLibrariesLabel = new Label(buildPathsInterpreted, SWT.NONE);
+        standardLibrariesLabel.setText("Default library:");
+
+        standardLibraries = new Combo(buildPathsInterpreted, SWT.READ_ONLY);
+        standardLibraries.setItems(STANDARD_LIBRARIES);
+        standardLibraries.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false));
+
         Label includePathsLabel = new Label(buildPathsInterpreted, SWT.NONE);
         includePathsLabel.setText("Additional &Include Paths:");
         includePathsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false, 2, 1));
@@ -505,6 +525,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         incrementalBuildStrategy.select(PropertyUtil.getInteger(projectWorkingCopy, addBuildProperty(MoSyncProject.DEPENDENCY_STRATEGY), MoSyncProject.GCC_DEPENDENCY_STRATEGY));
 
     	IPropertyOwner configProperties = getWorkingCopyOfBuildConfiguration();
+
+        standardLibraries.select(getStandardLibrariesIndex(configProperties.getProperty(MoSyncBuilder.STANDARD_LIBRARIES)));
 
         ignoreDefaultIncludePaths.setSelection(PropertyUtil.getBoolean(configProperties, addBuildProperty(MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS)));
         setText(additionalIncludePathsText, configProperties.getProperty(addBuildProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS)));
@@ -616,6 +638,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         libraryProjectType.setEnabled(isInterpreted);
 
         boolean isNative = getBinaryType().equals(MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE);
+        standardLibrariesLabel.setEnabled(!isNative);
+        standardLibraries.setEnabled(!isNative);
         librariesLabel.setEnabled(!isNative);
         excludeFilesLabel.setEnabled(!isNative);
         libraryPathsLabel.setEnabled(!isNative);
@@ -796,6 +820,8 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
         boolean changed = false;
         changed |= PropertyUtil.setInteger(getProject(), MoSyncProject.DEPENDENCY_STRATEGY, incrementalBuildStrategy.getSelectionIndex());
 
+        changed |= configProperties.setProperty(MoSyncBuilder.STANDARD_LIBRARIES, getStandardLibraries());
+
         changed |= configProperties.setProperty(MoSyncBuilder.ADDITIONAL_INCLUDE_PATHS, additionalIncludePathsText.getText().replace(';', ','));
         changed |= PropertyUtil.setBoolean(configProperties, MoSyncBuilder.IGNORE_DEFAULT_INCLUDE_PATHS, ignoreDefaultIncludePaths.getSelection());
 
@@ -865,6 +891,27 @@ public class BuildSettingsPropertyPage extends MoSyncPropertyPage implements Pro
 			return MoSyncBuilder.OUTPUT_TYPE_STATIC_RECOMPILATION;
 		} else {
 			return MoSyncBuilder.OUTPUT_TYPE_INTERPRETED;
+		}
+	}
+
+	private int getStandardLibrariesIndex(String libs) {
+		if (MoSyncBuilder.STANDARD_LIBRARIES_LIBC.equals(libs)) {
+			return 1;
+		} else if (MoSyncBuilder.STANDARD_LIBRARIES_STL.equals(libs)) {
+			return 2;
+		} else {
+			return 0;
+		}
+	}
+
+    private String getStandardLibraries() {
+		switch(standardLibraries.getSelectionIndex()) {
+		case 1:
+			return MoSyncBuilder.STANDARD_LIBRARIES_LIBC;
+		case 2:
+			return MoSyncBuilder.STANDARD_LIBRARIES_STL;
+		default:
+			return MoSyncBuilder.STANDARD_LIBRARIES_MASTD;
 		}
 	}
 

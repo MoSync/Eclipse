@@ -177,6 +177,10 @@ public class Binutils {
 				}
 			}
 			if(result[i] == null) {
+				console.addMessage("Could not find library "+lib.toString()+" in any of the following directories:");
+				for(IPath path : libraryPaths) {
+					console.addMessage(path.toString());
+				}
 				throw new ParameterResolverException("library", lib.toString());
 			}
 		}
