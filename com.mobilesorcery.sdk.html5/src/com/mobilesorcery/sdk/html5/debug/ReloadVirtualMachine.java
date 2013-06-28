@@ -16,6 +16,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IThread;
+import org.eclipse.wst.jsdt.debug.core.breakpoints.IJavaScriptBreakpoint;
 import org.eclipse.wst.jsdt.debug.core.jsdi.BooleanValue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.NullValue;
 import org.eclipse.wst.jsdt.debug.core.jsdi.NumberValue;
@@ -101,6 +102,13 @@ public class ReloadVirtualMachine implements VirtualMachine,
 				// exitRequest));
 			}
 		}
+	}
+
+	public boolean canUpdateBreakpoints() {
+		return false;
+	}
+
+	public void updateBreakpoint(IJavaScriptBreakpoint b) {
 	}
 
 	@Override

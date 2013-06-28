@@ -13,7 +13,7 @@
  */
 package com.mobilesorcery.sdk.core;
 
-import com.mobilesorcery.sdk.internal.PipeTool;
+import com.mobilesorcery.sdk.internal.Binutils;
 import com.mobilesorcery.sdk.profiles.IProfile;
 
 public abstract class AbstractPackager implements IPackagerDelegate {
@@ -28,7 +28,7 @@ public abstract class AbstractPackager implements IPackagerDelegate {
 
 	@Override
 	public String getGenerateMode(IProfile profile) {
-		return PipeTool.BUILD_C_MODE;
+		return Binutils.BUILD_MX_MODE;
 	}
 
 	@Override

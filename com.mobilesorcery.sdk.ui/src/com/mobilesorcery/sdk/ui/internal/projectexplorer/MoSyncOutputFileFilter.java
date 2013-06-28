@@ -55,6 +55,10 @@ public class MoSyncOutputFileFilter extends ViewerFilter {
 						return false;
 					}
 
+					if (projPath.equals(project.getProjectRelativePath().append("build"))) {
+						return false;
+					}
+
 					String ext = file.getFileExtension();
 
 					if ("s".equals(ext) || "tab".equals(ext) || "mopro".equals(ext) || "vcproj".equals(ext)) {

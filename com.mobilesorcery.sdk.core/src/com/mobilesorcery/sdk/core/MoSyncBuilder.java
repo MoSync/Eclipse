@@ -65,6 +65,7 @@ import com.mobilesorcery.sdk.core.build.IBuildStepFactory;
 import com.mobilesorcery.sdk.core.stats.CounterVariable;
 import com.mobilesorcery.sdk.core.stats.Stats;
 import com.mobilesorcery.sdk.core.stats.Variables;
+import com.mobilesorcery.sdk.internal.Binutils;
 import com.mobilesorcery.sdk.internal.BuildSession;
 import com.mobilesorcery.sdk.internal.BuildState;
 import com.mobilesorcery.sdk.internal.PipeTool;
@@ -87,6 +88,8 @@ public class MoSyncBuilder extends ACBuilder {
 
 	public static final String OUTPUT = "Output";
 
+	private static final String BUILD_FOLDER = "build";
+
 	public final static String ID = CoreMoSyncPlugin.PLUGIN_ID + ".builder";
 
 	public static final String COMPATIBLE_ID = "com.mobilesorcery.sdk.builder.builder";
@@ -100,7 +103,7 @@ public class MoSyncBuilder extends ACBuilder {
 
 	public final static String ADDITIONAL_INCLUDE_PATHS = BUILD_PREFS_PREFIX
 			+ "additional.include.paths";
-	
+
 	public static final String ADDITIONAL_NATIVE_INCLUDE_PATHS = ADDITIONAL_INCLUDE_PATHS + ".native";
 
 	public final static String IGNORE_DEFAULT_INCLUDE_PATHS = BUILD_PREFS_PREFIX
@@ -112,23 +115,22 @@ public class MoSyncBuilder extends ACBuilder {
 	public final static String IGNORE_DEFAULT_LIBRARY_PATHS = BUILD_PREFS_PREFIX
 			+ "ignore.default.library.paths";
 
-	public static final String DEFAULT_LIBRARIES = BUILD_PREFS_PREFIX
-			+ "default.libraries";
-
 	public final static String ADDITIONAL_LIBRARIES = BUILD_PREFS_PREFIX
 			+ "additional.libraries";
 
 	public final static String IGNORE_DEFAULT_LIBRARIES = BUILD_PREFS_PREFIX
 			+ "ignore.default.libraries";
 
+	public final static String STANDARD_LIBRARIES = BUILD_PREFS_PREFIX + "standard.libraries";
+	public final static String STANDARD_LIBRARIES_MASTD = "mastd";
+	public final static String STANDARD_LIBRARIES_LIBC = "libc";
+	public final static String STANDARD_LIBRARIES_STL = "stl";	// implies libc.
+
 	public static final String LIB_OUTPUT_PATH = BUILD_PREFS_PREFIX
 			+ "lib.output.path";
 
 	public static final String APP_OUTPUT_PATH = BUILD_PREFS_PREFIX
 			+ "app.output.path";
-
-	public static final String DEAD_CODE_ELIMINATION = BUILD_PREFS_PREFIX
-			+ "dead.code.elim";
 
 	public static final String EXTRA_LINK_SWITCHES = BUILD_PREFS_PREFIX
 			+ "extra.link.sw";
@@ -142,9 +144,9 @@ public class MoSyncBuilder extends ACBuilder {
 	public static final String PROJECT_TYPE_APPLICATION = "app";
 
 	public static final String PROJECT_TYPE_LIBRARY = "lib";
-	
+
 	public static final String PROJECT_TYPE_EXTENSION = "ext";
-	
+
 	public static final String EXTRA_COMPILER_SWITCHES = BUILD_PREFS_PREFIX
 			+ "gcc.switches";
 
@@ -160,32 +162,29 @@ public class MoSyncBuilder extends ACBuilder {
 	public static final String MEMORY_STACKSIZE_KB = MEMORY_PREFS_PREFIX
 			+ "stack";
 
-	public static final String MEMORY_DATASIZE_KB = MEMORY_PREFS_PREFIX
-			+ "data";
-
 	public static final String USE_DEBUG_RUNTIME_LIBS = BUILD_PREFS_PREFIX
 			+ "runtime.debug";
 
 	public static final String OUTPUT_TYPE = BUILD_PREFS_PREFIX
 			+ "output.static.recompilation";
-	
+
 	public static final String OUTPUT_TYPE_INTERPRETED = "interpreted";
-	
+
 	public static final String OUTPUT_TYPE_STATIC_RECOMPILATION = "rebuilt";
-	
+
 	public static final String OUTPUT_TYPE_NATIVE_COMPILE = "native";
 
 	public static final String PROJECT_VERSION = BUILD_PREFS_PREFIX
 			+ "app.version";
 
 	public static final String APP_NAME = BUILD_PREFS_PREFIX + "app.name";
-	
+
 	public static final String EXTENSIONS = BUILD_PREFS_PREFIX + "ext";
-	
+
 	public static final String REBUILD_ON_ERROR = BUILD_PREFS_PREFIX + "rebuild.on.error";
 
 	private static final String APP_CODE = "app.code";
-	
+
 	public static final String VERBOSE_BUILDS = "verbose.builds";
 
 	private static final String CONSOLE_PREPARED = "console.prepared";
@@ -196,7 +195,7 @@ public class MoSyncBuilder extends ACBuilder {
 
 	public static final int GCC_WERROR = 1 << 3;
 
-	private static Boolean doesRescompilerLibExist;
+	public static final int GCC_WMOAR = 1 << 4;
 
 	public final class GCCLineHandler extends LineAdapter {
 
@@ -304,7 +303,8 @@ public class MoSyncBuilder extends ACBuilder {
 				&& new Path(outputFolder).isPrefixOf(projectRelativePath);
 		boolean isLegacyOutputFolder = new Path(OUTPUT)
 				.isPrefixOf(projectRelativePath);
-		return isLegacyOutputFolder || isOutputFolder;
+		boolean isBuildFolder = new Path(BUILD_FOLDER).isPrefixOf(projectRelativePath);
+		return isLegacyOutputFolder || isOutputFolder || isBuildFolder;
 	}
 
 	/**
@@ -514,20 +514,19 @@ public class MoSyncBuilder extends ACBuilder {
 	 * @return The appropriate mode for the given profile.
 	 * @throws CoreException
 	 */
-	public static String getPipeToolMode(MoSyncProject project,
-			IProfile profile, boolean isLib) throws CoreException {
+	public static String getBinutilsMode(MoSyncProject project,
+		IProfile profile, boolean isLib) throws CoreException
+	{
 		if (isLib) {
-			return PipeTool.BUILD_LIB_MODE;
+			return Binutils.BUILD_LIB_MODE;
 		}
 
 		if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
 			Map<String, Object> properties = profile.getProperties();
 			if (properties.containsKey("MA_PROF_OUTPUT_CPP")) {
-				return PipeTool.BUILD_GEN_CPP_MODE;
-			} else if (properties.containsKey("MA_PROF_OUTPUT_JAVA")) {
-				return PipeTool.BUILD_GEN_JAVA_MODE;
+				return Binutils.BUILD_GEN_CPP_MODE;
 			} else if (properties.containsKey("MA_PROF_OUTPUT_CS")) {
-				return PipeTool.BUILD_GEN_CS_MODE;
+				return Binutils.BUILD_GEN_CS_MODE;
 			}
 		}
 
@@ -545,7 +544,7 @@ public class MoSyncBuilder extends ACBuilder {
 		}
 		return result;
 	}
-	
+
 	IBuildResult incrementalBuild0(IProject project, IBuildSession session,
 			IBuildVariant variant, IFilter<IResource> resourceFilter,
 			IProcessConsole console,
@@ -625,13 +624,19 @@ public class MoSyncBuilder extends ACBuilder {
 			GCCLineHandler linehandler = new GCCLineHandler(epm);
 
 			/* Set up pipe-tool */
-			PipeTool pipeTool = new PipeTool();
-			pipeTool.setAppCode(getCurrentAppCode(session));
-			pipeTool.setProject(project);
-			pipeTool.setVariant(variant);
-			pipeTool.setConsole(console);
-			pipeTool.setLineHandler(linehandler);
-			pipeTool.setArguments(buildProperties);
+			PipeTool pipetool = new PipeTool();
+			pipetool.setProject(project);
+			pipetool.setVariant(variant);
+			pipetool.setConsole(console);
+			pipetool.setLineHandler(linehandler);
+
+			Binutils binutils = new Binutils();
+			binutils.setAppCode(getCurrentAppCode(session));
+			binutils.setProject(project);
+			binutils.setVariant(variant);
+			binutils.setConsole(console);
+			binutils.setLineHandler(linehandler);
+			binutils.setArguments(buildProperties);
 
 			IDependencyProvider<IResource> dependencyProvider = createDependencyProvider(
 					mosyncProject, variant);
@@ -670,7 +675,8 @@ public class MoSyncBuilder extends ACBuilder {
 					buildStep.initConsole(console);
 					buildStep.initBuildProperties(buildProperties);
 					buildStep.initBuildState(buildState);
-					buildStep.initPipeTool(pipeTool);
+					buildStep.initBinutils(binutils);
+					buildStep.initPipeTool(pipetool);
 					buildStep.initParameterResolver(resolver);
 					buildStep.initDefaultLineHandler(linehandler);
 					buildStep.initDependencyProvider(dependencyProvider);
@@ -695,7 +701,7 @@ public class MoSyncBuilder extends ACBuilder {
 			// Update the current set of dependencies.
 			buildState.getDependencyManager().applyDelta(
 					buildResult.getDependencyDelta());
-			
+
 			Date endTimestamp = Calendar.getInstance().getTime();
 			console.addMessage(MessageFormat.format("Build finished at {0}. (Build time: {1}.)",
 					dateFormater.format(endTimestamp),
@@ -810,7 +816,7 @@ public class MoSyncBuilder extends ACBuilder {
 		// share app code.
 		String appCode = (String) session.getProperties().get(APP_CODE);
 		if (Util.isEmpty(appCode)) {
-			appCode = PipeTool.generateAppCode();
+			appCode = Binutils.generateAppCode();
 			session.getProperties().put(APP_CODE, appCode);
 		}
 
@@ -1112,14 +1118,22 @@ public class MoSyncBuilder extends ACBuilder {
 		boolean isNativeOutput = MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
 
 		ArrayList<IPath> result = new ArrayList<IPath>();
-		
+
 		boolean ignoreDefault = !isNativeOutput &&
 				(neverIncludeDefaults || PropertyUtil.getBoolean(buildProperties,
 				IGNORE_DEFAULT_INCLUDE_PATHS));
-		
+
+		boolean hasNewlib = false;
+		boolean hasStlport = false;
+		String stl = buildProperties.getProperty(STANDARD_LIBRARIES);
+		if(stl.equals(STANDARD_LIBRARIES_LIBC))
+			hasNewlib = true;
+		if(stl.equals(STANDARD_LIBRARIES_STL))
+			hasNewlib = hasStlport = true;
+
 		if (!ignoreDefault) {
 			result.addAll(Arrays.asList(MoSyncTool.getDefault()
-					.getMoSyncDefaultIncludes(isNativeOutput)));
+					.getMoSyncDefaultIncludes(isNativeOutput, hasNewlib, hasStlport)));
 		}
 
 		if (project.getProfileManagerType() == MoSyncTool.LEGACY_PROFILE_TYPE) {
@@ -1152,11 +1166,11 @@ public class MoSyncBuilder extends ACBuilder {
 				result.add(extension.getIncludePath());
 			}
 		}
-		
+
 		IPath[] paths = resolvePaths(result.toArray(new IPath[0]),
 				createParameterResolver(project, variant));
 		ArrayList<IPath> filteredPaths = new ArrayList<IPath>();
-		
+
 		// Filter out some paths.
 		for (int i = 0; i < paths.length; i++) {
 			IPath path = paths[i];
@@ -1164,10 +1178,10 @@ public class MoSyncBuilder extends ACBuilder {
 				filteredPaths.add(path);
 			}
 		}
-		
+
 		return filteredPaths.toArray(new IPath[0]);
 	}
-	
+
 	private static boolean isValidIncludePath(IPath path, String outputType) {
 		boolean isNativeOutput = MoSyncBuilder.OUTPUT_TYPE_NATIVE_COMPILE.equals(outputType);
 		if (!isNativeOutput) {
@@ -1175,7 +1189,7 @@ public class MoSyncBuilder extends ACBuilder {
 		}
 		// Native uses their own default paths -- and we actually need to
 		// filter the default path out from the additional paths.
-		IPath[] defaultIncludes = MoSyncTool.getDefault().getMoSyncDefaultIncludes(false);
+		IPath[] defaultIncludes = MoSyncTool.getDefault().getMoSyncDefaultIncludes(false, false, false);
 		for (IPath defaultInclude : defaultIncludes) {
 			if (defaultInclude.equals(path)) {
 				return false;
@@ -1190,12 +1204,16 @@ public class MoSyncBuilder extends ACBuilder {
 	}
 
 	public static IPath[] getLibraryPaths(IProject project,
-			IPropertyOwner buildProperties) {
+		IPropertyOwner buildProperties, boolean debug)
+	{
 		ArrayList<IPath> result = new ArrayList<IPath>();
 		if (!PropertyUtil.getBoolean(buildProperties,
-				IGNORE_DEFAULT_LIBRARY_PATHS)) {
+			IGNORE_DEFAULT_LIBRARY_PATHS))
+		{
 			result.addAll(Arrays.asList(MoSyncTool.getDefault()
-					.getMoSyncDefaultLibraryPaths()));
+				.getMoSyncDefaultLibraryPaths(debug,
+					!buildProperties.getProperty(MoSyncBuilder.STANDARD_LIBRARIES).
+						equals(MoSyncBuilder.STANDARD_LIBRARIES_MASTD))));
 		}
 
 		IPath[] additionalLibraryPaths = PropertyUtil.getPaths(buildProperties,
@@ -1210,7 +1228,7 @@ public class MoSyncBuilder extends ACBuilder {
 			String extensionLibraryPath = "%mosync-home%/extensions/" + extension + "/lib";
 			result.add(new Path(extensionLibraryPath));
 		}
-		
+
 		return result.toArray(new IPath[0]);
 	}
 
@@ -1220,8 +1238,20 @@ public class MoSyncBuilder extends ACBuilder {
 		ArrayList<IPath> result = new ArrayList<IPath>();
 
 		if (!PropertyUtil.getBoolean(buildProperties, IGNORE_DEFAULT_LIBRARIES)) {
-			result.addAll(Arrays.asList(PropertyUtil.getPaths(buildProperties,
-					DEFAULT_LIBRARIES)));
+			String stl = buildProperties.getProperty(STANDARD_LIBRARIES);
+			// If compiling natively, newlib and stlport are unavailable and replaced by
+			// the native platform's default libs, which we don't need to specify.
+			if(buildProperties.getProperty(OUTPUT_TYPE).equals(OUTPUT_TYPE_NATIVE_COMPILE)) {
+				stl = STANDARD_LIBRARIES_MASTD;
+			}
+			if(stl.equals(STANDARD_LIBRARIES_LIBC)) {
+				result.add(new Path("newlib.lib"));
+			} else if(stl.equals(STANDARD_LIBRARIES_STL)) {
+				result.add(new Path("newlib.lib"));
+				result.add(new Path("stlport.lib"));
+			} else {
+				result.add(new Path("mastd.lib"));
+			}
 		}
 
 		IPath[] additionalLibraries = PropertyUtil.getPaths(buildProperties,
@@ -1230,7 +1260,7 @@ public class MoSyncBuilder extends ACBuilder {
 		if (additionalLibraries != null) {
 			result.addAll(Arrays.asList(additionalLibraries));
 		}
-		
+
 		String[] extensions = PropertyUtil.getStrings(buildProperties, MoSyncBuilder.EXTENSIONS);
 		for (String extension : extensions) {
 			result.add(new Path(extension + ".lib"));
@@ -1465,7 +1495,7 @@ public class MoSyncBuilder extends ACBuilder {
 	public static boolean isExtension(MoSyncProject project) {
 		return PROJECT_TYPE_EXTENSION.equals(project.getProperty(PROJECT_TYPE));
 	}
-	
+
 	public static boolean isResourceFile(IResource resource) {
 		if (resource.getType() == IResource.FILE) {
 			IFile file = (IFile) resource;
@@ -1475,22 +1505,22 @@ public class MoSyncBuilder extends ACBuilder {
 
 		return false;
 	}
-	
+
 	public static File getResourcesDirectory(IProject project) {
 		File resDir = project.getLocation().append("Resources").toFile();
 		return resDir.exists() && resDir.isDirectory() ? resDir : null;
 	}
-	
+
     public static Map<String, String> extractMacroDefinesFromGCCArgs(MoSyncProject project, IBuildVariant variant) {
     	LinkedHashMap<String, String> result = new LinkedHashMap<String, String>();
-    	
+
     	String extraCompilerSwitchesLine = "";
 		try {
 			extraCompilerSwitchesLine = MoSyncBuilder.getExtraCompilerSwitches(project, variant);
 		} catch (ParameterResolverException e) {
 			CoreMoSyncPlugin.getDefault().logOnce(e, "qqeeww");
 		}
-        
+
         if (!Util.isEmpty(extraCompilerSwitchesLine)) {
             String[] extraCompilerSwitches = Util.parseCommandLine(extraCompilerSwitchesLine);
 
@@ -1509,5 +1539,5 @@ public class MoSyncBuilder extends ACBuilder {
     	return result;
     }
 
-	
+
 }

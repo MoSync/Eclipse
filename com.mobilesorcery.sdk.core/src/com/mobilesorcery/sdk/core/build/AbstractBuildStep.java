@@ -39,6 +39,7 @@ import com.mobilesorcery.sdk.core.MoSyncProject;
 import com.mobilesorcery.sdk.core.Util;
 import com.mobilesorcery.sdk.core.security.IApplicationPermissions;
 import com.mobilesorcery.sdk.internal.PipeTool;
+import com.mobilesorcery.sdk.internal.Binutils;
 import com.mobilesorcery.sdk.internal.dependencies.DependencyManager;
 import com.mobilesorcery.sdk.internal.dependencies.IDependencyProvider;
 import com.mobilesorcery.sdk.profiles.IProfile;
@@ -53,11 +54,12 @@ public abstract class AbstractBuildStep implements IBuildStep {
 	 * properties and must be of type {@link IApplicationPermissions}.
 	 */
 	public static final String MODIFIED_PERMISSIONS = CoreMoSyncPlugin.PLUGIN_ID + "mod.perm";
-	
+
 	private IProcessConsole console;
 	private IPropertyOwner buildProperties;
 	private IBuildState buildState;
 	private PipeTool pipeTool;
+	private Binutils binutils;
 	private ILineHandler defaultLineHandler;
 	private IDependencyProvider<IResource> dependencyProvider;
 	private String id;
@@ -68,24 +70,24 @@ public abstract class AbstractBuildStep implements IBuildStep {
 	public String getId() {
 		return id;
 	}
-	
+
 	protected void setId(String id) {
 		this.id = id;
 	}
-	
+
 	public String getName() {
 		return name;
 	}
-	
+
 	protected void setName(String name) {
 		this.name = name;
 	}
-	
+
 	@Override
 	public void initConsole(IProcessConsole console) {
 		this.console = console;
 	}
-	
+
 	protected IProcessConsole getConsole() {
 		return console;
 	}
@@ -94,40 +96,48 @@ public abstract class AbstractBuildStep implements IBuildStep {
 	public void initBuildProperties(IPropertyOwner buildProperties) {
 		this.buildProperties = buildProperties;
 	}
-	
+
 	protected IPropertyOwner getBuildProperties() {
 		return buildProperties;
 	}
-	
+
 	@Override
 	public void initBuildState(IBuildState buildState) {
 		this.buildState = buildState;
 	}
-	
+
 	protected IBuildState getBuildState() {
 		return buildState;
 	}
-	
+
 	public void initPipeTool(PipeTool pipeTool) {
 		this.pipeTool = pipeTool;
 	}
-	
+
 	protected PipeTool getPipeTool() {
 		return pipeTool;
+	}
+
+	public void initBinutils(Binutils b) {
+		this.binutils = b;
+	}
+
+	protected Binutils getBinutils() {
+		return binutils;
 	}
 
 	public void initDefaultLineHandler(ILineHandler defaultLineHandler) {
 		this.defaultLineHandler = defaultLineHandler;
 	}
-	
+
 	protected ILineHandler getDefaultLineHandler() {
 		return defaultLineHandler;
 	}
-	
+
 	public void initDependencyProvider(IDependencyProvider<IResource> dependencyProvider) {
 		this.dependencyProvider = dependencyProvider;
 	}
-	
+
 	protected IDependencyProvider<IResource> getDependencyProvider() {
 		return dependencyProvider;
 	}
@@ -136,7 +146,7 @@ public abstract class AbstractBuildStep implements IBuildStep {
 	public void initResourceFilter(IFilter<IResource> resourceFilter) {
 		this.resourceFilter = resourceFilter;
 	}
-	
+
 	protected IFilter<IResource> getResourceFilter() {
 		return resourceFilter;
 	}
@@ -144,7 +154,7 @@ public abstract class AbstractBuildStep implements IBuildStep {
 	public void initParameterResolver(ParameterResolver resolver) {
 		this.resolver = resolver;
 	}
-	
+
 	public ParameterResolver getParameterResolver() {
 		return resolver;
 	}
@@ -158,12 +168,12 @@ public abstract class AbstractBuildStep implements IBuildStep {
 	public boolean shouldBuild(MoSyncProject project, IBuildSession session, IBuildResult buildResult) {
 		return shouldAdd(session) && buildResult.getErrors().isEmpty();
 	}
-	
+
 	@Override
 	public boolean shouldAdd(IBuildSession session) {
 		return true;
 	}
-	
+
 	@Override
 	public String[] getDependees() {
 		return null;
@@ -195,7 +205,7 @@ public abstract class AbstractBuildStep implements IBuildStep {
     public String toString() {
     	return getId();
     }
-    
+
     /**
      * Returns {@code true} if the <b>resolved</b> output type equals
      * a certain value.
@@ -209,7 +219,7 @@ public abstract class AbstractBuildStep implements IBuildStep {
     public boolean isOutputType(MoSyncProject project, IBuildVariant variant, String outputType) {
     	return Util.equals(outputType, getOutputType(project, variant));
     }
-    
+
     /**
      * Returns the <b>resolved</b> output type to use. Does not necessarily correspond to
      * the project property ({@link MoSyncBuilder#OUTPUT_TYPE()}, since not all platforms
